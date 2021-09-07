@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: mapper
+Version: 0.0.1
+Summary: A simple implementation of the mapper algorithm from TDA
+Home-page: https://github.com/lucasimi/mapper-tda
+Author: Luca Simi
+Author-email: lucasimi90@gmail.com
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/lucasimi/mapper-tda/issues
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+UNKNOWN
+

@@ -1,2 +1,3 @@
 # mapper-tda
-A simple Mapper algorithm implementation
+A simple implementation of the mapper algorithm from TDA
+
