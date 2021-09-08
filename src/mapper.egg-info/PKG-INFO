@@ -15,5 +15,8 @@ Requires-Python: >=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-UNKNOWN
+# mapper-tda
+A simple implementation of the mapper algorithm from TDA
+
+
 

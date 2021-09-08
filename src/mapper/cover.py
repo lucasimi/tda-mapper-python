@@ -15,20 +15,34 @@ def _cover_fast(data, find_neighbors):
             groups.append(neighbors)
     return groups
 
-def ball_cover(data, metric, lens, radius):
-    metric_pb = _pullback_pseudometric(data, lens, metric)
-    data_ids = [x for x in range(len(data))]
-    dt = BallTree(metric_pb, data_ids, min_radius=radius)
-    find_neighbors = lambda p : dt.ball_search(p, radius)
-    return _cover_fast(data, find_neighbors)
+class BallCover:
 
-def knn_cover(data, metric, lens, k):
-    metric_pb = _pullback_pseudometric(data, lens, metric)
-    data_ids = [x for x in range(len(data))]
-    dt = BallTree(metric_pb, data_ids, max_count=k)
-    find_neighbors = lambda p : dt.knn_search(p, k)
-    return _cover_fast(data, find_neighbors)
+    def __init__(self, radius):
+        self.__radius = radius
 
-def trivial_cover(data, metric, lens):
-    """Return a trivial grouping of data with a single ball"""
-    return [[x for x in range(len(data))]]
+    def cover(self, data, metric, lens):
+        metric_pb = _pullback_pseudometric(data, lens, metric)
+        data_ids = [x for x in range(len(data))]
+        dt = BallTree(metric_pb, data_ids, min_radius=self.__radius)
+        find_neighbors = lambda p : dt.ball_search(p, self.__radius)
+        return _cover_fast(data, find_neighbors)
+
+
+class KnnCover:
+
+    def __init__(self, k):
+        self.__k = k
+
+    def cover(self, data, metric, lens):
+        metric_pb = _pullback_pseudometric(data, lens, metric)
+        data_ids = [x for x in range(len(data))]
+        dt = BallTree(metric_pb, data_ids, max_count=self.__k)
+        find_neighbors = lambda p : dt.knn_search(p, self.__k)
+        return _cover_fast(data, find_neighbors)
+
+
+class TrivialCover:
+
+    def cover(self, data, metric, lens):
+        """Return a trivial grouping of data with a single ball"""
+        return [[x for x in range(len(data))]]

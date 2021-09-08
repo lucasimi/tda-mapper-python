@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import mapper.graph
-import mapper.cover
+from mapper.cover import BallCover, TrivialCover
 import mapper.clustering
 import mapper.exact
 
@@ -17,8 +17,8 @@ class TestMapper(unittest.TestCase):
     def testTrivial(self):
         lens = lambda x: x
         data = dataset()
-        balls = mapper.cover.trivial_cover(data, None, lens)
-        labels = mapper.clustering.trivial(data, balls)
+        balls = TrivialCover().cover(data, None, lens)
+        labels = mapper.clustering.fit(data, balls)
         g = mapper.exact.compute_mapper(data, labels, lens, colormap=np.nanmean)
         self.assertEqual(1, len(g.get_vertices()))
         for vert_id in g.get_vertices():
@@ -27,8 +27,8 @@ class TestMapper(unittest.TestCase):
     def testBallSmallRadius(self):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
-        balls = mapper.cover.ball_cover(data, dist, lens, 0.5)
-        labels = mapper.clustering.trivial(data, balls)
+        balls = BallCover(0.5).cover(data, dist, lens)
+        labels = mapper.clustering.fit(data, balls)
         g = mapper.exact.compute_mapper(data, labels, lens, colormap=np.nanmean)
         self.assertEqual(1000, len(g.get_vertices()))
         for vert_id in g.get_vertices():
@@ -37,8 +37,8 @@ class TestMapper(unittest.TestCase):
     def testBallLargeRadius(self):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
-        balls = mapper.cover.ball_cover(data, dist, lens, 1000.0)
-        labels = mapper.clustering.trivial(data, balls)
+        balls = BallCover(1000.0).cover(data, dist, lens)
+        labels = mapper.clustering.fit(data, balls, None)
         g = mapper.exact.compute_mapper(data, labels, lens, colormap=np.nanmean)
         self.assertEqual(1, len(g.get_vertices()))
         for vert_id in g.get_vertices():
@@ -48,9 +48,9 @@ class TestMapper(unittest.TestCase):
         lens = lambda x: x
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
-        balls = mapper.cover.ball_cover(data, dist, lens, 150.0)
+        balls = BallCover(150.0).cover(data, dist, lens)
         self.assertEqual(2, len(balls))
-        labels = mapper.clustering.trivial(data, balls)
+        labels = mapper.clustering.fit(data, balls, None)
         g = mapper.exact.compute_mapper(data, labels, lens, colormap=np.nanmean)
         self.assertEqual(2, len(g.get_vertices()))
         for vert_id in g.get_vertices():
