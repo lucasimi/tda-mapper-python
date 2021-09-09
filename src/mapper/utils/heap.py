@@ -139,3 +139,4 @@ class MaxHeap:
     def update(self, values):
         for x in values:
             self.insert(x)
+

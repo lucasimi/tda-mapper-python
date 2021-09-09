@@ -3,6 +3,7 @@ import random
 
 from .heap import MaxHeap
 
+
 class KBall:
 
     def __init__(self, dist, center, k):
@@ -37,6 +38,7 @@ class KBall:
     def update(self, values):
         for x in values:
             self.insert(x)
+
 
 class Ball:
 
@@ -88,6 +90,7 @@ class Tree:
                 b = self.__right.get_height()
                 return max(a, b) + 1
 
+
 class SearchResult:
 
     def __init__(self, point, error):
@@ -99,6 +102,7 @@ class SearchResult:
 
     def get_error(self):
         return self._error
+
 
 class BallTree:
 
@@ -151,7 +155,6 @@ class BallTree:
             if right and (eps > radius or d > radius - eps):
                 self._ball_search(dist, right, point, eps, results)
 
-
     def nn_search(self, point):
         res = self._nn_search(self.__distance, self.__tree, point)
         return res.get_point()
@@ -199,7 +202,6 @@ class BallTree:
             else:
                 return self._nn_search_outside(dist, tree, point, dist_center_point, radius)
 
-
     def knn_search(self, point, k):
         kball = KBall(self.__distance, point, k)
         self._knn_search(self.__distance, self.__tree, point, kball)
@@ -240,6 +242,7 @@ class BallTree:
         else:
             self._knn_search(dist, tree.get_left(), point, kball)
 
+
 def pivot_higher(data, start, end, i, fun=lambda x: x):
     """Move the elements less or equal than data[i] on the left, and higher on the right"""
     data[start], data[i] = data[i], data[start]
@@ -251,6 +254,7 @@ def pivot_higher(data, start, end, i, fun=lambda x: x):
     data[start], data[higher - 1] = data[higher - 1], data[start]
     return higher - 1
 
+
 def place_in_order(data, start, end, k, fun=lambda x: x):
     """Return the element which should fall at place k among [start:end]"""
     s_current, e_current = start, end
@@ -261,3 +265,4 @@ def place_in_order(data, start, end, k, fun=lambda x: x):
             e_current = higher
         else:
             s_current = higher
+
