@@ -14,8 +14,7 @@ class ClusteringAlgorithm:
     def fit(self, data, atlas_ids):
         clusters = []
         for chart_ids in atlas_ids:
-            chart_data = [data[x] for x in chart_ids]
-            chart_clusters = self.__get_clusters(data, chart_data)
+            chart_clusters = self.__get_clusters(data, chart_ids)
             clusters.append([(x, y) for (x, y) in chart_clusters if y != -1])
         return clusters
 
