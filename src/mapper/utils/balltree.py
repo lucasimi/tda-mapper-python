@@ -1,4 +1,4 @@
-"""A class for fast knn-like searches, depending only on a given metric"""
+"""A class for fast knn and range searches, depending only on a given metric"""
 import random
 
 from .heap import MaxHeap
@@ -123,7 +123,7 @@ class BallTree:
         else:
             center = random.choice(data[start:end]) #improve this by removing the copy
             mid = (end + start) // 2
-            place_in_order(data, start, end, mid, lambda x: dist(center, x))
+            _place_in_order(data, start, end, mid, lambda x: dist(center, x))
             radius = dist(center, data[mid])
             if min_radius and radius <= min_radius:
                 left = Tree(Ball(None, None, data[start:mid]))
@@ -243,7 +243,7 @@ class BallTree:
             self._knn_search(dist, tree.get_left(), point, kball)
 
 
-def pivot_higher(data, start, end, i, fun=lambda x: x):
+def _pivot_higher(data, start, end, i, fun=lambda x: x):
     """Move the elements less or equal than data[i] on the left, and higher on the right"""
     data[start], data[i] = data[i], data[start]
     higher = start + 1
@@ -255,12 +255,12 @@ def pivot_higher(data, start, end, i, fun=lambda x: x):
     return higher - 1
 
 
-def place_in_order(data, start, end, k, fun=lambda x: x):
+def _place_in_order(data, start, end, k, fun=lambda x: x):
     """Return the element which should fall at place k among [start:end]"""
     s_current, e_current = start, end
     higher = None
     while higher != k:
-        higher = pivot_higher(data, s_current, e_current, k, fun)
+        higher = _pivot_higher(data, s_current, e_current, k, fun)
         if k < higher:
             e_current = higher
         else:

@@ -8,19 +8,12 @@ from mapper.search import BallSearch, KnnSearch
 from mapper.exact import Mapper
 from mapper.plot import GraphPlot
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
 
-
-def dataset(dim=10, num=1000):
-    return [np.random.rand(dim) for _ in range(num)]
-
-
+dist = lambda x, y: np.linalg.norm(x - y)
 lens = lambda x: x
-data = dataset()
+data = [np.random.rand(10) for _ in range(1000)]
 mp = Mapper(cover_algo=TrivialCover(), clustering_algo=TrivialClustering())
 g = mp.run(data, lens, dist, np.nanmean)
 gp = GraphPlot(g)
 gp.plot()
-
 
