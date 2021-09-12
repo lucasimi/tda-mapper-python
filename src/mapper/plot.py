@@ -32,13 +32,14 @@ class GraphPlot:
             return self._plot3d(title, width, height)
 
     def _plt_display(self, title, width, height):
+        px = 1/plt.rcParams['figure.dpi']
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         node_sizes = []
         for node in self.__nx.nodes():
             size = float(self.__size_dict[node]) / max_size
             node_sizes.append(600.0 * size)
         colors = list(self.__color_dict.values())
-        fig, ax = plt.subplots(figsize=(10, 10))
+        fig, ax = plt.subplots(figsize=(width * px, height * px))
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
             ax.spines[axis].set_linewidth(0)
@@ -53,7 +54,7 @@ class GraphPlot:
             node_size=node_sizes,
             alpha=1.0,
             edgecolors='#111')
-        colorbar = fig.colorbar(nodes, orientation='horizontal', aspect=60, pad=0.0)
+        colorbar = fig.colorbar(nodes, orientation='vertical', aspect=60, pad=0.0)
         colorbar.set_label(title)
         colorbar.outline.set_linewidth(0)
         return fig
