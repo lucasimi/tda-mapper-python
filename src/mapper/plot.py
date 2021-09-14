@@ -47,13 +47,15 @@ class GraphPlot:
         nx.draw_networkx_edges(self.__nx,
             self.__pos2d_dict,
             edge_color='#111',
-            alpha=0.25)
+            alpha=0.25,
+            ax=ax)
         nodes = nx.draw_networkx_nodes(self.__nx,
             self.__pos2d_dict,
             node_color=colors,
             node_size=node_sizes,
             alpha=1.0,
-            edgecolors='#111')
+            edgecolors='#111',
+            ax=ax)
         colorbar = fig.colorbar(nodes, orientation='vertical', aspect=60, pad=0.0)
         colorbar.set_label(title)
         colorbar.outline.set_linewidth(0)
@@ -76,7 +78,7 @@ class GraphPlot:
             color_text = str(self.__color_dict[node])
             txt = "size: " + size_text + ", color: " + color_text
             node_texts.append(txt)
-        node_trace = go.Scattergl(
+        node_trace = go.Scatter(
             x=node_x, y=node_y,
             mode='markers',
             hoverinfo='text',
@@ -88,7 +90,7 @@ class GraphPlot:
                 opacity=1.0,
                 size=node_sizes,
                 colorbar=dict(
-                    thickness=10,
+                    thickness=12,
                     title=title,
                     xanchor='left',
                     titleside='right',
@@ -131,7 +133,7 @@ class GraphPlot:
             layout=go.Layout(
                 width=width, height=height,
                 plot_bgcolor='#fff',
-                autosize=True,
+                autosize=False,
                 showlegend=False,
                 scene=dict(xaxis=dict(axis),
                             yaxis=dict(axis)),
@@ -224,7 +226,7 @@ class GraphPlot:
             layout=go.Layout(
                 width=width, height=height,
                 plot_bgcolor='#f0f2f6',
-                autosize=True,
+                autosize=False,
                 showlegend=False,
                 scene=dict(xaxis=dict(axis),
                             yaxis=dict(axis),
