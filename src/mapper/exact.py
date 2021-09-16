@@ -25,10 +25,10 @@ def _build_vertices(data, labels, mapper_graph, lens, colormap):
             clusters_dict[label].append(point_id)
         for label, cluster in clusters_dict.items():
             points = [data[i] for i in cluster]
-            point = np.nanmean(points)
+            point = np.nanmean(points, axis=0)
             values = [lens(x) for x in points]
-            value = np.nanmean([x for x in values])
-            color = np.nanmean([colormap(x) for x in values])
+            value = np.nanmean([x for x in values], axis=0)
+            color = np.nanmean([colormap(x) for x in values], axis=0)
             vertex = Vertex(MeanStats(point, value, color), len(cluster))
             vertex_ids[(ball_id, label)] = vertex_count
             mapper_graph.add_vertex(vertex_count, vertex)
