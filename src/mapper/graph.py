@@ -2,6 +2,8 @@
 import math
 import numpy as np
 from sklearn.metrics import mean_absolute_percentage_error as mape
+from sklearn.metrics import mean_absolute_error as mae
+from sklearn.metrics import mean_squared_error as mse
 
 from .utils.balltree import BallTree
 
@@ -113,13 +115,22 @@ class Graph:
         nn = self.__tree.nn_search(np.array(x_value))
         return nn
 
-    def test(self, metric, lens, test_set):
+
+    def test_kpi(self, metric, lens, test_set, kpi):
         errs = []
         if not self.__tree:
             self._build_tree(metric, lens)
         for x in test_set:
             x_pred = self._predict(x)
-            err = mape(x, x_pred)
+            err = kpi(x, x_pred)
             errs.append(err)
         return errs
 
+    def test_mape(self, metric, lens, test_set):
+        return self.test_kpi(metric, lens, test_set, mape)
+
+    def test_mae(self, metric, lens, test_set):
+        return self.test_kpi(metric, lens, test_set, mae)
+
+    def test_rmse(self, metric, lens, test_set):
+        return self.test_kpi(metric, lens, test_set, lambda x, x_pred: math.sqrt(mse(x, x_pred)))
