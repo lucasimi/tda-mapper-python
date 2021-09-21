@@ -77,7 +77,9 @@ class Graph:
     def __init__(self):
         self.__adjaciency = {}
         self.__vertices = {}
+        self.__vertex_points = {}
         self.__edges = {}
+        self.__labels = None
         self.__tree = None
 
     def _build_tree(self, metric, lens):
@@ -85,10 +87,11 @@ class Graph:
         pullback = lambda x, y : metric(lens(x), lens(y))
         self.__tree = BallTree(pullback, data)
 
-    def add_vertex(self, vertex_id, vertex):
+    def add_vertex(self, vertex_id, vertex, points):
         """Add a new vertex to the graph"""
         self.__adjaciency[vertex_id] = []
         self.__vertices[vertex_id] = vertex
+        self.__vertex_points[vertex_id] = points
 
     def add_edge(self, source_id, target_id, edge):
         """Add a new edge to the graph"""
@@ -103,6 +106,9 @@ class Graph:
         """Return the vertex for a given id"""
         return self.__vertices[vertex_id]
 
+    def get_points(self, vertex_id):
+        return self.__vertex_points[vertex_id]
+
     def get_adjaciency(self, vertex_id):
         """Return the adjaciency list of a given vertex"""
         return self.__adjaciency[vertex_id]
@@ -115,6 +121,30 @@ class Graph:
         nn = self.__tree.nn_search(np.array(x_value))
         return nn
 
+    def compute_labels(self):
+        self.__labels = {u_id: None for u_id in self.__vertices}
+        label_count = 0
+        for u_id in self.__vertices:
+            if not self.__labels[u_id]:
+                label_count += 1
+                self._set_vertex_label(u_id, label_count)
+
+    def _set_vertex_label(self, u_id, label_count):
+        if not self.__labels[u_id]:
+            self.__labels[u_id] = label_count
+            for v_id in self.__adjaciency[u_id]:
+                self._set_vertex_label(v_id, label_count)
+
+    def get_point_labels(self):
+        point_label = {}
+        for u_id in self.__vertices:
+            u_label = self.__labels[u_id]
+            for point in self.__vertex_points[u_id]:
+                point_label[point] = u_label
+        return point_label
+
+    def get_vertex_label(self, vertex_id):
+        return self.__labels[vertex_id]
 
     def test_kpi(self, metric, lens, test_set, kpi):
         errs = []

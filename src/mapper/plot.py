@@ -10,16 +10,19 @@ class GraphPlot:
     def __init__(self, graph):
         """build inner nx graph"""
         self.__nx = nx.Graph()
+        graph.compute_labels()
         for u in graph.get_vertices():
             u_vert = graph.get_vertex(u)
             u_color = u_vert.get_data().get_color()
             u_size = u_vert.get_size()
-            self.__nx.add_node(u, size=u_size, color=u_color)
+            u_label = graph.get_vertex_label(u)
+            self.__nx.add_node(u, size=u_size, color=u_color, label=u_label)
             for v in graph.get_adjaciency(u):
                 uv_weight = graph.get_edge(u, v).get_weight()
                 self.__nx.add_edge(u, v, weight=uv_weight)
         self.__size_dict = nx.get_node_attributes(self.__nx, 'size')
         self.__color_dict = nx.get_node_attributes(self.__nx, 'color')
+        self.__label_dict = nx.get_node_attributes(self.__nx, 'label')
         self.__pos2d_dict = nx.spring_layout(self.__nx, dim=2)
         self.__pos3d_dict = nx.spring_layout(self.__nx, dim=3)
 
@@ -76,7 +79,8 @@ class GraphPlot:
             node_sizes.append(30.0 * math.sqrt(size))
             size_text = str(self.__size_dict[node])
             color_text = str(self.__color_dict[node])
-            txt = "size: " + size_text + ", color: " + color_text
+            label = str(self.__label_dict[node])
+            txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
             node_texts.append(txt)
         node_trace = go.Scatter(
             x=node_x, y=node_y,
@@ -188,7 +192,8 @@ class GraphPlot:
             node_sizes.append(20.0 * math.sqrt(size))
             size_text = str(self.__size_dict[node])
             color_text = str(self.__color_dict[node])
-            txt = "size: " + size_text + ", color: " + color_text
+            label = str(self.__label_dict[node])
+            txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
             node_texts.append(txt)
         node_trace = go.Scatter3d(
             x=node_x, y=node_y, z=node_z,
