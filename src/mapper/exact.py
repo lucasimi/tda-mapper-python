@@ -31,7 +31,7 @@ def _build_vertices(data, labels, mapper_graph, lens, colormap):
             color = np.nanmean([colormap(x) for x in values], axis=0)
             vertex = Vertex(MeanStats(point, value, color), len(cluster))
             vertex_ids[(ball_id, label)] = vertex_count
-            mapper_graph.add_vertex(vertex_count, vertex)
+            mapper_graph.add_vertex(vertex_count, vertex, cluster)
             vertex_count += 1
     return vertex_ids
 
