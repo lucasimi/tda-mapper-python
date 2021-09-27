@@ -22,7 +22,7 @@ class TestMapper(unittest.TestCase):
         lens = lambda x: x
         data = dataset()
         mp = Mapper(cover_algo=TrivialCover(), clustering_algo=TrivialClustering())
-        g = mp.run(data, lens, dist, np.nanmean)
+        g = mp.run(data, lens, dist)
         self.assertEqual(1, len(g.get_vertices()))
         for vert_id in g.get_vertices():
             self.assertEqual([], g.get_adjaciency(vert_id))
@@ -31,7 +31,7 @@ class TestMapper(unittest.TestCase):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
         mp = Mapper(cover_algo=SearchCover(BallSearch(0.5)), clustering_algo=TrivialClustering())
-        g = mp.run(data, lens, dist, colormap=np.nanmean)
+        g = mp.run(data, lens, dist)
         self.assertEqual(1000, len(g.get_vertices()))
         for vert_id in g.get_vertices():
             self.assertEqual([], g.get_adjaciency(vert_id))
@@ -40,7 +40,7 @@ class TestMapper(unittest.TestCase):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
         mp = Mapper(cover_algo=SearchCover(BallSearch(1000.0)), clustering_algo=TrivialClustering())
-        g = mp.run(data, lens, dist, colormap=np.nanmean)
+        g = mp.run(data, lens, dist)
         self.assertEqual(1, len(g.get_vertices()))
         for vert_id in g.get_vertices():
             self.assertEqual([], g.get_adjaciency(vert_id))
@@ -50,7 +50,7 @@ class TestMapper(unittest.TestCase):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         mp = Mapper(cover_algo=SearchCover(BallSearch(150.0)), clustering_algo=TrivialClustering())
-        g = mp.run(data, lens, dist, colormap=np.nanmean)
+        g = mp.run(data, lens, dist)
         self.assertEqual(2, len(g.get_vertices()))
         for vert_id in g.get_vertices():
             self.assertEqual([], g.get_adjaciency(vert_id))

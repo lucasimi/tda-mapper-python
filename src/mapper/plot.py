@@ -1,32 +1,32 @@
 import math
 
 import networkx as nx
+import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
 
 class GraphPlot:
 
-    def __init__(self, graph):
+    def __init__(self, graph, colormap=None):
         """build inner nx graph"""
         self.__nx = nx.Graph()
         graph.compute_labels()
         for u in graph.get_vertices():
             u_vert = graph.get_vertex(u)
-            u_color = u_vert.get_data().get_color()
             u_size = u_vert.get_size()
             u_label = graph.get_vertex_label(u)
-            self.__nx.add_node(u, size=u_size, color=u_color, label=u_label)
+            self.__nx.add_node(u, size=u_size, label=u_label)
             for v in graph.get_adjaciency(u):
                 uv_weight = graph.get_edge(u, v).get_weight()
                 self.__nx.add_edge(u, v, weight=uv_weight)
         self.__size_dict = nx.get_node_attributes(self.__nx, 'size')
-        self.__color_dict = nx.get_node_attributes(self.__nx, 'color')
         self.__label_dict = nx.get_node_attributes(self.__nx, 'label')
         self.__pos2d_dict = nx.spring_layout(self.__nx, dim=2)
         self.__pos3d_dict = nx.spring_layout(self.__nx, dim=3)
 
-    def plot(self, title='Node value', frontend='plotly', width=512, height=512):
+    def plot(self, colors=None, title='Node value', frontend='plotly', width=512, height=512):
+        self.__color_dict = colors if colors else {x:0.0 for x in self.__nx.nodes()}
         if frontend == 'plotly':
             return self._plot2d(title, width, height)
         elif frontend == 'pyplot':

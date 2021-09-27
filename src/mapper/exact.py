@@ -1,7 +1,7 @@
 """A module for the exact mapper algorithm"""
 import numpy as np
 
-from .graph import MeanStats, Vertex, Edge, Graph
+from .graph import Vertex, Edge, Graph
 
 
 def _point_labels(labels):
@@ -14,7 +14,7 @@ def _point_labels(labels):
     return point_labels_dict
 
 
-def _build_vertices(data, labels, mapper_graph, lens, colormap):
+def _build_vertices(data, labels, mapper_graph, lens):
     vertex_ids = {}
     vertex_count = 0
     for ball_id, ls in enumerate(labels):
@@ -24,14 +24,9 @@ def _build_vertices(data, labels, mapper_graph, lens, colormap):
                 clusters_dict[label] = []
             clusters_dict[label].append(point_id)
         for label, cluster in clusters_dict.items():
-            points = [data[i] for i in cluster]
-            point = np.nanmean(points, axis=0)
-            values = [lens(x) for x in points]
-            value = np.nanmean([x for x in values], axis=0)
-            color = np.nanmean([colormap(x) for x in values], axis=0)
-            vertex = Vertex(MeanStats(point, value, color), len(cluster))
+            vertex = Vertex(cluster)
             vertex_ids[(ball_id, label)] = vertex_count
-            mapper_graph.add_vertex(vertex_count, vertex, cluster)
+            mapper_graph.add_vertex(vertex_count, vertex)
             vertex_count += 1
     return vertex_ids
 
@@ -47,10 +42,10 @@ def _build_edges(point_labels, vertex_ids, mapper_graph):
                     mapper_graph.add_edge(vert_s, vert_t, edge)
 
 
-def _compute_mapper(data, labels, lens, colormap):
+def _compute_mapper(data, labels, lens):
     """Build a mapper graph from data"""
     mapper_graph = Graph()
-    vert_ids = _build_vertices(data, labels, mapper_graph, lens, colormap)
+    vert_ids = _build_vertices(data, labels, mapper_graph, lens)
     point_labels = _point_labels(labels)
     _build_edges(point_labels, vert_ids, mapper_graph)
     return mapper_graph
@@ -62,9 +57,9 @@ class Mapper:
         self.__cover_algo = cover_algo
         self.__clustering_algo = clustering_algo
 
-    def run(self, data, lens, metric, colormap):
+    def run(self, data, lens, metric):
         pb_metric = lambda x, y: metric(lens(x), lens(y))
         atlas_ids = self.__cover_algo.cover(data, pb_metric)
         labels = self.__clustering_algo.fit(data, atlas_ids)
-        return _compute_mapper(data, labels, lens, colormap)
+        return _compute_mapper(data, labels, lens)
 
