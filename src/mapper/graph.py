@@ -53,13 +53,52 @@ class GraphColormap:
         self.__colormap = colormap
         self.__aggfunc = aggfunc
 
-    def get_colors(self, graph, data):
+    def compute(self, graph, data):
         colors = {}
         for u in graph.get_vertices():
             u_points = [data[i] for i in graph.get_points(u)]
             u_color = self.__aggfunc([self.__colormap(x) for x in u_points])
             colors[u] = u_color
         return colors
+
+
+class GraphStats:
+
+    def __init__(self, lens, metric, aggfunc=lambda x: np.nanmean(x, axis=0)):
+        self.__aggfunc = aggfunc
+        self.__lens = lens
+        self.__metric = metric
+        self.__tree = None
+
+    def compute(self, graph, data):
+        stats = {}
+        for u in graph.get_vertices():
+            u_points = [data[i] for i in graph.get_points(u)]
+            u_stats = self.__aggfunc(u_points)
+            stats[u] = u_stats
+        metric = lambda x, y: self.__metric(self.__lens(x), self.__lens(y))
+        self.__tree = BallTree(metric, stats.values())
+        return stats
+
+    def predict(self, point):
+        return self.__tree.nn_search(point)
+
+    def test_kpi(self, test_set, kpi):
+        errs = []
+        for x in test_set:
+            x_pred = self.predict(x)
+            err = kpi(x, x_pred)
+            errs.append(err)
+        return errs
+
+    def test_mape(self, test_set):
+        return self.test_kpi(test_set, mape)
+
+    def test_mae(self, test_set):
+        return self.test_kpi(test_set, mae)
+
+    def test_rmse(self, test_set):
+        return self.test_kpi(test_set, lambda x, x_pred: math.sqrt(mse(x, x_pred)))
 
 
 class Graph:
@@ -124,24 +163,3 @@ class Graph:
 
     def get_vertex_label(self, vertex_id):
         return self.__labels[vertex_id]
-
-    '''
-    def test_kpi(self, metric, lens, test_set, kpi):
-        errs = []
-        if not self.__tree:
-            self._build_tree(metric, lens)
-        for x in test_set:
-            x_pred = self._predict(x)
-            err = kpi(x, x_pred)
-            errs.append(err)
-        return errs
-
-    def test_mape(self, metric, lens, test_set):
-        return self.test_kpi(metric, lens, test_set, mape)
-
-    def test_mae(self, metric, lens, test_set):
-        return self.test_kpi(metric, lens, test_set, mae)
-
-    def test_rmse(self, metric, lens, test_set):
-        return self.test_kpi(metric, lens, test_set, lambda x, x_pred: math.sqrt(mse(x, x_pred)))
-    '''
