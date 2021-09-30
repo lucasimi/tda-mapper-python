@@ -6,12 +6,12 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
 
-class GraphPlot:
+class Network:
 
-    def __init__(self, graph, colormap=None):
-        """build inner nx graph"""
+    def __init__(self, graph):
         self.__nx = nx.Graph()
-        graph.compute_labels()
+        self.__graph = graph
+        graph._compute_labels()
         for u in graph.get_vertices():
             u_vert = graph.get_vertex(u)
             u_size = u_vert.get_size()
@@ -24,24 +24,34 @@ class GraphPlot:
         self.__label_dict = nx.get_node_attributes(self.__nx, 'label')
         self.__pos2d_dict = nx.spring_layout(self.__nx, dim=2)
         self.__pos3d_dict = nx.spring_layout(self.__nx, dim=3)
+        self.__colors = None
 
-    def plot(self, colors=None, title='Node value', frontend='plotly', width=512, height=512):
-        self.__color_dict = colors if colors else {x:0.0 for x in self.__nx.nodes()}
+    def _compute_colors(self, data, colormap, aggfunc):
+        self.__colors = {}
+        for u in self.__graph.get_vertices():
+            u_points = [data[i] for i in self.__graph.get_points(u)]
+            if colormap:
+                self.__colors[u] = aggfunc([colormap(x) for x in u_points])
+            else:
+                self.__colors[u] = 0.0
+
+    def plot(self, data, colormap=None, aggfunc=np.nanmean, title='Node value', frontend='plotly', width=512, height=512):
+        self._compute_colors(data, colormap, aggfunc)
         if frontend == 'plotly':
-            return self._plot2d(title, width, height)
+            return self._plot_plotly_2d(title, width, height)
         elif frontend == 'pyplot':
-            return self._plt_display(title, width, height)
+            return self._plot_pyplot(title, width, height)
         elif frontend == '3d':
-            return self._plot3d(title, width, height)
+            return self._plot_plotly_3d(title, width, height)
 
-    def _plt_display(self, title, width, height):
+    def _plot_pyplot(self, title, width, height):
         px = 1/plt.rcParams['figure.dpi']
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         node_sizes = []
         for node in self.__nx.nodes():
             size = float(self.__size_dict[node]) / max_size
             node_sizes.append(600.0 * size)
-        colors = list(self.__color_dict.values())
+        colors = list(self.__colors.values())
         fig, ax = plt.subplots(figsize=(width * px, height * px))
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
@@ -64,21 +74,21 @@ class GraphPlot:
         colorbar.outline.set_linewidth(0)
         return fig
 
-    def _plot2d_nodes(self, title):
+    def _plot_plotly_2d_nodes(self, title):
         node_x, node_y = [], []
         node_colors, node_sizes = [], []
         node_texts = []
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         for node in self.__nx.nodes():
             x, y = self.__pos2d_dict[node]
-            color = self.__color_dict[node]
+            color = self.__colors[node]
             size = float(self.__size_dict[node]) / max_size
             node_x.append(x)
             node_y.append(y)
             node_colors.append(color)
             node_sizes.append(30.0 * math.sqrt(size))
             size_text = str(self.__size_dict[node])
-            color_text = str(self.__color_dict[node])
+            color_text = str(self.__colors[node])
             label = str(self.__label_dict[node])
             txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
             node_texts.append(txt)
@@ -105,7 +115,7 @@ class GraphPlot:
         node_trace.text = node_texts
         return node_trace
 
-    def _plot2d_edges(self):
+    def _plot_plotly_2d_edges(self):
         edge_x, edge_y = [], []
         for edge in self.__nx.edges():
             x0, y0 = self.__pos2d_dict[edge[0]]
@@ -124,9 +134,9 @@ class GraphPlot:
         )
         return edge_trace
 
-    def _plot2d(self, title, width, height):
-        edge_trace = self._plot2d_edges()
-        node_trace = self._plot2d_nodes(title)
+    def _plot_plotly_2d(self, title, width, height):
+        edge_trace = self._plot_plotly_2d_edges()
+        node_trace = self._plot_plotly_2d_nodes(title)
         axis = dict(showbackground=False,
                 showline=False,
                 zeroline=False,
@@ -155,7 +165,7 @@ class GraphPlot:
             )
         return fig
         
-    def _plot3d_edges(self):
+    def _plot_plotly_3d_edges(self):
         edge_x, edge_y, edge_z = [], [], []
         for edge in self.__nx.edges():
             x0, y0, z0 = self.__pos3d_dict[edge[0]]
@@ -176,14 +186,14 @@ class GraphPlot:
             mode='lines')
         return edge_trace
 
-    def _plot3d_nodes(self, title):
+    def _plot_plotly_3d_nodes(self, title):
         node_x, node_y, node_z = [], [], []
         node_colors, node_sizes = [], []
         node_texts = []
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         for node in self.__nx.nodes():
             x, y, z = self.__pos3d_dict[node]
-            color = self.__color_dict[node]
+            color = self.__colors[node]
             size = float(self.__size_dict[node]) / max_size
             node_x.append(x)
             node_y.append(y)
@@ -191,7 +201,7 @@ class GraphPlot:
             node_colors.append(color)
             node_sizes.append(20.0 * math.sqrt(size))
             size_text = str(self.__size_dict[node])
-            color_text = str(self.__color_dict[node])
+            color_text = str(self.__colors[node])
             label = str(self.__label_dict[node])
             txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
             node_texts.append(txt)
@@ -218,9 +228,9 @@ class GraphPlot:
         node_trace.text = node_texts
         return node_trace
 
-    def _plot3d(self, title, width, height):
-        edge_trace = self._plot3d_edges()
-        node_trace = self._plot3d_nodes(title)
+    def _plot_plotly_3d(self, title, width, height):
+        edge_trace = self._plot_plotly_3d_edges()
+        node_trace = self._plot_plotly_3d_nodes(title)
         axis = dict(showbackground=False,
                 showline=False,
                 zeroline=False,

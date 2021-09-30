@@ -1,7 +1,9 @@
 """A module for the exact mapper algorithm"""
 import numpy as np
+import networkx as nx
 
 from .graph import Vertex, Edge, Graph
+from .network import Network
 
 
 def _point_labels(labels):
@@ -53,13 +55,16 @@ def _compute_mapper(data, labels, lens):
 
 class Mapper:
 
-    def __init__(self, cover_algo, clustering_algo):
+    def __init__(self, lens, metric, cover_algo, clustering_algo):
+        self.__lens = lens
+        self.__metric = metric
         self.__cover_algo = cover_algo
         self.__clustering_algo = clustering_algo
 
-    def run(self, data, lens, metric):
-        pb_metric = lambda x, y: metric(lens(x), lens(y))
+    def fit(self, data):
+        pb_metric = lambda x, y: self.__metric(self.__lens(x), self.__lens(y))
         atlas_ids = self.__cover_algo.cover(data, pb_metric)
         labels = self.__clustering_algo.fit(data, atlas_ids)
-        return _compute_mapper(data, labels, lens)
+        return _compute_mapper(data, labels, self.__lens)
+
 

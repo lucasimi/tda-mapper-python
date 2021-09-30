@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_percentage_error as mape
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
+import networkx as nx
 
 from .utils.balltree import BallTree
 
@@ -47,22 +48,7 @@ class Edge:
         self.__intersection = intersection
 
 
-class GraphColormap:
-
-    def __init__(self, colormap=np.nanmean, aggfunc=np.nanmean):
-        self.__colormap = colormap
-        self.__aggfunc = aggfunc
-
-    def compute(self, graph, data):
-        colors = {}
-        for u in graph.get_vertices():
-            u_points = [data[i] for i in graph.get_points(u)]
-            u_color = self.__aggfunc([self.__colormap(x) for x in u_points])
-            colors[u] = u_color
-        return colors
-
-
-class GraphStats:
+class Stats:
 
     def __init__(self, lens, metric, aggfunc=lambda x: np.nanmean(x, axis=0)):
         self.__aggfunc = aggfunc
@@ -139,7 +125,7 @@ class Graph:
         """Return the edge for two specified vertices"""
         return self.__edges[(source_id, target_id)]
 
-    def compute_labels(self):
+    def _compute_labels(self):
         self.__labels = {u_id: None for u_id in self.__vertices}
         label_count = 0
         for u_id in self.__vertices:
