@@ -1,10 +1,10 @@
 # mapper-tda
 A reasonably decent implementation of the mapper algorithm from TDA
 
-## What is TDA?
+### What is TDA?
 TDA stands for "Topological Data Analysis", a branch of data analysis using topological tools to recover insights from datasets. 
 
-## The Mapper Algorithm 
+### The Mapper Algorithm 
 Assume we have a dataset D inside a metric space X, together with the following choices:
 1. A continuous map f:X -> Y 
 2. A cover algorithm for f(D)
