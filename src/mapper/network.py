@@ -96,12 +96,13 @@ class Network:
             x=node_x, y=node_y,
             mode='markers',
             hoverinfo='text',
+            opacity=1.0,
             marker=dict(
                 showscale=True,
                 colorscale='viridis',
                 reversescale=True,
                 color=node_colors,
-                opacity=1.0,
+                opacity=0.85,
                 size=node_sizes,
                 colorbar=dict(
                     thickness=12,
@@ -126,9 +127,10 @@ class Network:
             edge_y.append(y0)
             edge_y.append(y1)
             edge_y.append(None)
-        edge_trace = go.Scattergl(
+        edge_trace = go.Scatter(
             x=edge_x, y=edge_y,
             mode='lines',
+            opacity=0.75,
             line=dict(width=1.0, color='rgba(1, 1, 1, 0.25)'),
             hoverinfo='none'
         )
@@ -209,12 +211,13 @@ class Network:
             x=node_x, y=node_y, z=node_z,
             mode='markers',
             hoverinfo='text',
+            opacity=1.0,
             marker=dict(
                 showscale=True,
                 colorscale='viridis',
                 reversescale=True,
                 color=node_colors,
-                opacity=1.0,
+                opacity=0.85,
                 size=node_sizes,
                 colorbar=dict(
                     thickness=10,
