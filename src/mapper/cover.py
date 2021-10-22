@@ -4,12 +4,14 @@ from .utils.balltree import BallTree
 
 class SearchCover:
     
-    def __init__(self, search_algo):
+    def __init__(self, lens, metric, search_algo):
+        self.__lens = lens
+        self.__metric = metric
         self.__search_algo = search_algo
 
-    def cover(self, data, metric):
+    def cover(self, data):
         data_ids = list(range(len(data)))
-        metric_ids = lambda i, j: metric(data[i], data[j])
+        metric_ids = lambda i, j: self.__metric(self.__lens(data[i]), self.__lens(data[j]))
         self.__search_algo.setup(data_ids, metric_ids)
         non_covered_ids = {i for i in data_ids}
         groups = []
@@ -24,7 +26,7 @@ class SearchCover:
 
 class TrivialCover:
 
-    def cover(self, data, metric):
+    def cover(self, data):
         """Return a trivial grouping of data with a single ball"""
         data_ids = list(range(len(data)))
         return [data_ids]
