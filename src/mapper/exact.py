@@ -16,7 +16,7 @@ def _point_labels(labels):
     return point_labels_dict
 
 
-def _build_vertices(data, labels, mapper_graph, lens):
+def _build_vertices(data, labels, mapper_graph):
     vertex_ids = {}
     vertex_count = 0
     for ball_id, ls in enumerate(labels):
@@ -44,10 +44,10 @@ def _build_edges(point_labels, vertex_ids, mapper_graph):
                     mapper_graph.add_edge(vert_s, vert_t, edge)
 
 
-def _compute_mapper(data, labels, lens):
+def _compute_mapper(data, labels):
     """Build a mapper graph from data"""
     mapper_graph = Graph()
-    vert_ids = _build_vertices(data, labels, mapper_graph, lens)
+    vert_ids = _build_vertices(data, labels, mapper_graph)
     point_labels = _point_labels(labels)
     _build_edges(point_labels, vert_ids, mapper_graph)
     return mapper_graph
@@ -55,16 +55,13 @@ def _compute_mapper(data, labels, lens):
 
 class Mapper:
 
-    def __init__(self, lens, metric, cover_algo, clustering_algo):
-        self.__lens = lens
-        self.__metric = metric
+    def __init__(self, cover_algo, clustering_algo):
         self.__cover_algo = cover_algo
         self.__clustering_algo = clustering_algo
 
     def fit(self, data):
-        pb_metric = lambda x, y: self.__metric(self.__lens(x), self.__lens(y))
-        atlas_ids = self.__cover_algo.cover(data, pb_metric)
+        atlas_ids = self.__cover_algo.cover(data)
         labels = self.__clustering_algo.fit(data, atlas_ids)
-        return _compute_mapper(data, labels, self.__lens)
+        return _compute_mapper(data, labels)
 
 
