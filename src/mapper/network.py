@@ -26,17 +26,14 @@ class Network:
         self.__pos3d_dict = nx.spring_layout(self.__nx, dim=3)
         self.__colors = None
 
-    def _compute_colors(self, data, colormap, aggfunc):
+    def _compute_colors(self, colors, aggfunc):
         self.__colors = {}
         for u in self.__graph.get_vertices():
-            u_points = [data[i] for i in self.__graph.get_points(u)]
-            if colormap:
-                self.__colors[u] = aggfunc([colormap(x) for x in u_points])
-            else:
-                self.__colors[u] = 0.0
+            u_colors = [colors[i] for i in self.__graph.get_points(u)]
+            self.__colors[u] = aggfunc(u_colors)
 
-    def plot(self, data, colormap=None, aggfunc=np.nanmean, title='Node value', frontend='plotly', width=512, height=512):
-        self._compute_colors(data, colormap, aggfunc)
+    def plot(self, colors, aggfunc=np.nanmean, title='Node value', frontend='plotly', width=512, height=512):
+        self._compute_colors(colors, aggfunc)
         if frontend == 'plotly':
             return self._plot_plotly_2d(title, width, height)
         elif frontend == 'pyplot':
@@ -112,7 +109,7 @@ class Network:
                     xpad=0
                 ),
                 line_width=1.0,
-                line_color='#111'))
+                line_color='rgba(0.25, 0.25, 0.25, 1.0)'))
         node_trace.text = node_texts
         return node_trace
 
@@ -131,7 +128,7 @@ class Network:
             x=edge_x, y=edge_y,
             mode='lines',
             opacity=0.75,
-            line=dict(width=1.0, color='rgba(1, 1, 1, 0.25)'),
+            line=dict(width=1.0, color='rgba(0.5, 0.5, 0.5, 0.5)'),
             hoverinfo='none'
         )
         return edge_trace
@@ -148,7 +145,7 @@ class Network:
         fig = go.Figure(data=[edge_trace, node_trace],
             layout=go.Layout(
                 width=width, height=height,
-                plot_bgcolor='#fff',
+                plot_bgcolor='rgba(0, 0, 0, 0)',
                 autosize=False,
                 showlegend=False,
                 scene=dict(xaxis=dict(axis),
