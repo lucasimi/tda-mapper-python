@@ -52,6 +52,7 @@ class TrivialCover:
         data_ids = list(range(len(data)))
         return [data_ids]
 
-    def cover_points(self, data):
-        return [[0] for _ in data]
+    def cover_points(self, data, clusterer):
+        clusters = clusterer.fit(data)
+        return [[l] for l in clusters.lables_]
 
