@@ -23,7 +23,7 @@ class SearchCover:
                 groups.append(neighbors_ids)
         return groups
 
-    def cover_points(self, data):
+    def cover_points(self, data, clusterer):
         c = 0
         data_ids = list(range(len(data)))
         metric_ids = lambda i, j: self.__metric(self.__lens(data[i]), self.__lens(data[j]))
@@ -32,10 +32,16 @@ class SearchCover:
         for i in data_ids:
             cover_i = cover_arr[i]
             if not cover_i:
-                neighs = self.__search_algo.find_neighbors(i)
-                for n in neighs:
-                    cover_arr[n].append(c)
-                c += 1
+                neighs_ids = self.__search_algo.find_neighbors(i)
+                neighs = [data[j] for j in neighs_ids]
+                clusters = clusterer.fit(neighs)
+                max_l = -1
+                for (n, l) in zip(neighs_ids, clusters.labels_):
+                    if l != -1:
+                        if l > max_l:
+                            max_l = l
+                        cover_arr[n].append(c + l)
+                c += max_l        
         return cover_arr
 
 
