@@ -41,7 +41,7 @@ class SearchCover:
                         if l > max_l:
                             max_l = l
                         cover_arr[n].append(c + l)
-                c += max_l        
+                c += max_l + 1
         return cover_arr
 
 

@@ -64,4 +64,28 @@ class Mapper:
         labels = self.__clustering_algo.fit(data, atlas_ids)
         return _compute_mapper(data, labels)
 
+    def compute(self, data, clusterer):
+        cluster_arr = self.__cover_algo.cover_points(data, clusterer)
+        print(cluster_arr)
+        graph = Graph()
+        vertices = {}
+        for i, clusters in enumerate(cluster_arr):
+            for c in clusters:
+                if c not in vertices:
+                    vertices[c] = []
+                vertices[c].append(i)
+        for cluster, cluster_points in vertices.items():
+            v = Vertex(cluster_points)
+            graph.add_vertex(cluster, v)
+        for p in cluster_arr:
+            for s in p:
+                for t in p:
+                    if s != t:
+                        edge = Edge(1, 1, 0) #compute this correctly
+                        graph.add_edge(s, t, edge)
+        return graph
+
+        
+                         
+
 
