@@ -2,6 +2,7 @@
 import numpy as np
 import networkx as nx
 
+from .clustering import TrivialClustering
 from .graph import Vertex, Edge, Graph
 from .network import Network
 
@@ -55,18 +56,12 @@ def _compute_mapper(data, labels):
 
 class Mapper:
 
-    def __init__(self, cover_algo, clustering_algo):
+    def __init__(self, cover_algo, clusterer=TrivialClustering()):
         self.__cover_algo = cover_algo
-        self.__clustering_algo = clustering_algo
+        self.__clusterer = clusterer
 
     def fit(self, data):
-        atlas_ids = self.__cover_algo.cover(data)
-        labels = self.__clustering_algo.fit(data, atlas_ids)
-        return _compute_mapper(data, labels)
-
-    def compute(self, data, clusterer):
-        cluster_arr = self.__cover_algo.cover_points(data, clusterer)
-        print(cluster_arr)
+        cluster_arr = self.__cover_algo.cover_points(data, self.__clusterer)
         graph = Graph()
         vertices = {}
         for i, clusters in enumerate(cluster_arr):

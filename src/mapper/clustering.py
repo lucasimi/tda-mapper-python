@@ -1,26 +1,11 @@
-"""A collection of clustering functions"""
 
+class ClusterLabels:
 
-class ClusteringAlgorithm:
-
-    def __init__(self, algo):
-        self.__algo = algo
-
-    def __get_clusters(self, data, ids):
-        local_data = [data[x] for x in ids]
-        local_clusters = self.__algo.fit(local_data)
-        return list(zip(ids, local_clusters.labels_))
-
-    def fit(self, data, atlas_ids):
-        clusters = []
-        for chart_ids in atlas_ids:
-            chart_clusters = self.__get_clusters(data, chart_ids)
-            clusters.append([(x, y) for (x, y) in chart_clusters if y != -1])
-        return clusters
-
+    def __init__(self, labels):
+        self.labels_ = labels
 
 class TrivialClustering:
 
-    def fit(self, data, atlas_ids):
-        return [[(x, 1) for x in chart_ids] for chart_ids in atlas_ids]
+    def fit(self, data):
+        return ClusterLabels([0 for _ in data])
 
