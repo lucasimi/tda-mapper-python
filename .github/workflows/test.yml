@@ -11,9 +11,11 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+          cd ${{ github.workspace }}
+      - name: Install package locally
+        run: |
+          pip install -e .
       - name: Run python tests
         run: |
-          cd ${{ github.workspace }}
-          pip install -e .
           python -m unittest
       - run: echo "This job's status is ${{ job.status }}."
