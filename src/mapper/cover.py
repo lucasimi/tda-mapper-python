@@ -21,7 +21,7 @@ class SearchCover:
                 neighs_ids = self.__search_algo.find_neighbors(i)
                 neighs = [data[j] for j in neighs_ids]
                 clusters = clusterer.fit(neighs)
-                max_l = -1
+                max_l = 0
                 for (n, l) in zip(neighs_ids, clusters.labels_):
                     if l != -1:
                         if l > max_l:
