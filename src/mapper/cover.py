@@ -31,21 +31,20 @@ class SearchCover:
         return cover_arr
 
 
-class ClusterLabels:
-
-    def __init__(self, labels):
-        self.labels_ = labels
-
-
 class TrivialClustering:
 
+    class ClusterLabels:
+
+        def __init__(self, labels):
+            self.labels_ = labels
+            
     def fit(self, data):
-        return ClusterLabels([0 for _ in data])
+        return self.ClusterLabels([0 for _ in data])
 
 
 class TrivialCover:
 
     def cover_points(self, data, clusterer):
         clusters = clusterer.fit(data)
-        return [[l] for l in clusters.lables_]
+        return [[l] for l in clusters.labels_]
 
