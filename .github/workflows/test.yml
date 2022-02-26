@@ -12,9 +12,12 @@ jobs:
         run: |
           ls ${{ github.workspace }}
           cd ${{ github.workspace }}
+      - name: Install requirements
+        run: |
+          python -m pip install -r requirements.txt
       - name: Install package locally
         run: |
-          python -m pip install --user -e .
+          python -m pip install -e .
       - name: Run python tests
         run: |
           python -m unittest
