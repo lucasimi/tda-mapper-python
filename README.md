@@ -1,5 +1,8 @@
-# mapper-tda
-A reasonably decent implementation of the mapper algorithm from TDA
+# mapper-tda 
+
+![test](https://github.com/lucasimi/mapper-tda/actions/workflows/test.yml/badge.svg)
+
+A simple implementation of the mapper algorithm from TDA
 
 ## Introduction
 TDA stands for "Topological Data Analysis", a branch of data analysis using topological tools to recover insights from datasets. 
@@ -22,3 +25,27 @@ The mapper algorithm follows these steps:
 The graph obtained is called a "mapper graph".
 
 ## How to use
+In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as `sklearn.cluster` algorithms do, and returning an object which defines a `.labels_` field.
+
+```
+import numpy as np
+
+from mapper.cover import SearchCover
+from mapper.search import BallSearch
+from mapper.pipeline import MapperPipeline
+from mapper.network import Network
+
+from sklearn.cluster import DBSCAN
+
+mp = MapperPipeline(
+    cover_algo=SearchCover(search_algo=BallSearch(1.5), 
+                           metric=lambda x, y: np.linalg.norm(x - y), 
+                           lens=lambda x: x),
+    clustering_algo=DBSCAN(eps=1.5, min_samples=2)
+    )
+
+data = [np.random.rand(10) for _ in range(100)]
+g = mp.fit(data)
+nw = Network(g)
+nw.plot(data)
+```
