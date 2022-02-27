@@ -2,13 +2,7 @@
 
 ![test](https://github.com/lucasimi/mapper-tda/actions/workflows/test.yml/badge.svg)
 
-A simple implementation of the mapper algorithm from TDA
-
-## Introduction
-TDA stands for "Topological Data Analysis", a branch of data analysis using topological tools to recover insights from datasets. 
-
-## The Mapper Algorithm
-The Mapper Algorithm builds a graph from a given dataset
+This library is an implementation of the Mapper Algorithm from Topological Data Analysis, a branch of data analysis using topological tools to recover insights from datasets. In the following, we give a brief description of the algorithm, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm builds a graph from a given dataset, and some user choices. The output graph, called "mapper graph" gives a global approximation of (some) topological features of the original dataset, giving direct information about its shape and its connected components.
 
 ### Input
 Assume we have a dataset D inside a metric space X, together with the following choices:
@@ -24,10 +18,10 @@ The mapper algorithm follows these steps:
 
 The graph obtained is called a "mapper graph".
 
-## How to use
-In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as `sklearn.cluster` algorithms do, and returning an object which defines a `.labels_` field.
+## How to use this library
+First, clone this repo, and install this library via pip install `python -m pip install .`. In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as [`sklearn.cluster`](https://scikit-learn.org/stable/modules/clustering.html) algorithms do, and returning an object which defines a `.labels_` field.
 
-```
+```python
 import numpy as np
 
 from mapper.cover import SearchCover
