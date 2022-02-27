@@ -49,3 +49,4 @@ g = mp.fit(data)
 nw = Network(g)
 nw.plot(data)
 ```
+![The mapper graph of a random dataset](/examples/graph.png)
