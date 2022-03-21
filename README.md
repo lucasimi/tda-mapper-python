@@ -44,3 +44,19 @@ nw = Network(g)
 nw.plot(data)
 ```
 ![The mapper graph of a random dataset](/examples/graph.png)
+
+## Features
+
+- [x] Topology
+    - [x] Any custom lens
+    - [x] Any custom metric
+- [x] Clustering algoritms
+    - [x] Any sklearn clustering algorithm
+    - [ ] No clustering
+- [ ] Cover algorithms:
+    - [x] Ball Cover
+    - [ ] Cubic Cover
+    - [ ] Knn Cover
+
+
+
