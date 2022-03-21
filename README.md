@@ -45,12 +45,12 @@ nw.plot(data)
 ```
 ![The mapper graph of a random dataset](/examples/graph.png)
 
-## Features
+### Features
 
 - [x] Topology
     - [x] Any custom lens
     - [x] Any custom metric
-- [x] Clustering algoritms
+- [ ] Clustering algoritms
     - [x] Any sklearn clustering algorithm
     - [ ] No clustering
 - [ ] Cover algorithms:
