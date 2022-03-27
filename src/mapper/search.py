@@ -8,7 +8,7 @@ class BallSearch:
         self.__vptree = None
 
     def setup(self, data, metric):
-        self.__vptree = VPTree(metric, data, min_radius=self.__radius)
+        self.__vptree = VPTree(metric, data, leaf_radius=self.__radius)
 
     def find_neighbors(self, point):
         if self.__vptree:
@@ -24,7 +24,7 @@ class KnnSearch:
         self.__vptree = None
 
     def setup(self, data, metric):
-        self.__vptree = VPTree(metric, data, max_count=self.__k)
+        self.__vptree = VPTree(metric, data, leaf_size=self.__k)
 
     def find_neighbors(self, point):
         if self.__vptree:
