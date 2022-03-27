@@ -42,19 +42,15 @@ class KBall:
 
 class Ball:
 
-    def __init__(self, center, radius, elements=None):
+    def __init__(self, center, radius):
         self.__center = center
         self.__radius = radius
-        self.__elements = elements
 
     def get_radius(self):
         return self.__radius
 
     def get_center(self):
         return self.__center
-
-    def get_elements(self):
-        return self.__elements
 
 
 class Tree:
@@ -91,25 +87,14 @@ class Tree:
                 return max(a, b) + 1
 
 
-class SearchResult:
-
-    def __init__(self, point, error):
-        self._point = point
-        self._error = error
-
-    def get_point(self):
-        return self._point
-
-    def get_error(self):
-        return self._error
-
-
 class VPTree:
 
-    def __init__(self, distance, data, leaf_size=1, leaf_radius=None):
+    def __init__(self, distance, dataset, leaf_size=1, leaf_radius=None):
         self.__distance = distance
-        dataset = [x for x in data]
-        self.__tree = self._build(distance, dataset, 0, len(dataset), leaf_size, leaf_radius)
+        self.__leaf_size = leaf_size
+        self.__leaf_radius = leaf_radius
+        self.__dataset = [x for x in dataset]
+        self.__tree = self._build(0, len(dataset))
 
     def get_tree(self):
         return self.__tree
@@ -117,81 +102,81 @@ class VPTree:
     def get_height(self):
         return self.__tree.get_height()
 
-    def _build(self, dist, data, start, end, leaf_count=1, leaf_radius=None):
-        if end - start <= leaf_count:
-            return Tree(Ball(None, None, data[start:end]))
+    def _build(self, start, end):
+        if end - start <= self.__leaf_size:
+            return Tree(self.__dataset[start:end])
         else:
-            center = random.choice(data[start:end]) #improve this by removing the copy
+            center = random.choice(self.__dataset[start:end]) #improve this by removing the copy
             mid = (end + start) // 2
-            _place_in_order(data, start, end, mid, lambda x: dist(center, x))
-            radius = dist(center, data[mid])
-            if leaf_radius and radius <= leaf_radius:
-                left = Tree(Ball(None, None, data[start:mid]))
+            _place_in_order(self.__dataset, start, end, mid, lambda x: self.__distance(center, x))
+            radius = self.__distance(center, self.__dataset[mid])
+            if self.__leaf_radius and radius <= self.__leaf_radius:
+                left = Tree(self.__dataset[start:mid])
             else:
-                left = self._build(dist, data, start, mid, leaf_count)
-            right = self._build(dist, data, mid, end, leaf_count)
+                left = self._build(start, mid)
+            right = self._build(mid, end)
             return Tree(Ball(center, radius), left, right)
     
     def ball_search(self, point, eps):
         results = []
-        self._ball_search(self.__distance, self.__tree, point, eps, results)
+        self._ball_search(self.__tree, point, eps, results)
         return results
 
-    def _ball_search(self, dist, tree, point, eps, results):
+    def _ball_search(self, tree, point, eps, results):
         if tree.is_terminal():
             ball = tree.get_data()
-            results.extend([x for x in ball.get_elements() if dist(x, point) < eps])
+            results.extend([x for x in ball if self.__distance(x, point) < eps])
         else:
             left, right = tree.get_left(), tree.get_right()
             ball = tree.get_data()
             center, radius = ball.get_center(), ball.get_radius()
-            d = dist(center, point)
+            d = self.__distance(center, point)
             # the search ball B(point, eps) intersects B(center, radius) 
             if left and d <= radius + eps:
-                self._ball_search(dist, left, point, eps, results)
+                self._ball_search(left, point, eps, results)
             # the search ball B(point, eps) is not contained in B(center, radius) 
             if right and (eps > radius or d > radius - eps):
-                self._ball_search(dist, right, point, eps, results)
+                self._ball_search(right, point, eps, results)
 
     def knn_search(self, point, k):
         kball = KBall(self.__distance, point, k)
-        self._knn_search(self.__distance, self.__tree, point, kball)
+        self._knn_search(self.__tree, point, kball)
         ballheap = kball.get_heap()
         while len(ballheap) > k:
             ballheap.extract_max()
         return list(ballheap)
 
-    def _knn_search(self, dist, tree, point, kball):
+    def _knn_search(self, tree, point, kball):
         if tree.is_terminal():
             self._knn_search_all(tree, kball)
         else:
             ball = tree.get_data()
             center, radius = ball.get_center(), ball.get_radius()
-            dist_center_point = dist(center, point)
+            dist_center_point = self.__distance(center, point)
             if dist_center_point < radius:
-                self._knn_search_inside(dist, tree, point, dist_center_point, radius, kball)
+                self._knn_search_inside(tree, point, dist_center_point, radius, kball)
             else:
-                self._knn_search_outside(dist, tree, point, dist_center_point, radius, kball)
+                self._knn_search_outside(tree, point, dist_center_point, radius, kball)
 
     def _knn_search_all(self, tree, kball):
         ball = tree.get_data()
-        kball.update(ball.get_elements())
+        kball.update(ball)
 
-    def _knn_search_inside(self, dist, tree, point, dist_center_point, radius, kball):
-        self._knn_search(dist, tree.get_left(), point, kball)
+    def _knn_search_inside(self, tree, point, dist_center_point, radius, kball):
+        self._knn_search(tree.get_left(), point, kball)
         fst_dist = kball.get_radius()
         if dist_center_point + fst_dist <= radius:
             return
         else:
-            self._knn_search(dist, tree.get_right(), point, kball)
+            self._knn_search(tree.get_right(), point, kball)
     
-    def _knn_search_outside(self, dist, tree, point, dist_center_point, radius, kball):
-        self._knn_search(dist, tree.get_right(), point, kball)
+    def _knn_search_outside(self, tree, point, dist_center_point, radius, kball):
+        self._knn_search(tree.get_right(), point, kball)
         fst_dist = kball.get_radius()
         if dist_center_point >= radius + fst_dist:
             return
         else:
-            self._knn_search(dist, tree.get_left(), point, kball)
+            self._knn_search(tree.get_left(), point, kball)
 
 
 def _pivot_higher(data, start, end, i, fun=lambda x: x):
