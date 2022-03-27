@@ -41,7 +41,7 @@ class TestVPTree(unittest.TestCase):
         for y in near:
             self.assertTrue(any((x == y).all() for x in ball))
 
-    def testKNNSearchDataRefs(self):
+    def testNNSearchDataRefs(self):
         data = dataset()
         data_refs = [i for i in range(len(data))]
         dist_refs = lambda i, j: dist(data[i], data[j])
@@ -50,7 +50,7 @@ class TestVPTree(unittest.TestCase):
             neigh = vpt.knn_search(x, 1)
             self.assertEqual(x, neigh)
     
-    def testKNNSearchData(self):
+    def testNNSearchData(self):
         data = dataset()
         vpt = VPTree(dist, data)
         for x in data:
