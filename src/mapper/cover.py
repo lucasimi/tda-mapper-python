@@ -1,5 +1,5 @@
 """A collection of functions to build open covers"""
-from .utils.balltree import BallTree
+from .utils.vptree import VPTree
 
 
 class SearchCover:

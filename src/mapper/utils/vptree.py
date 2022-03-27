@@ -104,7 +104,7 @@ class SearchResult:
         return self._error
 
 
-class BallTree:
+class VPTree:
 
     def __init__(self, distance, data, max_count=1, min_radius=None):
         self.__distance = distance
@@ -132,7 +132,6 @@ class BallTree:
             right = self._build(dist, data, mid, end, max_count)
             return Tree(Ball(center, radius), left, right)
     
-
     def ball_search(self, point, eps):
         results = []
         self._ball_search(self.__distance, self.__tree, point, eps, results)
@@ -141,7 +140,6 @@ class BallTree:
     def _ball_search(self, dist, tree, point, eps, results):
         if tree.is_terminal():
             ball = tree.get_data()
-            #results.update([x for x in ball.get_elements() if dist(x, point) < eps])
             results.extend([x for x in ball.get_elements() if dist(x, point) < eps])
         else:
             left, right = tree.get_left(), tree.get_right()
@@ -154,53 +152,6 @@ class BallTree:
             # the search ball B(point, eps) is not contained in B(center, radius) 
             if right and (eps > radius or d > radius - eps):
                 self._ball_search(dist, right, point, eps, results)
-
-    def nn_search(self, point):
-        res = self._nn_search(self.__distance, self.__tree, point)
-        return res.get_point()
-
-    def _nn_search_inside(self, dist, tree, point, dist_center_point, radius):
-        fst_res = self._nn_search(dist, tree.get_left(), point)
-        fst_dist = fst_res.get_error()
-        if dist_center_point + fst_dist <= radius:
-            return fst_res
-        else:
-            snd_res = self._nn_search(dist, tree.get_right(), point)
-            snd_dist = snd_res.get_error()
-            return fst_res if fst_dist < snd_dist else snd_res
-        
-    def _nn_search_outside(self, dist, tree, point, dist_center_point, radius):
-        fst_res = self._nn_search(dist, tree.get_right(), point)
-        fst_dist = fst_res.get_error()
-        if dist_center_point >= radius + fst_dist:
-            return fst_res
-        else:
-            snd_res = self._nn_search(dist, tree.get_left(), point)
-            snd_dist = snd_res.get_error()
-            return fst_res if fst_dist < snd_dist else snd_res
-
-    def _nn_search_all(self, dist, tree, point):
-        ball = tree.get_data()
-        min_dist = float('inf')
-        best_fit = None
-        for x in ball.get_elements():
-            x_dist = dist(point, x)
-            if x_dist < min_dist:
-                min_dist = x_dist
-                best_fit = x
-        return SearchResult(best_fit, min_dist)
-
-    def _nn_search(self, dist, tree, point):
-        if tree.is_terminal():
-            return self._nn_search_all(dist, tree, point)
-        else:
-            ball = tree.get_data()
-            center, radius = ball.get_center(), ball.get_radius()
-            dist_center_point = dist(center, point)
-            if dist_center_point < radius:
-                return self._nn_search_inside(dist, tree, point, dist_center_point, radius)
-            else:
-                return self._nn_search_outside(dist, tree, point, dist_center_point, radius)
 
     def knn_search(self, point, k):
         kball = KBall(self.__distance, point, k)
