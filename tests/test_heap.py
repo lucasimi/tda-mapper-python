@@ -1,10 +1,10 @@
 import unittest
 import random
 
-from mapper.utils.heap import MinHeap, MaxHeap
+from mapper.utils.heap import MaxHeap
 
 def minheap(data):
-    m = MinHeap()
+    m = MaxHeap()
     for x in data:
         m.insert(x)
     return m
@@ -15,10 +15,10 @@ def maxheap(data):
         m.insert(x)
     return m
 
-class TestMinHeap(unittest.TestCase):
+class TestMaxHeap(unittest.TestCase):
 
     def testEmpty(self):
-        m = MinHeap()
+        m = MaxHeap()
         self.assertTrue(m.empty())
 
     def testMin(self):
