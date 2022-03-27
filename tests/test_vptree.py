@@ -17,7 +17,7 @@ class TestVPTree(unittest.TestCase):
         data = dataset()
         data_refs = [i for i in range(len(data))]
         dist_refs = lambda i, j: dist(data[i], data[j])
-        vpt = VPTree(dist_refs, data_refs, min_radius=eps)
+        vpt = VPTree(dist_refs, data_refs, leaf_radius=eps)
         for x in data_refs:
             neigh = vpt.ball_search(x, eps)
             self.assertTrue(x in neigh)
@@ -29,7 +29,7 @@ class TestVPTree(unittest.TestCase):
     def testBallSearchData(self):
         eps = 0.25
         data = dataset()
-        vpt = VPTree(dist, data, min_radius=eps)
+        vpt = VPTree(dist, data, leaf_radius=eps)
         for x in data:
             neigh = vpt.ball_search(x, eps)
             self.assertTrue(any((x == y).all() for y in neigh))
@@ -62,7 +62,7 @@ class TestVPTree(unittest.TestCase):
         data = dataset()
         data_refs = [i for i in range(len(data))]
         dist_refs = lambda i, j: dist(data[i], data[j])
-        vpt = VPTree(dist_refs, data_refs, max_count=k)
+        vpt = VPTree(dist_refs, data_refs, leaf_size=k)
         for x in data_refs:
             neigh = vpt.knn_search(x, k)
             self.assertLessEqual(len(neigh), k)
@@ -74,7 +74,7 @@ class TestVPTree(unittest.TestCase):
     def testKNNSearchData(self):
         k = 5
         data = dataset()
-        vpt = VPTree(dist, data, max_count=k)
+        vpt = VPTree(dist, data, leaf_size=k)
         for x in data:
             neigh = vpt.knn_search(x, k)
             self.assertLessEqual(len(neigh), k)
