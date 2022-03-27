@@ -6,7 +6,7 @@ from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 import networkx as nx
 
-from .utils.balltree import BallTree
+from .utils.vptree import VPTree
 
 EDGE_COLOR = 'rgba(1, 1, 1, 0.5)'
 VERTEX_BORDER_COLOR = '#111'
@@ -63,7 +63,7 @@ class Stats:
             u_stats = self.__aggfunc(u_points)
             stats[u] = u_stats
         metric = lambda x, y: self.__metric(self.__lens(x), self.__lens(y))
-        self.__tree = BallTree(metric, stats.values())
+        self.__tree = VPTree(metric, stats.values())
         return stats
 
     def predict(self, point):
