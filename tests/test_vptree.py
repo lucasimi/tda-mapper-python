@@ -48,7 +48,7 @@ class TestVPTree(unittest.TestCase):
         vpt = VPTree(dist_refs, data_refs)
         for x in data_refs:
             neigh = vpt.knn_search(x, 1)
-            self.assertEqual(x, neigh)
+            self.assertEqual(x, neigh[0])
     
     def testNNSearchData(self):
         data = dataset()
