@@ -55,7 +55,7 @@ nw.plot(data)
 - [x] Topology
     - [x] Any custom lens
     - [x] Any custom metric
-- [ ] Clustering algoritms
+- [x] Clustering algoritms
     - [x] Any sklearn clustering algorithm
     - [x] No clustering
 - [ ] Cover algorithms:
