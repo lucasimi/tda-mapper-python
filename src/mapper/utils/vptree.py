@@ -106,10 +106,10 @@ class SearchResult:
 
 class VPTree:
 
-    def __init__(self, distance, data, max_count=1, min_radius=None):
+    def __init__(self, distance, data, leaf_size=1, leaf_radius=None):
         self.__distance = distance
         dataset = [x for x in data]
-        self.__tree = self._build(distance, dataset, 0, len(dataset), max_count, min_radius)
+        self.__tree = self._build(distance, dataset, 0, len(dataset), leaf_size, leaf_radius)
 
     def get_tree(self):
         return self.__tree
@@ -117,19 +117,19 @@ class VPTree:
     def get_height(self):
         return self.__tree.get_height()
 
-    def _build(self, dist, data, start, end, max_count=1, min_radius=None):
-        if end - start <= max_count:
+    def _build(self, dist, data, start, end, leaf_count=1, leaf_radius=None):
+        if end - start <= leaf_count:
             return Tree(Ball(None, None, data[start:end]))
         else:
             center = random.choice(data[start:end]) #improve this by removing the copy
             mid = (end + start) // 2
             _place_in_order(data, start, end, mid, lambda x: dist(center, x))
             radius = dist(center, data[mid])
-            if min_radius and radius <= min_radius:
+            if leaf_radius and radius <= leaf_radius:
                 left = Tree(Ball(None, None, data[start:mid]))
             else:
-                left = self._build(dist, data, start, mid, max_count)
-            right = self._build(dist, data, mid, end, max_count)
+                left = self._build(dist, data, start, mid, leaf_count)
+            right = self._build(dist, data, mid, end, leaf_count)
             return Tree(Ball(center, radius), left, right)
     
     def ball_search(self, point, eps):
