@@ -11,12 +11,12 @@ class Network:
     def __init__(self, graph):
         self.__nx = nx.Graph()
         self.__graph = graph
-        graph._compute_labels()
+        graph._compute_ccs()
         for u in graph.get_vertices():
             u_vert = graph.get_vertex(u)
             u_size = u_vert.get_size()
-            u_label = graph.get_vertex_label(u)
-            self.__nx.add_node(u, size=u_size, label=u_label)
+            u_cc = graph.get_vertex_cc(u)
+            self.__nx.add_node(u, size=u_size, label=u_cc)
             for v in graph.get_adjaciency(u):
                 uv_weight = graph.get_edge(u, v).get_weight()
                 self.__nx.add_edge(u, v, weight=uv_weight)
@@ -24,31 +24,38 @@ class Network:
         self.__label_dict = nx.get_node_attributes(self.__nx, 'label')
         self.__pos2d_dict = nx.spring_layout(self.__nx, dim=2)
         self.__pos3d_dict = nx.spring_layout(self.__nx, dim=3)
-        self.__colors = None
+        self.__vertex_colors = None
+        self.__cc_colors = None
 
     def _compute_colors(self, colors, aggfunc):
-        self.__colors = {}
+        self.__vertex_colors = {}
         for u in self.__graph.get_vertices():
-            u_colors = [colors[i] for i in self.__graph.get_points(u)]
-            self.__colors[u] = aggfunc(u_colors)
+            u_colors = [colors[i] for i in self.__graph.get_vertex_ids(u)]
+            self.__vertex_colors[u] = aggfunc(u_colors)
+        self.__cc_colors = {}
+        for cc in self.__graph.get_ccs():
+            cc_colors = [colors[i] for i in self.__graph.get_cc_ids(cc)]
+            cc_color = aggfunc(cc_colors)
+            for u in self.__graph.get_cc_vertices(cc):
+                self.__cc_colors[u] = cc_color
 
-    def plot(self, colors, aggfunc=np.nanmean, title='Node value', frontend='plotly', width=512, height=512):
+    def plot(self, colors, aggfunc=np.nanmean, title='Node value', frontend='plotly', width=512, height=512, use_cc_colors=False):
         self._compute_colors(colors, aggfunc)
         if frontend == 'plotly':
-            return self._plot_plotly_2d(title, width, height)
-        elif frontend == 'pyplot':
-            return self._plot_pyplot(title, width, height)
-        elif frontend == '3d':
-            return self._plot_plotly_3d(title, width, height)
+            return self._plot_plotly_2d(title, width, height, use_cc_colors)
+        if frontend == 'pyplot':
+            return self._plot_pyplot(title, width, height, use_cc_colors)
+        if frontend == '3d':
+            return self._plot_plotly_3d(title, width, height, use_cc_colors)
 
-    def _plot_pyplot(self, title, width, height):
+    def _plot_pyplot(self, title, width, height, use_cc_colors):
         px = 1/plt.rcParams['figure.dpi']
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         node_sizes = []
         for node in self.__nx.nodes():
             size = float(self.__size_dict[node]) / max_size
             node_sizes.append(600.0 * size)
-        colors = list(self.__colors.values())
+        colors = list(self.__cc_colors) if use_cc_colors else list(self.__vertex_colors)
         fig, ax = plt.subplots(figsize=(width * px, height * px))
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
@@ -71,23 +78,26 @@ class Network:
         colorbar.outline.set_linewidth(0)
         return fig
 
-    def _plot_plotly_2d_nodes(self, title):
+    def _plot_plotly_2d_nodes(self, title, use_cc_colors):
         node_x, node_y = [], []
         node_colors, node_sizes = [], []
         node_texts = []
+        colors = self.__cc_colors if use_cc_colors else self.__vertex_colors
+        max_color = max(self.__vertex_colors.values())
+        min_color = min(self.__vertex_colors.values())
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         for node in self.__nx.nodes():
             x, y = self.__pos2d_dict[node]
-            color = self.__colors[node]
+            color = colors[node]
             size = float(self.__size_dict[node]) / max_size
             node_x.append(x)
             node_y.append(y)
             node_colors.append(color)
             node_sizes.append(30.0 * math.sqrt(size))
-            size_text = str(self.__size_dict[node])
-            color_text = str(self.__colors[node])
-            label = str(self.__label_dict[node])
-            txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
+            size_text = self.__size_dict[node]
+            color_text = colors[node]
+            label = self.__label_dict[node]
+            txt = f'size: {size_text}, color: {color_text:.2f}, cc: {label}'
             node_texts.append(txt)
         node_trace = go.Scatter(
             x=node_x, y=node_y,
@@ -99,6 +109,8 @@ class Network:
                 colorscale='viridis',
                 reversescale=True,
                 color=node_colors,
+                cmax=max_color,
+                cmin=min_color,
                 opacity=0.85,
                 size=node_sizes,
                 colorbar=dict(
@@ -133,9 +145,9 @@ class Network:
         )
         return edge_trace
 
-    def _plot_plotly_2d(self, title, width, height):
+    def _plot_plotly_2d(self, title, width, height, use_cc_colors):
         edge_trace = self._plot_plotly_2d_edges()
-        node_trace = self._plot_plotly_2d_nodes(title)
+        node_trace = self._plot_plotly_2d_nodes(title, use_cc_colors)
         axis = dict(showbackground=False,
                 showline=False,
                 zeroline=False,
@@ -185,24 +197,27 @@ class Network:
             mode='lines')
         return edge_trace
 
-    def _plot_plotly_3d_nodes(self, title):
+    def _plot_plotly_3d_nodes(self, title, use_cc_colors):
         node_x, node_y, node_z = [], [], []
         node_colors, node_sizes = [], []
         node_texts = []
+        colors = self.__cc_colors if use_cc_colors else self.__vertex_colors
+        max_color = max(self.__vertex_colors.values())
+        min_color = min(self.__vertex_colors.values())
         max_size = max(self.__size_dict.values()) if self.__size_dict else 1.0
         for node in self.__nx.nodes():
             x, y, z = self.__pos3d_dict[node]
-            color = self.__colors[node]
+            color = colors[node]
             size = float(self.__size_dict[node]) / max_size
             node_x.append(x)
             node_y.append(y)
             node_z.append(z)
             node_colors.append(color)
             node_sizes.append(20.0 * math.sqrt(size))
-            size_text = str(self.__size_dict[node])
-            color_text = str(self.__colors[node])
-            label = str(self.__label_dict[node])
-            txt = "size: {}, color: {}, label: {}".format(size_text, color_text, label)
+            size_text = self.__size_dict[node]
+            color_text = colors[node]
+            label = self.__label_dict[node]
+            txt = f'size: {size_text}, color: {color_text:.2f}, cc: {label}'
             node_texts.append(txt)
         node_trace = go.Scatter3d(
             x=node_x, y=node_y, z=node_z,
@@ -216,6 +231,8 @@ class Network:
                 color=node_colors,
                 opacity=0.85,
                 size=node_sizes,
+                cmax=max_color,
+                cmin=min_color,
                 colorbar=dict(
                     thickness=10,
                     title=title,
@@ -228,9 +245,9 @@ class Network:
         node_trace.text = node_texts
         return node_trace
 
-    def _plot_plotly_3d(self, title, width, height):
+    def _plot_plotly_3d(self, title, width, height, use_cc_colors):
         edge_trace = self._plot_plotly_3d_edges()
-        node_trace = self._plot_plotly_3d_nodes(title)
+        node_trace = self._plot_plotly_3d_nodes(title, use_cc_colors)
         axis = dict(showbackground=False,
                 showline=False,
                 zeroline=False,
