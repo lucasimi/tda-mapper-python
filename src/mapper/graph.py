@@ -1,8 +1,4 @@
 """Classes for storing the mapper graph"""
-import networkx as nx
-
-from .utils.vptree import VPTree
-from .search import KnnSearch
 
 EDGE_COLOR = 'rgba(1, 1, 1, 0.5)'
 VERTEX_BORDER_COLOR = '#111'
@@ -51,7 +47,8 @@ class Graph:
         self.__adjaciency = {}
         self.__vertices = {}
         self.__edges = {}
-        self.__labels = None
+        self.__vert_cc = None  # connected components indexed by vertices
+        self.__cc_vert = None  # vertices indexed by connected components
 
     def add_vertex(self, vertex_id, vertex):
         """Add a new vertex to the graph"""
@@ -71,7 +68,7 @@ class Graph:
         """Return the vertex for a given id"""
         return self.__vertices[vertex_id]
 
-    def get_points(self, vertex_id):
+    def get_vertex_ids(self, vertex_id):
         return self.__vertices[vertex_id].get_ids()
 
     def get_adjaciency(self, vertex_id):
@@ -82,27 +79,46 @@ class Graph:
         """Return the edge for two specified vertices"""
         return self.__edges[(source_id, target_id)]
 
-    def _compute_labels(self):
-        self.__labels = {u_id: None for u_id in self.__vertices}
-        label_count = 0
+    def _compute_ccs(self):
+        vert_ccs = {u_id: None for u_id in self.__vertices}
+        cc_count = 0
         for u_id in self.__vertices:
-            if not self.__labels[u_id]:
-                label_count += 1
-                self._set_vertex_label(u_id, label_count)
+            if not vert_ccs[u_id]:
+                cc_count += 1
+                self._set_cc(vert_ccs, u_id, cc_count)
+        self.__vert_cc = vert_ccs
+        ccs = {}
+        for u, u_cc in vert_ccs.items():
+            if u_cc not in ccs:
+                ccs[u_cc] = []
+            ccs[u_cc].append(u)
+        self.__cc_vert = ccs
 
-    def _set_vertex_label(self, u_id, label_count):
-        if not self.__labels[u_id]:
-            self.__labels[u_id] = label_count
+    def _set_cc(self, vert_ccs, u_id, cc_label):
+        if not vert_ccs[u_id]:
+            vert_ccs[u_id] = cc_label
             for v_id in self.__adjaciency[u_id]:
-                self._set_vertex_label(v_id, label_count)
+                self._set_cc(vert_ccs, v_id, cc_label)
 
-    def get_point_labels(self):
-        point_label = {}
-        for u_id in self.__vertices:
-            u_label = self.__labels[u_id]
-            for point in self.__vertices[u_id].get_ids():
-                point_label[point] = u_label
-        return point_label
+    def get_cc_vertices(self, cc):
+        return self.__cc_vert[cc]
 
-    def get_vertex_label(self, vertex_id):
-        return self.__labels[vertex_id]
+    def get_ids_ccs(self):
+        ids_cc = {}
+        for u_id, u_vert in self.__vertices.items():
+            cc_id = self.get_vertex_cc(u_id)
+            for point_id in u_vert.get_ids():
+                ids_cc[point_id] = cc_id
+        return ids_cc
+
+    def get_cc_ids(self, cc):
+        ids = set()
+        for u in self.get_cc_vertices(cc):
+            ids.update(self.get_vertex_ids(u))
+        return ids
+
+    def get_vertex_cc(self, vertex_id):
+        return self.__vert_cc[vertex_id]
+
+    def get_ccs(self):
+        return self.__cc_vert.keys()
