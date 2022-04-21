@@ -1,7 +1,13 @@
-name: Test
-on: [push]
+name: test
+
+on: 
+  push:
+    branches:
+      - develop
+      - main      
+
 jobs:
-  Run-Test:
+  test:
     runs-on: ubuntu-latest
     steps:
       - run: echo "This job is running on ${{ runner.os }}, triggered by a ${{ github.event_name }} event"
