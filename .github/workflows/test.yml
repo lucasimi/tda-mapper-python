@@ -7,20 +7,17 @@ on:
       - main      
 
 jobs:
-  test:
+  install:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "This job is running on ${{ runner.os }}, triggered by a ${{ github.event_name }} event"
-      - run: echo "Running tests for ${{ github.repository }} at branch ${{ github.ref }}."
       - name: Check out repository code
         uses: actions/checkout@v2
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-          cd ${{ github.workspace }}
       - name: Install package locally
         run: |
           python -m pip install .
+  test:
+    runs-on: ubuntu-latest
+    steps:
       - name: Run python tests
         run: |
           python -m unittest
