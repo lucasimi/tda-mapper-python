@@ -7,7 +7,7 @@ on:
       - main      
 
 jobs:
-  test:
+  test-job:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -16,4 +16,3 @@ jobs:
         run: python -m pip install .
       - name: Run python tests
         run: python -m unittest
-      
