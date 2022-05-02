@@ -99,15 +99,14 @@ class CoverGraph:
         sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
-        px = 1/plt.rcParams['figure.dpi']
-        fig, ax = plt.subplots(figsize=(width * px, height * px))
+        px = 1.0/plt.rcParams['figure.dpi'] * 1.4
+        fig, ax = plt.subplots(figsize=(width * px, height * px)) #, gridspec_kw={'width_ratios': [10, 1]})
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
             ax.spines[axis].set_linewidth(0)
         _ = nx.draw_networkx_edges(
             self.__graph,
             self.__pos2d,
-            #edge_color='#111',
             edge_color=BORDER_COLOR,
             alpha=0.25,
             ax=ax)
@@ -115,14 +114,15 @@ class CoverGraph:
             self.__graph,
             self.__pos2d,
             node_color=[colors[v] for v in nodes],
-            node_size=[600.0 * sizes[v] / max_size for v in nodes],
+            node_size=[800.0 * sizes[v] / max_size for v in nodes],
             alpha=1.0,
             edgecolors=BORDER_COLOR,
             cmap='viridis_r',
             vmin=self.__graph.graph[ATTR_MIN_COLOR],
             vmax=self.__graph.graph[ATTR_MAX_COLOR],
+            linewidths=0.5,
             ax=ax)
-        colorbar = fig.colorbar(verts, orientation='vertical', aspect=60, pad=0.0)
+        colorbar = plt.colorbar(verts, orientation='vertical', aspect=60, pad=0.0, ax=ax, format='%.2f')
         colorbar.set_label(label)
         colorbar.outline.set_linewidth(0)
         return fig
@@ -142,7 +142,8 @@ class CoverGraph:
         fig = go.Figure(
             data=[edge_trace, node_trace],
             layout=go.Layout(
-                width=width, height=height,
+                width=width,
+                height=height,
                 plot_bgcolor='rgba(0, 0, 0, 0)',
                 autosize=False,
                 showlegend=False,
@@ -226,7 +227,7 @@ class CoverGraph:
             node_colors.append(color)
             size = float(sizes[node]) / max_size
             node_sizes.append(30.0 * math.sqrt(size))
-            node_label = f'size: {sizes[node]}, color: {colors[node]:.2f}, cc: {ccs[node]}'
+            node_label = f'size: {sizes[node]}, color: {colors[node]:.3e}, cc: {ccs[node]}'
             node_captions.append(node_label)
         node_trace = go.Scatter(
             x=node_x,
