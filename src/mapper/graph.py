@@ -4,9 +4,16 @@ import math
 import plotly.graph_objects as go
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 import numpy as np
 
-BORDER_COLOR = '#111'
+BORDER_COLOR = '#777'
+NODE_ALPHA = 0.85
+EDGE_ALPHA=0.85
+
+FONT_SIZE = 8
+COLOR_FORMAT = '.2e'
+TICKS_NUM = 5
 
 ATTR_SIZE = 'size'
 ATTR_COLOR = 'color'
@@ -14,6 +21,8 @@ ATTR_CC = 'cc'
 ATTR_IDS = 'ids'
 ATTR_MIN_COLOR = 'min_color'
 ATTR_MAX_COLOR = 'max_color'
+
+DPIS = 96
 
 FE_MATPLOTLIB = 'matplotlib'
 FE_PLOTLY = 'plotly'
@@ -99,32 +108,50 @@ class CoverGraph:
         sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
-        px = 1.0/plt.rcParams['figure.dpi'] * 1.4
-        fig, ax = plt.subplots(figsize=(width * px, height * px)) #, gridspec_kw={'width_ratios': [10, 1]})
+        min_color = self.__graph.graph[ATTR_MIN_COLOR]
+        max_color = self.__graph.graph[ATTR_MAX_COLOR]
+        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS, frameon=True)
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
             ax.spines[axis].set_linewidth(0)
-        _ = nx.draw_networkx_edges(
+        edges = nx.draw_networkx_edges(
             self.__graph,
             self.__pos2d,
             edge_color=BORDER_COLOR,
-            alpha=0.25,
+            alpha=EDGE_ALPHA,
+            width=0.5,
             ax=ax)
         verts = nx.draw_networkx_nodes(
             self.__graph,
             self.__pos2d,
             node_color=[colors[v] for v in nodes],
-            node_size=[800.0 * sizes[v] / max_size for v in nodes],
-            alpha=1.0,
+            node_size=[300 * sizes[v] / max_size for v in nodes],
+            alpha=NODE_ALPHA,
             edgecolors=BORDER_COLOR,
             cmap='viridis_r',
-            vmin=self.__graph.graph[ATTR_MIN_COLOR],
-            vmax=self.__graph.graph[ATTR_MAX_COLOR],
+            vmin=min_color,
+            vmax=max_color,
             linewidths=0.5,
             ax=ax)
-        colorbar = plt.colorbar(verts, orientation='vertical', aspect=60, pad=0.0, ax=ax, format='%.2f')
+        colorbar = plt.colorbar(
+            verts,
+            orientation='vertical',
+            aspect=60,
+            pad=0.0,
+            ax=ax,
+            #format=f'%{COLOR_FORMAT}',
+            ticks=[min_color + i * (max_color - min_color) / TICKS_NUM for i in range(TICKS_NUM + 1)],
+        )
         colorbar.set_label(label)
         colorbar.outline.set_linewidth(0)
+        colorbar.ax.tick_params(labelsize=FONT_SIZE)
+        colorbar.ax.tick_params(size=0)
+        colorbar.ax.yaxis.set_tick_params(color=BORDER_COLOR, labelcolor=BORDER_COLOR)
+        #ax.set_aspect('equal')
+        #fig.tight_layout()
+        fig.patch.set_alpha(0.0)
+        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
+        ax.patch.set_alpha(0.0)
         return fig
 
 
@@ -198,7 +225,7 @@ class CoverGraph:
             x=edge_x, 
             y=edge_y,
             mode='lines',
-            opacity=0.75,
+            opacity=1.0 - EDGE_ALPHA,
             line=dict(
                 width=1.0, 
                 color='rgba(0.5, 0.5, 0.5, 0.5)'
@@ -213,6 +240,8 @@ class CoverGraph:
         sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
+        min_color = self.__graph.graph[ATTR_MIN_COLOR]
+        max_color = self.__graph.graph[ATTR_MAX_COLOR]
         ccs = nx.get_node_attributes(self.__graph, ATTR_CC)
 
         node_x, node_y = [], []
@@ -225,8 +254,7 @@ class CoverGraph:
             node_y.append(y)
             color = colors[node]
             node_colors.append(color)
-            size = float(sizes[node]) / max_size
-            node_sizes.append(30.0 * math.sqrt(size))
+            node_sizes.append(30.0 * sizes[node] / max_size)
             node_label = f'size: {sizes[node]}, color: {colors[node]:.3e}, cc: {ccs[node]}'
             node_captions.append(node_label)
         node_trace = go.Scatter(
@@ -240,16 +268,21 @@ class CoverGraph:
                 colorscale='viridis',
                 reversescale=True,
                 color=node_colors,
-                cmax=self.__graph.graph[ATTR_MAX_COLOR],
-                cmin=self.__graph.graph[ATTR_MIN_COLOR],
-                opacity=0.85,
+                cmax=max_color,
+                cmin=min_color,
+                opacity=NODE_ALPHA,
                 size=node_sizes,
                 colorbar=dict(
+                    tickformat=COLOR_FORMAT,
+                    outlinewidth=0,
+                    borderwidth=0,
                     thickness=12,
                     title=label,
                     xanchor='left',
                     titleside='right',
-                    xpad=0
+                    xpad=0,
+                    tickfont=dict(size=FONT_SIZE),
+                    tickvals=[min_color + i * (max_color - min_color) / TICKS_NUM for i in range(TICKS_NUM + 1)],
                 ),
                 line_width=1.0,
                 line_color='rgba(0.25, 0.25, 0.25, 1.0)'))
