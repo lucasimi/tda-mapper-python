@@ -5,11 +5,12 @@ import plotly.graph_objects as go
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.collections import LineCollection
 
 NODE_ALPHA = 0.85
-EDGE_WIDTH = 0.3 
-EDGE_COLOR = '#777'
 EDGE_ALPHA = 0.85
+EDGE_WIDTH = 0.5
+EDGE_COLOR = '#777'
 
 FONT_SIZE = 8
 COLOR_FORMAT = '.2e'
@@ -111,15 +112,14 @@ class CoverGraph:
             return self._plot_plotly_2d(width, height, label)
 
 
-
-    def _plot_matplotlib(self, width, height, label):
+    def _plot_matplotlib_old(self, width, height, label):
         nodes = self.__graph.nodes()
         sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
         min_color = self.__graph.graph[ATTR_MIN_COLOR]
         max_color = self.__graph.graph[ATTR_MAX_COLOR]
-        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS, frameon=True)
+        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
         ax.set_facecolor('#fff')
         #for axis in ['top','bottom','left','right']:
             #ax.spines[axis].set_linewidth(0)
@@ -145,24 +145,91 @@ class CoverGraph:
         colorbar = plt.colorbar(
             verts,
             orientation='vertical',
-            aspect=40,
+            aspect=height/(0.025 * width),
             pad=-0.025,
             ax=ax,
             fraction=0.025
-            #format=f'%{COLOR_FORMAT}',
-            #ticks=[min_color + i * (max_color - min_color) / TICKS_NUM for i in range(TICKS_NUM + 1)],
         )
         colorbar.set_label(label)
         colorbar.outline.set_linewidth(0)
         #colorbar.ax.tick_params(labelsize=FONT_SIZE)
         colorbar.ax.tick_params(size=0)
         colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
-        #ax[0].set_aspect('equal')
-        #ax[1].set_aspect('equal')
-        fig.tight_layout()
+        #fig.tight_layout(pad=0, rect=(0.0, 0.0, 1.0, 1.0))
         fig.patch.set_alpha(0.0)
         fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
         ax.patch.set_alpha(0.0)
+        return fig
+
+
+    def _plot_matplotlib_nodes(self, ax, width, height, label):
+        nodes = self.__graph.nodes()
+        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
+        max_size = max(sizes.values()) if sizes else 1.0
+        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
+        min_color = self.__graph.graph[ATTR_MIN_COLOR]
+        max_color = self.__graph.graph[ATTR_MAX_COLOR]
+        nodes_x = [self.__pos2d[node][0] for node in nodes]
+        nodes_y = [self.__pos2d[node][1] for node in nodes]
+        nodes_c = [colors[node] for node in nodes]
+        nodes_s = [sizes[node] for node in nodes]
+        verts = ax.scatter(
+            x=nodes_x,
+            y=nodes_y,
+            c=nodes_c,
+            s=nodes_s,
+            alpha=NODE_ALPHA,
+            vmin=min_color,
+            vmax=max_color,
+            edgecolors=EDGE_COLOR,
+            linewidths=EDGE_WIDTH
+        )
+        colorbar = plt.colorbar(
+            verts,
+            orientation='vertical',
+            aspect=height/(0.025 * width),
+            pad=-0.025,
+            ax=ax,
+            fraction=0.025
+        )
+        colorbar.set_label(label)
+        colorbar.set_alpha(NODE_ALPHA)
+        colorbar.outline.set_linewidth(0)
+        colorbar.outline.set_color(EDGE_COLOR)
+        colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
+
+
+    def _plot_matplotlib_edges(self, ax):
+        min_color = self.__graph.graph[ATTR_MIN_COLOR]
+        max_color = self.__graph.graph[ATTR_MAX_COLOR]
+        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
+        edges = self.__graph.edges()
+        segments = [[self.__pos2d[edge[i]] for i in [0, 1]] for edge in edges]
+        cols = [0.5 * (colors[edge[0]] + colors[edge[1]]) for edge in edges]
+        norm = plt.Normalize(min_color, max_color)
+        lines = LineCollection(
+            segments,
+            cmap='viridis',
+            norm=norm,
+            linewidth=EDGE_WIDTH,
+            alpha=EDGE_ALPHA
+        )
+        lines.set_array(cols)
+        ax.add_collection(lines)
+
+
+    def _plot_matplotlib(self, width, height, label):
+        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
+        ax.set_facecolor('#fff')
+        for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(0)
+        fig.patch.set_alpha(0.0)
+        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
+        ax.patch.set_alpha(0.0)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        self._plot_matplotlib_edges(ax)
+        self._plot_matplotlib_nodes(ax, width, height, label)
         return fig
 
 
