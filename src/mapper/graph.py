@@ -98,7 +98,7 @@ class CoverGraph:
             if max_color > graph_max_color:
                 graph_max_color = max_color
             colors[node] = np.nanmean(node_colors)
-        self._set_colors(colors, min_color, max_color)
+        self._set_colors(colors, graph_min_color, graph_max_color)
 
 
     def plot(self, frontend, width, height, label=''):
@@ -152,7 +152,7 @@ class CoverGraph:
         max_color = self.__graph.graph[ATTR_MAX_COLOR]
         colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
         edges = self.__graph.edges()
-        segments = [[self.__pos2d[edge[i]] for i in [0, 1]] for edge in edges]
+        segments = [(self.__pos2d[edge[0]], self.__pos2d[edge[1]]) for edge in edges]
         cols = [0.5 * (colors[edge[0]] + colors[edge[1]]) for edge in edges]
         norm = plt.Normalize(min_color, max_color)
         lines = LineCollection(
