@@ -21,27 +21,27 @@ class TestMapper(unittest.TestCase):
         data = dataset()
         mp = MapperPipeline()
         g = mp.fit(data)
-        self.assertEqual(1, len(g.get_vertices()))
-        for vert_id in g.get_vertices():
-            self.assertEqual([], g.get_adjaciency(vert_id))
+        self.assertEqual(1, len(g))
+        for node in g.get_nx().nodes():
+            self.assertEqual([], list(g.get_nx().neighbors(node)))
 
     def testBallSmallRadius(self):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(0.5), lens=lens, metric=dist))
         g = mp.fit(data)
-        self.assertEqual(1000, len(g.get_vertices()))
-        for vert_id in g.get_vertices():
-            self.assertEqual([], g.get_adjaciency(vert_id))
+        self.assertEqual(1000, len(g))
+        for node in g.get_nx().nodes():
+            self.assertEqual([], list(g.get_nx().neighbors(node)))
 
     def testBallLargeRadius(self):
         lens = lambda x: x
         data = [float(i) for i in range(1000)]
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(1000.0), lens=lens, metric=dist))
         g = mp.fit(data)
-        self.assertEqual(1, len(g.get_vertices()))
-        for vert_id in g.get_vertices():
-            self.assertEqual([], g.get_adjaciency(vert_id))
+        self.assertEqual(1, len(g))
+        for node in g.get_nx().nodes():
+            self.assertEqual([], list(g.get_nx().neighbors(node)))
 
     def testTwoDisconnectedClusters(self):
         lens = lambda x: x
@@ -49,9 +49,9 @@ class TestMapper(unittest.TestCase):
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(150.0), lens=lens, metric=dist))
         g = mp.fit(data)
-        self.assertEqual(2, len(g.get_vertices()))
-        for vert_id in g.get_vertices():
-            self.assertEqual([], g.get_adjaciency(vert_id))
+        self.assertEqual(2, len(g))
+        for node in g.get_nx().nodes():
+            self.assertEqual([], list(g.get_nx().neighbors(node)))
 
 
 if __name__=='__main__':
