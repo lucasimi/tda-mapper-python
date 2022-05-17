@@ -35,7 +35,8 @@ class CoverGraph:
         self.__graph = self._build_graph(cover_arr)
         self.__pos2d = nx.spring_layout(self.__graph)
         self._compute_connected_components(self.__graph)
-        self._compute_colors(self.__graph, None, None)
+        colors = {node: 0.5 for node in self.__graph.nodes()}
+        self._set_colors(self.__graph, colors, 0.0, 1.0)
 
 
     def get_nx(self):
@@ -46,10 +47,6 @@ class CoverGraph:
         return len(self.__graph.nodes())
 
     
-    def colorize(self, data, colormap):
-        self._compute_colors(self.__graph, data, colormap)
-
-
     def _build_graph(self, cluster_arr):
         graph = nx.Graph()
         vertices = {}
@@ -79,30 +76,29 @@ class CoverGraph:
                 vert_cc[node] = cc_id
             cc_id += 1
         nx.set_node_attributes(graph, vert_cc, ATTR_CC)
-    
 
-    def _compute_colors(self, graph, data, colormap):
+
+    def _set_colors(self, graph, colors, min_color, max_color):
+        graph.graph[ATTR_MIN_COLOR] = min_color
+        graph.graph[ATTR_MAX_COLOR] = max_color
+        nx.set_node_attributes(graph, colors, ATTR_COLOR)
+
+
+    def colorize(self, graph, data, colormap):
         nodes = graph.nodes()
         colors = {}
-        if data is None or colormap is None:
-            colors = {node: 0.5 for node in self.__graph.nodes()}
-            graph_min_color = 0.0
-            graph_max_color = 1.0
-        else:
-            graph_min_color = float('inf')
-            graph_max_color = -float('inf')
-            for node in nodes:
-                node_colors = [colormap(data[i]) for i in nodes[node][ATTR_IDS]]
-                min_color = min(node_colors)
-                if min_color < graph_min_color:
-                    graph_min_color = min_color
-                max_color = max(node_colors)
-                if max_color > graph_max_color:
-                    graph_max_color = max_color
-                colors[node] = np.nanmean(node_colors)
-        graph.graph[ATTR_MIN_COLOR] = graph_min_color
-        graph.graph[ATTR_MAX_COLOR] = graph_max_color
-        nx.set_node_attributes(graph, colors, ATTR_COLOR)
+        graph_min_color = float('inf')
+        graph_max_color = -float('inf')
+        for node in nodes:
+            node_colors = [colormap(data[i]) for i in nodes[node][ATTR_IDS]]
+            min_color = min(node_colors)
+            if min_color < graph_min_color:
+                graph_min_color = min_color
+            max_color = max(node_colors)
+            if max_color > graph_max_color:
+                graph_max_color = max_color
+            colors[node] = np.nanmean(node_colors)
+        self._set_colors(graph, colors, min_color, max_color)
 
 
     def plot(self, width, height, frontend, label=''):
@@ -110,56 +106,6 @@ class CoverGraph:
             return self._plot_matplotlib(width, height, label)
         elif frontend == FE_PLOTLY:
             return self._plot_plotly_2d(width, height, label)
-
-
-    def _plot_matplotlib_old(self, width, height, label):
-        nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
-        max_size = max(sizes.values()) if sizes else 1.0
-        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
-        min_color = self.__graph.graph[ATTR_MIN_COLOR]
-        max_color = self.__graph.graph[ATTR_MAX_COLOR]
-        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
-        ax.set_facecolor('#fff')
-        #for axis in ['top','bottom','left','right']:
-            #ax.spines[axis].set_linewidth(0)
-        edges = nx.draw_networkx_edges(
-            self.__graph,
-            self.__pos2d,
-            edge_color=EDGE_COLOR,
-            alpha=EDGE_ALPHA,
-            width=EDGE_WIDTH,
-            ax=ax)
-        verts = nx.draw_networkx_nodes(
-            self.__graph,
-            self.__pos2d,
-            node_color=[colors[v] for v in nodes],
-            node_size=[300 * sizes[v] / max_size for v in nodes],
-            alpha=NODE_ALPHA,
-            edgecolors=EDGE_COLOR,
-            cmap='viridis_r',
-            vmin=min_color,
-            vmax=max_color,
-            linewidths=EDGE_WIDTH,
-            ax=ax)
-        colorbar = plt.colorbar(
-            verts,
-            orientation='vertical',
-            aspect=height/(0.025 * width),
-            pad=-0.025,
-            ax=ax,
-            fraction=0.025
-        )
-        colorbar.set_label(label)
-        colorbar.outline.set_linewidth(0)
-        #colorbar.ax.tick_params(labelsize=FONT_SIZE)
-        colorbar.ax.tick_params(size=0)
-        colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
-        #fig.tight_layout(pad=0, rect=(0.0, 0.0, 1.0, 1.0))
-        fig.patch.set_alpha(0.0)
-        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
-        ax.patch.set_alpha(0.0)
-        return fig
 
 
     def _plot_matplotlib_nodes(self, ax, width, height, label):
@@ -351,7 +297,6 @@ class CoverGraph:
                 opacity=NODE_ALPHA,
                 size=node_sizes,
                 colorbar=dict(
-                    #tickformat=COLOR_FORMAT,
                     outlinewidth=0,
                     borderwidth=0,
                     orientation='v',
@@ -361,8 +306,6 @@ class CoverGraph:
                     xanchor='left',
                     titleside='right',
                     ypad=0,
-                    #tickfont=dict(size=1.4 * FONT_SIZE),
-                    #tickvals=[min_color + i * (max_color - min_color) / TICKS_NUM for i in range(TICKS_NUM + 1)],
                 ),
                 line_width=1.4 * EDGE_WIDTH,
                 line_color=EDGE_COLOR))
