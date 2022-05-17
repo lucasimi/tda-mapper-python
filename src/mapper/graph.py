@@ -36,7 +36,7 @@ class CoverGraph:
         self.__pos2d = nx.spring_layout(self.__graph)
         self._compute_connected_components(self.__graph)
         colors = {node: 0.5 for node in self.__graph.nodes()}
-        self._set_colors(self.__graph, colors, 0.0, 1.0)
+        self._set_colors(colors, 0.0, 1.0)
 
 
     def get_nx(self):
@@ -78,14 +78,14 @@ class CoverGraph:
         nx.set_node_attributes(graph, vert_cc, ATTR_CC)
 
 
-    def _set_colors(self, graph, colors, min_color, max_color):
-        graph.graph[ATTR_MIN_COLOR] = min_color
-        graph.graph[ATTR_MAX_COLOR] = max_color
-        nx.set_node_attributes(graph, colors, ATTR_COLOR)
+    def _set_colors(self, colors, min_color, max_color):
+        self.__graph.graph[ATTR_MIN_COLOR] = min_color
+        self.__graph.graph[ATTR_MAX_COLOR] = max_color
+        nx.set_node_attributes(self.__graph, colors, ATTR_COLOR)
 
 
-    def colorize(self, graph, data, colormap):
-        nodes = graph.nodes()
+    def colorize(self, data, colormap):
+        nodes = self.__graph.nodes()
         colors = {}
         graph_min_color = float('inf')
         graph_max_color = -float('inf')
@@ -98,14 +98,16 @@ class CoverGraph:
             if max_color > graph_max_color:
                 graph_max_color = max_color
             colors[node] = np.nanmean(node_colors)
-        self._set_colors(graph, colors, min_color, max_color)
+        self._set_colors(colors, min_color, max_color)
 
 
-    def plot(self, width, height, frontend, label=''):
+    def plot(self, frontend, width, height, label=''):
         if frontend == FE_MATPLOTLIB:
             return self._plot_matplotlib(width, height, label)
         elif frontend == FE_PLOTLY:
             return self._plot_plotly_2d(width, height, label)
+        else:
+            raise Exception(f'unexpected argument {frontend} for frontend')
 
 
     def _plot_matplotlib_nodes(self, ax, width, height, label):
@@ -290,7 +292,7 @@ class CoverGraph:
             marker=dict(
                 showscale=True,
                 colorscale='viridis',
-                reversescale=True,
+                reversescale=False,
                 color=node_colors,
                 cmax=max_color,
                 cmin=min_color,
