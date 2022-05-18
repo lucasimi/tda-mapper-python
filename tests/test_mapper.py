@@ -22,8 +22,8 @@ class TestMapper(unittest.TestCase):
         mp = MapperPipeline()
         g = mp.fit(data)
         self.assertEqual(1, len(g))
-        for node in g.get_nx().nodes():
-            self.assertEqual([], list(g.get_nx().neighbors(node)))
+        for node in g.nodes():
+            self.assertEqual([], list(g.neighbors(node)))
 
     def testBallSmallRadius(self):
         lens = lambda x: x
@@ -31,8 +31,8 @@ class TestMapper(unittest.TestCase):
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(0.5), lens=lens, metric=dist))
         g = mp.fit(data)
         self.assertEqual(1000, len(g))
-        for node in g.get_nx().nodes():
-            self.assertEqual([], list(g.get_nx().neighbors(node)))
+        for node in g.nodes():
+            self.assertEqual([], list(g.neighbors(node)))
 
     def testBallLargeRadius(self):
         lens = lambda x: x
@@ -40,8 +40,8 @@ class TestMapper(unittest.TestCase):
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(1000.0), lens=lens, metric=dist))
         g = mp.fit(data)
         self.assertEqual(1, len(g))
-        for node in g.get_nx().nodes():
-            self.assertEqual([], list(g.get_nx().neighbors(node)))
+        for node in g.nodes():
+            self.assertEqual([], list(g.neighbors(node)))
 
     def testTwoDisconnectedClusters(self):
         lens = lambda x: x
@@ -50,8 +50,8 @@ class TestMapper(unittest.TestCase):
         mp = MapperPipeline(cover_algo=SearchCover(search_algo=BallSearch(150.0), lens=lens, metric=dist))
         g = mp.fit(data)
         self.assertEqual(2, len(g))
-        for node in g.get_nx().nodes():
-            self.assertEqual([], list(g.get_nx().neighbors(node)))
+        for node in g.nodes():
+            self.assertEqual([], list(g.neighbors(node)))
 
 
 if __name__=='__main__':

@@ -1,11 +1,14 @@
 """module for storing and drawing a cover graph"""
 import math
+import numpy as np
+import pandas as pd
 
 import plotly.graph_objects as go
 import networkx as nx
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.collections import LineCollection
+
+import mapper.pipeline
 
 NODE_ALPHA = 0.85
 EDGE_ALPHA = 0.85
@@ -16,111 +19,39 @@ FONT_SIZE = 8
 COLOR_FORMAT = '.2e'
 TICKS_NUM = 5
 
-ATTR_SIZE = 'size'
-ATTR_COLOR = 'color'
-ATTR_CC = 'cc'
-ATTR_IDS = 'ids'
-ATTR_MIN_COLOR = 'min_color'
-ATTR_MAX_COLOR = 'max_color'
-
 DPIS = 96
 
 FE_MATPLOTLIB = 'matplotlib'
 FE_PLOTLY = 'plotly'
 
-class CoverGraph:
+
+class GraphPlot:
 
     "A class representing a cover graph"
-    def __init__(self, cover_arr):
-        self.__graph = self._build_graph(cover_arr)
+    def __init__(self, graph):
+        self.__graph = graph
         self.__pos2d = nx.spring_layout(self.__graph)
-        self._compute_connected_components(self.__graph)
-        colors = {node: 0.5 for node in self.__graph.nodes()}
-        self._set_colors(colors, 0.0, 1.0)
 
-
-    def get_nx(self):
-        return self.__graph
-
-
-    def __len__(self):
-        return len(self.__graph.nodes())
-
-    
-    def _build_graph(self, cluster_arr):
-        graph = nx.Graph()
-        vertices = {}
-        for i, clusters in enumerate(cluster_arr):
-            for c in clusters:
-                if c not in vertices:
-                    vertices[c] = []
-                vertices[c].append(i)
-        for cluster, cluster_points in vertices.items():
-            graph.add_node(
-                cluster, 
-                ids=cluster_points,
-                size=len(cluster_points))
-        for p in cluster_arr:
-            for s in p:
-                for t in p:
-                    if s != t:
-                        graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
-        return graph
-
-
-    def _compute_connected_components(self, graph):
-        cc_id = 1
-        vert_cc = {}
-        for cc in nx.connected_components(graph):
-            for node in cc:
-                vert_cc[node] = cc_id
-            cc_id += 1
-        nx.set_node_attributes(graph, vert_cc, ATTR_CC)
-
-
-    def _set_colors(self, colors, min_color, max_color):
-        self.__graph.graph[ATTR_MIN_COLOR] = min_color
-        self.__graph.graph[ATTR_MAX_COLOR] = max_color
-        nx.set_node_attributes(self.__graph, colors, ATTR_COLOR)
-
-
-    def colorize(self, data, colormap):
-        nodes = self.__graph.nodes()
-        colors = {}
-        graph_min_color = float('inf')
-        graph_max_color = -float('inf')
-        for node in nodes:
-            node_colors = [colormap(data[i]) for i in nodes[node][ATTR_IDS]]
-            min_color = min(node_colors)
-            if min_color < graph_min_color:
-                graph_min_color = min_color
-            max_color = max(node_colors)
-            if max_color > graph_max_color:
-                graph_max_color = max_color
-            colors[node] = np.nanmean(node_colors)
-        self._set_colors(colors, graph_min_color, graph_max_color)
-
-
-    def plot(self, frontend, width, height, label=''):
+    def plot_graph(self, attribute, frontend, width, height):
         if frontend == FE_MATPLOTLIB:
-            return self._plot_matplotlib(width, height, label)
+            return self._plot_matplotlib(attribute, width, height)
         elif frontend == FE_PLOTLY:
-            return self._plot_plotly_2d(width, height, label)
+            return self._plot_plotly_2d(attribute, width, height)
         else:
             raise Exception(f'unexpected argument {frontend} for frontend')
 
 
-    def _plot_matplotlib_nodes(self, ax, width, height, label):
+    def _plot_matplotlib_nodes(self, attribute, ax, width, height):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
-        max_size = max(sizes.values()) if sizes else 1.0
-        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
-        min_color = self.__graph.graph[ATTR_MIN_COLOR]
-        max_color = self.__graph.graph[ATTR_MAX_COLOR]
+        sizes = nx.get_node_attributes(self.__graph, mapper.pipeline.ATTR_SIZE)
+        max_size = max(sizes.values())
+        colors = nx.get_node_attributes(self.__graph, attribute)
+        min_color = min(colors.values())
+        max_color = max(colors.values())
         nodes_x = [self.__pos2d[node][0] for node in nodes]
         nodes_y = [self.__pos2d[node][1] for node in nodes]
         nodes_c = [colors[node] for node in nodes]
-        nodes_s = [sizes[node] for node in nodes]
+        nodes_s = [250.0 * math.sqrt(sizes[node]/max_size) for node in nodes]
         verts = ax.scatter(
             x=nodes_x,
             y=nodes_y,
@@ -136,21 +67,20 @@ class CoverGraph:
             verts,
             orientation='vertical',
             aspect=height/(0.025 * width),
-            pad=-0.025,
+            pad=0.0,
             ax=ax,
             fraction=0.025
         )
-        colorbar.set_label(label)
+        colorbar.set_label(attribute)
         colorbar.set_alpha(NODE_ALPHA)
         colorbar.outline.set_linewidth(0)
         colorbar.outline.set_color(EDGE_COLOR)
         colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
 
-
-    def _plot_matplotlib_edges(self, ax):
-        min_color = self.__graph.graph[ATTR_MIN_COLOR]
-        max_color = self.__graph.graph[ATTR_MAX_COLOR]
-        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
+    def _plot_matplotlib_edges(self, attribute, ax):
+        colors = nx.get_node_attributes(self.__graph, attribute)
+        min_color = min(colors.values())
+        max_color = max(colors.values())
         edges = self.__graph.edges()
         segments = [(self.__pos2d[edge[0]], self.__pos2d[edge[1]]) for edge in edges]
         cols = [0.5 * (colors[edge[0]] + colors[edge[1]]) for edge in edges]
@@ -165,8 +95,7 @@ class CoverGraph:
         lines.set_array(cols)
         ax.add_collection(lines)
 
-
-    def _plot_matplotlib(self, width, height, label):
+    def _plot_matplotlib(self, attribute, width, height):
         fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
@@ -176,14 +105,13 @@ class CoverGraph:
         ax.patch.set_alpha(0.0)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        self._plot_matplotlib_edges(ax)
-        self._plot_matplotlib_nodes(ax, width, height, label)
+        self._plot_matplotlib_edges(attribute, ax)
+        self._plot_matplotlib_nodes(attribute, ax, width, height)
         return fig
 
-
-    def _plot_plotly_2d(self, width, height, label):
+    def _plot_plotly_2d(self, attribute, width, height):
         edge_trace = self._plot_plotly_2d_edges()
-        node_trace = self._plot_plotly_2d_nodes(label)
+        node_trace = self._plot_plotly_2d_nodes(attribute)
         axis = dict(
             showbackground=False,
             showline=False,
@@ -235,7 +163,6 @@ class CoverGraph:
         )
         return fig
 
-
     def _plot_plotly_2d_edges(self):
         edge_x, edge_y = [], []
         for edge in self.__graph.edges():
@@ -260,15 +187,13 @@ class CoverGraph:
         )
         return edge_trace
 
-
-    def _plot_plotly_2d_nodes(self, label):
+    def _plot_plotly_2d_nodes(self, attribute):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, mapper.pipeline.ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
-        colors = nx.get_node_attributes(self.__graph, ATTR_COLOR)
-        min_color = self.__graph.graph[ATTR_MIN_COLOR]
-        max_color = self.__graph.graph[ATTR_MAX_COLOR]
-        ccs = nx.get_node_attributes(self.__graph, ATTR_CC)
+        colors = nx.get_node_attributes(self.__graph, attribute)
+        min_color = min(colors.values())
+        max_color = max(colors.values())
 
         node_x, node_y = [], []
         node_colors, node_sizes = [], []
@@ -281,7 +206,7 @@ class CoverGraph:
             color = colors[node]
             node_colors.append(color)
             node_sizes.append(25.0 * math.sqrt(sizes[node] / max_size))
-            node_label = f'size: {sizes[node]:.2e}, color: {colors[node]:.2e}<br>connected component: {ccs[node]}'
+            node_label = f'size: {sizes[node]:.2e}, color: {colors[node]:.2e}'
             node_captions.append(node_label)
         node_trace = go.Scatter(
             x=node_x,
@@ -304,7 +229,7 @@ class CoverGraph:
                     orientation='v',
                     thickness=0.025,
                     thicknessmode='fraction',
-                    title=label,
+                    title=attribute,
                     xanchor='left',
                     titleside='right',
                     ypad=0,
