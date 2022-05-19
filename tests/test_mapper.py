@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 
-import mapper.graph
 from mapper.cover import SearchCover, TrivialCover
 from mapper.search import BallSearch, KnnSearch
 from mapper.pipeline import MapperPipeline
