@@ -1,7 +1,6 @@
 """A module for the exact mapper algorithm"""
 import math
 import numpy as np
-import pandas as pd
 import networkx as nx
 
 from sklearn.metrics import mean_absolute_percentage_error as mape
