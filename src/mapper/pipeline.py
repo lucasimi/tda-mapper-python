@@ -1,11 +1,29 @@
 """A module for the exact mapper algorithm"""
+import math
 import numpy as np
+import pandas as pd
 import networkx as nx
+
+from sklearn.metrics import mean_absolute_percentage_error as mape
+from sklearn.metrics import mean_absolute_error as mae
+from sklearn.metrics import mean_squared_error as mse
 
 from .cover import TrivialClustering, TrivialCover
 
+
 ATTR_IDS = 'ids'
 ATTR_SIZE = 'size'
+
+
+def _rmse(x, y):
+    return math.sqrt(mse(x, y))
+
+
+KPIS = {
+    'mape': mape,
+    'mae': mae,
+    'rmse': _rmse
+}
 
 
 def compute_connected_components(graph):
@@ -18,13 +36,41 @@ def compute_connected_components(graph):
     return vert_cc
 
 
-def aggregate(graph, data, fun, agg=np.nanmean):
-    nodes = graph.nodes()
-    values = {}
-    for node_id in nodes:
-        node_values = [fun(data[i]) for i in nodes[node_id][ATTR_IDS]]
-        values[node_id] = agg(node_values)
-    return values
+class MapperKpis:
+
+    def __init__(self, agg=lambda x: np.nanmean(x, axis=0), colormap=np.nanmean, kpis=None):
+        self.__agg = agg
+        self.__colormap = colormap
+        self.__kpis = KPIS if not kpis else kpis
+        self.__col_values = {}
+        self.__agg_values = {}
+        self.__kpi_values = {}
+
+    def aggregate(self, graph, data, fun, attribute=None):
+        nodes = graph.nodes()
+        self.__agg_values = {}
+        self.__col_values = {}
+        self.__kpi_values = {kpi_name:{} for kpi_name, _ in self.__kpis.items()}
+        for node_id in nodes:
+            node_data = [data[i] for i in nodes[node_id][ATTR_IDS]]
+            node_values = [fun(x) for x in node_data]
+            agg_value = self.__agg(node_values)
+            self.__agg_values[node_id] = agg_value
+            col_value = self.__colormap(agg_value)
+            self.__col_values[node_id] = col_value
+            for kpi_name, kpi_fun in self.__kpis.items():
+                self.__kpi_values[kpi_name][node_id] = kpi_fun(node_values, [agg_value for _ in node_data])
+        if attribute is not None:
+            nx.set_node_attributes(graph, self.__col_values, attribute)
+
+    def get_colors(self):
+        return self.__col_values
+
+    def get_kpis(self):
+        return self.__kpi_values
+
+    def get_aggregations(self):
+        return self.__agg_values
 
 
 class MapperPipeline:

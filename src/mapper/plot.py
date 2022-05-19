@@ -28,9 +28,32 @@ FE_PLOTLY = 'plotly'
 class GraphPlot:
 
     "A class representing a cover graph"
-    def __init__(self, graph):
+    def __init__(self, graph, kpis):
         self.__graph = graph
+        self.__kpis = kpis
         self.__pos2d = nx.spring_layout(self.__graph)
+
+    def plot_kpis(self, width, height):
+        df = pd.DataFrame({kpi_name: list(kpi_values.values()) for kpi_name, kpi_values in self.__kpis.items()})
+        fig, axs = plt.subplots(1, len(self.__kpis), sharey=True, tight_layout=True, figsize=(width / DPIS, height / DPIS), dpi=DPIS)
+        fig.patch.set_alpha(0.0)
+        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
+        i = 0
+        for kpi_name in self.__kpis:
+            axs[i].hist(df[kpi_name], bins=10)
+            axs[i].title.set_text(kpi_name)
+            axs[i].title.set_color(EDGE_COLOR)
+            axs[i].patch.set_alpha(0.0)
+            for axis in ['top', 'right']:
+                axs[i].spines[axis].set_linewidth(0)
+            for axis in ['left', 'bottom']:
+                axs[i].spines[axis].set_color(EDGE_COLOR)
+            axs[i].tick_params(axis='x', colors=EDGE_COLOR)
+            axs[i].tick_params(axis='y', colors=EDGE_COLOR)
+            axs[i].yaxis.label.set_color(EDGE_COLOR)
+            axs[i].xaxis.label.set_color(EDGE_COLOR)
+            i += 1
+        return fig
 
     def plot_graph(self, attribute, frontend, width, height):
         if frontend == FE_MATPLOTLIB:
@@ -71,7 +94,7 @@ class GraphPlot:
             ax=ax,
             fraction=0.025
         )
-        colorbar.set_label(attribute)
+        colorbar.set_label(attribute, color=EDGE_COLOR)
         colorbar.set_alpha(NODE_ALPHA)
         colorbar.outline.set_linewidth(0)
         colorbar.outline.set_color(EDGE_COLOR)
