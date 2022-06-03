@@ -1,7 +1,6 @@
 """module for storing and drawing a cover graph"""
 import math
 import numpy as np
-import pandas as pd
 
 import plotly.graph_objects as go
 import networkx as nx
@@ -25,55 +24,41 @@ FE_MATPLOTLIB = 'matplotlib'
 FE_PLOTLY = 'plotly'
 
 
-class GraphPlot:
+class MapperPlot:
 
     "A class representing a cover graph"
-    def __init__(self, graph, kpis):
+    def __init__(self, graph):
         self.__graph = graph
-        self.__kpis = kpis
         self.__pos2d = nx.spring_layout(self.__graph)
+        self.__colors = {x:0.5 for x in self.__graph.nodes()}
 
-    def plot_kpis(self, width, height):
-        df = pd.DataFrame({kpi_name: list(kpi_values.values()) for kpi_name, kpi_values in self.__kpis.items()})
-        fig, axs = plt.subplots(1, len(self.__kpis), sharey=True, tight_layout=True, figsize=(width / DPIS, height / DPIS), dpi=DPIS)
-        fig.patch.set_alpha(0.0)
-        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
-        i = 0
-        for kpi_name in self.__kpis:
-            axs[i].hist(df[kpi_name], bins=10)
-            axs[i].title.set_text(kpi_name)
-            axs[i].title.set_color(EDGE_COLOR)
-            axs[i].patch.set_alpha(0.0)
-            for axis in ['top', 'right']:
-                axs[i].spines[axis].set_linewidth(0)
-            for axis in ['left', 'bottom']:
-                axs[i].spines[axis].set_color(EDGE_COLOR)
-            axs[i].tick_params(axis='x', colors=EDGE_COLOR)
-            axs[i].tick_params(axis='y', colors=EDGE_COLOR)
-            axs[i].yaxis.label.set_color(EDGE_COLOR)
-            axs[i].xaxis.label.set_color(EDGE_COLOR)
-            i += 1
-        return fig
+    def colorize(self, data, colormap=lambda x: x, agg=np.nanmean):
+        colors = {}
+        nodes = self.__graph.nodes()
+        for node_id in nodes:
+            node_data = [data[i] for i in nodes[node_id][mapper.pipeline.ATTR_IDS]]
+            node_colors = [colormap(x) for x in node_data]
+            agg_color = agg(node_colors)
+            colors[node_id] = agg_color
+        self.__colors = colors
 
-    def plot_graph(self, attribute, frontend, width, height):
+    def plot(self, frontend, width, height, title=''):
         if frontend == FE_MATPLOTLIB:
-            return self._plot_matplotlib(attribute, width, height)
+            return self._plot_matplotlib(width, height, title)
         elif frontend == FE_PLOTLY:
-            return self._plot_plotly_2d(attribute, width, height)
+            return self._plot_plotly_2d(width, height, title)
         else:
             raise Exception(f'unexpected argument {frontend} for frontend')
 
-
-    def _plot_matplotlib_nodes(self, attribute, ax, width, height):
+    def _plot_matplotlib_nodes(self, ax, width, height, title):
         nodes = self.__graph.nodes()
         sizes = nx.get_node_attributes(self.__graph, mapper.pipeline.ATTR_SIZE)
         max_size = max(sizes.values())
-        colors = nx.get_node_attributes(self.__graph, attribute)
-        min_color = min(colors.values())
-        max_color = max(colors.values())
+        min_color = min(self.__colors.values())
+        max_color = max(self.__colors.values())
         nodes_x = [self.__pos2d[node][0] for node in nodes]
         nodes_y = [self.__pos2d[node][1] for node in nodes]
-        nodes_c = [colors[node] for node in nodes]
+        nodes_c = [self.__colors[node] for node in nodes]
         nodes_s = [250.0 * math.sqrt(sizes[node]/max_size) for node in nodes]
         verts = ax.scatter(
             x=nodes_x,
@@ -94,19 +79,18 @@ class GraphPlot:
             ax=ax,
             fraction=0.025
         )
-        colorbar.set_label(attribute, color=EDGE_COLOR)
+        colorbar.set_label(title, color=EDGE_COLOR)
         colorbar.set_alpha(NODE_ALPHA)
         colorbar.outline.set_linewidth(0)
         colorbar.outline.set_color(EDGE_COLOR)
         colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
 
-    def _plot_matplotlib_edges(self, attribute, ax):
-        colors = nx.get_node_attributes(self.__graph, attribute)
-        min_color = min(colors.values())
-        max_color = max(colors.values())
+    def _plot_matplotlib_edges(self, ax):
+        min_color = min(self.__colors.values())
+        max_color = max(self.__colors.values())
         edges = self.__graph.edges()
         segments = [(self.__pos2d[edge[0]], self.__pos2d[edge[1]]) for edge in edges]
-        cols = [0.5 * (colors[edge[0]] + colors[edge[1]]) for edge in edges]
+        cols = [0.5 * (self.__colors[edge[0]] + self.__colors[edge[1]]) for edge in edges]
         norm = plt.Normalize(min_color, max_color)
         lines = LineCollection(
             segments,
@@ -118,7 +102,7 @@ class GraphPlot:
         lines.set_array(cols)
         ax.add_collection(lines)
 
-    def _plot_matplotlib(self, attribute, width, height):
+    def _plot_matplotlib(self, width, height, title):
         fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
@@ -128,20 +112,20 @@ class GraphPlot:
         ax.patch.set_alpha(0.0)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        self._plot_matplotlib_edges(attribute, ax)
-        self._plot_matplotlib_nodes(attribute, ax, width, height)
+        self._plot_matplotlib_edges(ax)
+        self._plot_matplotlib_nodes(ax, width, height, title)
         return fig
 
-    def _plot_plotly_2d(self, attribute, width, height):
+    def _plot_plotly_2d(self, width, height, title):
         edge_trace = self._plot_plotly_2d_edges()
-        node_trace = self._plot_plotly_2d_nodes(attribute)
+        node_trace = self._plot_plotly_2d_nodes(title)
         axis = dict(
             showbackground=False,
             showline=False,
             zeroline=False,
             showgrid=False,
             showticklabels=False,
-            title=''
+            title=title
         )
         fig = go.Figure(
             data=[edge_trace, node_trace],
@@ -210,13 +194,12 @@ class GraphPlot:
         )
         return edge_trace
 
-    def _plot_plotly_2d_nodes(self, attribute):
+    def _plot_plotly_2d_nodes(self, title):
         nodes = self.__graph.nodes()
         sizes = nx.get_node_attributes(self.__graph, mapper.pipeline.ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
-        colors = nx.get_node_attributes(self.__graph, attribute)
-        min_color = min(colors.values())
-        max_color = max(colors.values())
+        min_color = min(self.__colors.values())
+        max_color = max(self.__colors.values())
 
         node_x, node_y = [], []
         node_colors, node_sizes = [], []
@@ -226,10 +209,10 @@ class GraphPlot:
             x, y = self.__pos2d[node]
             node_x.append(x)
             node_y.append(y)
-            color = colors[node]
+            color = self.__colors[node]
             node_colors.append(color)
             node_sizes.append(25.0 * math.sqrt(sizes[node] / max_size))
-            node_label = f'size: {sizes[node]:.2e}, color: {colors[node]:.2e}'
+            node_label = f'size: {sizes[node]:.2e}, color: {self.__colors[node]:.2e}'
             node_captions.append(node_label)
         node_trace = go.Scatter(
             x=node_x,
@@ -252,7 +235,7 @@ class GraphPlot:
                     orientation='v',
                     thickness=0.025,
                     thicknessmode='fraction',
-                    title=attribute,
+                    title=title,
                     xanchor='left',
                     titleside='right',
                     ypad=0,
