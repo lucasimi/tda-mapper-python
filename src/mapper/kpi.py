@@ -41,7 +41,7 @@ class MapperKpis:
         fig, ax = plt.subplots(1, 1, tight_layout=True, figsize=(width / dpis, height / dpis), dpi=dpis)
         fig.patch.set_alpha(0.0)
         fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
-        ax.hist(self.__kpis.values(), bins=10)
+        ax.hist(self.__kpis.values(), bins=10, edgecolor='#ff4b4b', fc=(0, 0, 0, 0.0), linewidth=2)
         ax.title.set_text(title)
         ax.title.set_color(mapper.plot.EDGE_COLOR)
         ax.patch.set_alpha(0.0)
