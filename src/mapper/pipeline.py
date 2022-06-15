@@ -1,7 +1,7 @@
 """A module for the exact mapper algorithm"""
 import networkx as nx
 
-from .cover import TrivialClustering, TrivialCover
+from .cover import CoverGraph
 
 
 ATTR_IDS = 'ids'
@@ -20,9 +20,11 @@ def compute_connected_components(graph):
 
 class MapperPipeline:
 
-    def __init__(self, cover_algo=TrivialCover(), clustering_algo=TrivialClustering()):
-        self.__cover_algo = cover_algo
-        self.__clustering_algo = clustering_algo
+    def __init__(self, search_algo=None, clustering_algo=None):
+        self.__cover_graph = CoverGraph(
+            search_algo=search_algo,
+            clustering_algo=clustering_algo
+        )
 
     def _build_graph(self, cover_arr):
         graph = nx.Graph()
@@ -47,7 +49,7 @@ class MapperPipeline:
                         graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
         return graph
 
-    def fit(self, data):
-        cover_arr = self.__cover_algo.cover_points(data, self.__clustering_algo)
+    def fit(self, X):
+        cover_arr = self.__cover_graph.fit_predict(X)
         graph = self._build_graph(cover_arr)
         return graph

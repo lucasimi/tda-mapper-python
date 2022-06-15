@@ -1,49 +1,42 @@
 """A collection of functions to build open covers"""
+from .search import TrivialSearch
 
 
-class SearchCover:
+class CoverGraph:
     
-    def __init__(self, lens, metric, search_algo):
-        self.__lens = lens
-        self.__metric = metric
-        self.__search_algo = search_algo
+    def __init__(self, search_algo=None, clustering_algo=None):
+        if not search_algo:
+            self.__search_algo = TrivialSearch()
+        else:
+            self.__search_algo = search_algo
+        if not clustering_algo:
+            self.__clustering_algo = TrivialClustering()
+        else:
+            self.__clustering_algo = clustering_algo
 
-    def cover_points(self, data, clusterer):
-        c = 0
-        data_ids = list(range(len(data)))
-        metric_ids = lambda i, j: self.__metric(self.__lens(data[i]), self.__lens(data[j]))
-        self.__search_algo.setup(data_ids, metric_ids)
-        cover_arr = [[] for _ in data]
-        for i in data_ids:
-            cover_i = cover_arr[i]
+    def fit_predict(self, X, y=None):
+        cluster_count = 0
+        X_ids = list(range(len(X)))
+        self.__search_algo.setup(X_ids)
+        point_labels = [[] for _ in X]
+        for i in X_ids:
+            cover_i = point_labels[i]
             if not cover_i:
                 neighs_ids = self.__search_algo.find_neighbors(i)
-                neighs = [data[j] for j in neighs_ids]
-                clusters = clusterer.fit(neighs)
-                max_l = 0
-                for (n, l) in zip(neighs_ids, clusters.labels_):
-                    if l != -1:
-                        if l > max_l:
-                            max_l = l
-                        cover_arr[n].append(c + l)
-                c += max_l + 1
-        return cover_arr
+                neighs = [X[j] for j in neighs_ids]
+                labels = self.__clustering_algo.fit_predict(neighs)
+                max_label = 0
+                for (n, label) in zip(neighs_ids, labels):
+                    if label != -1:
+                        if label > max_label:
+                            max_label = label
+                        point_labels[n].append(cluster_count + label)
+                cluster_count += max_label + 1
+        return point_labels
 
 
 class TrivialClustering:
 
-    class ClusterLabels:
-
-        def __init__(self, labels):
-            self.labels_ = labels
-            
-    def fit(self, data):
-        return self.ClusterLabels([0 for _ in data])
-
-
-class TrivialCover:
-
-    def cover_points(self, data, clusterer):
-        clusters = clusterer.fit(data)
-        return [[l] for l in clusters.labels_]
+    def fit_predict(self, X, y=None):
+        return [0 for _ in X]
 
