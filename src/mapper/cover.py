@@ -16,7 +16,7 @@ class CoverGraph:
 
     def fit_predict(self, X, y=None):
         cluster_count = 0
-        self.__search_algo.setup(X)
+        self.__search_algo.fit(X)
         point_labels = [[] for _ in X]
         for i, cover_i in enumerate(point_labels):
             cover_i = point_labels[i]
