@@ -7,13 +7,17 @@ class BallSearch:
         self.__metric = metric
         self.__radius = radius
         self.__vptree = None
+        self.__data = None
 
     def setup(self, data):
-        self.__vptree = VPTree(self.__metric, data, leaf_radius=self.__radius)
+        self.__data = list(enumerate(data))
+        metric = lambda x, y: self.__metric(x[1], y[1])
+        self.__vptree = VPTree(metric, self.__data, leaf_radius=self.__radius)
 
     def find_neighbors(self, point):
         if self.__vptree:
-            return self.__vptree.ball_search(point, self.__radius)
+            neighs = self.__vptree.ball_search((-1, point), self.__radius)
+            return [x for (x, _) in neighs]
         else:
             return []
 

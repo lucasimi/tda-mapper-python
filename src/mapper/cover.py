@@ -16,13 +16,12 @@ class CoverGraph:
 
     def fit_predict(self, X, y=None):
         cluster_count = 0
-        X_ids = list(range(len(X)))
-        self.__search_algo.setup(X_ids)
+        self.__search_algo.setup(X)
         point_labels = [[] for _ in X]
-        for i in X_ids:
+        for i, cover_i in enumerate(point_labels):
             cover_i = point_labels[i]
             if not cover_i:
-                neighs_ids = self.__search_algo.find_neighbors(i)
+                neighs_ids = self.__search_algo.find_neighbors(X[i])
                 neighs = [X[j] for j in neighs_ids]
                 labels = self.__clustering_algo.fit_predict(neighs)
                 max_label = 0
