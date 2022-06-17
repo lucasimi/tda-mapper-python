@@ -17,11 +17,11 @@ class CoverGraph:
     def fit_predict(self, X, y=None):
         cluster_count = 0
         self.__search_algo.fit(X)
-        point_labels = [[] for _ in X]
-        for i, cover_i in enumerate(point_labels):
-            cover_i = point_labels[i]
+        multilabels = [[] for _ in X]
+        for i, cover_i in enumerate(multilabels):
+            cover_i = multilabels[i]
             if not cover_i:
-                neighs_ids = self.__search_algo.find_neighbors(X[i])
+                neighs_ids = self.__search_algo.neighbors(X[i])
                 neighs = [X[j] for j in neighs_ids]
                 labels = self.__clustering_algo.fit_predict(neighs)
                 max_label = 0
@@ -29,9 +29,9 @@ class CoverGraph:
                     if label != -1:
                         if label > max_label:
                             max_label = label
-                        point_labels[n].append(cluster_count + label)
+                        multilabels[n].append(cluster_count + label)
                 cluster_count += max_label + 1
-        return point_labels
+        return multilabels
 
 
 class TrivialClustering:

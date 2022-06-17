@@ -26,27 +26,31 @@ class MapperPipeline:
             clustering_algo=clustering_algo
         )
 
-    def _build_graph(self, cover_arr):
+    def _build_graph(self, multilabels):
         graph = nx.Graph()
-        added_clusters = set()
+        clusters = set()
         sizes = {}
         point_ids = {}
-        for point_id, point_clusters in enumerate(cover_arr):
-            for cluster in point_clusters:
-                if cluster not in added_clusters:
-                    added_clusters.add(cluster)
-                    graph.add_node(cluster)
-                    sizes[cluster] = 0
-                    point_ids[cluster] = []
-                sizes[cluster] += 1
-                point_ids[cluster].append(point_id)
+        for point_id, point_labels in enumerate(multilabels):
+            for label in point_labels:
+                if label not in clusters:
+                    clusters.add(label)
+                    graph.add_node(label)
+                    sizes[label] = 0
+                    point_ids[label] = []
+                sizes[label] += 1
+                point_ids[label].append(point_id)
         nx.set_node_attributes(graph, sizes, ATTR_SIZE)
         nx.set_node_attributes(graph, point_ids, ATTR_IDS)
-        for clusters in cover_arr:
-            for s in clusters:
-                for t in clusters:
-                    if s != t:
+        edges = set()
+        for labels in multilabels:
+            for s in labels:
+                for t in labels:
+                    if s != t and (s, t) not in edges:
                         graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
+                        edges.add((s, t))
+                        graph.add_edge(t, s, weight=1) # TODO: compute weight correctly
+                        edges.add((t, s))
         return graph
 
     def fit(self, X):

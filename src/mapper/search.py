@@ -13,7 +13,7 @@ class BallSearch:
         self.__data = list(enumerate(data))
         self.__vptree = VPTree(self.__metric, self.__data, leaf_radius=self.__radius)
 
-    def find_neighbors(self, point):
+    def neighbors(self, point):
         if self.__vptree:
             neighs = self.__vptree.ball_search((-1, point), self.__radius)
             return [x for (x, _) in neighs]
@@ -33,7 +33,7 @@ class KnnSearch:
         self.__data = list(enumerate(data))
         self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__k)
 
-    def find_neighbors(self, point):
+    def neighbors(self, point):
         if self.__vptree:
             neighs = self.__vptree.knn_search(point, self.__k)
             return [x for (x, _) in neighs]
@@ -49,5 +49,5 @@ class TrivialSearch:
     def fit(self, data):
         self.__data = data
 
-    def find_neighbors(self, point=None):
+    def neighbors(self, point=None):
         return list(range(len(self.__data)))
