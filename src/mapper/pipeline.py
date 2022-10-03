@@ -1,28 +1,24 @@
 """A module for the exact mapper algorithm"""
-import math
-import numpy as np
+import logging
+import time
 import networkx as nx
+from .cover import CoverGraph
 
-from sklearn.metrics import mean_absolute_percentage_error as mape
-from sklearn.metrics import mean_absolute_error as mae
-from sklearn.metrics import mean_squared_error as mse
 
-from .cover import TrivialClustering, TrivialCover
+_logger = logging.getLogger()
+_logger.setLevel(logging.INFO)
+_fhandler = logging.FileHandler(filename='mapper-tda.log', mode='a')
+_logger.addHandler(_fhandler)
+_formatter = logging.Formatter('%(asctime)s - %(name)s - %(lineno)s - %(levelname)s - %(message)s')
+_fhandler.setFormatter(_formatter)
 
 
 ATTR_IDS = 'ids'
 ATTR_SIZE = 'size'
 
 
-def _rmse(x, y):
-    return math.sqrt(mse(x, y))
-
-
-KPIS = {
-    'mape': mape,
-    'mae': mae,
-    'rmse': _rmse
-}
+def _log(msg):
+    logging.info(msg)
 
 
 def compute_connected_components(graph):
@@ -35,73 +31,49 @@ def compute_connected_components(graph):
     return vert_cc
 
 
-class MapperKpis:
-
-    def __init__(self, agg=lambda x: np.nanmean(x, axis=0), colormap=np.nanmean, kpis=None):
-        self.__agg = agg
-        self.__colormap = colormap
-        self.__kpis = KPIS if not kpis else kpis
-        self.__col_values = {}
-        self.__agg_values = {}
-        self.__kpi_values = {}
-
-    def aggregate(self, graph, data, fun, attribute=None):
-        nodes = graph.nodes()
-        self.__agg_values = {}
-        self.__col_values = {}
-        self.__kpi_values = {kpi_name:{} for kpi_name, _ in self.__kpis.items()}
-        for node_id in nodes:
-            node_data = [data[i] for i in nodes[node_id][ATTR_IDS]]
-            node_values = [fun(x) for x in node_data]
-            agg_value = self.__agg(node_values)
-            self.__agg_values[node_id] = agg_value
-            col_value = self.__colormap(agg_value)
-            self.__col_values[node_id] = col_value
-            for kpi_name, kpi_fun in self.__kpis.items():
-                self.__kpi_values[kpi_name][node_id] = kpi_fun(node_values, [agg_value for _ in node_data])
-        if attribute is not None:
-            nx.set_node_attributes(graph, self.__col_values, attribute)
-
-    def get_colors(self):
-        return self.__col_values
-
-    def get_kpis(self):
-        return self.__kpi_values
-
-    def get_aggregations(self):
-        return self.__agg_values
+def _build_graph(multilabels):
+    graph = nx.Graph()
+    clusters = set()
+    sizes = {}
+    point_ids = {}
+    for point_id, point_labels in enumerate(multilabels):
+        for label in point_labels:
+            if label not in clusters:
+                clusters.add(label)
+                graph.add_node(label)
+                sizes[label] = 0
+                point_ids[label] = []
+            sizes[label] += 1
+            point_ids[label].append(point_id)
+    nx.set_node_attributes(graph, sizes, ATTR_SIZE)
+    nx.set_node_attributes(graph, point_ids, ATTR_IDS)
+    edges = set()
+    for labels in multilabels:
+        for s in labels:
+            for t in labels:
+                if s != t and (s, t) not in edges:
+                    graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
+                    edges.add((s, t))
+                    graph.add_edge(t, s, weight=1) # TODO: compute weight correctly
+                    edges.add((t, s))
+    return graph
 
 
 class MapperPipeline:
 
-    def __init__(self, cover_algo=TrivialCover(), clustering_algo=TrivialClustering()):
-        self.__cover_algo = cover_algo
-        self.__clustering_algo = clustering_algo
+    def __init__(self, search_algo=None, clustering_algo=None):
+        self.__cover_graph = CoverGraph(
+            search_algo=search_algo,
+            clustering_algo=clustering_algo
+        )
 
-    def _build_graph(self, cover_arr):
-        graph = nx.Graph()
-        added_clusters = set()
-        sizes = {}
-        point_ids = {}
-        for point_id, point_clusters in enumerate(cover_arr):
-            for cluster in point_clusters:
-                if cluster not in added_clusters:
-                    added_clusters.add(cluster)
-                    graph.add_node(cluster)
-                    sizes[cluster] = 0
-                    point_ids[cluster] = []
-                sizes[cluster] += 1
-                point_ids[cluster].append(point_id)
-        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
-        nx.set_node_attributes(graph, point_ids, ATTR_IDS)
-        for clusters in cover_arr:
-            for s in clusters:
-                for t in clusters:
-                    if s != t:
-                        graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
-        return graph
 
-    def fit(self, data):
-        cover_arr = self.__cover_algo.cover_points(data, self.__clustering_algo)
-        graph = self._build_graph(cover_arr)
+    def fit(self, X):
+        t0 = time.time()
+        labels = self.__cover_graph.fit_predict(X)
+        t1 = time.time()
+        _log(f'Mapper labels computed in {t1 - t0}s')
+        graph = _build_graph(labels)
+        t2 = time.time()
+        _log(f'Mapper graph computed in {t2 - t1}s')
         return graph
