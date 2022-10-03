@@ -1,7 +1,6 @@
 **/__pycache__
 **/*.pyc
 **/*.csv
-**/*.egg-info
-**/.ipynb_checkpoints
-**/.ipynb_checkpoints/*
+#**/*.egg-info
+#**/.ipynb_checkpoints
 **/*.log
