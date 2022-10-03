@@ -7,7 +7,7 @@ from .cover import CoverGraph
 
 _logger = logging.getLogger()
 _logger.setLevel(logging.INFO)
-_fhandler = logging.FileHandler(filename='mapper-tda.log', mode='a')
+_fhandler = logging.FileHandler(filename='tda-mapper-python.log', mode='a')
 _logger.addHandler(_fhandler)
 _formatter = logging.Formatter('%(asctime)s - %(name)s - %(lineno)s - %(levelname)s - %(message)s')
 _fhandler.setFormatter(_formatter)
@@ -18,7 +18,7 @@ ATTR_SIZE = 'size'
 
 
 def _log(msg):
-    logging.info(msg)
+    logging.debug(msg)
 
 
 def compute_connected_components(graph):

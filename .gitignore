@@ -2,3 +2,5 @@
 **/*.pyc
 **/*.csv
 **/*.egg-info
+**/.ipynb_checkpoints
+**/*.log
