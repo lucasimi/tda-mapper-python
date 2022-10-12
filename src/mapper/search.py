@@ -1,4 +1,4 @@
-from .utils.vptree import VPTree
+from .utils.vptree import VPTree, VPTree2
 
 
 class BallSearch:
@@ -11,7 +11,8 @@ class BallSearch:
 
     def fit(self, data):
         self.__data = list(enumerate(data))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_radius=self.__radius)
+        self.__vptree = VPTree(
+            self.__metric, self.__data, leaf_radius=self.__radius)
 
     def neighbors(self, point):
         if self.__vptree:
