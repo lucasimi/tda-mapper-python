@@ -8,17 +8,17 @@ This library is an implementation of the Mapper Algorithm from Topological Data 
 
 Assume we have a dataset D inside a metric space X, together with the following choices:
 
-1. A continuous map f:X -> Y 
-2. A cover algorithm for f(D)
-3. A clustering algorithm for D.
+1. A continuous map $f \colon X \to Y$
+2. A cover algorithm for $f(D)$
+3. A clustering algorithm for $D$.
 
 ### Steps
 
 The mapper algorithm follows these steps:
 
-1. Build an open cover of f(D)
-2. For each open chart U of f(D) let V the preimage of U under f, then the V's form an open cover of D. For each V, run the chosen clustering algorithm
-3. For each local cluster obtained, build a node. Whenever two local clusters (from different V's) intersect, draw an edge between their corresponding nodes.
+1. Build an open cover of $f(D)$
+2. For each open chart $U$ of $f(D)$ let $V$ the preimage of $U$ under $f$, then the $V$'s form an open cover of $D$. For each $V$, run the chosen clustering algorithm
+3. For each local cluster obtained, build a node. Whenever two local clusters (from different $V$'s) intersect, draw an edge between their corresponding nodes.
 
 The graph obtained is called a "mapper graph".
 
@@ -57,11 +57,9 @@ nw.plot(data)
     - [x] Any custom metric
 - [x] Clustering algoritms
     - [x] Any sklearn clustering algorithm
-    - [x] No clustering
-- [ ] Cover algorithms:
+    - [x] Skip clustering
+- [x] Cover algorithms:
     - [x] Ball Cover
-    - [ ] Cubic Cover
     - [x] Knn Cover
-
-
+    - [ ] Induced Cover
 
