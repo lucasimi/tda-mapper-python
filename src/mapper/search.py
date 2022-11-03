@@ -36,7 +36,7 @@ class KnnSearch:
 
     def neighbors(self, point):
         if self.__vptree:
-            neighs = self.__vptree.knn_search(point, self.__k)
+            neighs = self.__vptree.knn_search((-1, point), self.__k)
             return [x for (x, _) in neighs]
         else:
             return []
