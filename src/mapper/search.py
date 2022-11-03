@@ -1,4 +1,4 @@
-from .utils.vptree import VPTree, VPTree2
+from .utils.vptree import VPTree
 
 
 class BallSearch:
