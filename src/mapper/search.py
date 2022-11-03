@@ -11,7 +11,8 @@ class BallSearch:
 
     def fit(self, data):
         self.__data = list(enumerate(data))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_radius=self.__radius)
+        self.__vptree = VPTree(
+            self.__metric, self.__data, leaf_radius=self.__radius)
 
     def neighbors(self, point):
         if self.__vptree:
@@ -35,7 +36,7 @@ class KnnSearch:
 
     def neighbors(self, point):
         if self.__vptree:
-            neighs = self.__vptree.knn_search(point, self.__k)
+            neighs = self.__vptree.knn_search((-1, point), self.__k)
             return [x for (x, _) in neighs]
         else:
             return []
