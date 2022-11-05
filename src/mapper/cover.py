@@ -78,8 +78,7 @@ class SearchClustering:
 
     def fit(self, X):
         cover_algo = CoverAlgorithm(search_algo=self.__search_algo)
-        cover_algo.fit(X)
-        multilabels = cover_algo.predict() 
+        multilabels = cover_algo.fit(X).labels_
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
