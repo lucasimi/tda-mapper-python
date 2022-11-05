@@ -18,7 +18,7 @@ class TestMapper(unittest.TestCase):
     def testTrivial(self):
         data = dataset()
         mp = MapperPipeline()
-        g = mp.fit(data)
+        g = mp.fit(data).get_graph()
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -26,7 +26,7 @@ class TestMapper(unittest.TestCase):
     def testBallSmallRadius(self):
         data = [float(i) for i in range(1000)]
         mp = MapperPipeline(search_algo=BallSearch(0.5, metric=dist))
-        g = mp.fit(data)
+        g = mp.fit(data).get_graph()
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -34,7 +34,7 @@ class TestMapper(unittest.TestCase):
     def testBallLargeRadius(self):
         data = [float(i) for i in range(1000)]
         mp = MapperPipeline(search_algo=BallSearch(1000.0, metric=dist))
-        g = mp.fit(data)
+        g = mp.fit(data).get_graph()
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -43,7 +43,7 @@ class TestMapper(unittest.TestCase):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         mp = MapperPipeline(search_algo=BallSearch(150.0, metric=dist))
-        g = mp.fit(data)
+        g = mp.fit(data).get_graph()
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
