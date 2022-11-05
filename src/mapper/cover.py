@@ -83,7 +83,7 @@ class SearchClustering:
         for labels in multilabels:
             label_values.update(labels)
         uf = UnionFind(label_values)
-        cc = [None for _ in X]
+        cc = []
         for labels in multilabels:
             if len(labels) > 1:
                 for first, second in zip(labels, labels[1:]):
