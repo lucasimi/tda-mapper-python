@@ -1,5 +1,7 @@
 """A collection of functions to build open covers"""
 import networkx as nx
+from sklearn.utils import check_X_y, check_array
+
 from .search import TrivialSearch
 from .utils.unionfind import UnionFind
 
@@ -8,35 +10,70 @@ ATTR_SIZE = 'size'
 
 class CoverAlgorithm:
     
-    def __init__(self, search_algo=None, clustering_algo=None):
-        if not search_algo:
-            self.__search_algo = TrivialSearch()
-        else:
-            self.__search_algo = search_algo
-        if not clustering_algo:
-            self.__clustering_algo = TrivialClustering()
-        else:
-            self.__clustering_algo = clustering_algo
-        self.labels_ = []
+    def __init__(self, search=None, clustering=None):
+        self.search = search
+        self.clustering = clustering
 
-    def fit(self, X):
+    def _check_params(self):
+        if not self.search:
+            search = TrivialSearch()
+        else:
+            search = self.search
+        if not self.clustering:
+            clustering = TrivialClustering()
+        else:
+            clustering = self.clustering
+        return search, clustering
+
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['search'] = self.search
+        parameters['clustering'] = self.clustering
+        if deep:
+            if self.search:
+                for k, v in self.search.get_params().items():
+                    parameters[f'search__{k}'] = v
+            if self.clustering:
+                for k, v in self.clustering.get_params().items():
+                    parameters[f'clustering__{k}'] = v
+        return parameters
+    
+    def set_params(self, **parameters):
+        for k, v in parameters.items():
+            setattr(self, k, v)
+        return self
+
+    def _check_input(self, X, y):
+        if y is None:
+            X = check_array(X)
+        else:
+            X, y = check_X_y(X, y)
+        return X, y
+
+    def _set_n_features_in_(self, X):
+        self.n_features_in_ = len(X[0])
+
+    def fit(self, X, y=None):
+        search, clustering = self._check_params()
+        X, y = self._check_input(X, y)
         cluster_count = 0
-        self.__search_algo.fit(X)
-        multilabels = [[] for _ in X]
-        for i, cover_i in enumerate(multilabels):
-            cover_i = multilabels[i]
+        search.fit(X)
+        self.labels_ = [[] for _ in X]
+        for i, cover_i in enumerate(self.labels_):
+            cover_i = self.labels_[i]
             if not cover_i:
-                neighs_ids = self.__search_algo.neighbors(X[i])
+                neighs_ids = search.neighbors(X[i])
                 neighs = [X[j] for j in neighs_ids]
-                labels = self.__clustering_algo.fit(neighs).labels_
+                #neighs = np.take(X, neighs_ids, axis=0)
+                labels = clustering.fit(neighs).labels_
                 max_label = 0
                 for (n, label) in zip(neighs_ids, labels):
                     if label != -1:
                         if label > max_label:
                             max_label = label
-                        multilabels[n].append(cluster_count + label)
+                        self.labels_[n].append(cluster_count + label)
                 cluster_count += max_label + 1
-        self.labels_ = multilabels
+        self._set_n_features_in_(X)
         return self
 
     def build_graph(self):
@@ -69,37 +106,82 @@ class CoverAlgorithm:
 
 class SearchClustering:
 
-    def __init__(self, search_algo=None):
-        if not search_algo:
-            self.__search_algo = TrivialSearch()
-        else:
-            self.__search_algo = search_algo
-        self.labels_ = []
+    def __init__(self, search=None):
+        self.search = search
 
-    def fit(self, X):
-        cover_algo = CoverAlgorithm(search_algo=self.__search_algo)
-        multilabels = cover_algo.fit(X).labels_
+    def _check_params(self):
+        if not self.search:
+            search = TrivialSearch()
+        else:
+            search = self.search
+        return search
+
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['search'] = self.search
+        if deep:
+            if self.search:
+                for k, v in self.search.get_params().items():
+                    parameters[f'search__{k}'] = v
+        return parameters
+    
+    def set_params(self, **parameters):
+        for k, v in parameters.items():
+            setattr(self, k, v)
+        return self
+
+    def _set_n_features_in_(self, X):
+        self.n_features_in_ = len(X[0])
+
+    def _check_input(self, X, y):
+        if y is None:
+            X = check_array(X)
+        else:
+            X, y = check_X_y(X, y)
+        return X, y
+
+    def fit(self, X, y=None):
+        X, y = self._check_input(X, y)
+        multilabels = CoverAlgorithm(search=self.search).fit(X).labels_
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
         uf = UnionFind(label_values)
-        cc = []
+        self.labels_ = []
         for labels in multilabels:
             if len(labels) > 1:
                 for first, second in zip(labels, labels[1:]):
                     root = uf.union(first, second)
             else:
                 root = uf.find(labels[0])
-            cc.append(root)
-        self.labels_ = cc
+            self.labels_.append(root)
+        self._set_n_features_in_(X)
         return self
 
 
 class TrivialClustering:
 
     def TrivialClustering(self):
-        self.labels_ = []
+        pass
 
-    def fit(self, X):
+    def get_params(self, deep=True):
+        return {}
+    
+    def set_params(self, **parameters):
+        return self
+
+    def _set_n_features_in_(self, X):
+        self.n_features_in_ = len(X[0])
+
+    def _check_input(self, X, y):
+        if y is None:
+            X = check_array(X)
+        else:
+            X, y = check_X_y(X, y)
+        return X, y
+
+    def fit(self, X, y=None):
+        X, y = self._check_input(X, y)
         self.labels_ = [0 for _ in X]
+        self._set_n_features_in_(X)
         return self

@@ -15,15 +15,15 @@ def compute_connected_components(graph):
 
 class MapperPipeline:
 
-    def __init__(self, search_algo=None, clustering_algo=None):
-        self.__cover_algo = CoverAlgorithm(
-            search_algo=search_algo,
-            clustering_algo=clustering_algo
+    def __init__(self, search=None, clustering=None):
+        self.cover = CoverAlgorithm(
+            search=search,
+            clustering=clustering
         )
         self.__graph = None
 
     def fit(self, X):
-        self.__graph = self.__cover_algo.fit(X).build_graph()
+        self.__graph = self.cover.fit(X).build_graph()
         return self
 
     def get_graph(self):

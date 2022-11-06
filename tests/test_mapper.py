@@ -1,6 +1,8 @@
 import unittest
 import numpy as np
 
+from sklearn.cluster import DBSCAN
+
 from mapper.search import BallSearch, KnnSearch
 from mapper.pipeline import MapperPipeline
 
@@ -24,16 +26,24 @@ class TestMapper(unittest.TestCase):
             self.assertEqual([], list(g.neighbors(node)))
 
     def testBallSmallRadius(self):
-        data = [float(i) for i in range(1000)]
-        mp = MapperPipeline(search_algo=BallSearch(0.5, metric=dist))
+        data = np.array([[float(i)] for i in range(1000)])
+        mp = MapperPipeline(search=BallSearch(0.5, metric=dist))
+        g = mp.fit(data).get_graph()
+        self.assertEqual(1000, len(g))
+        for node in g.nodes():
+            self.assertEqual([], list(g.neighbors(node)))
+
+    def testBallSmallRadiusList(self):
+        data = [[float(i)] for i in range(1000)]
+        mp = MapperPipeline(search=BallSearch(0.5, metric=dist), clustering=DBSCAN(eps=1.0, min_samples=1))
         g = mp.fit(data).get_graph()
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
 
     def testBallLargeRadius(self):
-        data = [float(i) for i in range(1000)]
-        mp = MapperPipeline(search_algo=BallSearch(1000.0, metric=dist))
+        data = np.array([[float(i)] for i in range(1000)])
+        mp = MapperPipeline(search=BallSearch(1000.0, metric=dist))
         g = mp.fit(data).get_graph()
         self.assertEqual(1, len(g))
         for node in g.nodes():
@@ -42,7 +52,8 @@ class TestMapper(unittest.TestCase):
     def testTwoDisconnectedClusters(self):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
-        mp = MapperPipeline(search_algo=BallSearch(150.0, metric=dist))
+        data = np.array(data)
+        mp = MapperPipeline(search=BallSearch(150.0, metric=dist))
         g = mp.fit(data).get_graph()
         self.assertEqual(2, len(g))
         for node in g.nodes():
