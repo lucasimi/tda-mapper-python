@@ -10,7 +10,6 @@ from mapper.search import BallSearch, KnnSearch
 
 logger = logging.getLogger()
 logger.level = logging.INFO
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def dist(x, y):
@@ -53,9 +52,8 @@ class TestMapper(unittest.TestCase):
             x = random.choice(data)
             knnResults = ks.neighbors(x)
         t4 = time.time()
-        logger.info(f'\nBall Search: {len(bsResults)} results, fit in {t1 - t0}s, search in {t3 - t2}s')
-        logger.info(f'KNN Search: {len(knnResults)} results, fit in {t2 - t1}s, search in {t4 - t3}s')
-
+        logger.debug(f'Ball Search: {len(bsResults)} results, fit in {t1 - t0}s, search in {t3 - t2}s')
+        logger.debug(f'KNN Search: {len(knnResults)} results, fit in {t2 - t1}s, search in {t4 - t3}s')
 
 
 if __name__ == '__main__':

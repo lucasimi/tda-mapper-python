@@ -10,6 +10,7 @@ from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 
 import mapper.pipeline
+import mapper.cover
 import mapper.plot
 
 def _rmse(x, y):
@@ -30,7 +31,7 @@ class MapperKpis:
         nodes = self.__graph.nodes()
         kpis = {}
         for node_id in nodes:
-            node_data = [data[i] for i in nodes[node_id][mapper.pipeline.ATTR_IDS]]
+            node_data = [data[i] for i in nodes[node_id][mapper.cover.ATTR_IDS]]
             node_values = [fun(x) for x in node_data]
             agg_value = agg(node_values)
             kpis[node_id] = metric(node_values, [agg_value for _ in node_data])
