@@ -1,6 +1,7 @@
 """A class for fast knn and range searches, depending only on a given metric"""
 import random
 
+from .quickselect import quickselect
 from .heap import MaxHeap
 
 
@@ -88,8 +89,11 @@ class VPTree:
         self.__distance = distance
         self.__leaf_size = leaf_size
         self.__leaf_radius = leaf_radius
-        self.__dataset = [x for x in dataset]
-        self.__tree = self._build(0, len(dataset))
+        self.__dataset = [(0.0, x) for x in dataset]
+        if not leaf_radius:
+            self.__tree = self._build_update_no_radius(0, len(dataset))
+        else:
+            self.__tree = self._build_update_radius(0, len(dataset))
 
     def get_tree(self):
         return self.__tree
@@ -97,19 +101,62 @@ class VPTree:
     def get_height(self):
         return self.__tree.get_height()
 
-    def _build(self, start, end):
+    def _build_update_no_radius(self, start, end):
         if end - start <= self.__leaf_size:
-            return Tree(self.__dataset[start:end])
-        center = random.choice(self.__dataset[start:end]) #improve this by removing the copy
+            return Tree([x for _, x in self.__dataset[start:end]])
         mid = (end + start) // 2
-        _place_in_order(self.__dataset, start, end, mid, lambda x: self.__distance(center, x))
-        radius = self.__distance(center, self.__dataset[mid])
-        if self.__leaf_radius and radius <= self.__leaf_radius:
-            left = Tree(self.__dataset[start:mid])
+        _, vp = self.__dataset[start]
+        for i in range(start + 1, end):
+            _, x = self.__dataset[i]
+            self.__dataset[i] = self.__distance(vp, x), x
+        quickselect(self.__dataset, start + 1, end, mid,
+                    lambda x: x[0])
+        radius, _ = self.__dataset[mid]
+        left = self._build_no_update_no_radius(start, mid)
+        right = self._build_update_no_radius(mid, end)
+        return Tree(Ball(vp, radius), left, right)
+
+    def _build_no_update_no_radius(self, start, end):
+        if end - start <= self.__leaf_size:
+            return Tree([x for _, x in self.__dataset[start:end]])
+        mid = (end + start) // 2
+        _, vp = self.__dataset[start]
+        quickselect(self.__dataset, start + 1, end, mid, lambda x: x[0])
+        radius, _ = self.__dataset[mid]
+        left = self._build_no_update_no_radius(start, mid)
+        right = self._build_update_no_radius(mid, end)
+        return Tree(Ball(vp, radius), left, right)
+
+    def _build_update_radius(self, start, end):
+        if end - start <= self.__leaf_size:
+            return Tree([x for _, x in self.__dataset[start:end]])
+        mid = (end + start) // 2
+        _, vp = self.__dataset[start]
+        for i in range(start + 1, end):
+            _, x = self.__dataset[i]
+            self.__dataset[i] = self.__distance(vp, x), x
+        quickselect(self.__dataset, start + 1, end, mid, lambda x: x[0])
+        radius, _ = self.__dataset[mid]
+        if radius <= self.__leaf_radius:
+            left = Tree([x for _, x in self.__dataset[start:mid]])
         else:
-            left = self._build(start, mid)
-        right = self._build(mid, end)
-        return Tree(Ball(center, radius), left, right)
+            left = self._build_no_update_radius(start, mid)
+        right = self._build_update_radius(mid, end)
+        return Tree(Ball(vp, radius), left, right)
+
+    def _build_no_update_radius(self, start, end):
+        if end - start <= self.__leaf_size:
+            return Tree([x for _, x in self.__dataset[start:end]])
+        mid = (end + start) // 2
+        _, vp = self.__dataset[start]
+        quickselect(self.__dataset, start + 1, end, mid, lambda x: x[0])
+        radius, _ = self.__dataset[mid]
+        if radius <= self.__leaf_radius:
+            left = Tree([x for _, x in self.__dataset[start:mid]])
+        else:
+            left = self._build_no_update_radius(start, mid)
+        right = self._build_update_radius(mid, end)
+        return Tree(Ball(vp, radius), left, right)
 
     def ball_search(self, point, eps):
         results = []
@@ -119,16 +166,17 @@ class VPTree:
     def _ball_search(self, tree, point, eps, results):
         if tree.is_terminal():
             ball = tree.get_data()
-            results.extend([x for x in ball if self.__distance(x, point) < eps])
+            results.extend(
+                [x for x in ball if self.__distance(x, point) < eps])
         else:
             left, right = tree.get_left(), tree.get_right()
             ball = tree.get_data()
             center, radius = ball.get_center(), ball.get_radius()
             d = self.__distance(center, point)
-            # the search ball B(point, eps) intersects B(center, radius) 
+            # the search ball B(point, eps) intersects B(center, radius)
             if left and d <= radius + eps:
                 self._ball_search(left, point, eps, results)
-            # the search ball B(point, eps) is not contained in B(center, radius) 
+            # the search ball B(point, eps) is not contained in B(center, radius)
             if right and (eps > radius or d > radius - eps):
                 self._ball_search(right, point, eps, results)
 
@@ -148,9 +196,11 @@ class VPTree:
             center, radius = ball.get_center(), ball.get_radius()
             dist_center_point = self.__distance(center, point)
             if dist_center_point < radius:
-                self._knn_search_inside(tree, point, dist_center_point, radius, kball)
+                self._knn_search_inside(
+                    tree, point, dist_center_point, radius, kball)
             else:
-                self._knn_search_outside(tree, point, dist_center_point, radius, kball)
+                self._knn_search_outside(
+                    tree, point, dist_center_point, radius, kball)
 
     def _knn_search_all(self, tree, kball):
         ball = tree.get_data()
@@ -169,27 +219,3 @@ class VPTree:
         if dist_center_point >= radius + fst_dist:
             return
         self._knn_search(tree.get_left(), point, kball)
-
-
-def _pivot_higher(data, start, end, i, fun=lambda x: x):
-    """Move the elements less or equal than data[i] on the left, and higher on the right"""
-    data[start], data[i] = data[i], data[start]
-    higher = start + 1
-    for j in range(start + 1, end):
-        if fun(data[j]) <= fun(data[start]):
-            data[higher], data[j] = data[j], data[higher]
-            higher += 1
-    data[start], data[higher - 1] = data[higher - 1], data[start]
-    return higher - 1
-
-
-def _place_in_order(data, start, end, k, fun=lambda x: x):
-    """Return the element which should fall at place k among [start:end]"""
-    s_current, e_current = start, end
-    higher = None
-    while higher != k:
-        higher = _pivot_higher(data, s_current, e_current, k, fun)
-        if k < higher:
-            e_current = higher
-        else:
-            s_current = higher
