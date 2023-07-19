@@ -104,6 +104,38 @@ class CoverAlgorithm:
         return graph
 
 
+class CoverGraph:
+
+    def __init__(self):
+        pass
+
+    def build(self, subsets):
+        graph = nx.Graph()
+        # a map where:
+        # key   = item
+        # value = set of subsets containing the key
+        items_subsets = {} 
+        for n, subset in enumerate(subsets): 
+            graph.add_node(n)
+            for x in subset:
+                if x not in items_subsets:
+                    items_subsets[x] = set()
+                items_subsets[x].add(n)
+
+        sizes = [len(s) for s in subsets]
+        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
+        edges = set()
+        for item, subset_ids in items_subsets:
+            for source in subset_ids:
+                for target in subset_ids:
+                    if target > source and (source, target) not in edges:
+                        graph.add_edge(source, target, weight=1) # TODO: compute weight correctly
+                        graph.add_edge(target, source, weight=1) # TODO: compute weight correctly
+                        edges.add((source, target))
+        return graph
+
+
+
 class SearchClustering:
 
     def __init__(self, search=None):
