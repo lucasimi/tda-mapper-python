@@ -88,6 +88,3 @@ class TestVPTree(unittest.TestCase):
             self.assertTrue(any((val == y).all() for y in data[:k]))
         for val in data[:k]:
             self.assertTrue(any((x == val).all() for x in neigh))
-
-if __name__=='__main__':
-    unittest.main()

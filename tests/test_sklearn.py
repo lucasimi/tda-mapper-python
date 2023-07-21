@@ -10,7 +10,3 @@ class TestSklearn(unittest.TestCase):
         check_estimator(CoverAlgorithm())
         check_estimator(SearchClustering())
         check_estimator(TrivialClustering())
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -24,6 +24,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+        cc = MapperPipeline.compute_connected_components(g)
+        self.assertEqual(1, len(cc))
 
     def testBallSmallRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
@@ -58,8 +60,3 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-
-
-if __name__=='__main__':
-    unittest.main()
-

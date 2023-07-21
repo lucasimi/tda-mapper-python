@@ -123,10 +123,15 @@ class CoverGraph:
                 dual_map[x].add(n)
         return dual_map 
 
-    def build_dict(self, subsets):
+    def build_dict(self, groups):
+        '''
+        Takes a list of groups of items, 
+        returns a dict where each group id is mapped to the set of ids of intersecting groups.
+        Each id is the position of the corresponding group in the input
+        '''
         adjaciency_map = {}
-        dual_map = self.__build_dual_map(subsets)
-        for subset_id, _ in enumerate(subsets):
+        dual_map = self.__build_dual_map(groups)
+        for subset_id, _ in enumerate(groups):
             adjaciency_map[subset_id] = set()
         edges = set()
         for item, subset_ids in dual_map.items():
@@ -138,20 +143,25 @@ class CoverGraph:
                         edges.add((source, target))
         return adjaciency_map
 
-    def build_nx(self, subsets):
+    def build_nx(self, groups):
+        '''
+        Takes a list of groups of items, 
+        returns a networkx graph where a vertex corresponds to a group, 
+        and whenever two groups intersect, an edge is drawn between their corresponding vertices.
+        '''
         graph = nx.Graph()
-        dual_map = self.__build_dual_map(subsets)
-        sizes = [len(s) for s in subsets]
+        dual_map = self.__build_dual_map(groups)
+        sizes = [len(s) for s in groups]
         nx.set_node_attributes(graph, sizes, ATTR_SIZE)
-        for subset_id, _ in enumerate(subsets):
+        for subset_id, _ in enumerate(groups):
             graph.add_node(subset_id)
         edges = set()
         for item, subset_ids in dual_map.items():
             for source in subset_ids:
                 for target in subset_ids:
                     if target > source and (source, target) not in edges:
-                        graph.add_edge(source, target) # TODO: compute weight correctly
-                        graph.add_edge(target, source) # TODO: compute weight correctly
+                        graph.add_edge(source, target)
+                        graph.add_edge(target, source)
                         edges.add((source, target))
         return graph
 
