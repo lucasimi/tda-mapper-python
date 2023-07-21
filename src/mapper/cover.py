@@ -109,31 +109,51 @@ class CoverGraph:
     def __init__(self):
         pass
 
-    def build(self, subsets):
-        graph = nx.Graph()
-        # a map where:
-        # key   = item
-        # value = set of subsets containing the key
-        items_subsets = {} 
-        for n, subset in enumerate(subsets): 
-            graph.add_node(n)
+    def __build_dual_map(self, groups):
+        '''
+        Takes a list of groups of items, 
+        returns a dict where each item is mapped to the set of ids of groups containing the key.
+        Each id is the position of the corresponding group in the input
+        '''
+        dual_map = {} 
+        for n, subset in enumerate(groups): 
             for x in subset:
-                if x not in items_subsets:
-                    items_subsets[x] = set()
-                items_subsets[x].add(n)
+                if x not in dual_map:
+                    dual_map[x] = set()
+                dual_map[x].add(n)
+        return dual_map 
 
-        sizes = [len(s) for s in subsets]
-        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
+    def build_dict(self, subsets):
+        adjaciency_map = {}
+        dual_map = self.__build_dual_map(subsets)
+        for subset_id, _ in enumerate(subsets):
+            adjaciency_map[subset_id] = set()
         edges = set()
-        for item, subset_ids in items_subsets:
+        for item, subset_ids in dual_map.items():
             for source in subset_ids:
                 for target in subset_ids:
                     if target > source and (source, target) not in edges:
-                        graph.add_edge(source, target, weight=1) # TODO: compute weight correctly
-                        graph.add_edge(target, source, weight=1) # TODO: compute weight correctly
+                        adjaciency_map[source].add(target)
+                        adjaciency_map[target].add(source)
+                        edges.add((source, target))
+        return adjaciency_map
+
+    def build_nx(self, subsets):
+        graph = nx.Graph()
+        dual_map = self.__build_dual_map(subsets)
+        sizes = [len(s) for s in subsets]
+        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
+        for subset_id, _ in enumerate(subsets):
+            graph.add_node(subset_id)
+        edges = set()
+        for item, subset_ids in dual_map.items():
+            for source in subset_ids:
+                for target in subset_ids:
+                    if target > source and (source, target) not in edges:
+                        graph.add_edge(source, target) # TODO: compute weight correctly
+                        graph.add_edge(target, source) # TODO: compute weight correctly
                         edges.add((source, target))
         return graph
-
 
 
 class SearchClustering:
