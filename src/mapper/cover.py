@@ -109,60 +109,62 @@ class CoverGraph:
     def __init__(self):
         pass
 
-    def __build_dual_map(self, groups):
+    def build_labels(self, groups):
         '''
         Takes a list of groups of items, 
-        returns a dict where each item is mapped to the set of ids of groups containing the key.
-        Each id is the position of the corresponding group in the input
+        returns a dict where each item is mapped to the list of ids of groups containing the key.
+        Each id is the position of the corresponding group in the input.
+        Each key maps to a monotonically strictly increasing list of integers.
         '''
-        dual_map = {} 
-        for n, subset in enumerate(groups): 
-            for x in subset:
-                if x not in dual_map:
-                    dual_map[x] = set()
-                dual_map[x].add(n)
-        return dual_map 
+        labels = {} 
+        for n, group in enumerate(groups): 
+            for x in set(group):
+                if x not in labels:
+                    labels[x] = []
+                labels[x].append(n)
+        return labels
 
-    def build_dict(self, groups):
+    def build_adjaciency(self, groups):
         '''
         Takes a list of groups of items, 
         returns a dict where each group id is mapped to the set of ids of intersecting groups.
         Each id is the position of the corresponding group in the input
         '''
-        adjaciency_map = {}
-        dual_map = self.__build_dual_map(groups)
-        for subset_id, _ in enumerate(groups):
-            adjaciency_map[subset_id] = set()
+        labels = self.build_labels(groups)
+        adjaciency = {n: [] for n, _ in enumerate(groups)}
         edges = set()
-        for item, subset_ids in dual_map.items():
-            for source in subset_ids:
-                for target in subset_ids:
-                    if target > source and (source, target) not in edges:
-                        adjaciency_map[source].add(target)
-                        adjaciency_map[target].add(source)
+        for item, group_ids in labels.items():
+            for i in range(len(group_ids)):
+                source = group_ids[i]
+                for j in range(i + 1, len(group_ids)):
+                    target = group_ids[j]
+                    if (source, target) not in edges:
+                        adjaciency[source].append(target)
                         edges.add((source, target))
-        return adjaciency_map
+                        adjaciency[target].append(source)
+                        edges.add((target, source))
+        return adjaciency
 
-    def build_nx(self, groups):
+    def build_nx(self, adjaciency):
         '''
         Takes a list of groups of items, 
         returns a networkx graph where a vertex corresponds to a group, 
         and whenever two groups intersect, an edge is drawn between their corresponding vertices.
         '''
         graph = nx.Graph()
-        dual_map = self.__build_dual_map(groups)
-        sizes = [len(s) for s in groups]
-        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
-        for subset_id, _ in enumerate(groups):
-            graph.add_node(subset_id)
+        for node_id in adjaciency:
+            graph.add_node(node_id)
         edges = set()
-        for item, subset_ids in dual_map.items():
-            for source in subset_ids:
-                for target in subset_ids:
-                    if target > source and (source, target) not in edges:
+        for node_id, node_ids in adjaciency.items():
+            for i in range(len(node_ids)):
+                source = node_ids[i]
+                for j in range(i + 1, len(node_ids)):
+                    target = node_ids[j]
+                    if (source, target) not in edges:
                         graph.add_edge(source, target)
-                        graph.add_edge(target, source)
                         edges.add((source, target))
+                        graph.add_edge(target, source)
+                        edges.add((target, source))
         return graph
 
 

@@ -1,5 +1,7 @@
 """A module for the exact mapper algorithm"""
 import time
+import networkx as nx
+
 from .cover import CoverAlgorithm
 
 

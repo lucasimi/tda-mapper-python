@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 from mapper.search import BallSearch, KnnSearch
-from mapper.pipeline import MapperPipeline
+from mapper.pipeline import MapperPipeline, compute_connected_components
 
 
 def dist(x, y):
@@ -24,7 +24,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-        cc = MapperPipeline.compute_connected_components(g)
+        cc = compute_connected_components(g)
         self.assertEqual(1, len(cc))
 
     def testBallSmallRadius(self):
