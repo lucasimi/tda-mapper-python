@@ -59,12 +59,11 @@ class CoverAlgorithm:
         cluster_count = 0
         search.fit(X)
         self.labels_ = [[] for _ in X]
-        for i, cover_i in enumerate(self.labels_):
+        for i in range(len(X)):
             cover_i = self.labels_[i]
             if not cover_i:
                 neighs_ids = search.neighbors(X[i])
                 neighs = [X[j] for j in neighs_ids]
-                #neighs = np.take(X, neighs_ids, axis=0)
                 labels = clustering.fit(neighs).labels_
                 max_label = 0
                 for (n, label) in zip(neighs_ids, labels):
@@ -104,17 +103,66 @@ class CoverAlgorithm:
         return graph
 
 
-class CoverGraph:
+class MapperAlgorithm:
 
-    def __init__(self):
-        pass
+    def __init__(self, search, clustering):
+        self.__search = search
+        self.__clustering = clustering
+
+    def build_labels(self, X, search, clustering):
+        '''
+        Takes a dataset, a search algorithm and a clustering algortithm, 
+        returns a list of lists, where the list at position i contains
+        the cluster ids to which the item at position i belongs to.
+        * Each list in the output is a sorted list of ints with no duplicate.
+        '''
+        max_label = 0
+        labels = [[] for _ in X]
+        search.fit(X)
+        for i in range(len(X)):
+            cover_i = labels[i]
+            if not cover_i:
+                neigh_ids = search.neighbors(X[i])
+                neigh_data = [X[j] for j in neigh_ids]
+                neigh_labels = clustering.fit(neigh_data).labels_
+                max_neigh_label = 0
+                for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
+                    if neigh_label != -1:
+                        if neigh_label > max_neigh_label:
+                            max_neigh_label = neigh_label
+                        labels[neigh_id].append(max_label + neigh_label)
+                max_label += max_neigh_label + 1
+        return labels
+
+    def build_adjaciency(self, labels):
+        adj = {}
+        for clusters in enumerate(labels):
+            for label in clusters:
+                if label not in adj:
+                    adj[label] = []
+        edges = set()
+        for clusters in enumerate(labels):
+            clusters_len = len(clusters)
+            for i in range(clusters_len):
+                source = clusters[i]
+                for j in range(i + 1, clusters_len):
+                    if (source, target) not in edges:
+                        target = clusters[j]
+                        adj[source].append(target)
+                        edges.add((source, target))
+                        adj[target].append(source)
+                        edges.add((target, source))
+        return adj
+
+
+class CoverGraph:
 
     def build_labels(self, groups):
         '''
-        Takes a list of groups of items, 
-        returns a dict where each item is mapped to the list of ids of groups containing the key.
-        Each id is the position of the corresponding group in the input.
-        Each key maps to a monotonically strictly increasing list of integers.
+        Takes a list of groups of items, returns a dict where each item 
+        is mapped to the list of ids of groups containing the key.
+        * Each id is the position of the corresponding group in the input.
+        * Each key maps to a sorted list of ints with no duplicate element.
         '''
         labels = {} 
         for n, group in enumerate(groups): 
@@ -126,9 +174,9 @@ class CoverGraph:
 
     def build_adjaciency(self, groups):
         '''
-        Takes a list of groups of items, 
-        returns a dict where each group id is mapped to the set of ids of intersecting groups.
-        Each id is the position of the corresponding group in the input
+        Takes a list of groups of items, returns a dict where each group id
+        is mapped to the set of ids of intersecting groups.
+        * Each id is the position of the corresponding group in the input.
         '''
         labels = self.build_labels(groups)
         adjaciency = {n: [] for n, _ in enumerate(groups)}
@@ -147,9 +195,9 @@ class CoverGraph:
 
     def build_nx(self, adjaciency):
         '''
-        Takes a list of groups of items, 
-        returns a networkx graph where a vertex corresponds to a group, 
-        and whenever two groups intersect, an edge is drawn between their corresponding vertices.
+        Takes a list of groups of items, returns a networkx graph where a vertex
+        corresponds to a group. Whenever two groups intersect, an edge is drawn 
+        between their corresponding vertices.
         '''
         graph = nx.Graph()
         for node_id in adjaciency:
@@ -249,3 +297,9 @@ class TrivialClustering:
         self.labels_ = [0 for _ in X]
         self._set_n_features_in_(X)
         return self
+
+
+class BallCover:
+
+    def __init__(self, radius, metric):
+        self.__search = BallSearch(radius, metric)

@@ -30,3 +30,12 @@ class MapperPipeline:
 
     def get_graph(self):
         return self.__graph    
+
+
+class MapperAlgorithm:
+
+    def __init__(self, lens, cover, clustering):
+        pass
+
+    def fit(self, X):
+        pass
