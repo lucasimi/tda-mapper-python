@@ -2,157 +2,25 @@
 import networkx as nx
 from sklearn.utils import check_X_y, check_array
 
-from .search import TrivialSearch
+from .search import BallSearch, KnnSearch, TrivialSearch
 from .utils.unionfind import UnionFind
 
-ATTR_IDS = 'ids'
-ATTR_SIZE = 'size'
 
-class CoverAlgorithm:
-    
-    def __init__(self, search=None, clustering=None):
-        self.search = search
-        self.clustering = clustering
+class SearchCoverCharts: 
 
-    def _check_params(self):
-        if not self.search:
-            search = TrivialSearch()
-        else:
-            search = self.search
-        if not self.clustering:
-            clustering = TrivialClustering()
-        else:
-            clustering = self.clustering
-        return search, clustering
-
-    def get_params(self, deep=True):
-        parameters = {}
-        parameters['search'] = self.search
-        parameters['clustering'] = self.clustering
-        if deep:
-            if self.search:
-                for k, v in self.search.get_params().items():
-                    parameters[f'search__{k}'] = v
-            if self.clustering:
-                for k, v in self.clustering.get_params().items():
-                    parameters[f'clustering__{k}'] = v
-        return parameters
-    
-    def set_params(self, **parameters):
-        for k, v in parameters.items():
-            setattr(self, k, v)
-        return self
-
-    def _check_input(self, X, y):
-        if y is None:
-            X = check_array(X)
-        else:
-            X, y = check_X_y(X, y)
-        return X, y
-
-    def _set_n_features_in_(self, X):
-        self.n_features_in_ = len(X[0])
-
-    def fit(self, X, y=None):
-        search, clustering = self._check_params()
-        X, y = self._check_input(X, y)
-        cluster_count = 0
-        search.fit(X)
-        self.labels_ = [[] for _ in X]
-        for i in range(len(X)):
-            cover_i = self.labels_[i]
-            if not cover_i:
-                neighs_ids = search.neighbors(X[i])
-                neighs = [X[j] for j in neighs_ids]
-                labels = clustering.fit(neighs).labels_
-                max_label = 0
-                for (n, label) in zip(neighs_ids, labels):
-                    if label != -1:
-                        if label > max_label:
-                            max_label = label
-                        self.labels_[n].append(cluster_count + label)
-                cluster_count += max_label + 1
-        self._set_n_features_in_(X)
-        return self
-
-    def build_graph(self):
-        graph = nx.Graph()
-        clusters = set()
-        sizes = {}
-        point_ids = {}
-        for point_id, point_labels in enumerate(self.labels_):
-            for label in point_labels:
-                if label not in clusters:
-                    clusters.add(label)
-                    graph.add_node(label)
-                    sizes[label] = 0
-                    point_ids[label] = []
-                sizes[label] += 1
-                point_ids[label].append(point_id)
-        nx.set_node_attributes(graph, sizes, ATTR_SIZE)
-        nx.set_node_attributes(graph, point_ids, ATTR_IDS)
-        edges = set()
-        for labels in self.labels_:
-            for s in labels:
-                for t in labels:
-                    if s != t and (s, t) not in edges:
-                        graph.add_edge(s, t, weight=1) # TODO: compute weight correctly
-                        edges.add((s, t))
-                        graph.add_edge(t, s, weight=1) # TODO: compute weight correctly
-                        edges.add((t, s))
-        return graph
-
-
-class MapperAlgorithm:
-
-    def __init__(self, search, clustering):
+    def __init__(self, X, search):
+        self.__X = X
         self.__search = search
-        self.__clustering = clustering
 
-    def build_labels(self, X, search, clustering):
-        '''
-        Takes a dataset, a search algorithm and a clustering algortithm, 
-        returns a list of lists, where the list at position i contains
-        the cluster ids to which the item at position i belongs to.
-        * Each list in the output is a sorted list of ints with no duplicate.
-        '''
-        max_label = 0
-        labels = [[] for _ in X]
-        search.fit(X)
-        for i in range(len(X)):
-            cover_i = labels[i]
-            if not cover_i:
-                neigh_ids = search.neighbors(X[i])
-                neigh_data = [X[j] for j in neigh_ids]
-                neigh_labels = clustering.fit(neigh_data).labels_
-                max_neigh_label = 0
-                for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
-                    if neigh_label != -1:
-                        if neigh_label > max_neigh_label:
-                            max_neigh_label = neigh_label
-                        labels[neigh_id].append(max_label + neigh_label)
-                max_label += max_neigh_label + 1
-        return labels
-
-    def build_adjaciency(self, labels):
-        adj = {}
-        for clusters in enumerate(labels):
-            for label in clusters:
-                if label not in adj:
-                    adj[label] = []
-        edges = set()
-        for clusters in enumerate(labels):
-            clusters_len = len(clusters)
-            for i in range(clusters_len):
-                source = clusters[i]
-                for j in range(i + 1, clusters_len):
-                    if (source, target) not in edges:
-                        target = clusters[j]
-                        adj[source].append(target)
-                        edges.add((source, target))
-                        adj[target].append(source)
-                        edges.add((target, source))
-        return adj
+    def generate(self):
+        covered = set()
+        self.__search.fit(self.__X)
+        for i in range(len(self.__X)):
+            if i not in covered:
+                xi = self.__X[i]
+                neigh_ids = self.__search.neighbors(xi)
+                covered.update(neigh_ids)
+                yield neigh_ids
 
 
 class CoverGraph:
@@ -215,7 +83,7 @@ class CoverGraph:
                         edges.add((target, source))
         return graph
 
-
+'''
 class SearchClustering:
 
     def __init__(self, search=None):
@@ -269,6 +137,7 @@ class SearchClustering:
             self.labels_.append(root)
         self._set_n_features_in_(X)
         return self
+'''
 
 
 class TrivialClustering:
@@ -301,5 +170,31 @@ class TrivialClustering:
 
 class BallCover:
 
-    def __init__(self, radius, metric):
-        self.__search = BallSearch(radius, metric)
+    def __init__(self, radius, metric): 
+        self.__radius = radius 
+        self.__metric = metric 
+
+    def get_charts_iter(self, X): 
+        search = BallSearch(self.__radius, self.__metric)
+        return SearchCoverCharts(X, search)
+
+
+class KnnCover:
+
+    def __init__(self, neighbors, metric): 
+        self.__neighbors = neighbors 
+        self.__metric = metric 
+
+    def get_charts_iter(self, X): 
+        search = KnnSearch(self.__neighbors, self.__metric)
+        return SearchCoverCharts(X, search)
+
+
+class TrivialCover:
+
+    def __init__(self): 
+        pass
+
+    def get_charts_iter(self, X): 
+        search = TrivialSearch()
+        return SearchCoverCharts(X, search)
