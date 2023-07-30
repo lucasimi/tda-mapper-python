@@ -37,7 +37,7 @@ class MapperPlot:
         colors = {}
         nodes = self.__graph.nodes()
         for node_id in nodes:
-            node_data = [data[i] for i in nodes[node_id][mapper.cover.ATTR_IDS]]
+            node_data = [data[i] for i in nodes[node_id][mapper.core.ATTR_IDS]]
             node_colors = [colormap(x) for x in node_data]
             agg_color = agg(node_colors)
             colors[node_id] = agg_color
@@ -53,7 +53,7 @@ class MapperPlot:
 
     def _plot_matplotlib_nodes(self, ax, width, height, title):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, mapper.cover.ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, mapper.core.ATTR_SIZE)
         max_size = max(sizes.values())
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
@@ -197,7 +197,7 @@ class MapperPlot:
 
     def _plot_plotly_2d_nodes(self, title):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, mapper.cover.ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, mapper.core.ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())

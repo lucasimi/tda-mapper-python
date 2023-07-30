@@ -6,21 +6,6 @@ from .search import BallSearch, KnnSearch, TrivialSearch
 from .utils.unionfind import UnionFind
 
 
-class SearchCoverCharts: 
-
-    def __init__(self, X, search):
-        self.__X = X
-        self.__search = search
-
-    def generate(self):
-        covered = set()
-        self.__search.fit(self.__X)
-        for i in range(len(self.__X)):
-            if i not in covered:
-                xi = self.__X[i]
-                neigh_ids = self.__search.neighbors(xi)
-                covered.update(neigh_ids)
-                yield neigh_ids
 
 
 class CoverGraph:
@@ -139,62 +124,3 @@ class SearchClustering:
         return self
 '''
 
-
-class TrivialClustering:
-
-    def TrivialClustering(self):
-        pass
-
-    def get_params(self, deep=True):
-        return {}
-    
-    def set_params(self, **parameters):
-        return self
-
-    def _set_n_features_in_(self, X):
-        self.n_features_in_ = len(X[0])
-
-    def _check_input(self, X, y):
-        if y is None:
-            X = check_array(X)
-        else:
-            X, y = check_X_y(X, y)
-        return X, y
-
-    def fit(self, X, y=None):
-        X, y = self._check_input(X, y)
-        self.labels_ = [0 for _ in X]
-        self._set_n_features_in_(X)
-        return self
-
-
-class BallCover:
-
-    def __init__(self, radius, metric): 
-        self.__radius = radius 
-        self.__metric = metric 
-
-    def get_charts_iter(self, X): 
-        search = BallSearch(self.__radius, self.__metric)
-        return SearchCoverCharts(X, search)
-
-
-class KnnCover:
-
-    def __init__(self, neighbors, metric): 
-        self.__neighbors = neighbors 
-        self.__metric = metric 
-
-    def get_charts_iter(self, X): 
-        search = KnnSearch(self.__neighbors, self.__metric)
-        return SearchCoverCharts(X, search)
-
-
-class TrivialCover:
-
-    def __init__(self): 
-        pass
-
-    def get_charts_iter(self, X): 
-        search = TrivialSearch()
-        return SearchCoverCharts(X, search)

@@ -25,7 +25,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(len(data), len(labels))
         adj = mp.build_adjaciency(mp.build_labels(data))
         self.assertEqual(1, len(adj))
-        self.assertEqual([], adj[0])
+        self.assertEqual((list(range(len(data))), []), adj[0])
         g = mp.build_graph(data)
         self.assertEqual(1, len(g))
         self.assertEqual([], list(g.neighbors(0)))
