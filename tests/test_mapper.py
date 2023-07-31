@@ -3,9 +3,7 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
-from mapper.search import BallSearch, KnnSearch
-from mapper.pipeline import MapperAlgorithm, compute_connected_components
-from mapper.cover import TrivialCover, BallCover, KnnCover, TrivialClustering
+from mapper.core import *
 
 
 def dist(x, y):
@@ -20,12 +18,12 @@ class TestMapper(unittest.TestCase):
 
     def testTrivial(self):
         data = dataset()
-        mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
-        labels = mp.build_labels(data)
+        labels = build_labels(data, TrivialCover(), TrivialClustering())
         self.assertEqual(len(data), len(labels))
-        adj = mp.build_adjaciency(mp.build_labels(data))
+        adj = build_adjaciency(labels)
         self.assertEqual(1, len(adj))
         self.assertEqual((list(range(len(data))), []), adj[0])
+        mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
         g = mp.build_graph(data)
         self.assertEqual(1, len(g))
         self.assertEqual([], list(g.neighbors(0)))

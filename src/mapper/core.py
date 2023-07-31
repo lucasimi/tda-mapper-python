@@ -1,8 +1,8 @@
 import networkx as nx
 from sklearn.utils import check_X_y, check_array
 
-from .search import BallSearch, KnnSearch
-from .unionfind import UnionFind
+from .search import BallSearch, KnnSearch, TrivialSearch
+from .utils.unionfind import UnionFind
 
 
 ATTR_IDS = 'ids'
@@ -79,6 +79,37 @@ def build_graph(X, cover, clustering):
     return graph
 
 
+def generate_charts(X, search):
+    covered = set()
+    search.fit(X)
+    for i in range(len(X)):
+        if i not in covered:
+            xi = X[i]
+            neigh_ids = search.neighbors(xi)
+            covered.update(neigh_ids)
+            yield neigh_ids
+
+
+def compute_connected_components(graph):
+    cc_id = 1
+    vert_cc = {}
+    for cc in nx.connected_components(graph):
+        for node in cc:
+            vert_cc[node] = cc_id
+        cc_id += 1
+    return vert_cc
+
+
+class MapperAlgorithm:
+
+    def __init__(self, cover, clustering):
+        self.__cover = cover
+        self.__clustering = clustering
+            
+    def build_graph(self, X):
+        return build_graph(X, self.__cover, self.__clustering)
+
+
 class BallCover:
 
     def __init__(self, radius, metric): 
@@ -87,7 +118,7 @@ class BallCover:
 
     def charts(self, X): 
         search = BallSearch(self.__radius, self.__metric)
-        return SearchCoverCharts(X, search).generate()
+        return generate_charts(X, search)
 
 
 class KnnCover:
@@ -98,7 +129,7 @@ class KnnCover:
 
     def charts(self, X): 
         search = KnnSearch(self.__neighbors, self.__metric)
-        return SearchCoverCharts(X, search).generate()
+        return generate_charts(X, search)
 
 
 class TrivialCover:
@@ -108,7 +139,7 @@ class TrivialCover:
 
     def charts(self, X): 
         search = TrivialSearch()
-        return SearchCoverCharts(X, search).generate()
+        return generate_charts(X, search)
 
 
 class TrivialClustering:
@@ -137,33 +168,6 @@ class TrivialClustering:
         self.labels_ = [0 for _ in X]
         self._set_n_features_in_(X)
         return self
-
-
-class SearchCoverCharts: 
-
-    def __init__(self, X, search):
-        self.__X = X
-        self.__search = search
-
-    def generate(self):
-        covered = set()
-        self.__search.fit(self.__X)
-        for i in range(len(self.__X)):
-            if i not in covered:
-                xi = self.__X[i]
-                neigh_ids = self.__search.neighbors(xi)
-                covered.update(neigh_ids)
-                yield neigh_ids
-
-
-class MapperAlgorithm:
-
-    def __init__(self, cover, clustering):
-        self.__cover = cover
-        self.__clustering = clustering
-            
-    def build_graph(self, X):
-        return build_graph(X, self.__cover, self.__clustering)
 
 
 class CoverClustering:
