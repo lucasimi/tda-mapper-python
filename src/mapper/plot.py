@@ -7,7 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
-import mapper.pipeline
+import mapper.core
 import mapper.cover
 
 NODE_ALPHA = 0.85
