@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 from mapper.core import *
+from mapper.cover import *
+from mapper.clustering import *
 
 
 def dist(x, y):
@@ -61,3 +63,14 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+
+    def testTwoConnectedClusters(self):
+        data = [np.array([0.0, 1.0]), np.array([1.0, 0.0]), np.array([0.0, 0.0]), np.array([1.0, 1.0])]
+        mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist), clustering=TrivialClustering())
+        g = mp.build_graph(data)
+        self.assertEqual(2, len(g))
+        for node in g.nodes():
+            self.assertEqual(1, len(list(g.neighbors(node))))
+        cc = compute_connected_components(data, g)
+        cc_values = set([cc[n] for n, _ in enumerate(data)])
+        self.assertEqual(1, len(cc_values))
