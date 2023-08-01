@@ -90,14 +90,15 @@ def generate_charts(X, search):
             yield neigh_ids
 
 
-def compute_connected_components(graph):
+def compute_connected_components(X, graph):
     cc_id = 1
-    vert_cc = {}
+    item_cc = {}
     for cc in nx.connected_components(graph):
         for node in cc:
-            vert_cc[node] = cc_id
+            for item_id in node[ATTR_IDS]:
+                item_cc[item_id] = cc_id
         cc_id += 1
-    return vert_cc
+    return item_cc
 
 
 class MapperAlgorithm:
@@ -208,9 +209,7 @@ class CoverClustering:
 
     def fit(self, X, y=None):
         X, y = self._check_input(X, y)
-        #multilabels = CoverAlgorithm(search=self.search).fit(X).labels_
         multilabels = build_labels(X, self.__cover, TrivialClustering())
-
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
