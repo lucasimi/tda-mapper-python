@@ -1,4 +1,5 @@
 from mapper.core import *
+from mapper.cover import TrivialCover
 
 
 class TrivialClustering:
@@ -67,7 +68,11 @@ class CoverClustering:
 
     def fit(self, X, y=None):
         X, y = self._check_input(X, y)
-        multilabels = build_labels(X, self.cover, TrivialClustering())
+        if self.cover:
+            cover = self.cover
+        else:
+            cover = TrivialCover()
+        multilabels = build_labels(X, cover, TrivialClustering())
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
