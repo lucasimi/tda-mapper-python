@@ -67,7 +67,7 @@ def build_graph(X, cover, clustering):
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
-        graph.add_node(source, size=len(items), ids=items)
+        graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
     edges = set()
     for source, (_, target_ids) in adjaciency.items():
         for target in target_ids:
@@ -90,11 +90,18 @@ def generate_charts(X, search):
             yield neigh_ids
 
 
-def compute_connected_components(X, graph):
+def build_connectivity(X, graph):
+    '''
+    Takes a dataset and a graph, where each node represents a sets of elements
+    from the dataset, returns a list of integers, where position i is the id
+    of the connected component of the graph where the element at position i 
+    from the dataset lies.
+    '''
     cc_id = 1
     item_cc = {}
     for cc in nx.connected_components(graph):
         for nd in cc:
+            graph.nodes[nd]
             for item_id in graph.nodes[nd][ATTR_IDS]:
                 item_cc[item_id] = cc_id
         cc_id += 1

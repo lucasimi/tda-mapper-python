@@ -71,6 +71,6 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual(1, len(list(g.neighbors(node))))
-        cc = compute_connected_components(data, g)
+        cc = build_connectivity(data, g)
         cc_values = set([cc[n] for n, _ in enumerate(data)])
         self.assertEqual(1, len(cc_values))

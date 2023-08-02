@@ -31,22 +31,22 @@ class TrivialClustering:
 
 class CoverClustering:
 
-    def __init__(self, cover):
-        self.__cover = cover
+    def __init__(self, cover=None):
+        self.cover = cover
 
     def _check_params(self):
-        if not self.__cover:
+        if not self.cover:
             cover = TrivialCover()
         else:
-            cover = self.__cover
+            cover = self.cover
         return cover
 
     def get_params(self, deep=True):
         parameters = {}
-        parameters['cover'] = self.__cover
+        parameters['cover'] = self.cover
         if deep:
-            if self.__cover:
-                for k, v in self.search.get_params().items():
+            if self.cover:
+                for k, v in self.cover.get_params().items():
                     parameters[f'cover__{k}'] = v
         return parameters
     
@@ -67,7 +67,7 @@ class CoverClustering:
 
     def fit(self, X, y=None):
         X, y = self._check_input(X, y)
-        multilabels = build_labels(X, self.__cover, TrivialClustering())
+        multilabels = build_labels(X, self.cover, TrivialClustering())
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
