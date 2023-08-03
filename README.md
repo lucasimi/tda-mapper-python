@@ -27,26 +27,29 @@ The graph obtained is called a "mapper graph".
 First, clone this repo, and install this library via pip install `python -m pip install .`. In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as [`sklearn.cluster`](https://scikit-learn.org/stable/modules/clustering.html) algorithms do, and returning an object which defines a `.labels_` field.
 
 ```python
-import numpy as np
+from sklearn.datasets import load_iris
 
-from mapper.cover import SearchCover
-from mapper.search import BallSearch
-from mapper.pipeline import MapperPipeline
-from mapper.network import Network
+from mapper.core import *
+from mapper.cover import *
+from mapper.clustering import *
+from mapper.plot import *
 
-from sklearn.cluster import DBSCAN
+iris_data = load_iris()
+iris_data
+X = iris_data.data[:, :]
+y = iris_data.target
 
-mp = MapperPipeline(
-    cover_algo=SearchCover(search_algo=BallSearch(1.5), 
-                           metric=lambda x, y: np.linalg.norm(x - y), 
-                           lens=lambda x: x),
-    clustering_algo=DBSCAN(eps=1.5, min_samples=2)
-    )
+cover_algo = BallCover(radius=1.0, metric=lambda x, y: np.linalg.norm(x - y))
+mapper_algo = MapperAlgorithm(cover=cover_algo, clustering=TrivialClustering())
+mapper_graph = mapper_algo.build_graph(X)
+mapper_plot = MapperPlot(X, mapper_graph)
 
-data = [np.random.rand(10) for _ in range(100)]
-g = mp.fit(data)
-nw = Network(g)
-nw.plot(data)
+fig1 = mapper_plot.with_colors().plot('plotly', 512, 512, 'mean lens')
+fig1.show()
+
+fig2 = mapper_plot.with_colors(colors=list(y)).plot('plotly', 512, 512, 'mean lens')
+fig2.show()
+
 ```
 ![The mapper graph of a random dataset](/examples/graph.png)
 
