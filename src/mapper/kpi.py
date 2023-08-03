@@ -9,9 +9,7 @@ from sklearn.metrics import mean_absolute_percentage_error as mape
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 
-import mapper.pipeline
-import mapper.cover
-import mapper.plot
+from mapper.core import aggregate_graph
 
 def _rmse(x, y):
     return math.sqrt(mse(x, y))
@@ -23,22 +21,17 @@ RMSE = _rmse
 
 class MapperKpis:
 
-    def __init__(self, graph): 
+    def __init__(self, X, graph): 
+        self.__X = X
         self.__graph = graph 
         self.__kpis = {x: 0.5 for x in self.__graph.nodes()}
 
-    def aggregate(self, data, metric, fun=lambda x: x, agg=np.nanmean):
-        nodes = self.__graph.nodes()
-        kpis = {}
-        for node_id in nodes:
-            node_data = [data[i] for i in nodes[node_id][mapper.cover.ATTR_IDS]]
-            node_values = [fun(x) for x in node_data]
-            agg_value = agg(node_values)
-            kpis[node_id] = metric(node_values, [agg_value for _ in node_data])
+    def aggregate(self, metric, fun=lambda x: x, agg=np.nanmean):
+        kpis = aggregate_graph(self.__X, self.__graph, metric, fun, agg)
         self.__kpis = kpis
 
     def plot(self, width, height, title=''):
-        dpis = mapper.plot.DPIS
+        dpis = mapper.plot._DPIS
         fig, ax = plt.subplots(1, 1, tight_layout=True, figsize=(width / dpis, height / dpis), dpi=dpis)
         fig.patch.set_alpha(0.0)
         fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)

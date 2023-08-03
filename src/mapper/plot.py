@@ -19,41 +19,40 @@ FONT_SIZE = 8
 COLOR_FORMAT = '.2e'
 TICKS_NUM = 5
 
-DPIS = 96
+_DPIS = 96
 
-FE_MATPLOTLIB = 'matplotlib'
-FE_PLOTLY = 'plotly'
+_MATPLOTLIB = 'matplotlib'
+_PLOTLY = 'plotly'
+_PLOTLY_3D = 'plotly_3d'
+
+
+from mapper.core import color_graph
 
 
 class MapperPlot:
 
-    "A class representing a cover graph"
-    def __init__(self, graph):
+    def __init__(self, X, graph):
+        self.__X = X
         self.__graph = graph
-        self.__pos2d = nx.spring_layout(self.__graph)
+        self.__pos2d = nx.spring_layout(self.__graph, dim=2)
+        self.__pos3d = nx.spring_layout(self.__graph, dim=3)
         self.__colors = {x:0.5 for x in self.__graph.nodes()}
 
-    def colorize(self, data, colormap=lambda x: x, agg=np.nanmean):
-        colors = {}
-        nodes = self.__graph.nodes()
-        for node_id in nodes:
-            node_data = [data[i] for i in nodes[node_id][mapper.core.ATTR_IDS]]
-            node_colors = [colormap(x) for x in node_data]
-            agg_color = agg(node_colors)
-            colors[node_id] = agg_color
+    def color_graph(self, colormap=lambda x: x, agg=np.nanmean):
+        colors = color_graph(self.__X, self.__graph, colormap, agg)
         self.__colors = colors
 
     def plot(self, frontend, width, height, title=''):
-        if frontend == FE_MATPLOTLIB:
+        if frontend == _MATPLOTLIB:
             return self._plot_matplotlib(width, height, title)
-        elif frontend == FE_PLOTLY:
+        elif frontend == _PLOTLY:
             return self._plot_plotly_2d(width, height, title)
         else:
             raise Exception(f'unexpected argument {frontend} for frontend')
 
     def _plot_matplotlib_nodes(self, ax, width, height, title):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, mapper.core.ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
         max_size = max(sizes.values())
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
@@ -104,7 +103,7 @@ class MapperPlot:
         ax.add_collection(lines)
 
     def _plot_matplotlib(self, width, height, title):
-        fig, ax = plt.subplots(figsize=(width / DPIS, height / DPIS), dpi=DPIS)
+        fig, ax = plt.subplots(figsize=(width / _DPIS, height / _DPIS), dpi=_DPIS)
         ax.set_facecolor('#fff')
         for axis in ['top','bottom','left','right']:
             ax.spines[axis].set_linewidth(0)
@@ -197,7 +196,7 @@ class MapperPlot:
 
     def _plot_plotly_2d_nodes(self, title):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, mapper.core.ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())

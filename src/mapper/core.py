@@ -1,3 +1,4 @@
+import numpy as np
 import networkx as nx
 from sklearn.utils import check_X_y, check_array
 
@@ -5,8 +6,8 @@ from .search import BallSearch, KnnSearch, TrivialSearch
 from .utils.unionfind import UnionFind
 
 
-ATTR_IDS = 'ids'
-ATTR_SIZE = 'size'
+_ATTR_IDS = 'ids'
+_ATTR_SIZE = 'size'
 
 _ID_IDS = 0
 _ID_NEIGHS = 1
@@ -67,7 +68,7 @@ def build_graph(X, cover, clustering):
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
-        graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
+        graph.add_node(source, **{_ATTR_SIZE: len(items), _ATTR_IDS: items})
     edges = set()
     for source, (_, target_ids) in adjaciency.items():
         for target in target_ids:
@@ -102,10 +103,25 @@ def build_connectivity(X, graph):
     for cc in nx.connected_components(graph):
         for nd in cc:
             graph.nodes[nd]
-            for item_id in graph.nodes[nd][ATTR_IDS]:
+            for item_id in graph.nodes[nd][_ATTR_IDS]:
                 item_cc[item_id] = cc_id
         cc_id += 1
     return item_cc
+
+
+def color_graph(X, graph, colormap=lambda x: x, agg=np.nanmean):
+    return aggregate_graph(X, graph, lambda x, y: np.nanmean(y), fun=colormap, agg=agg)
+
+
+def aggregate_graph(X, graph, metric, fun=lambda x: x, agg=np.nanmean):
+    kpis = {}
+    nodes = graph.nodes()
+    for node_id in nodes:
+        node_data = [X[i] for i in nodes[node_id][_ATTR_IDS]]
+        node_values = [fun(x) for x in node_data]
+        agg_value = agg(node_values)
+        kpis[node_id] = metric(node_values, [agg_value for _ in node_data])
+    return kpis
 
 
 class MapperAlgorithm:
@@ -116,4 +132,3 @@ class MapperAlgorithm:
             
     def build_graph(self, X):
         return build_graph(X, self.__cover, self.__clustering)
-
