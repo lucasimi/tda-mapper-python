@@ -26,21 +26,33 @@ _PLOTLY = 'plotly'
 _PLOTLY_3D = 'plotly_3d'
 
 
-from mapper.core import color_graph
+from mapper.core import aggregate_graph
 
 
 class MapperPlot:
 
-    def __init__(self, X, graph):
+    def __init__(self, X, graph, colors=None, pos2d=None, pos3d=None):
         self.__X = X
         self.__graph = graph
-        self.__pos2d = nx.spring_layout(self.__graph, dim=2)
-        self.__pos3d = nx.spring_layout(self.__graph, dim=3)
-        self.__colors = {x:0.5 for x in self.__graph.nodes()}
+        if colors is None:
+            self.__colors = {x:0.5 for x in self.__graph.nodes()}
+        else:
+            self.__colors = colors
+        if pos2d is None:
+            self.__pos2d = nx.spring_layout(self.__graph, dim=2)
+        else:
+            self.__pos2d = pos2d
+        if pos3d is None:
+            self.__pos3d = nx.spring_layout(self.__graph, dim=3)
+        else:
+            self.__pos3d = pos3d
 
-    def color_graph(self, colormap=lambda x: x, agg=np.nanmean):
-        colors = color_graph(self.__X, self.__graph, colormap, agg)
-        self.__colors = colors
+    def with_colors(self, colors=None, agg=np.nanmean):
+        if colors is None: 
+            colors = [np.nanmean(x) for x in self.__X]
+        node_colors = aggregate_graph(colors, self.__graph, agg)
+        mapper_plot = MapperPlot(self.__X, self.__graph, colors=node_colors, pos2d=self.__pos2d, pos3d=self.__pos3d)
+        return mapper_plot
 
     def plot(self, frontend, width, height, title=''):
         if frontend == _MATPLOTLIB:
