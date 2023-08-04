@@ -1,4 +1,5 @@
 from mapper.core import *
+from mapper.search import *
 
 
 class BallCover:
@@ -32,6 +33,23 @@ class KnnCover:
         parameters = {}
         parameters['neighbors'] = self.__neighbors
         parameters['metric'] = self.__metric
+        return parameters
+
+
+class CubicCover:
+
+    def __init__(self, n, perc): 
+        self.__n = n 
+        self.__perc = perc 
+
+    def charts(self, X): 
+        search = CubicSearch(self.__n, self.__perc)
+        return generate_charts(X, search)
+
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['n'] = self.__n
+        parameters['perc'] = self.__perc
         return parameters
 
 
