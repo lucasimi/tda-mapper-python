@@ -54,11 +54,11 @@ class MapperPlot:
         mapper_plot = MapperPlot(self.__X, self.__graph, colors=node_colors, pos2d=self.__pos2d, pos3d=self.__pos3d)
         return mapper_plot
 
-    def plot(self, frontend, width, height, title=''):
+    def plot(self, ax, frontend, width, height, title=''):
         if frontend == _MATPLOTLIB:
-            return self._plot_matplotlib(width, height, title)
+            return self._plot_matplotlib(ax, width, height, title)
         elif frontend == _PLOTLY:
-            return self._plot_plotly_2d(width, height, title)
+            return self._plot_plotly_2d(ax, width, height, title)
         else:
             raise Exception(f'unexpected argument {frontend} for frontend')
 
@@ -86,14 +86,16 @@ class MapperPlot:
         colorbar = plt.colorbar(
             verts,
             orientation='vertical',
-            aspect=height/(0.025 * width),
+            #aspect=height/(0.025 * width),
+            aspect=40,
             pad=0.0,
             ax=ax,
-            fraction=0.025
+            
+            #fraction=0.025
         )
         colorbar.set_label(title, color=EDGE_COLOR)
         colorbar.set_alpha(NODE_ALPHA)
-        colorbar.outline.set_linewidth(0)
+        #colorbar.outline.set_linewidth(0)
         colorbar.outline.set_color(EDGE_COLOR)
         colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
 
@@ -114,21 +116,20 @@ class MapperPlot:
         lines.set_array(cols)
         ax.add_collection(lines)
 
-    def _plot_matplotlib(self, width, height, title):
-        fig, ax = plt.subplots(figsize=(width / _DPIS, height / _DPIS), dpi=_DPIS)
-        ax.set_facecolor('#fff')
-        for axis in ['top','bottom','left','right']:
-            ax.spines[axis].set_linewidth(0)
-        fig.patch.set_alpha(0.0)
-        fig.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
-        ax.patch.set_alpha(0.0)
+    def _plot_matplotlib(self, ax, width, height, title):
+        #fig, ax = plt.subplots(figsize=(width / _DPIS, height / _DPIS), dpi=_DPIS)
+        #ax.set_facecolor('#fff')
+        #for axis in ['top','bottom','left','right']:
+        #    ax.spines[axis].set_linewidth(0)
+        #ax.patch.set_alpha(0.0)
+        #ax.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left=0.0)
+        #ax.patch.set_alpha(0.0)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         self._plot_matplotlib_edges(ax)
         self._plot_matplotlib_nodes(ax, width, height, title)
-        return fig
 
-    def _plot_plotly_2d(self, width, height, title):
+    def _plot_plotly_2d(self, ax, width, height, title):
         edge_trace = self._plot_plotly_2d_edges()
         node_trace = self._plot_plotly_2d_nodes(title)
         axis = dict(
