@@ -116,7 +116,6 @@ def aggregate_graph(y, graph, agg):
         node_values = [y[i] for i in nodes[node_id][_ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
-        #kpis[node_id] = metric(node_values, [agg_value for _ in node_data])
     return agg_values
 
 

@@ -68,7 +68,10 @@ class CubicSearch:
             maximum = np.maximum(maximum, np.array(w))
         self.__minimum = minimum
         self.__maximum = maximum
-        self.__delta = (self.__maximum - self.__minimum) / self.__n
+        eps = np.finfo(np.float64).eps
+        delta = (self.__maximum - self.__minimum) / self.__n
+        self.__delta = np.array([max(x, eps) for x in delta])
+
 
     def _nearest_center(self, x):
         return np.round((np.array(x) - self.__minimum) / self.__delta)
