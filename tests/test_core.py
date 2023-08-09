@@ -20,20 +20,20 @@ class TestMapper(unittest.TestCase):
 
     def testTrivial(self):
         data = dataset()
-        labels = build_labels(data, TrivialCover(), TrivialClustering())
+        labels = build_labels(data, data, TrivialCover(), TrivialClustering())
         self.assertEqual(len(data), len(labels))
         adj = build_adjaciency(labels)
         self.assertEqual(1, len(adj))
         self.assertEqual((list(range(len(data))), []), adj[0])
         mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         self.assertEqual([], list(g.neighbors(0)))
 
     def testBallSmallRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
         mp = MapperAlgorithm(BallCover(0.5, metric=dist), TrivialClustering())
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -41,7 +41,7 @@ class TestMapper(unittest.TestCase):
     def testBallSmallRadiusList(self):
         data = [np.array([float(i)]) for i in range(1000)]
         mp = MapperAlgorithm(cover=BallCover(0.5, metric=dist), clustering=DBSCAN(eps=1.0, min_samples=1))
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -49,7 +49,7 @@ class TestMapper(unittest.TestCase):
     def testBallLargeRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
         mp = MapperAlgorithm(cover=BallCover(1000.0, metric=dist), clustering=TrivialClustering())
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -59,7 +59,7 @@ class TestMapper(unittest.TestCase):
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         data = np.array(data)
         mp = MapperAlgorithm(cover=BallCover(150.0, metric=dist), clustering=TrivialClustering())
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
@@ -67,7 +67,7 @@ class TestMapper(unittest.TestCase):
     def testTwoConnectedClusters(self):
         data = [np.array([0.0, 1.0]), np.array([1.0, 0.0]), np.array([0.0, 0.0]), np.array([1.0, 1.0])]
         mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist), clustering=TrivialClustering())
-        g = mp.build_graph(data)
+        g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual(1, len(list(g.neighbors(node))))

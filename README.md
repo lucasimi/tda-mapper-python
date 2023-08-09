@@ -29,6 +29,7 @@ First, clone this repo, and install this library via pip install `python -m pip 
 ```python
 from sklearn.datasets import load_iris
 from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
 
 from mapper.core import *
 from mapper.cover import *
@@ -39,9 +40,10 @@ import matplotlib
 
 iris_data = load_iris()
 X, y = iris_data.data, iris_data.target
+lens = PCA(2).fit_transform(X)
 
 mapper_algo = MapperAlgorithm(cover=CubicCover(n=10, perc=0.25), clustering=TrivialClustering())
-mapper_graph = mapper_algo.build_graph(X)
+mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph)
 
 fig, axs = plt.subplots(1, 3, figsize=(15, 4))

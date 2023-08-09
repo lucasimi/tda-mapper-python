@@ -13,7 +13,7 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def build_labels(X, cover, clustering):
+def build_labels(X, y, cover, clustering):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
     contains the cluster ids to which the item at position i belongs to.
@@ -21,7 +21,7 @@ def build_labels(X, cover, clustering):
     '''
     max_label = 0
     labels = [[] for _ in X]
-    for neigh_ids in cover.charts(X):
+    for neigh_ids in cover.charts(y):
         neigh_data = [X[j] for j in neigh_ids]
         neigh_labels = clustering.fit(neigh_data).labels_
         max_neigh_label = 0
@@ -63,8 +63,8 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, cover, clustering):
-    labels = build_labels(X, cover, clustering)
+def build_graph(X, y, cover, clustering):
+    labels = build_labels(X, y, cover, clustering)
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
@@ -125,5 +125,5 @@ class MapperAlgorithm:
         self.__cover = cover
         self.__clustering = clustering
             
-    def build_graph(self, X):
-        return build_graph(X, self.__cover, self.__clustering)
+    def fit_transform(self, X, y):
+        return build_graph(X, y, self.__cover, self.__clustering)

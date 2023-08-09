@@ -72,7 +72,7 @@ class CoverClustering:
             cover = self.cover
         else:
             cover = TrivialCover()
-        multilabels = build_labels(X, cover, TrivialClustering())
+        multilabels = build_labels(X, X, cover, TrivialClustering())
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)
