@@ -91,7 +91,7 @@ def generate_charts(X, search):
             yield neigh_ids
 
 
-def build_connectivity(X, graph):
+def build_connectivity(graph):
     '''
     Takes a dataset and a graph, where each node represents a sets of elements
     from the dataset, returns a list of integers, where position i is the id

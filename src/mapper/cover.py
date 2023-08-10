@@ -10,7 +10,10 @@ class BallCover:
 
     def charts(self, X): 
         search = BallSearch(self.__radius, self.__metric)
-        return generate_charts(X, search)
+        return generate_charts(X, search) 
+
+    def fit(self, X, y=None):
+        return build_labels(X, X, self, TrivialClustering())
 
     def get_params(self, deep=True):
         parameters = {}
@@ -29,6 +32,9 @@ class KnnCover:
         search = KnnSearch(self.__neighbors, self.__metric)
         return generate_charts(X, search)
 
+    def fit(self, X, y=None):
+        return build_labels(X, X, self, TrivialClustering())
+
     def get_params(self, deep=True):
         parameters = {}
         parameters['neighbors'] = self.__neighbors
@@ -46,6 +52,9 @@ class CubicCover:
         search = CubicSearch(self.__n, self.__perc)
         return generate_charts(X, search)
 
+    def fit(self, X, y=None):
+        return build_labels(X, X, self, TrivialClustering())
+
     def get_params(self, deep=True):
         parameters = {}
         parameters['n'] = self.__n
@@ -61,6 +70,9 @@ class TrivialCover:
     def charts(self, X): 
         search = TrivialSearch()
         return generate_charts(X, search)
+
+    def fit(self, X, y=None):
+        return build_labels(X, X, self, TrivialClustering())
 
     def get_params(self, deep=True):
         parameters = {}
