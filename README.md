@@ -2,29 +2,27 @@
 
 ![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
 
-This library is an implementation of the Mapper Algorithm from Topological Data Analysis, a branch of data analysis using topological tools to recover insights from datasets. In the following, we give a brief description of the algorithm, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm builds a graph from a given dataset, and some user choices. The output graph, called "mapper graph" gives a global approximation of (some) topological features of the original dataset, giving direct information about its shape and its connected components.
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data analysis. The core principle of TDA is to rely on topological methods to gain reliable insights about datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. In the following, we give a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
-### Input
+The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the connectivity of $X$. Surprisingly enough, despite living in a 2-dimensional space, the connectivity of $X$ is completely described by the mapper graph, i.e. they share the same number of connected components. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted.
 
-Assume we have a dataset D inside a metric space X, together with the following choices:
+The Mapper Algorithm follows these steps:
 
-1. A continuous map $f \colon X \to Y$
-2. A cover algorithm for $f(D)$
-3. A clustering algorithm for $D$.
+1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
-### Steps
+2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
-The mapper algorithm follows these steps:
+3. For each open set $U$ of $f(X)$ let $V$ be the preimage of $U$ under $f$. Then the collection of $V$'s makes an open cover of $X$. For each $V$, run any chosen *clustering* algorithm and keep track of all the local clusters. 
 
-1. Build an open cover of $f(D)$
-2. For each open chart $U$ of $f(D)$ let $V$ the preimage of $U$ under $f$, then the $V$'s form an open cover of $D$. For each $V$, run the chosen clustering algorithm
-3. For each local cluster obtained, build a node. Whenever two local clusters (from different $V$'s) intersect, draw an edge between their corresponding nodes.
+4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding clusters intersect.
 
-The graph obtained is called a "mapper graph".
+NB: The choice of the lens $f$ is important, more than the choice of cover or clustering.
 
-## How to use this library
+## How to use this package - A Simple Example
 
-First, clone this repo, and install this library via pip install `python -m pip install .`. In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as [`sklearn.cluster`](https://scikit-learn.org/stable/modules/clustering.html) algorithms do, and returning an object which defines a `.labels_` field.
+First, clone this repo, and install via pip `python -m pip install .`. 
+
+In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numeric features and a label which represents a class. As a lens we chose the PCA on two components. 
 
 ```python
 from sklearn.datasets import load_iris
@@ -66,4 +64,3 @@ for c in range(3):
     - [x] Any sklearn clustering algorithm
     - [x] Skip clustering
     - [x] Clustering induced by cover
-
