@@ -1,4 +1,4 @@
-from mapper.core import *
+from mapper.core import build_labels
 from mapper.cover import TrivialCover
 
 

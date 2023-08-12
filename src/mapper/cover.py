@@ -1,4 +1,4 @@
-from mapper.core import *
+from mapper.core import generate_charts
 from mapper.search import *
 
 

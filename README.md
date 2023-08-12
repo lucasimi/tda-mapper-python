@@ -4,7 +4,7 @@
 
 In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data analysis. The core principle of TDA is to rely on topological methods to gain reliable insights about datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. In the following, we give a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
-The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the connectivity of $X$. Surprisingly enough, despite living in a 2-dimensional space, the connectivity of $X$ is completely described by the mapper graph, i.e. they share the same number of connected components. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted.
+The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the shape of $X$. Surprisingly enough, despite living in a 2-dimensional space, the connected components of $X$ are completely described by the mapper graph, i.e. they share the same number of connected components. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted.
 
 The Mapper Algorithm follows these steps:
 
@@ -12,11 +12,11 @@ The Mapper Algorithm follows these steps:
 
 2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
-3. For each open set $U$ of $f(X)$ let $V$ be the preimage of $U$ under $f$. Then the collection of $V$'s makes an open cover of $X$. For each $V$, run any chosen *clustering* algorithm and keep track of all the local clusters. 
+3. For each open set $U$ of $f(X)$ let $V$ be the preimage of $U$ under $f$. Then the collection of $V$'s makes an open cover of $X$. For each $V$, run any chosen *clustering* algorithm and keep track of all the local clusters. Here we use clustering as the statistical version of the topological notion of connected components.
 
 4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding clusters intersect.
 
-NB: The choice of the lens $f$ is important, more than the choice of cover or clustering.
+N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the Nerve Theorem for a more precise statement). Unfortunately, clustering algorithms are not perfect tools. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
 
 ## How to use this package - A Simple Example
 

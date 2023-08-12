@@ -2,7 +2,6 @@ import numpy as np
 import networkx as nx
 from sklearn.utils import check_X_y, check_array
 
-from .search import BallSearch, KnnSearch, TrivialSearch
 from .utils.unionfind import UnionFind
 
 
@@ -23,7 +22,10 @@ def build_labels(X, y, cover, clustering):
     labels = [[] for _ in X]
     for neigh_ids in cover.charts(y):
         neigh_data = [X[j] for j in neigh_ids]
-        neigh_labels = clustering.fit(neigh_data).labels_
+        try:
+            neigh_labels = clustering.fit(neigh_data).labels_
+        except:
+            neigh_labels = [0 for _ in neigh_data]
         max_neigh_label = 0
         for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
             if neigh_label != -1:
