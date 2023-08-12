@@ -124,15 +124,6 @@ class MapperPlot:
     def _plot_plotly_2d(self, title, width, height):
         edge_trace = self._plot_plotly_2d_edges()
         node_trace = self._plot_plotly_2d_nodes(title)
-        axis = dict(
-            showbackground=False,
-            showline=True,
-            mirror=True,
-            zeroline=False,
-            showgrid=False,
-            showticklabels=False,
-            title=title
-        )
         fig = go.Figure(
             data=[edge_trace, node_trace],
             layout=go.Layout(
@@ -141,18 +132,22 @@ class MapperPlot:
                 plot_bgcolor='rgba(0, 0, 0, 0)',
                 autosize=False,
                 showlegend=False,
-                scene=dict(
-                    xaxis=dict(axis),
-                    yaxis=dict(axis)
-                ),
                 hovermode='closest',
                 xaxis=dict(
                     showline=True,
+                    linecolor='black',
+                    linewidth=1,
                     mirror=True,
+                    visible=True,
+                    showticklabels=False,
                 ),
                 yaxis=dict(
                     showline=True,
+                    linecolor='black',
+                    linewidth=1,
                     mirror=True,
+                    visible=True,
+                    showticklabels=False,
                 )
             )
         )
@@ -175,26 +170,7 @@ class MapperPlot:
             layout=go.Layout(
                 width=width,
                 height=height,
-                plot_bgcolor='rgba(0, 0, 0, 1)',
-                autosize=False,
-                showlegend=False,
-                scene=dict(
-                    xaxis=dict(axis),
-                    yaxis=dict(axis)
-                ),
-                hovermode='closest',
-                annotations=[
-                    dict(
-                        showarrow=False,
-                        xref="paper",
-                        yref="paper",
-                        x=0.000, 
-                        y=0.000,
-                        text=''
-                    ) 
-                ],
                 xaxis=dict(
-                    showgrid=False,
                     zeroline=False, 
                     showticklabels=False
                 ),
@@ -279,7 +255,7 @@ class MapperPlot:
             color = self.__colors[node]
             node_colors.append(color)
             node_sizes.append(25.0 * math.sqrt(sizes[node] / max_size))
-            node_label = self._plotly_label(sizes[node], self.__colors[node])
+            node_label = self._plotly_label(node, sizes[node], self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter(
             x=node_x,
@@ -306,16 +282,18 @@ class MapperPlot:
                     xanchor='left',
                     titleside='right',
                     ypad=0,
+                    xpad=0,
+                    x=1
                 ),
                 line_width=1.4 * EDGE_WIDTH,
                 line_color=EDGE_COLOR))
         node_trace.text = node_captions
         return node_trace
 
-    def _plotly_label(self, size, color):
+    def _plotly_label(self, node_id, size, color):
         node_label_size = self._fmt(size, 5)
         node_label_color = self._fmt(color, 3)
-        return f'size: {node_label_size}<br>color: {node_label_color}'
+        return f'color: {node_label_color}<br>node: {node_id}<br>size: {node_label_size}'
 
     def _plot_plotly_3d_nodes(self, title):
         nodes = self.__graph.nodes()
@@ -336,7 +314,7 @@ class MapperPlot:
             color = self.__colors[node]
             node_colors.append(color)
             node_sizes.append(25.0 * math.sqrt(sizes[node] / max_size))
-            node_label = self._plotly_label(sizes[node], self.__colors[node])
+            node_label = self._plotly_label(node, sizes[node], self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter3d(
             x=node_x,
