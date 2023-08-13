@@ -54,15 +54,16 @@ class MapperPlot:
         mapper_plot = MapperPlot(self.__X, self.__graph, pos2d=self.__pos2d, pos3d=self.__pos3d, colors=node_colors, cmap=cmap)
         return mapper_plot
 
-    def plot(self, frontend, title='', ax=None, width=512, height=512):
-        if frontend == _MATPLOTLIB:
-            return self._plot_matplotlib(title, ax)
-        elif frontend == _PLOTLY:
-            return self._plot_plotly_2d(title, width, height)
-        elif frontend == _PLOTLY_3D:
-            return self._plot_plotly_3d(title, width, height)
-        else:
-            raise Exception(f'unexpected argument {frontend} for frontend')
+    def plot_static(self, title='', ax=None):
+        if ax is None:
+            _, ax = plt.subplots(1, 1, figsize=(6, 6))
+        return self._plot_matplotlib(title, ax)
+    
+    def plot_interactive_2d(self, title='', width=512, height=512): 
+        return self._plot_plotly_2d(title, width, height)
+
+    def plot_interactive_3d(self, title='', width=512, height=512): 
+        return self._plot_plotly_3d(title, width, height)
 
     def _plot_matplotlib_nodes(self, title, ax):
         nodes = self.__graph.nodes()
@@ -154,29 +155,6 @@ class MapperPlot:
         )
         return fig
 
-    def _plot_plotly_3d(self, title, width, height):
-        edge_trace = self._plot_plotly_3d_edges()
-        node_trace = self._plot_plotly_3d_nodes(title)
-        axis = dict(
-            showline=True,
-            linecolor='black',
-            linewidth=1,
-            mirror=True,
-            visible=True,
-            showticklabels=False,
-        )
-        layout = go.Layout(
-            width=width,
-            height=height,
-            xaxis=axis,
-            yaxis=axis,
-        )
-        fig = go.Figure(
-            data=[edge_trace, node_trace],
-            layout=layout,
-        )
-        return fig
-
     def _plot_plotly_2d_edges(self):
         edge_x, edge_y = [], []
         for edge in self.__graph.edges():
@@ -201,39 +179,11 @@ class MapperPlot:
         )
         return edge_trace
 
-    def _plot_plotly_3d_edges(self):
-        edge_x, edge_y, edge_z = [], [], []
-        for edge in self.__graph.edges():
-            x0, y0, z0 = self.__pos3d[edge[0]]
-            x1, y1, z1 = self.__pos3d[edge[1]]
-            edge_x.append(x0)
-            edge_x.append(x1)
-            edge_x.append(None)
-            edge_y.append(y0)
-            edge_y.append(y1)
-            edge_y.append(None)
-            edge_z.append(z0)
-            edge_z.append(z1)
-            edge_z.append(None)
-        edge_trace = go.Scatter3d(
-            x=edge_x, 
-            y=edge_y,
-            z=edge_z,
-            mode='lines',
-            opacity=EDGE_ALPHA,
-            line=dict(
-                width=1.5 * EDGE_WIDTH, 
-                color=EDGE_COLOR
-            ),
-            hoverinfo='none'
-        )
-        return edge_trace
-
     def _fmt(self, x, max_len=3):
         fmt = f'.{max_len}g'
         return f'{x:{fmt}}'
 
-    def _plotly_colorbar(self, title):
+    def _plotly_colorbar_2d(self, title):
         return go.scatter.marker.ColorBar(
             showticklabels=True,
             outlinewidth=1,
@@ -269,7 +219,7 @@ class MapperPlot:
             mode='markers',
             hoverinfo='text',
             opacity=1.0,
-            marker=self._plotly_node_marker(title),
+            marker=self._plotly_node_marker_2d(title),
             text=node_captions,
         )
         return node_trace
@@ -279,7 +229,7 @@ class MapperPlot:
         node_label_color = self._fmt(color, 3)
         return f'color: {node_label_color}<br>node: {node_id}<br>size: {node_label_size}'
 
-    def _plotly_node_marker(self, title):
+    def _plotly_node_marker_2d(self, title):
         nodes = self.__graph.nodes()
         colors = [self.__colors[node] for node in nodes]
         min_color = min(self.__colors.values())
@@ -296,7 +246,136 @@ class MapperPlot:
             cmin=min_color,
             opacity=NODE_ALPHA,
             size=node_sizes,
-            colorbar=self._plotly_colorbar(title),
+            colorbar=self._plotly_colorbar_2d(title),
+            line_width=1.4 * EDGE_WIDTH,
+            line_color=EDGE_COLOR
+        )
+
+    def _plot_plotly_3d(self, title, width, height):
+        edge_trace = self._plot_plotly_3d_edges()
+        node_trace = self._plot_plotly_3d_nodes(title)
+        axis = dict(
+            showline=True,
+            linecolor='black',
+            linewidth=1,
+            mirror=True,
+            visible=True,
+            showticklabels=False,
+        )
+        layout = go.Layout(
+            width=width,
+            height=height,
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            autosize=False,
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=10, l=10, r=10, t=10),
+            xaxis=axis,
+            yaxis=axis,
+            scene=dict(
+                xaxis=dict(
+                    showgrid=False,
+                    visible=True,
+                    backgroundcolor='rgba(0, 0, 0, 0)',
+                    showline=True,
+                    linecolor='black',
+                    linewidth=1,
+                    mirror=True,
+                    showticklabels=False,
+                ),
+                yaxis=dict(
+                    showgrid=False,
+                    visible=True,
+                    backgroundcolor='rgba(0, 0, 0, 0)',
+                    showline=True,
+                    linecolor='black',
+                    linewidth=1,
+                    mirror=True,
+                    showticklabels=False,
+                ),
+                zaxis=dict(
+                    showgrid=False,
+                    visible=True,
+                    backgroundcolor='rgba(0, 0, 0, 0)',
+                    showline=True,
+                    linecolor='black',
+                    linewidth=1,
+                    mirror=True,
+                    showticklabels=False,
+                )
+            )
+        )
+        fig = go.Figure(
+            data=[edge_trace, node_trace],
+            layout=layout,
+        )
+        return fig
+
+    def _plot_plotly_3d_edges(self):
+        edge_x, edge_y, edge_z = [], [], []
+        for edge in self.__graph.edges():
+            x0, y0, z0 = self.__pos3d[edge[0]]
+            x1, y1, z1 = self.__pos3d[edge[1]]
+            edge_x.append(x0)
+            edge_x.append(x1)
+            edge_x.append(None)
+            edge_y.append(y0)
+            edge_y.append(y1)
+            edge_y.append(None)
+            edge_z.append(z0)
+            edge_z.append(z1)
+            edge_z.append(None)
+        edge_trace = go.Scatter3d(
+            x=edge_x, 
+            y=edge_y,
+            z=edge_z,
+            mode='lines',
+            opacity=EDGE_ALPHA,
+            line=dict(
+                width=1.5 * EDGE_WIDTH, 
+                color=EDGE_COLOR
+            ),
+            hoverinfo='none'
+        )
+        return edge_trace
+
+    def _plotly_colorbar_3d(self, title):
+        return go.scatter3d.marker.ColorBar(
+            showticklabels=True,
+            outlinewidth=1,
+            borderwidth=0,
+            orientation='v',
+            thickness=0.025,
+            thicknessmode='fraction',
+            title=title,
+            xanchor='left',
+            titleside='right',
+            ypad=0,
+            xpad=0, 
+            tickwidth=1,
+            tickformat='.2g',
+            nticks=10,
+            tickmode='auto',
+        )
+
+    def _plotly_node_marker_3d(self, title):
+        nodes = self.__graph.nodes()
+        colors = [self.__colors[node] for node in nodes]
+        min_color = min(self.__colors.values())
+        max_color = max(self.__colors.values())
+        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
+        max_size = max(sizes.values()) if sizes else 1.0
+        node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
+        return go.scatter3d.Marker( 
+            showscale=True,
+            colorscale=self.__cmap,
+            reversescale=False,
+            color=colors,
+            cmax=max_color,
+            cmin=min_color,
+            opacity=NODE_ALPHA,
+            size=node_sizes,
+            colorbar=self._plotly_colorbar_3d(title),
             line_width=1.4 * EDGE_WIDTH,
             line_color=EDGE_COLOR
         )
@@ -310,7 +389,8 @@ class MapperPlot:
             node_x.append(x)
             node_y.append(y)
             node_z.append(z)
-            node_label = self._plotly_label(node, sizes[node], self.__colors[node])
+            size = nodes[node][mapper.core._ATTR_SIZE]
+            node_label = self._plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter3d(
             x=node_x,
@@ -319,7 +399,7 @@ class MapperPlot:
             mode='markers',
             hoverinfo='text',
             opacity=1.0,
-            marker=self._plotly_node_marker(title),
+            marker=self._plotly_node_marker_3d(title),
             text=node_captions,
         )
         return node_trace
