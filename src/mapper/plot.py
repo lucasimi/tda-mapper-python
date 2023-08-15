@@ -1,7 +1,6 @@
-"""module for storing and drawing a cover graph"""
 import math
-import numpy as np
 
+import numpy as np
 import plotly.graph_objects as go
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -9,33 +8,25 @@ from matplotlib.collections import LineCollection
 
 import mapper.core
 import mapper.cover
+from mapper.core import _compute_local_interpolation
 
-from mapper.core import aggregate_graph
-
-NODE_ALPHA = 0.85
-EDGE_ALPHA = 0.85
-EDGE_WIDTH = 0.5
-EDGE_COLOR = '#777'
-
-FONT_SIZE = 8
-COLOR_FORMAT = '.2e'
-TICKS_NUM = 5
-
-_DPIS = 96
-
-_MATPLOTLIB = 'matplotlib'
-_PLOTLY = 'plotly'
-_PLOTLY_3D = 'plotly_3d'
+_NODE_ALPHA = 0.85
+_EDGE_ALPHA = 0.85
+_EDGE_WIDTH = 0.5
+_EDGE_COLOR = '#777'
+_FONT_SIZE = 8
+_TICKS_NUM = 10
 
 
 class MapperPlot:
 
-    def __init__(self, X, graph, colors=None, pos2d=None, pos3d=None, iterations=50, cmap='jet'):
+    def __init__(self, X, graph, colors=None, agg=np.nanmean, cmap='jet', iterations=50, pos2d=None, pos3d=None):
         self.__X = X
         self.__graph = graph
         self.__cmap = cmap
-        if colors is None:
-            self.__colors = {x:0.5 for x in self.__graph.nodes()}
+        if colors is None: 
+            item_colors = [np.nanmean(x) for x in self.__X]
+            self.__colors = _compute_local_interpolation(item_colors, self.__graph, agg)
         else:
             self.__colors = colors
         if pos2d is None:
@@ -44,15 +35,12 @@ class MapperPlot:
             self.__pos2d = pos2d
         if pos3d is None:
             self.__pos3d = nx.spring_layout(self.__graph, dim=3, iterations=iterations)
-        else:
+        else: 
             self.__pos3d = pos3d
 
-    def with_colors(self, colors=None, agg=np.nanmean, cmap='jet'):
-        if colors is None: 
-            colors = [np.nanmean(x) for x in self.__X]
-        node_colors = aggregate_graph(colors, self.__graph, agg)
-        mapper_plot = MapperPlot(self.__X, self.__graph, pos2d=self.__pos2d, pos3d=self.__pos3d, colors=node_colors, cmap=cmap)
-        return mapper_plot
+    def with_colors(self, colors, agg=np.nanmean, cmap='jet'):
+        node_colors = _compute_local_interpolation(colors, self.__graph, agg)
+        return MapperPlot(self.__X, self.__graph, colors=node_colors, cmap=cmap, pos2d=self.__pos2d, pos3d=self.__pos3d)
 
     def plot_static(self, title='', ax=None):
         if ax is None:
@@ -79,13 +67,13 @@ class MapperPlot:
             x=nodes_x,
             y=nodes_y,
             c=nodes_c,
-            cmap=self.__cmap,
             s=nodes_s,
-            alpha=NODE_ALPHA,
+            cmap=self.__cmap,
+            alpha=_NODE_ALPHA,
             vmin=min_color,
             vmax=max_color,
-            edgecolors=EDGE_COLOR,
-            linewidths=EDGE_WIDTH
+            edgecolors=_EDGE_COLOR,
+            linewidths=_EDGE_WIDTH
         )
         colorbar = plt.colorbar(
             verts,
@@ -96,29 +84,24 @@ class MapperPlot:
             ax=ax,
             format="%.2g"
         )
-        colorbar.set_label(title, color=EDGE_COLOR)
-        colorbar.set_alpha(NODE_ALPHA)
-        colorbar.outline.set_color(EDGE_COLOR)
-        colorbar.ax.yaxis.set_tick_params(color=EDGE_COLOR, labelcolor=EDGE_COLOR)
+        colorbar.set_label(title, color=_EDGE_COLOR)
+        colorbar.set_alpha(_NODE_ALPHA)
+        colorbar.outline.set_color(_EDGE_COLOR)
+        colorbar.ax.yaxis.set_tick_params(color=_EDGE_COLOR, labelcolor=_EDGE_COLOR)
         colorbar.ax.tick_params(labelsize=8)
         colorbar.ax.locator_params(nbins=10)
 
-
     def _plot_matplotlib_edges(self, ax):
-        min_color = min(self.__colors.values())
-        max_color = max(self.__colors.values())
         edges = self.__graph.edges()
         segments = [(self.__pos2d[edge[0]], self.__pos2d[edge[1]]) for edge in edges]
-        cols = [0.5 * (self.__colors[edge[0]] + self.__colors[edge[1]]) for edge in edges]
-        norm = plt.Normalize(min_color, max_color)
         lines = LineCollection(
             segments,
-            cmap=self.__cmap,
-            norm=norm,
-            linewidth=EDGE_WIDTH,
-            alpha=EDGE_ALPHA
+            color=_EDGE_COLOR,
+            linewidth=_EDGE_WIDTH,
+            alpha=_EDGE_ALPHA,
+            zorder=-1,
+            antialiased=True
         )
-        lines.set_array(cols)
         ax.add_collection(lines)
 
     def _plot_matplotlib(self, title, ax):
@@ -170,10 +153,10 @@ class MapperPlot:
             x=edge_x, 
             y=edge_y,
             mode='lines',
-            opacity=EDGE_ALPHA,
+            opacity=_EDGE_ALPHA,
             line=dict(
-                width=1.5 * EDGE_WIDTH, 
-                color=EDGE_COLOR
+                width=1.5 * _EDGE_WIDTH, 
+                color=_EDGE_COLOR
             ),
             hoverinfo='none'
         )
@@ -244,11 +227,11 @@ class MapperPlot:
             color=colors,
             cmax=max_color,
             cmin=min_color,
-            opacity=NODE_ALPHA,
+            opacity=_NODE_ALPHA,
             size=node_sizes,
             colorbar=self._plotly_colorbar_2d(title),
-            line_width=1.4 * EDGE_WIDTH,
-            line_color=EDGE_COLOR
+            line_width=1.4 * _EDGE_WIDTH,
+            line_color=_EDGE_COLOR
         )
 
     def _plot_plotly_3d(self, title, width, height):
@@ -336,10 +319,10 @@ class MapperPlot:
             y=edge_y,
             z=edge_z,
             mode='lines',
-            opacity=EDGE_ALPHA,
+            opacity=_EDGE_ALPHA,
             line=dict(
-                width=1.5 * EDGE_WIDTH, 
-                color=EDGE_COLOR
+                width=1.5 * _EDGE_WIDTH, 
+                color=_EDGE_COLOR
             ),
             hoverinfo='none'
         )
@@ -379,11 +362,11 @@ class MapperPlot:
             color=colors,
             cmax=max_color,
             cmin=min_color,
-            opacity=NODE_ALPHA,
+            opacity=_NODE_ALPHA,
             size=node_sizes,
             colorbar=self._plotly_colorbar_3d(title),
-            line_width=1.4 * EDGE_WIDTH,
-            line_color=EDGE_COLOR
+            line_width=1.4 * _EDGE_WIDTH,
+            line_color=_EDGE_COLOR
         )
 
     def _plot_plotly_3d_nodes(self, title):

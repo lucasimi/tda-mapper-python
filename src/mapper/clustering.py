@@ -1,4 +1,7 @@
-from mapper.core import build_labels
+from sklearn.utils import check_X_y
+
+from mapper.utils.unionfind import UnionFind
+from mapper.core import _build_labels
 from mapper.cover import TrivialCover
 
 
@@ -72,7 +75,7 @@ class CoverClustering:
             cover = self.cover
         else:
             cover = TrivialCover()
-        multilabels = build_labels(X, X, cover, TrivialClustering())
+        multilabels = _build_labels(X, X, cover, TrivialClustering())
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)

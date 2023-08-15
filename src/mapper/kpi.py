@@ -9,7 +9,7 @@ from sklearn.metrics import mean_absolute_percentage_error as mape
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.metrics import mean_squared_error as mse
 
-from mapper.core import aggregate_graph
+from mapper.core import _compute_local_interpolation
 
 def _rmse(x, y):
     return math.sqrt(mse(x, y))
@@ -27,7 +27,7 @@ class MapperKpis:
         self.__kpis = {x: 0.5 for x in self.__graph.nodes()}
 
     def aggregate(self, metric, fun=lambda x: x, agg=np.nanmean):
-        kpis = aggregate_graph(self.__X, self.__graph, metric, fun, agg)
+        kpis = _compute_local_interpolation(self.__X, self.__graph, metric, fun, agg)
         self.__kpis = kpis
 
     def plot(self, width, height, title=''):

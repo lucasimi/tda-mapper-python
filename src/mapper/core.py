@@ -12,7 +12,7 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def build_labels(X, y, cover, clustering):
+def _build_labels(X, y, cover, clustering):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
     contains the cluster ids to which the item at position i belongs to.
@@ -36,7 +36,7 @@ def build_labels(X, y, cover, clustering):
     return labels
         
 
-def build_adjaciency(labels):
+def _build_adjaciency(labels):
     '''
     Takes a list of lists of items, returns a dict where each item is
     mapped to a couple. Inside each couple the first entry is the list 
@@ -65,9 +65,9 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, y, cover, clustering):
-    labels = build_labels(X, y, cover, clustering)
-    adjaciency = build_adjaciency(labels)
+def _build_graph(X, y, cover, clustering):
+    labels = _build_labels(X, y, cover, clustering)
+    adjaciency = _build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
         graph.add_node(source, **{_ATTR_SIZE: len(items), _ATTR_IDS: items})
@@ -82,7 +82,7 @@ def build_graph(X, y, cover, clustering):
     return graph
 
 
-def generate_charts(X, search):
+def _build_charts(X, search):
     covered = set()
     search.fit(X)
     for i in range(len(X)):
@@ -93,7 +93,7 @@ def generate_charts(X, search):
             yield neigh_ids
 
 
-def build_connectivity(graph):
+def _build_connected_components(graph):
     '''
     Takes a dataset and a graph, where each node represents a sets of elements
     from the dataset, returns a list of integers, where position i is the id
@@ -111,7 +111,7 @@ def build_connectivity(graph):
     return item_cc
 
 
-def aggregate_graph(y, graph, agg):
+def _compute_local_interpolation(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
@@ -126,6 +126,25 @@ class MapperAlgorithm:
     def __init__(self, cover, clustering):
         self.__cover = cover
         self.__clustering = clustering
+
+    def fit(self, X, y=None):
+        self.graph_ = self.fit_transform(X, y)
+        return self
             
     def fit_transform(self, X, y):
-        return build_graph(X, y, self.__cover, self.__clustering)
+        return _build_graph(X, y, self.__cover, self.__clustering)
+
+
+class MapperClassifier:
+
+    def __init__(self, mapper_algo):
+        self.__mapper_algo = mapper_algo
+
+    def fit(self, X, y=None):
+        self.labels_ = self.fit_predict(X, y)
+        return self
+            
+    def fit_predict(self, X, y):
+        graph = self.__mapper_algo.fit_transform(X, y)
+        ccs = _build_connected_components(graph)
+        return [ccs[i] for i, _ in enumerate(X)]

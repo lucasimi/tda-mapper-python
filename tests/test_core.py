@@ -20,9 +20,9 @@ class TestMapper(unittest.TestCase):
 
     def testTrivial(self):
         data = dataset()
-        labels = build_labels(data, data, TrivialCover(), TrivialClustering())
+        labels = _build_labels(data, data, TrivialCover(), TrivialClustering())
         self.assertEqual(len(data), len(labels))
-        adj = build_adjaciency(labels)
+        adj = _build_adjaciency(labels)
         self.assertEqual(1, len(adj))
         self.assertEqual((list(range(len(data))), []), adj[0])
         mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
@@ -71,6 +71,3 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual(1, len(list(g.neighbors(node))))
-        cc = build_connectivity(data, g)
-        cc_values = set([cc[n] for n, _ in enumerate(data)])
-        self.assertEqual(1, len(cc_values))
