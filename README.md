@@ -2,13 +2,13 @@
 
 ![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
 
-In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data analysis. The core principle of TDA is to rely on topological methods to gain valuable insights from datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. In the following, we give a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to rely on topological methods to gain valuable insights from datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the shape of $X$. Surprisingly enough, despite living in a 2-dimensional space, the mapper graph $G$ shares the same number of connected components of $X$. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted. This is especially true when you want to visualize the shape of a dataset: if you wanto to get some understanding of how different clusters of data are related together, you want to reduce the effect of distorsions.
 
-The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the shape of $X$. Surprisingly enough, despite living in a 2-dimensional space, the connected components of $X$ are completely described by the mapper graph, i.e. they share the same number of connected components. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted. This is especially true when you want to visualize the shape of a dataset. In order to get some understanding of how subsets of data are related together, you want to reduce the chance of distorsions.
+## Basics
 
-The Mapper Algorithm follows these steps:
+Here we'll give just a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
 
-1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
+1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually with dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
 2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
@@ -18,7 +18,7 @@ The Mapper Algorithm follows these steps:
 
 N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the Nerve Theorem for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a strong tool to understand the shape of data. Unfortunately, clustering algorithms are not perfect tools. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
 
-## How to use this package - A Simple Example
+## How to use this package - A First Example
 
 First, clone this repo, and install via pip `python -m pip install .`. 
 
@@ -54,9 +54,9 @@ colored.plot_static(title='class', ax=ax)
 ```
 ![The mapper graph of the iris dataset](/examples/iris.png)
 
-## Another Example
+## A Second Example
 
-In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented a dim-64 arrays (8x8 pictures)
+In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented as dim-64 arrays (8x8 pictures)
 
 ```python
 from sklearn.datasets import load_digits
