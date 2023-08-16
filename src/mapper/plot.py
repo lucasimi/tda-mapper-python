@@ -8,7 +8,7 @@ from matplotlib.collections import LineCollection
 
 import mapper.core
 import mapper.cover
-from mapper.core import _compute_local_interpolation
+from mapper.core import compute_local_interpolation
 
 _NODE_ALPHA = 0.85
 _EDGE_ALPHA = 0.85
@@ -20,13 +20,15 @@ _TICKS_NUM = 10
 
 class MapperPlot:
 
-    def __init__(self, X, graph, colors=None, agg=np.nanmean, cmap='jet', iterations=50, pos2d=None, pos3d=None):
+    def __init__(self, 
+        X, graph, colors=None, agg=np.nanmean, cmap='jet', iterations=50,
+        pos2d=None, pos3d=None):
         self.__X = X
         self.__graph = graph
         self.__cmap = cmap
-        if colors is None: 
+        if colors is None:
             item_colors = [np.nanmean(x) for x in self.__X]
-            self.__colors = _compute_local_interpolation(item_colors, self.__graph, agg)
+            self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
         else:
             self.__colors = colors
         if pos2d is None:
@@ -35,22 +37,24 @@ class MapperPlot:
             self.__pos2d = pos2d
         if pos3d is None:
             self.__pos3d = nx.spring_layout(self.__graph, dim=3, iterations=iterations)
-        else: 
+        else:
             self.__pos3d = pos3d
 
     def with_colors(self, colors, agg=np.nanmean, cmap='jet'):
-        node_colors = _compute_local_interpolation(colors, self.__graph, agg)
-        return MapperPlot(self.__X, self.__graph, colors=node_colors, cmap=cmap, pos2d=self.__pos2d, pos3d=self.__pos3d)
+        node_colors = compute_local_interpolation(colors, self.__graph, agg)
+        return MapperPlot(
+            self.__X, self.__graph, colors=node_colors, cmap=cmap,
+            pos2d=self.__pos2d, pos3d=self.__pos3d)
 
     def plot_static(self, title='', ax=None):
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(6, 6))
         return self._plot_matplotlib(title, ax)
-    
-    def plot_interactive_2d(self, title='', width=512, height=512): 
+
+    def plot_interactive_2d(self, title='', width=512, height=512):
         return self._plot_plotly_2d(title, width, height)
 
-    def plot_interactive_3d(self, title='', width=512, height=512): 
+    def plot_interactive_3d(self, title='', width=512, height=512):
         return self._plot_plotly_3d(title, width, height)
 
     def _plot_matplotlib_nodes(self, title, ax):
@@ -133,7 +137,7 @@ class MapperPlot:
             yaxis=axis,
         )
         fig = go.Figure(
-            data=[edge_trace, node_trace], 
+            data=[edge_trace, node_trace],
             layout=layout
         )
         return fig
@@ -150,12 +154,12 @@ class MapperPlot:
             edge_y.append(y1)
             edge_y.append(None)
         edge_trace = go.Scatter(
-            x=edge_x, 
+            x=edge_x,
             y=edge_y,
             mode='lines',
             opacity=_EDGE_ALPHA,
             line=dict(
-                width=1.5 * _EDGE_WIDTH, 
+                width=1.5 * _EDGE_WIDTH,
                 color=_EDGE_COLOR
             ),
             hoverinfo='none'
@@ -220,7 +224,7 @@ class MapperPlot:
         sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
-        return go.scatter.Marker( 
+        return go.scatter.Marker(
             showscale=True,
             colorscale=self.__cmap,
             reversescale=False,
@@ -325,7 +329,7 @@ class MapperPlot:
             mode='lines',
             opacity=_EDGE_ALPHA,
             line=dict(
-                width=1.5 * _EDGE_WIDTH, 
+                width=1.5 * _EDGE_WIDTH,
                 color=_EDGE_COLOR
             ),
             hoverinfo='none'

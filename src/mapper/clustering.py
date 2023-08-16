@@ -1,7 +1,7 @@
-from sklearn.utils import check_X_y
+from sklearn.utils import check_X_y, check_array
 
+from mapper.core import build_labels
 from mapper.utils.unionfind import UnionFind
-from mapper.core import _build_labels
 from mapper.cover import TrivialCover
 
 
@@ -12,7 +12,7 @@ class TrivialClustering:
 
     def get_params(self, deep=True):
         return {}
-    
+
     def set_params(self, **parameters):
         return self
 
@@ -53,7 +53,7 @@ class CoverClustering:
                 for k, v in self.cover.get_params().items():
                     parameters[f'cover__{k}'] = v
         return parameters
-    
+
     def set_params(self, **parameters):
         for k, v in parameters.items():
             setattr(self, k, v)
@@ -75,7 +75,7 @@ class CoverClustering:
             cover = self.cover
         else:
             cover = TrivialCover()
-        multilabels = _build_labels(X, X, cover, TrivialClustering())
+        multilabels = build_labels(X, X, cover, TrivialClustering())
         label_values = set()
         for labels in multilabels:
             label_values.update(labels)

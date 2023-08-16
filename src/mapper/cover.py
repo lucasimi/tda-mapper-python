@@ -1,16 +1,17 @@
-from mapper.core import _build_charts
-from mapper.search import *
+from mapper.core import build_charts, build_labels
+from mapper.clustering import TrivialClustering
+from mapper.search import BallSearch, KnnSearch, TrivialSearch, CubicSearch
 
 
 class BallCover:
 
-    def __init__(self, radius, metric): 
-        self.__radius = radius 
-        self.__metric = metric 
+    def __init__(self, radius, metric):
+        self.__radius = radius
+        self.__metric = metric
 
-    def charts(self, X): 
+    def charts(self, X):
         search = BallSearch(self.__radius, self.__metric)
-        return _build_charts(X, search) 
+        return build_charts(X, search)
 
     def fit(self, X, y=None):
         return build_labels(X, X, self, TrivialClustering())
@@ -24,13 +25,13 @@ class BallCover:
 
 class KnnCover:
 
-    def __init__(self, neighbors, metric): 
-        self.__neighbors = neighbors 
-        self.__metric = metric 
+    def __init__(self, neighbors, metric):
+        self.__neighbors = neighbors
+        self.__metric = metric
 
-    def charts(self, X): 
+    def charts(self, X):
         search = KnnSearch(self.__neighbors, self.__metric)
-        return _build_charts(X, search)
+        return build_charts(X, search)
 
     def fit(self, X, y=None):
         return build_labels(X, X, self, TrivialClustering())
@@ -44,13 +45,13 @@ class KnnCover:
 
 class CubicCover:
 
-    def __init__(self, n, perc): 
-        self.__n = n 
-        self.__perc = perc 
+    def __init__(self, n, perc):
+        self.__n = n
+        self.__perc = perc
 
-    def charts(self, X): 
+    def charts(self, X):
         search = CubicSearch(self.__n, self.__perc)
-        return _build_charts(X, search)
+        return build_charts(X, search)
 
     def fit(self, X, y=None):
         return build_labels(X, X, self, TrivialClustering())
@@ -64,12 +65,12 @@ class CubicCover:
 
 class TrivialCover:
 
-    def __init__(self): 
+    def __init__(self):
         pass
 
     def charts(self, X): 
         search = TrivialSearch()
-        return _build_charts(X, search)
+        return build_charts(X, search)
 
     def fit(self, X, y=None):
         return build_labels(X, X, self, TrivialClustering())
