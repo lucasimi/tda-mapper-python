@@ -1,7 +1,6 @@
 import time
 import logging
 import random
-import sys
 import unittest
 import numpy as np
 
@@ -20,11 +19,10 @@ def dataset(dim=1, num=10000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
-class TestMapper(unittest.TestCase):
+class TestSearch(unittest.TestCase):
 
     def testTrivial(self):
-        return
-        data = dataset()
+        data = dataset(dim=1, num=100)
         bs = BallSearch(10, dist)
         bs.fit(data)
         for x in data:
