@@ -26,7 +26,3 @@ class TestQuickSelect(unittest.TestCase):
             for i in range(choice, n):
                 self.assertTrue(arr[i] >= val)
     
-
-if __name__=='__main__':
-    unittest.main()
-

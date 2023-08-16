@@ -54,7 +54,3 @@ class TestMapper(unittest.TestCase):
         t4 = time.time()
         logger.debug(f'Ball Search: {len(bsResults)} results, fit in {t1 - t0}s, search in {t3 - t2}s')
         logger.debug(f'KNN Search: {len(knnResults)} results, fit in {t2 - t1}s, search in {t4 - t3}s')
-
-
-if __name__ == '__main__':
-    unittest.main()

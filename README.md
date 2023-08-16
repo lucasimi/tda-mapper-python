@@ -2,64 +2,98 @@
 
 ![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
 
-This library is an implementation of the Mapper Algorithm from Topological Data Analysis, a branch of data analysis using topological tools to recover insights from datasets. In the following, we give a brief description of the algorithm, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm builds a graph from a given dataset, and some user choices. The output graph, called "mapper graph" gives a global approximation of (some) topological features of the original dataset, giving direct information about its shape and its connected components.
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to rely on topological methods to gain valuable insights from datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. As a 2-dimensional object, the mapper graph represents a reliable summary for the shape of $X$. Surprisingly enough, despite living in a 2-dimensional space, the mapper graph $G$ shares the same number of connected components of $X$. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted. This is especially true when you want to visualize the shape of a dataset: if you wanto to get some understanding of how different clusters of data are related together, you want to reduce the effect of distorsions.
 
-### Input
+## Basics
 
-Assume we have a dataset D inside a metric space X, together with the following choices:
+Here we'll give just a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
 
-1. A continuous map $f \colon X \to Y$
-2. A cover algorithm for $f(D)$
-3. A clustering algorithm for $D$.
+1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually with dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
-### Steps
+2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
-The mapper algorithm follows these steps:
+3. For each open set $U$ of $f(X)$ let $V$ be the preimage of $U$ under $f$. Then the collection of $V$'s makes an open cover of $X$. For each $V$, run any chosen *clustering* algorithm and keep track of all the local clusters. Here we use clustering as the statistical version of the topological notion of connected components.
 
-1. Build an open cover of $f(D)$
-2. For each open chart $U$ of $f(D)$ let $V$ the preimage of $U$ under $f$, then the $V$'s form an open cover of $D$. For each $V$, run the chosen clustering algorithm
-3. For each local cluster obtained, build a node. Whenever two local clusters (from different $V$'s) intersect, draw an edge between their corresponding nodes.
+4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding clusters intersect.
 
-The graph obtained is called a "mapper graph".
+N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the Nerve Theorem for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a strong tool to understand the shape of data. Unfortunately, clustering algorithms are not perfect tools. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
 
-## How to use this library
+## How to use this package - A First Example
 
-First, clone this repo, and install this library via pip install `python -m pip install .`. In the following example, available [here](examples/example_notebook.ipynb), we compute the mapper graph on a random dataset, using the identity lens and the euclidean metric. The clustering algorithm can be any class implementing a `fit` method, as [`sklearn.cluster`](https://scikit-learn.org/stable/modules/clustering.html) algorithms do, and returning an object which defines a `.labels_` field.
+First, clone this repo, and install via pip `python -m pip install .`. 
+
+In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numeric features and a label which represents a class. As a lens we chose the PCA on two components. 
 
 ```python
-import numpy as np
 
-from mapper.cover import SearchCover
-from mapper.search import BallSearch
-from mapper.pipeline import MapperPipeline
-from mapper.network import Network
+from sklearn.datasets import load_iris
+from sklearn.cluster import DBSCAN, KMeans, AgglomerativeClustering
+from sklearn.decomposition import PCA
 
-from sklearn.cluster import DBSCAN
+from mapper.core import *
+from mapper.cover import *
+from mapper.clustering import *
+from mapper.plot import *
 
-mp = MapperPipeline(
-    cover_algo=SearchCover(search_algo=BallSearch(1.5), 
-                           metric=lambda x, y: np.linalg.norm(x - y), 
-                           lens=lambda x: x),
-    clustering_algo=DBSCAN(eps=1.5, min_samples=2)
-    )
+import matplotlib
 
-data = [np.random.rand(10) for _ in range(100)]
-g = mp.fit(data)
-nw = Network(g)
-nw.plot(data)
+iris_data = load_iris()
+X, y = iris_data.data, iris_data.target
+lens = PCA(2).fit_transform(X)
+
+mapper_algo = MapperAlgorithm(
+    cover=CubicCover(n=10, perc=0.5), 
+    clustering=AgglomerativeClustering(n_clusters=None, linkage='single'))
+mapper_graph = mapper_algo.fit_transform(X, lens)
+mapper_plot = MapperPlot(X, mapper_graph)
+
+fig, ax = plt.subplots(1, 1, figsize=(7, 7))
+colored = mapper_plot.with_colors(colors=list(y), agg=np.nanmedian)
+colored.plot_static(title='class', ax=ax)
+
 ```
-![The mapper graph of a random dataset](/examples/graph.png)
+![The mapper graph of the iris dataset](/examples/iris.png)
+
+## A Second Example
+
+In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented as dim-64 arrays (8x8 pictures)
+
+```python
+from sklearn.datasets import load_digits
+from sklearn.cluster import DBSCAN, KMeans
+from sklearn.decomposition import PCA
+
+from mapper.core import *
+from mapper.cover import *
+from mapper.clustering import *
+from mapper.plot import *
+
+import matplotlib
+
+digits = load_digits()
+X, y = [np.array(x) for x in digits.data], digits.target
+lens = PCA(2).fit_transform(X)
+
+mapper_algo = MapperAlgorithm(cover=CubicCover(n=10, perc=0.25), clustering=KMeans(10, n_init='auto'))
+mapper_graph = mapper_algo.fit_transform(X, lens)
+mapper_plot = MapperPlot(X, mapper_graph, iterations=100)
+mapper_plot.with_colors(colors=y, cmap='jet', agg=np.nanmedian).plot_interactive_2d(width=512, height=512)
+
+```
+![The mapper graph of the digits dataset](/examples/digits.png)
+
+As you can see, the mapper can give you an interesting visual feedback about what's going on.
 
 ### Features
 
 - [x] Topology
     - [x] Any custom lens
     - [x] Any custom metric
+- [x] Cover algorithms:
+    - [x] Cubic Cover
+    - [x] Ball Cover
+    - [x] Knn Cover
 - [x] Clustering algoritms
     - [x] Any sklearn clustering algorithm
     - [x] Skip clustering
-- [x] Cover algorithms:
-    - [x] Ball Cover
-    - [x] Knn Cover
-    - [ ] Induced Cover
-
+    - [x] Clustering induced by cover
