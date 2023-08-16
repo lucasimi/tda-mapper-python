@@ -3,9 +3,9 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
-from mapper.core import *
-from mapper.cover import *
-from mapper.clustering import *
+from mapper.core import MapperAlgorithm
+from mapper.cover import TrivialCover, BallCover
+from mapper.clustering import TrivialClustering
 
 
 def dist(x, y):
@@ -35,7 +35,8 @@ class TestMapper(unittest.TestCase):
 
     def testBallSmallRadiusList(self):
         data = [np.array([float(i)]) for i in range(1000)]
-        mp = MapperAlgorithm(cover=BallCover(0.5, metric=dist), clustering=DBSCAN(eps=1.0, min_samples=1))
+        mp = MapperAlgorithm(cover=BallCover(0.5, metric=dist),
+            clustering=DBSCAN(eps=1.0, min_samples=1))
         g = mp.fit_transform(data, data)
         self.assertEqual(1000, len(g))
         for node in g.nodes():
@@ -43,7 +44,8 @@ class TestMapper(unittest.TestCase):
 
     def testBallLargeRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
-        mp = MapperAlgorithm(cover=BallCover(1000.0, metric=dist), clustering=TrivialClustering())
+        mp = MapperAlgorithm(cover=BallCover(1000.0, metric=dist),
+            clustering=TrivialClustering())
         g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         for node in g.nodes():
@@ -53,15 +55,19 @@ class TestMapper(unittest.TestCase):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         data = np.array(data)
-        mp = MapperAlgorithm(cover=BallCover(150.0, metric=dist), clustering=TrivialClustering())
+        mp = MapperAlgorithm(cover=BallCover(150.0, metric=dist),
+            clustering=TrivialClustering())
         g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
 
     def testTwoConnectedClusters(self):
-        data = [np.array([0.0, 1.0]), np.array([1.0, 0.0]), np.array([0.0, 0.0]), np.array([1.0, 1.0])]
-        mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist), clustering=TrivialClustering())
+        data = [
+            np.array([0.0, 1.0]), np.array([1.0, 0.0]),
+            np.array([0.0, 0.0]), np.array([1.0, 1.0])]
+        mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist),
+            clustering=TrivialClustering())
         g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():

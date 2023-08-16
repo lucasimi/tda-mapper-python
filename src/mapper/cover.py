@@ -1,5 +1,4 @@
-from mapper.core import build_charts, build_labels
-from mapper.clustering import TrivialClustering
+from mapper.core import build_charts
 from mapper.search import BallSearch, KnnSearch, TrivialSearch, CubicSearch
 
 
@@ -12,9 +11,6 @@ class BallCover:
     def charts(self, X):
         search = BallSearch(self.__radius, self.__metric)
         return build_charts(X, search)
-
-    def fit(self, X, y=None):
-        return build_labels(X, X, self, TrivialClustering())
 
     def get_params(self, deep=True):
         parameters = {}
@@ -33,9 +29,6 @@ class KnnCover:
         search = KnnSearch(self.__neighbors, self.__metric)
         return build_charts(X, search)
 
-    def fit(self, X, y=None):
-        return build_labels(X, X, self, TrivialClustering())
-
     def get_params(self, deep=True):
         parameters = {}
         parameters['neighbors'] = self.__neighbors
@@ -53,9 +46,6 @@ class CubicCover:
         search = CubicSearch(self.__n, self.__perc)
         return build_charts(X, search)
 
-    def fit(self, X, y=None):
-        return build_labels(X, X, self, TrivialClustering())
-
     def get_params(self, deep=True):
         parameters = {}
         parameters['n'] = self.__n
@@ -71,9 +61,6 @@ class TrivialCover:
     def charts(self, X): 
         search = TrivialSearch()
         return build_charts(X, search)
-
-    def fit(self, X, y=None):
-        return build_labels(X, X, self, TrivialClustering())
 
     def get_params(self, deep=True):
         parameters = {}

@@ -20,7 +20,7 @@ def build_labels(X, y, cover, clustering):
         neigh_data = [X[j] for j in neigh_ids]
         try:
             neigh_labels = clustering.fit(neigh_data).labels_
-        except:
+        except Exception:
             neigh_labels = [0 for _ in neigh_data]
         max_neigh_label = 0
         for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
@@ -30,7 +30,7 @@ def build_labels(X, y, cover, clustering):
                 labels[neigh_id].append(max_label + neigh_label)
         max_label += max_neigh_label + 1
     return labels
-        
+
 
 def build_adjaciency(labels):
     '''
@@ -125,7 +125,7 @@ class MapperAlgorithm:
     def fit(self, X, y=None):
         self.graph_ = self.fit_transform(X, y)
         return self
-            
+
     def fit_transform(self, X, y):
         return build_graph(X, y, self.__cover, self.__clustering)
 
@@ -139,7 +139,7 @@ class MapperClassifier:
     def fit(self, X, y=None):
         self.labels_ = self.fit_predict(X, y)
         return self
-            
+
     def fit_predict(self, X, y):
         graph = self.__mapper_algo.fit_transform(X, y)
         ccs = build_connected_components(graph)
