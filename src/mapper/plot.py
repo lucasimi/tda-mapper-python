@@ -244,6 +244,7 @@ class MapperPlot:
             mirror=True,
             visible=True,
             showticklabels=False,
+            title=''
         )
         layout = go.Layout(
             width=width,
@@ -267,6 +268,7 @@ class MapperPlot:
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
+                    title='',
                 ),
                 yaxis=dict(
                     showgrid=True,
@@ -279,6 +281,7 @@ class MapperPlot:
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
+                    title='',
                 ),
                 zaxis=dict(
                     showgrid=True,
@@ -291,6 +294,7 @@ class MapperPlot:
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
+                    title='',
                 )
             )
         )
