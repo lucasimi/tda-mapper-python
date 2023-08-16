@@ -80,7 +80,7 @@ class VPTree:
                     lambda x: x[0])
         radius, _ = self.__dataset[mid]
         self.__dataset[start] = (radius, vp)
-        self._build_no_update_no_radius(start + 1, mid)
+        self._build_update_no_radius(start + 1, mid)
         self._build_update_no_radius(mid, end)
 
     def _build_no_update_no_radius(self, start, end):
@@ -106,7 +106,7 @@ class VPTree:
         radius, _ = self.__dataset[mid]
         self.__dataset[start] = (radius, vp)
         if radius > self.__leaf_radius:
-            self._build_no_update_radius(start + 1, mid)
+            self._build_update_radius(start + 1, mid)
         self._build_update_radius(mid, end)
 
     def _build_no_update_radius(self, start, end):

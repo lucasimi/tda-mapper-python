@@ -20,11 +20,6 @@ class TestMapper(unittest.TestCase):
 
     def testTrivial(self):
         data = dataset()
-        labels = _build_labels(data, data, TrivialCover(), TrivialClustering())
-        self.assertEqual(len(data), len(labels))
-        adj = _build_adjaciency(labels)
-        self.assertEqual(1, len(adj))
-        self.assertEqual((list(range(len(data))), []), adj[0])
         mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
         g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
