@@ -2,21 +2,31 @@
 
 ![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
 
-In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to rely on topological methods to gain valuable insights from datasets, as topology provides tools which are more robust to noise than many more traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. The mapper algorithm takes any dataset $X$ (in any dimension), and returns a graph $G$, called **Mapper Graph**. Despite living in a 2-dimensional space, the mapper graph $G$ represents a reliable summary for the shape of $X$, and, more importantly, they have the same number of connected components. This feature makes the mapper algorithm a very appealing choice over more traditional approaches based on projections, as they often offer low to no control on how the shape gets distorted. This is especially important when you want to visualize the shape of a dataset: using the wrong tool it's easy to lose relationships across subsets of data, but the mapper algorithm can reduce the effects of distorsions.
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to gain insights from data by using topological methods, as they show good resilience to noise, and they are often more stable than many traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. 
+
+The mapper algorithm takes any dataset $X$ (usually high dimensional), and returns a graph $G$, called **Mapper Graph**. Surprisingly enough, despite living in a 2-dimensional space, the mapper graph $G$ represents a reliable summary for the shape of $X$ (they share the same number of connected components). This feature makes the mapper algorithm a very appealing choice over more traditional approaches, for example those based on projections, because they often give you no way to control shape distortions. Moreover, preventing artifacts is especially important for data visualization: the mapper graph is often a capable tool, which can help you identify hidden patterns in high-dimensional data.
 
 ## Basics
 
-Here we'll give just a brief description of the core ideas around the mapper, but the interested user is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
+Here we'll give just a brief description of the core ideas around the mapper, but the interested reader is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
 
-1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually with dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
+1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually having dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
+
+    ![Step 1](/examples/mapper_1.png)
 
 2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
-3. For each open set $U$ of $f(X)$ let $V$ be the preimage of $U$ under $f$. Then the collection of $V$'s makes an open cover of $X$. For each $V$, run any chosen *clustering* algorithm and keep track of all the local clusters. Here we use clustering as the statistical version of the topological notion of connected components.
+    ![Step 2](/examples/mapper_2.png)
 
-4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding clusters intersect.
+3. For each open set $U$ of $f(X)$ let $f^{-1}(U)$ be the preimage of $U$ under $f$. Then the collection of $f^{-1}(U)$'s makes an open cover of $X$. Then, on each preimage $f^{-1}(U)$, run any chosen *clustering* algorithm and keep track of all the local clusters. All these local clusters make a *refined open cover* for $X$.
 
-N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the Nerve Theorem for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a more complete tool to understand the shape of data. Unfortunately, clustering algorithms are not perfect. As an example for how important $f$ is, think about the case of $f$ being a constant function. In this setting the preimage of any open cover would be the whole dataset $X$, then computing the mapper graph would be equivalent to performing clustering on $X$. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets show a clean clustered behavior, the higher the chance of obtaining a good local clustering. In practice, chosing the right lens is much easier than chosing the right metric (or the right clustering algorithm), but can be quite tricky too. For this reason, the mapper algorithm is an interactive tool which is expected to be tuned by looking at the mapper graph, after some trials.
+    ![Step 3](/examples/mapper_3.png)
+
+4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding local clusters intersect.
+
+    ![Step 4](/examples/mapper_4.png)
+
+N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the [Nerve Theorem](https://en.wikipedia.org/wiki/Nerve_complex#Nerve_theorems) for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a complete tool to understand the shape of data. Unfortunately, clustering algorithms are not that good. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
 
 ## How to use this package - A First Example
 
@@ -54,6 +64,8 @@ colored.plot_static(title='class', ax=ax)
 ```
 ![The mapper graph of the iris dataset](/examples/iris.png)
 
+As you can see from the plot, we can identify two major connected components, one which corresponds precisely to a single class, and the other which is shared by the other two classes.
+
 ## A Second Example
 
 In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented as dim-64 arrays (8x8 pictures)
@@ -82,9 +94,13 @@ mapper_plot.with_colors(colors=y, cmap='jet', agg=np.nanmedian).plot_interactive
 ```
 ![The mapper graph of the digits dataset](/examples/digits.png)
 
-As you can see, the mapper can give you an interesting visual feedback about what's going on.
+As you can see the mapper graph shows interesting patterns. Note that the shape of the graph is obtained by looking only at the 8x8 pictures, discarding any information about the actual label (the digit). You can see that those local clusters which share the same labels are located in the same area of the graph. This tells you (as you would expect) that the labelling is *compatible with the shape of data*.
 
-### Features
+![Digits 4 and 7](/examples/digits_4_7.png)
+
+Moreover, by zooming in, you can see that some clusters are located next to others. For example in the picture you can see the details of digits '4' (cyan) and '7' (red) being located one next to the other.
+
+### Development - Supported Features
 
 - [x] Topology
     - [x] Any custom lens
