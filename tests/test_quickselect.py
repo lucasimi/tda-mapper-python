@@ -1,7 +1,7 @@
 import unittest
 import random
 
-from mapper.utils.quickselect import *
+from mapper.utils.quickselect import partition, quickselect
 
 class TestQuickSelect(unittest.TestCase):
 
