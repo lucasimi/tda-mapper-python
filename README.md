@@ -12,19 +12,19 @@ Here we'll give just a brief description of the core ideas around the mapper, bu
 
 1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually having dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
-    ![Step 1](/examples/mapper_1.png)
+![Step 1](/examples/mapper_1.png)
 
 2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
 
-    ![Step 2](/examples/mapper_2.png)
+![Step 2](/examples/mapper_2.png)
 
 3. For each open set $U$ of $f(X)$ let $f^{-1}(U)$ be the preimage of $U$ under $f$. Then the collection of $f^{-1}(U)$'s makes an open cover of $X$. Then, on each preimage $f^{-1}(U)$, run any chosen *clustering* algorithm and keep track of all the local clusters. All these local clusters make a *refined open cover* for $X$.
 
-    ![Step 3](/examples/mapper_3.png)
+![Step 3](/examples/mapper_3.png)
 
 4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding local clusters intersect.
 
-    ![Step 4](/examples/mapper_4.png)
+![Step 4](/examples/mapper_4.png)
 
 N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the [Nerve Theorem](https://en.wikipedia.org/wiki/Nerve_complex#Nerve_theorems) for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a complete tool to understand the shape of data. Unfortunately, clustering algorithms are not that good. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
 
