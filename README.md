@@ -1,6 +1,6 @@
 # tda-mapper-python 
 
-![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
+![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg) [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
 
 In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to gain insights from data by using topological methods, as they show good resilience to noise, and they are often more stable than many traditional techniques. This Python package provides an implementation of the **Mapper Algorithm**, one of the most common tools from TDA. 
 
