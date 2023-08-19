@@ -2,7 +2,7 @@
 
 ![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)
 
-In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to gain insights from data by using topological methods, as they show good resilience to noise, and they are often more stable than many traditional techniques. This Python package provides an implementation of the **Mapper Algorithm** from TDA. 
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to gain insights from data by using topological methods, as they show good resilience to noise, and they are often more stable than many traditional techniques. This Python package provides an implementation of the **Mapper Algorithm**, one of the most common tools from TDA. 
 
 The mapper algorithm takes any dataset $X$ (usually high dimensional), and returns a graph $G$, called **Mapper Graph**. Surprisingly enough, despite living in a 2-dimensional space, the mapper graph $G$ represents a reliable summary for the shape of $X$ (they share the same number of connected components). This feature makes the mapper algorithm a very appealing choice over more traditional approaches, for example those based on projections, because they often give you no way to control shape distortions. Moreover, preventing artifacts is especially important for data visualization: the mapper graph is often a capable tool, which can help you identify hidden patterns in high-dimensional data.
 
@@ -10,7 +10,7 @@ The mapper algorithm takes any dataset $X$ (usually high dimensional), and retur
 
 Here we'll give just a brief description of the core ideas around the mapper, but the interested reader is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
 
-1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually having dimension lower than $X$. You can think about $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
+1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually having dimension lower than $X$. You can think of $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
 ![Step 1](/examples/mapper_1.png)
 
@@ -18,27 +18,32 @@ Here we'll give just a brief description of the core ideas around the mapper, bu
 
 ![Step 2](/examples/mapper_2.png)
 
-3. For each open set $U$ of $f(X)$ let $f^{-1}(U)$ be the preimage of $U$ under $f$. Then the collection of $f^{-1}(U)$'s makes an open cover of $X$. Then, on each preimage $f^{-1}(U)$, run any chosen *clustering* algorithm and keep track of all the local clusters. All these local clusters make a *refined open cover* for $X$.
+3. For each element $U$ of the open cover of $f(X)$, let $f^{-1}(U)$ be the preimage of $U$ under $f$. Then the collection of all the $f^{-1}(U)$'s makes an open cover of $X$. At this point, split every preimage $f^{-1}(U)$ into clusters, by running any chosen *clustering* algorithm, and keep track of all the local clusters obtained. All these local clusters together make a *refined open cover* for $X$.
 
 ![Step 3](/examples/mapper_3.png)
 
-4. Build the mapper graph $G$, by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding local clusters intersect.
+4. Build the mapper graph $G$ by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding local clusters intersect.
 
 ![Step 4](/examples/mapper_4.png)
 
-N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly catch connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the [Nerve Theorem](https://en.wikipedia.org/wiki/Nerve_complex#Nerve_theorems) for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a complete tool to understand the shape of data. Unfortunately, clustering algorithms are not that good. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
+N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly identify connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the [Nerve Theorem](https://en.wikipedia.org/wiki/Nerve_complex#Nerve_theorems) for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a complete tool to understand the shape of data. Unfortunately, clustering algorithms are not that good. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
+
+## Installation
+
+First, clone this repo, `cd` into the local repo, and install via `pip` from your local repo
+```
+python -m pip install .
+```
 
 ## How to use this package - A First Example
 
-First, clone this repo, and install via pip `python -m pip install .`. 
-
-In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numeric features and a label which represents a class. As a lens we chose the PCA on two components. 
+In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numerical features and a label which represents a class. As lens, we chose the PCA on two components. 
 
 ```python
 
 from sklearn.datasets import load_iris
-from sklearn.cluster import DBSCAN, KMeans, AgglomerativeClustering
-from sklearn.decomposition import PCA
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PknownCA
 
 from mapper.core import *
 from mapper.cover import *
@@ -72,7 +77,7 @@ In this second example we try to take a look at the shape of the digits dataset.
 
 ```python
 from sklearn.datasets import load_digits
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 from mapper.core import *
