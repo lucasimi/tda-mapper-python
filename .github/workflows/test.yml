@@ -20,7 +20,7 @@ jobs:
         run: | 
           python -m pip install coverage
           python -m pip install -e .
-      - name: Run coverage
+      - name: Run Test & Coverage
         run: | 
           coverage run --source=src -m unittest discover -s tests
           coverage report -m
