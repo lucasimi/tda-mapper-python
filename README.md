@@ -40,33 +40,30 @@ python -m pip install .
 In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numerical features and a label which represents a class. As lens, we chose the PCA on two components. 
 
 ```python
-
 from sklearn.datasets import load_iris
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.decomposition import PknownCA
+from sklearn.decomposition import PCA
+
+import matplotlib
 
 from mapper.core import *
 from mapper.cover import *
 from mapper.clustering import *
 from mapper.plot import *
 
-import matplotlib
-
 iris_data = load_iris()
 X, y = iris_data.data, iris_data.target
 lens = PCA(2).fit_transform(X)
 
-mapper_algo = MapperAlgorithm(
-    cover=CubicCover(n=10, perc=0.5), 
-    clustering=AgglomerativeClustering(n_clusters=None, linkage='single'))
+mapper_algo = MapperAlgorithm(cover=CubicCover(n=7, perc=0.25), clustering=AgglomerativeClustering(n_clusters=2, linkage='single'))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph)
-
-fig, ax = plt.subplots(1, 1, figsize=(7, 7))
 colored = mapper_plot.with_colors(colors=list(y), agg=np.nanmedian)
-colored.plot_static(title='class', ax=ax)
 
+fig1, ax = plt.subplots(1, 1, figsize=(6, 6))
+colored.plot_static(title='class', ax=ax)
 ```
+
 ![The mapper graph of the iris dataset](/examples/iris.png)
 
 As you can see from the plot, we can identify two major connected components, one which corresponds precisely to a single class, and the other which is shared by the other two classes.
@@ -91,12 +88,14 @@ digits = load_digits()
 X, y = [np.array(x) for x in digits.data], digits.target
 lens = PCA(2).fit_transform(X)
 
-mapper_algo = MapperAlgorithm(cover=CubicCover(n=10, perc=0.25), clustering=KMeans(10, n_init='auto'))
+mapper_algo = MapperAlgorithm(cover=CubicCover(n=15, perc=0.25), clustering=KMeans(10, n_init='auto'))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph, iterations=100)
-mapper_plot.with_colors(colors=y, cmap='jet', agg=np.nanmedian).plot_interactive_2d(width=512, height=512)
 
+fig = mapper_plot.with_colors(colors=y, cmap='jet', agg=np.nanmedian).plot_interactive_2d(title='digit', width=512, height=512)
+fig.show(config={'scrollZoom': True})
 ```
+
 ![The mapper graph of the digits dataset](/examples/digits.png)
 
 As you can see the mapper graph shows interesting patterns. Note that the shape of the graph is obtained by looking only at the 8x8 pictures, discarding any information about the actual label (the digit). You can see that those local clusters which share the same labels are located in the same area of the graph. This tells you (as you would expect) that the labelling is *compatible with the shape of data*.
