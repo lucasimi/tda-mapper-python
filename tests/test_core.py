@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
-from mapper.core import MapperAlgorithm
+from mapper.core import MapperAlgorithm, build_connected_components
 from mapper.cover import TrivialCover, BallCover
 from mapper.clustering import TrivialClustering
 
@@ -24,6 +24,8 @@ class TestMapper(unittest.TestCase):
         g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         self.assertEqual([], list(g.neighbors(0)))
+        ccs = build_connected_components(g)
+        self.assertEqual(1, len(set(ccs.values())))
 
     def testBallSmallRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
@@ -32,6 +34,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+        ccs = build_connected_components(g)
+        self.assertEqual(1000, len(set(ccs.values())))
 
     def testBallSmallRadiusList(self):
         data = [np.array([float(i)]) for i in range(1000)]
@@ -41,6 +45,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+        ccs = build_connected_components(g)
+        self.assertEqual(1000, len(set(ccs.values())))
 
     def testBallLargeRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
@@ -50,6 +56,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+        ccs = build_connected_components(g)
+        self.assertEqual(1, len(set(ccs.values())))
 
     def testTwoDisconnectedClusters(self):
         data = [np.array([float(i), 0.0]) for i in range(100)]
@@ -61,6 +69,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
+        ccs = build_connected_components(g)
+        self.assertEqual(2, len(set(ccs.values())))
 
     def testTwoConnectedClusters(self):
         data = [
@@ -72,3 +82,5 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual(1, len(list(g.neighbors(node))))
+        ccs = build_connected_components(g)
+        self.assertEqual(1, len(set(ccs.values())))
