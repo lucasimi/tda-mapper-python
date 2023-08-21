@@ -1,6 +1,31 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "tda-mapper"
+version = "0.0.1" 
+description = "A simple implementation of the Mapper Algorithm for TDA"
+readme = "README.md"
+authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
+license = { file = "LICENSE" } 
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3"
+]
+keywords = ["tda", "mapper", "topology"]
+dependencies = [
+    "matplotlib>=3.3.4",
+    "networkx>=2.5",
+    "numpy>=1.20.1",
+    "scikit-learn>=0.24.1",
+    "plotly>=4.14.3"
+]
+requires-python = ">=3.6"
+
+[project.optional-dependencies]
+dev = ["coverage"]
+
+[project.urls]
+Homepage = "https://github.com/lucasimi/tda-mapper-python"

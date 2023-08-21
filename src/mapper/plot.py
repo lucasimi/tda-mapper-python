@@ -10,11 +10,12 @@ import mapper.core
 import mapper.cover
 from mapper.core import compute_local_interpolation
 
-_NODE_ALPHA = 0.85
-_EDGE_ALPHA = 0.85
-_EDGE_WIDTH = 0.5
+_NODE_OUTER_WIDTH = 0.75
+_NODE_OUTER_COLOR = '#777'
+
+_EDGE_WIDTH = 0.75
 _EDGE_COLOR = '#777'
-_FONT_SIZE = 8
+
 _TICKS_NUM = 10
 
 
@@ -73,11 +74,11 @@ class MapperPlot:
             c=nodes_c,
             s=nodes_s,
             cmap=self.__cmap,
-            alpha=_NODE_ALPHA,
+            alpha=1.0,
             vmin=min_color,
             vmax=max_color,
-            edgecolors=_EDGE_COLOR,
-            linewidths=_EDGE_WIDTH
+            edgecolors=_NODE_OUTER_COLOR,
+            linewidths=_NODE_OUTER_WIDTH
         )
         colorbar = plt.colorbar(
             verts,
@@ -88,10 +89,13 @@ class MapperPlot:
             ax=ax,
             format="%.2g"
         )
-        colorbar.set_label(title, color=_EDGE_COLOR)
-        colorbar.set_alpha(_NODE_ALPHA)
-        colorbar.outline.set_color(_EDGE_COLOR)
-        colorbar.ax.yaxis.set_tick_params(color=_EDGE_COLOR, labelcolor=_EDGE_COLOR)
+        colorbar.set_label(title, color=_NODE_OUTER_COLOR)
+        colorbar.set_alpha(1.0)
+        colorbar.outline.set_color(_NODE_OUTER_COLOR)
+        colorbar.ax.yaxis.set_tick_params(
+            color=_NODE_OUTER_COLOR,
+            labelcolor=_NODE_OUTER_COLOR
+        )
         colorbar.ax.tick_params(labelsize=8)
         colorbar.ax.locator_params(nbins=10)
 
@@ -102,7 +106,7 @@ class MapperPlot:
             segments,
             color=_EDGE_COLOR,
             linewidth=_EDGE_WIDTH,
-            alpha=_EDGE_ALPHA,
+            alpha=1.0,
             zorder=-1,
             antialiased=True
         )
@@ -157,9 +161,9 @@ class MapperPlot:
             x=edge_x,
             y=edge_y,
             mode='lines',
-            opacity=_EDGE_ALPHA,
+            opacity=1.0,
             line=dict(
-                width=1.5 * _EDGE_WIDTH,
+                width=_EDGE_WIDTH,
                 color=_EDGE_COLOR
             ),
             hoverinfo='none'
@@ -182,10 +186,10 @@ class MapperPlot:
             xanchor='left',
             titleside='right',
             ypad=0,
-            xpad=0, 
+            xpad=0,
             tickwidth=1,
             tickformat='.2g',
-            nticks=10,
+            nticks=_TICKS_NUM,
             tickmode='auto',
         )
 
@@ -231,11 +235,11 @@ class MapperPlot:
             color=colors,
             cmax=max_color,
             cmin=min_color,
-            opacity=_NODE_ALPHA,
+            opacity=1.0,
             size=node_sizes,
             colorbar=self._plotly_colorbar_2d(title),
-            line_width=1.4 * _EDGE_WIDTH,
-            line_color=_EDGE_COLOR
+            line_width=_NODE_OUTER_WIDTH,
+            line_color=_NODE_OUTER_COLOR,
         )
 
     def _plot_plotly_3d(self, title, width, height):
@@ -268,7 +272,7 @@ class MapperPlot:
                     showaxeslabels=False,
                     showline=True,
                     linecolor='black',
-                    gridcolor='rgba(230, 230, 230, 128)',
+                    gridcolor='rgba(230, 230, 230, 1.0)',
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
@@ -281,7 +285,7 @@ class MapperPlot:
                     showaxeslabels=False,
                     showline=True,
                     linecolor='black',
-                    gridcolor='rgba(230, 230, 230, 128)',
+                    gridcolor='rgba(230, 230, 230, 1.0)',
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
@@ -294,7 +298,7 @@ class MapperPlot:
                     showaxeslabels=False,
                     showline=True,
                     linecolor='black',
-                    gridcolor='rgba(230, 230, 230, 128)',
+                    gridcolor='rgba(230, 230, 230, 1.0)',
                     linewidth=1,
                     mirror=True,
                     showticklabels=False,
@@ -323,15 +327,13 @@ class MapperPlot:
             edge_z.append(z1)
             edge_z.append(None)
         edge_trace = go.Scatter3d(
-            x=edge_x, 
+            x=edge_x,
             y=edge_y,
             z=edge_z,
             mode='lines',
-            opacity=_EDGE_ALPHA,
-            line=dict(
-                width=1.5 * _EDGE_WIDTH,
-                color=_EDGE_COLOR
-            ),
+            opacity=1.0,
+            line_width=_EDGE_WIDTH,
+            line_color=_EDGE_COLOR,
             hoverinfo='none'
         )
         return edge_trace
@@ -348,10 +350,10 @@ class MapperPlot:
             xanchor='left',
             titleside='right',
             ypad=0,
-            xpad=0, 
+            xpad=0,
             tickwidth=1,
             tickformat='.2g',
-            nticks=10,
+            nticks=_TICKS_NUM,
             tickmode='auto',
         )
 
@@ -363,18 +365,19 @@ class MapperPlot:
         sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
-        return go.scatter3d.Marker( 
+        return go.scatter3d.Marker(
             showscale=True,
             colorscale=self.__cmap,
             reversescale=False,
             color=colors,
             cmax=max_color,
             cmin=min_color,
-            opacity=_NODE_ALPHA,
+            opacity=1.0,
             size=node_sizes,
             colorbar=self._plotly_colorbar_3d(title),
-            line_width=1.4 * _EDGE_WIDTH,
-            line_color=_EDGE_COLOR
+            line_width=_NODE_OUTER_WIDTH,
+            line_color=_NODE_OUTER_COLOR,
+            line_colorscale=self.__cmap,
         )
 
     def _plot_plotly_3d_nodes(self, title):
