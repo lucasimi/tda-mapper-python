@@ -1,8 +1,8 @@
 from sklearn.utils import check_X_y, check_array
 
-from mapper.core import build_labels
-from mapper.utils.unionfind import UnionFind
-from mapper.cover import TrivialCover
+from tdamapper.core import build_labels
+from tdamapper.utils.unionfind import UnionFind
+from tdamapper.cover import TrivialCover
 
 
 class TrivialClustering:

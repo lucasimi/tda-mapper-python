@@ -3,9 +3,9 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
-from mapper.core import MapperAlgorithm, build_connected_components
-from mapper.cover import TrivialCover, BallCover
-from mapper.clustering import TrivialClustering
+from tdamapper.core import MapperAlgorithm, build_connected_components
+from tdamapper.cover import TrivialCover, BallCover
+from tdamapper.clustering import TrivialClustering
 
 
 def dist(x, y):

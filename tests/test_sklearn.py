@@ -1,7 +1,7 @@
 import unittest
 from sklearn.utils.estimator_checks import check_estimator
 
-from mapper.clustering import CoverClustering, TrivialClustering
+from tdamapper.clustering import CoverClustering, TrivialClustering
 
 
 class TestSklearn(unittest.TestCase):

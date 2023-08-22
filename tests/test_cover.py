@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from mapper.cover import TrivialCover, BallCover, KnnCover, CubicCover
+from tdamapper.cover import TrivialCover, BallCover, KnnCover, CubicCover
 
 
 def dist(x, y):

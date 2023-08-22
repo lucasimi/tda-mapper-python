@@ -1,10 +1,10 @@
 import unittest
 import numpy as np
 
-from mapper.core import MapperAlgorithm
-from mapper.cover import BallCover
-from mapper.clustering import TrivialClustering
-from mapper.plot import MapperPlot
+from tdamapper.core import MapperAlgorithm
+from tdamapper.cover import BallCover
+from tdamapper.clustering import TrivialClustering
+from tdamapper.plot import MapperPlot
 
 
 def dist(x, y):

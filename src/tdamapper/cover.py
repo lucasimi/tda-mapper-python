@@ -1,5 +1,5 @@
-from mapper.core import build_charts
-from mapper.search import BallSearch, KnnSearch, TrivialSearch, CubicSearch
+from tdamapper.core import build_charts
+from tdamapper.search import BallSearch, KnnSearch, TrivialSearch, CubicSearch
 
 
 class BallCover:

@@ -2,7 +2,8 @@ import unittest
 import random
 import numpy as np
 
-from mapper.utils.vptree_flat import VPTree
+from tdamapper.utils.vptree_flat import VPTree
+
 
 def dist(x, y):
     return np.linalg.norm(x - y)

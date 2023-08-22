@@ -1,6 +1,6 @@
 import unittest
 
-from mapper.utils.unionfind import UnionFind
+from tdamapper.utils.unionfind import UnionFind
 
 
 class TestUnionFind(unittest.TestCase):
