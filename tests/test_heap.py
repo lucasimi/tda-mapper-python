@@ -1,7 +1,7 @@
 import unittest
 import random
 
-from mapper.utils.heap import MaxHeap
+from tdamapper.utils.heap import MaxHeap
 
 def maxheap(data):
     m = MaxHeap()

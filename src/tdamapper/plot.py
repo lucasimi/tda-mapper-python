@@ -6,9 +6,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
-import mapper.core
-import mapper.cover
-from mapper.core import compute_local_interpolation
+import tdamapper.core
+import tdamapper.cover
+from tdamapper.core import compute_local_interpolation
 
 _NODE_OUTER_WIDTH = 0.75
 _NODE_OUTER_COLOR = '#777'
@@ -60,7 +60,7 @@ class MapperPlot:
 
     def _plot_matplotlib_nodes(self, title, ax):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
         max_size = max(sizes.values())
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
@@ -201,7 +201,7 @@ class MapperPlot:
             x, y = self.__pos2d[node]
             node_x.append(x)
             node_y.append(y)
-            size = nodes[node][mapper.core._ATTR_SIZE]
+            size = nodes[node][tdamapper.core._ATTR_SIZE]
             node_label = self._plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter(
@@ -225,7 +225,7 @@ class MapperPlot:
         colors = [self.__colors[node] for node in nodes]
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
-        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
         return go.scatter.Marker(
@@ -362,7 +362,7 @@ class MapperPlot:
         colors = [self.__colors[node] for node in nodes]
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
-        sizes = nx.get_node_attributes(self.__graph, mapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
         return go.scatter3d.Marker(
@@ -389,7 +389,7 @@ class MapperPlot:
             node_x.append(x)
             node_y.append(y)
             node_z.append(z)
-            size = nodes[node][mapper.core._ATTR_SIZE]
+            size = nodes[node][tdamapper.core._ATTR_SIZE]
             node_label = self._plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter3d(

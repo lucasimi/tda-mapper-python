@@ -4,7 +4,7 @@ import random
 import unittest
 import numpy as np
 
-from mapper.search import BallSearch, KnnSearch
+from tdamapper.search import BallSearch, KnnSearch
 
 
 logger = logging.getLogger()
