@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tda-mapper"
 version = "0.0.1" 
-description = "A simple implementation of the Mapper Algorithm for TDA"
+description = "A simple and efficient implementation of the Mapper Algorithm for Topological Data Analysis (TDA)"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 license = { file = "LICENSE" } 
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3"
 ]
