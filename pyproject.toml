@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tda-mapper"
-version = "0.0.1" 
+version = "0.0.2" 
 description = "A simple and efficient implementation of the Mapper Algorithm for Topological Data Analysis (TDA)"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
