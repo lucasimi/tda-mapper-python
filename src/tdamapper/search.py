@@ -23,35 +23,47 @@ class BallSearch:
         else:
             return []
 
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['radius'] = self.__radius
+        parameters['metric'] = self.__metric
+        return parameters
+
 
 class KnnSearch:
 
-    def __init__(self, k, metric):
-        self.__k = k
+    def __init__(self, neighbors, metric):
+        self.__neighbors = neighbors
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__vptree = None
         self.__data = None
 
     def fit(self, data):
         self.__data = list(enumerate(data))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__k)
+        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__neighbors)
         return self
 
     def neighbors(self, point):
         if self.__vptree:
-            neighs = self.__vptree.knn_search((-1, point), self.__k)
+            neighs = self.__vptree.knn_search((-1, point), self.__neighbors)
             return [x for (x, _) in neighs]
         else:
             return []
 
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['neighbors'] = self.__neighbors
+        parameters['metric'] = self.__metric
+        return parameters
+
 
 class CubicSearch:
 
-    def __init__(self, n, perc):
+    def __init__(self, n_intervals, overlap_frac):
         self.__metric = lambda x, y: np.linalg.norm(x[1] - y[1], ord=np.inf)
-        self.__n = n
-        self.__perc = perc
-        self.__radius = 1.0 + self.__perc
+        self.__n_intervals = n_intervals
+        self.__overlap_frac = overlap_frac
+        self.__radius = 1.0 + self.__overlap_frac
         self.__vptree = None
         self.__data = None
         self.__minimum = None
@@ -69,13 +81,11 @@ class CubicSearch:
         self.__minimum = minimum
         self.__maximum = maximum
         eps = np.finfo(np.float64).eps
-        delta = (self.__maximum - self.__minimum) / self.__n
+        delta = (self.__maximum - self.__minimum) / self.__n_intervals
         self.__delta = np.array([max(x, eps) for x in delta])
-
 
     def _nearest_center(self, x):
         return np.round((np.array(x) - self.__minimum) / self.__delta)
-        #return grid * self.__delta
 
     def _normalize(self, x):
         return (np.array(x) - self.__minimum) / self.__delta
@@ -95,6 +105,12 @@ class CubicSearch:
         else:
             return []
 
+    def get_params(self, deep=True):
+        parameters = {}
+        parameters['n_intervals'] = self.__n_intervals
+        parameters['overlap_frac'] = self.__overlap_frac
+        return parameters
+
 
 class TrivialSearch:
 
@@ -107,3 +123,7 @@ class TrivialSearch:
 
     def neighbors(self, point=None):
         return list(range(len(self.__data)))
+
+    def get_params(self, deep=True):
+        parameters = {}
+        return parameters
