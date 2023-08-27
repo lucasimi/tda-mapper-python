@@ -1,4 +1,4 @@
-from tdamapper.search import BallNeighbors, KNNeighbors, TrivialNeighbors, CubicNeighbors
+from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, CubicNeighbors
 
 
 class NeighborsCover:

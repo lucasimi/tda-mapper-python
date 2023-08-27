@@ -4,7 +4,7 @@ import random
 import unittest
 import numpy as np
 
-from tdamapper.search import BallNeighbors, KNNeighbors
+from tdamapper.neighbors import BallNeighbors, KNNeighbors
 
 
 logger = logging.getLogger()
