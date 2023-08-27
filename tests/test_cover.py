@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from tdamapper.cover import TrivialCover, BallCover, KnnCover, CubicCover
+from tdamapper.cover import TrivialCover, BallCover, KNNCover, CubicCover
 
 
 def dist(x, y):
@@ -17,7 +17,7 @@ class TestCover(unittest.TestCase):
     def testTrivialCover(self):
         data = dataset()
         cover = TrivialCover()
-        charts = list(cover.compute_neighbors_net(data))
+        charts = list(cover.neighbors_net(data))
         self.assertEqual(1, len(charts))
 
     def testBallCover(self):
@@ -25,15 +25,15 @@ class TestCover(unittest.TestCase):
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
         cover = BallCover(1.1, metric=dist)
-        charts = list(cover.compute_neighbors_net(data))
+        charts = list(cover.neighbors_net(data))
         self.assertEqual(2, len(charts))
 
     def testKnnCover(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
-        cover = KnnCover(2, metric=dist)
-        charts = list(cover.compute_neighbors_net(data))
+        cover = KNNCover(2, metric=dist)
+        charts = list(cover.neighbors_net(data))
         self.assertEqual(2, len(charts))
 
     def testCubicCover(self):
@@ -41,5 +41,5 @@ class TestCover(unittest.TestCase):
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
         cover = CubicCover(2, 0.5)
-        charts = list(cover.compute_neighbors_net(data))
+        charts = list(cover.neighbors_net(data))
         self.assertEqual(4, len(charts))

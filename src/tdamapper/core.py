@@ -16,7 +16,7 @@ def build_labels(X, y, cover, clustering):
     '''
     max_label = 0
     labels = [[] for _ in X]
-    for neigh_ids in cover.compute_neighbors_net(y):
+    for neigh_ids in cover.neighbors_net(y):
         neigh_data = [X[j] for j in neigh_ids]
         try:
             neigh_labels = clustering.fit(neigh_data).labels_

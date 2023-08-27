@@ -1,43 +1,48 @@
-from tdamapper.search import BallSearch, KnnSearch, TrivialSearch, CubicSearch
+from tdamapper.search import BallNeighbors, KNNeighbors, TrivialNeighbors, CubicNeighbors
 
 
 class NeighborsCover:
 
-    def __init__(self, search):
-        self.__search = search
+    def __init__(self, neighbors):
+        self.__neighbors = neighbors
 
-    def compute_neighbors_net(self, X):
+    def neighbors_net(self, X):
         covered_ids = set()
-        self.__search.fit(X)
+        self.__neighbors.fit(X)
         for i, xi in enumerate(X):
             if i not in covered_ids:
-                neigh_ids = self.__search.neighbors(xi)
+                neigh_ids = self.__neighbors.search(xi)
                 covered_ids.update(neigh_ids)
                 yield neigh_ids
 
     def get_params(self, deep=True):
-        return self.__search.get_params(deep)
+        return self.__neighbors.get_params(deep)
 
 
 class BallCover(NeighborsCover):
 
     def __init__(self, radius, metric):
-        super().__init__(BallSearch(radius, metric))
+        super().__init__(BallNeighbors(radius, metric))
 
 
-class KnnCover(NeighborsCover):
+class KNNCover(NeighborsCover):
 
-    def __init__(self, neighbors, metric):
-        super().__init__(KnnSearch(neighbors, metric))
+    def __init__(self, k_neighbors, metric):
+        super().__init__(KNNeighbors(k_neighbors, metric))
 
 
 class CubicCover(NeighborsCover):
 
-    def __init__(self, n, perc):
-        super().__init__(CubicSearch(n, perc))
+    def __init__(self, n_intervals, overlap_frac):
+        super().__init__(CubicNeighbors(n_intervals, overlap_frac))
 
 
 class TrivialCover(NeighborsCover):
 
     def __init__(self):
-        super().__init__(TrivialSearch())
+        super().__init__(TrivialNeighbors())
+
+
+
+
+

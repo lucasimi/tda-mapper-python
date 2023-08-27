@@ -2,7 +2,7 @@ import numpy as np
 from .utils.vptree import VPTree
 
 
-class BallSearch:
+class BallNeighbors:
 
     def __init__(self, radius, metric):
         self.__metric = lambda x, y: metric(x[1], y[1])
@@ -16,7 +16,7 @@ class BallSearch:
             self.__metric, self.__data, leaf_radius=self.__radius)
         return self
 
-    def neighbors(self, point):
+    def search(self, point):
         if self.__vptree:
             neighs = self.__vptree.ball_search((-1, point), self.__radius)
             return [x for (x, _) in neighs]
@@ -30,34 +30,34 @@ class BallSearch:
         return parameters
 
 
-class KnnSearch:
+class KNNeighbors:
 
-    def __init__(self, neighbors, metric):
-        self.__neighbors = neighbors
+    def __init__(self, k_neighbors, metric):
+        self.__k_neighbors = k_neighbors
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__vptree = None
         self.__data = None
 
     def fit(self, data):
         self.__data = list(enumerate(data))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__neighbors)
+        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__k_neighbors)
         return self
 
-    def neighbors(self, point):
+    def search(self, point):
         if self.__vptree:
-            neighs = self.__vptree.knn_search((-1, point), self.__neighbors)
+            neighs = self.__vptree.knn_search((-1, point), self.__k_neighbors)
             return [x for (x, _) in neighs]
         else:
             return []
 
     def get_params(self, deep=True):
         parameters = {}
-        parameters['neighbors'] = self.__neighbors
+        parameters['k_neighbors'] = self.__k_neighbors
         parameters['metric'] = self.__metric
         return parameters
 
 
-class CubicSearch:
+class CubicNeighbors:
 
     def __init__(self, n_intervals, overlap_frac):
         self.__metric = lambda x, y: np.linalg.norm(x[1] - y[1], ord=np.inf)
@@ -97,7 +97,7 @@ class CubicSearch:
             self.__metric, self.__data, leaf_radius=self.__radius)
         return self
 
-    def neighbors(self, point):
+    def search(self, point):
         if self.__vptree:
             center = self._nearest_center(point)
             neighs = self.__vptree.ball_search((-1, center), self.__radius)
@@ -112,7 +112,7 @@ class CubicSearch:
         return parameters
 
 
-class TrivialSearch:
+class TrivialNeighbors:
 
     def __init__(self):
         self.__data = None
@@ -121,7 +121,7 @@ class TrivialSearch:
         self.__data = data
         return self
 
-    def neighbors(self, point=None):
+    def search(self, point=None):
         return list(range(len(self.__data)))
 
     def get_params(self, deep=True):
