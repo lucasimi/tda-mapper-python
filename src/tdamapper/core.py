@@ -16,7 +16,7 @@ def build_labels(X, y, cover, clustering):
     '''
     max_label = 0
     labels = [[] for _ in X]
-    for neigh_ids in cover.charts(y):
+    for neigh_ids in cover.neighbors_net(y):
         neigh_data = [X[j] for j in neigh_ids]
         try:
             neigh_labels = clustering.fit(neigh_data).labels_
@@ -76,16 +76,6 @@ def build_graph(X, y, cover, clustering):
                 graph.add_edge(target, source)
                 edges.add((target, source))
     return graph
-
-
-def build_charts(X, search):
-    covered = set()
-    search.fit(X)
-    for i, xi in enumerate(X):
-        if i not in covered:
-            neigh_ids = search.neighbors(xi)
-            covered.update(neigh_ids)
-            yield neigh_ids
 
 
 def build_connected_components(graph):
