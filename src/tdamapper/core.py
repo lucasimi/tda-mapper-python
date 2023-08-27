@@ -78,7 +78,6 @@ def build_graph(X, y, cover, clustering):
     return graph
 
 
-
 def build_connected_components(graph):
     '''
     Takes a dataset and a graph, where each node represents a sets of elements
