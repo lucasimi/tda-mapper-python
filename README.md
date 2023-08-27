@@ -46,21 +46,24 @@ from sklearn.decomposition import PCA
 
 import matplotlib
 
-from mapper.core import *
-from mapper.cover import *
-from mapper.clustering import *
-from mapper.plot import *
+from tdamapper.core import *
+from tdamapper.cover import *
+from tdamapper.clustering import *
+from tdamapper.plot import *
 
 iris_data = load_iris()
 X, y = iris_data.data, iris_data.target
 lens = PCA(2).fit_transform(X)
 
-mapper_algo = MapperAlgorithm(cover=CubicCover(n=7, perc=0.25), clustering=AgglomerativeClustering(n_clusters=2, linkage='single'))
+cover = CubicCover(n_intervals=7, overlap_frac=0.25)
+clustering = AgglomerativeClustering(n_clusters=2, linkage='single')
+
+mapper_algo = MapperAlgorithm(cover, clustering)
 mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph)
 colored = mapper_plot.with_colors(colors=list(y), agg=np.nanmedian)
 
-fig1, ax = plt.subplots(1, 1, figsize=(6, 6))
+fig, ax = plt.subplots(1, 1, figsize=(7, 7))
 colored.plot_static(title='class', ax=ax)
 ```
 
@@ -77,10 +80,10 @@ from sklearn.datasets import load_digits
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-from mapper.core import *
-from mapper.cover import *
-from mapper.clustering import *
-from mapper.plot import *
+from tdamapper.core import *
+from tdamapper.cover import *
+from tdamapper.clustering import *
+from tdamapper.plot import *
 
 import matplotlib
 
@@ -88,7 +91,10 @@ digits = load_digits()
 X, y = [np.array(x) for x in digits.data], digits.target
 lens = PCA(2).fit_transform(X)
 
-mapper_algo = MapperAlgorithm(cover=CubicCover(n=15, perc=0.25), clustering=KMeans(10, n_init='auto'))
+cover = CubicCover(n_intervals=15, overlap_frac=0.25)
+clustering = KMeans(10, n_init='auto')
+
+mapper_algo = MapperAlgorithm(cover, clustering)
 mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph, iterations=100)
 
