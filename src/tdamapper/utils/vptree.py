@@ -11,21 +11,21 @@ class KBall:
         self.__dist = dist
         self.__center = center
         self.__k = k
-        self.__heap = MaxHeap(fun=lambda x: self.__dist(x, self.__center))
+        self.__heap = MaxHeap()
 
     def insert(self, data):
-        dist_x = self.__dist(self.__center, data)
+        dist = self.__dist(self.__center, data)
         radius = self.get_radius()
-        if dist_x >= radius:
+        if dist >= radius:
             return
-        self.__heap.insert(data)
+        self.__heap.add((dist, data))
         if len(self.__heap) > self.__k:
-            self.__heap.extract_max()
+            self.__heap.pop()
 
     def get_radius(self):
         if len(self.__heap) < self.__k:
             return float('inf')
-        furthest = self.__heap.max()
+        _, furthest = self.__heap.top()
         return self.__dist(self.__center, furthest)
 
     def get_center(self):
@@ -186,7 +186,8 @@ class VPTree:
         ballheap = kball.get_heap()
         while len(ballheap) > k:
             ballheap.extract_max()
-        return list(ballheap)
+        return [x for (_, x) in ballheap]
+        #return list(ballheap)
 
     def _knn_search(self, tree, point, kball):
         if tree.is_terminal():
