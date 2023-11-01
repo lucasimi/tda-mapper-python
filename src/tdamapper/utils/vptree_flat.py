@@ -108,11 +108,13 @@ class VPTree:
 
     def knn_search(self, point, neighbors):
         s = KNNSearch(self.__distance, point, neighbors)
-        return self._search(s)
+        stack = [VisitLeft(0, len(self.__dataset))]
+        return self._search(s, stack)
 
     def ball_search(self, point, eps, inclusive=True):
         s = BallSearch(self.__distance, point, eps, inclusive)
-        return self._search(s)
+        stack = [Visit(0, len(self.__dataset))]
+        return self._search(s, stack)
 
     def ball_search_old(self, point, eps, inclusive=True):
         search = BallSearch(self.__distance, point, eps, inclusive)
@@ -131,8 +133,7 @@ class VPTree:
                     stack.append((mid, end))
         return search.get_items()
 
-    def _search(self, search):
-        stack = [VisitLeft(0, len(self.__dataset))]
+    def _search(self, search, stack):
         while stack:
             visit = stack.pop()
             start, end = visit.start(), visit.end()
@@ -141,6 +142,28 @@ class VPTree:
             else:
                 visit.after(self.__dataset, stack, search)
         return search.get_items()
+
+
+class Visit:
+
+    def __init__(self, start, end):
+        self.__start = start
+        self.__end = end
+
+    def start(self):
+        return self.__start
+
+    def end(self):
+        return self.__end
+
+    def after(self, dataset, stack, search):
+        v_radius, v_point = dataset[self.__start]
+        dist = search.process(v_point)
+        mid = (self.__end + self.__start) // 2
+        if dist > v_radius - search.get_radius():     # results is not contained in B(center, radius)
+            stack.append(Visit(mid, self.__end))
+        if dist <= v_radius + search.get_radius():    # results intersects B(center, radius)
+            stack.append(Visit(self.__start + 1, mid))
 
 
 class VisitLeft:
