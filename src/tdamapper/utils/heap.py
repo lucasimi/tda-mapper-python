@@ -20,9 +20,9 @@ class MaxHeap:
     def pop(self):
         if not self.__heap:
             return
-        last = self.__heap.pop()
         max_val = self.__heap[0]
-        self.__heap[0] = last
+        self.__heap[0] = self.__heap[-1]
+        self.__heap.pop()
         self._bubble_down()
         return max_val
 

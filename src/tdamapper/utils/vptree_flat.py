@@ -1,9 +1,9 @@
 """A class for fast knn and range searches, depending only on a given metric"""
-from .quickselect import quickselect
+from .quickselect import quickselect_tuple
 from .heap import MaxHeap
 
 
-class KNNResults:
+class KNNSearch:
 
     def __init__(self, dist, center, neighbors):
         self.__dist = dist
@@ -17,45 +17,62 @@ class KNNResults:
     def __next__(self):
         return next(self.__items)
 
-    def extract(self):
-        results = []
-        while len(self.__items) > 0:
-            results.append(self.__items.pop())
-        return results
+    def get_items(self):
+        while len(self.__items) > self.__neighbors:
+            self.__items.pop()
+        return [x for (_, x) in self.__items]
 
     def get_radius(self):
         if len(self.__items) < self.__neighbors:
             return float('inf')
-        _, furthest = self.__items.top()
-        return self.__dist(furthest, self.__center)
+        furthest_dist, _ = self.__items.top()
+        return furthest_dist
 
-    def add(self, value):
+    def process(self, value):
         dist = self.__dist(self.__center, value)
         self.__items.add((dist, value))
         while len(self.__items) > self.__neighbors:
             self.__items.pop()
         return dist
 
+    def process_all(self, values):
+        for value in values:
+            self.process(value)
 
-class BallResults:
 
-    def __init__(self, dist, center, radius):
-        self.__dist = dist
+class BallSearch:
+
+    def __init__(self, distance, center, radius, inclusive):
+        self.__distance = distance
         self.__center = center
         self.__radius = radius
         self.__items = []
+        self.__inside = self._inside_inclusive if inclusive else self._inside_not_inclusive
 
-    def extract(self):
+    def get_items(self):
         return self.__items
 
     def get_radius(self):
         return self.__radius
 
-    def add(self, value):
-        dist = self.__dist(self.__center, value)
-        if dist <= self.__radius: #TODO: inclusive or not?
+    def process_all(self, values):
+        inside = [x for x in values if self.__inside(self._from_center(x))]
+        self.__items.extend(inside)
+
+    def process(self, value):
+        dist = self._from_center(value)
+        if self.__inside(dist):
             self.__items.append(value)
         return dist
+
+    def _from_center(self, value):
+        return self.__distance(self.__center, value)
+
+    def _inside_inclusive(self, dist):
+        return dist <= self.__radius
+
+    def _inside_not_inclusive(self, dist):
+        return dist < self.__radius
 
 
 class VPTree:
@@ -65,66 +82,103 @@ class VPTree:
         self.__leaf_size = 1 if leaf_size is None else leaf_size
         self.__leaf_radius = float('inf') if leaf_radius is None else leaf_radius
         self.__dataset = [(0.0, x) for x in dataset]
-        self._build_update_iter()
+        self._build_iter()
 
-    def _build_update_iter(self):
+    def _update(self, v_point, start, end):
+        for i in range(start + 1, end):
+            _, point = self.__dataset[i]
+            self.__dataset[i] = self.__distance(v_point, point), point
+
+    def _build_iter(self):
         stack = []
         if len(self.__dataset) > self.__leaf_size:
             stack.append((0, len(self.__dataset)))
         while stack:
-            (start, end) = stack.pop()
+            start, end = stack.pop()
             mid = (end + start) // 2
-            _, vp = self.__dataset[start]
-            for i in range(start + 1, end):
-                _, x = self.__dataset[i]
-                self.__dataset[i] = self.__distance(vp, x), x
-            quickselect(self.__dataset, start + 1, end, mid,
-                        lambda x: x[0]) #TODO: optimized version of quickselect
-            radius, _ = self.__dataset[mid]
-            self.__dataset[start] = (radius, vp)
+            _, v_point = self.__dataset[start]
+            self._update(v_point, start, end)
+            quickselect_tuple(self.__dataset, start + 1, end, mid)
+            v_radius, _ = self.__dataset[mid]
+            self.__dataset[start] = (v_radius, v_point)
             if end - mid > self.__leaf_size:
                 stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_size) and (radius > self.__leaf_radius):
+            if (mid - start - 1 > self.__leaf_size) and (v_radius > self.__leaf_radius):
                 stack.append((start + 1, mid))
 
     def knn_search(self, point, neighbors):
-        results = KNNResults(self.__distance, point, neighbors)
-        return self._knn_search(point, neighbors, 0, len(self.__dataset), results)
+        s = KNNSearch(self.__distance, point, neighbors)
+        return self._search(s)
 
-    def _knn_search(self, point, neighbors, start, end, results):
-        if end - start <= self.__leaf_size:
-            for _, itm in self.__dataset[start:end]:
-                results.add(itm)
-        else:
-            radius, center = self.__dataset[start]
-            mid = (end + start) // 2
-            dist = results.add(center)
-            self._knn_search(point, neighbors, start + 1, mid, results)
-            neigh = 0
-            for res in results:
-                if self.__distance(res, center) < abs(radius - dist):
-                    neigh += 1
-            if neigh < neighbors:
-                self._knn_search(point, neighbors - neigh, mid, end, results)
-        return results
+    def ball_search(self, point, eps, inclusive=True):
+        s = BallSearch(self.__distance, point, eps, inclusive)
+        return self._search(s)
 
-    def ball_search(self, point, eps):
-        results = []
+    def ball_search_old(self, point, eps, inclusive=True):
+        search = BallSearch(self.__distance, point, eps, inclusive)
         stack = [(0, len(self.__dataset))]
         while stack:
             (start, end) = stack.pop()
             if end - start <= self.__leaf_size:
-                partial = [x for _, x in self.__dataset[start:end]
-                    if self.__distance(x, point) < eps] # TODO: inclusive?
-                results.extend(partial)
+                search.process_all([x for _, x in self.__dataset[start:end]])
             else:
-                radius, center = self.__dataset[start]
-                dist = self.__distance(center, point)
+                v_radius, v_point = self.__dataset[start]
                 mid = (end + start) // 2
-                if dist <= eps: #TODO: inclusive?
-                    results.append(center)
-                if dist <= radius + eps:    # results intersects B(center, radius)
+                dist = search.process(v_point)
+                if dist <= v_radius + eps:    # results intersects B(center, radius)
                     stack.append((start + 1, mid))
-                if dist > radius - eps:     # results is not contained in B(center, radius)
+                if dist > v_radius - eps:     # results is not contained in B(center, radius)
                     stack.append((mid, end))
-        return results
+        return search.get_items()
+
+    def _search(self, search):
+        stack = [VisitLeft(0, len(self.__dataset))]
+        while stack:
+            visit = stack.pop()
+            start, end = visit.start(), visit.end()
+            if end - start <= self.__leaf_size:
+                search.process_all([x for _, x in self.__dataset[start:end]])
+            else:
+                visit.after(self.__dataset, stack, search)
+        return search.get_items()
+
+
+class VisitLeft:
+
+    def __init__(self, start, end):
+        self.__start = start
+        self.__end = end
+
+    def start(self):
+        return self.__start
+
+    def end(self):
+        return self.__end
+
+    def after(self, dataset, stack, search):
+        v_radius, v_point = dataset[self.__start]
+        dist = search.process(v_point)
+        mid = (self.__end + self.__start) // 2
+        stack.append(VisitRight(self.__start, self.__end, dist))
+        if dist <= v_radius + search.get_radius():    # results intersects B(center, radius)
+            stack.append(VisitLeft(self.__start + 1, mid))
+
+
+class VisitRight:
+
+    def __init__(self, start, end, dist):
+        self.__start = start
+        self.__end = end
+        self.__dist = dist
+
+    def start(self):
+        return self.__start
+
+    def end(self):
+        return self.__end
+
+    def after(self, dataset, stack, search):
+        v_radius, _ = dataset[self.__start]
+        mid = (self.__end + self.__start) // 2
+        if self.__dist > v_radius - search.get_radius():     # results is not contained in B(center, radius)
+            stack.append(VisitLeft(mid, self.__end))
