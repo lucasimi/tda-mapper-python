@@ -82,7 +82,7 @@ class _KNNSearch:
 
     def process(self, value):
         dist = self.__dist(self.__center, value)
-        self.__items.add((dist, value))
+        self.__items.add(dist, value)
         while len(self.__items) > self.__neighbors:
             self.__items.pop()
         return dist

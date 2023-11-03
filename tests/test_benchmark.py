@@ -49,8 +49,8 @@ class TestBenchmark(unittest.TestCase):
         for val in data:
             neigh = vpt.ball_search(val, eps)
         t2 = time()
-        #for val in data:
-        #    neigh = vpt.knn_search(val, k)
+        for val in data:
+            neigh = vpt.knn_search(val, k)
         t3 = time()
         self.logger.info(f'{name} build      : {t1 - t0}')
         self.logger.info(f'{name} ball search: {t2 - t1}')

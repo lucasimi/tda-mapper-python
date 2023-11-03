@@ -1,13 +1,37 @@
+class _HeapNode:
+
+    def __init__(self, key, value):
+        self.__key = key
+        self.__value = value
+
+    def get(self):
+        return self.__key, self.__value
+
+    def __lt__(self, other):
+        return self.__key < other
+    
+    def __le__(self, other):
+        return self.__key <= other
+
+    def __gt__(self, other):
+        return self.__key > other
+    
+    def __ge__(self, other):
+        return self.__key >= other
+
+
 class MaxHeap:
 
     def __init__(self):
         self.__heap = []
 
     def __iter__(self):
-        return iter(self.__heap)
+        self.__iter = iter(self.__heap)
+        return self
 
     def __next__(self):
-        return next(self.__heap)
+        node = next(self.__iter)
+        return node.get()
 
     def __len__(self):
         return len(self.__heap)
@@ -15,7 +39,7 @@ class MaxHeap:
     def top(self):
         if not self.__heap:
             return None
-        return self.__heap[0]
+        return self.__heap[0].get()
 
     def pop(self):
         if not self.__heap:
@@ -24,10 +48,10 @@ class MaxHeap:
         self.__heap[0] = self.__heap[-1]
         self.__heap.pop()
         self._bubble_down()
-        return max_val
+        return max_val.get()
 
-    def add(self, val):
-        self.__heap.append(val)
+    def add(self, key, val):
+        self.__heap.append(_HeapNode(key, val))
         self._bubble_up()
 
     def _get_local_max(self, i):
@@ -56,7 +80,7 @@ class MaxHeap:
 
     def _fix_up(self, i):
         parent = self._parent(i)
-        if self.__heap[i] > self.__heap[parent]:
+        if self.__heap[parent] < self.__heap[i]:
             self.__heap[i], self.__heap[parent] = self.__heap[parent], self.__heap[i]
             return parent
         return i

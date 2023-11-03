@@ -16,7 +16,7 @@ class KBall:
         radius = self.get_radius()
         if dist >= radius:
             return
-        self.__heap.add((dist, data))
+        self.__heap.add(dist, data)
         if len(self.__heap) > self.__k:
             self.__heap.pop()
 
