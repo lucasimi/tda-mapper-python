@@ -36,12 +36,12 @@ class VPTree:
 
     def knn_search(self, point, neighbors):
         search = _KNNSearch(self.__distance, point, neighbors)
-        stack = [_VisitLeft(0, len(self.__dataset))]
+        stack = [_KNNSearchVisitPre(0, len(self.__dataset))]
         return self._search_iter(search, stack)
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
-        stack = [_Visit(0, len(self.__dataset))]
+        stack = [_BallSearchVisit(0, len(self.__dataset))]
         return self._search_iter(search, stack)
 
     def _search_iter(self, search, stack):
@@ -82,6 +82,8 @@ class _KNNSearch:
 
     def process(self, value):
         dist = self.__dist(self.__center, value)
+        if dist >= self.get_radius():
+            return dist
         self.__items.add(dist, value)
         while len(self.__items) > self.__neighbors:
             self.__items.pop()
@@ -127,7 +129,7 @@ class _BallSearch:
         return dist < self.__radius
 
 
-class _Visit:
+class _BallSearchVisit:
 
     def __init__(self, start, end):
         self.__start = start
@@ -140,13 +142,19 @@ class _Visit:
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
-        if dist > v_radius - search.get_radius():     # results is not contained in B(center, radius)
-            stack.append(_Visit(mid, self.__end))
-        if dist <= v_radius + search.get_radius():    # results intersects B(center, radius)
-            stack.append(_Visit(self.__start + 1, mid))
+        if dist < v_radius:
+            fst_start, fst_end = self.__start + 1, mid
+            snd_start, snd_end = mid, self.__end
+        else:
+            fst_start, fst_end = mid, self.__end
+            snd_start, snd_end = self.__start + 1, mid
+        if abs(dist - v_radius) <= search.get_radius():
+            stack.append(_BallSearchVisit(snd_start, snd_end))
+        stack.append(_BallSearchVisit(fst_start, fst_end))
 
 
-class _VisitLeft:
+
+class _KNNSearchVisitPre:
 
     def __init__(self, start, end):
         self.__start = start
@@ -159,12 +167,17 @@ class _VisitLeft:
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
-        stack.append(_VisitRight(self.__start, self.__end, dist))
-        if dist <= v_radius + search.get_radius():    # results intersects B(center, radius)
-            stack.append(_VisitLeft(self.__start + 1, mid))
+        if dist < v_radius:
+            fst_start, fst_end = self.__start + 1, mid
+            snd_start, snd_end = mid, self.__end
+        else:
+            fst_start, fst_end = mid, self.__end
+            snd_start, snd_end = self.__start + 1, mid
+        stack.append(_KNNSearchVisitPost(snd_start, snd_end, dist))
+        stack.append(_KNNSearchVisitPre(fst_start, fst_end))
 
 
-class _VisitRight:
+class _KNNSearchVisitPost:
 
     def __init__(self, start, end, dist):
         self.__start = start
@@ -176,6 +189,6 @@ class _VisitRight:
 
     def after(self, dataset, stack, search):
         v_radius, _ = dataset[self.__start]
-        mid = (self.__end + self.__start) // 2
-        if self.__dist > v_radius - search.get_radius():     # results is not contained in B(center, radius)
-            stack.append(_VisitLeft(mid, self.__end))
+        if abs(self.__dist - v_radius) <= search.get_radius():
+            stack.append(_KNNSearchVisitPre(self.__start, self.__end))
+
