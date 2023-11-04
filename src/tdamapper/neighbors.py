@@ -1,5 +1,5 @@
 import numpy as np
-from .utils.vptree import VPTree
+from .utils.vptree_flat import VPTree
 
 
 class BallNeighbors:
@@ -20,8 +20,7 @@ class BallNeighbors:
         if self.__vptree:
             neighs = self.__vptree.ball_search((-1, point), self.__radius)
             return [x for (x, _) in neighs]
-        else:
-            return []
+        return []
 
     def get_params(self, deep=True):
         parameters = {}
@@ -47,8 +46,7 @@ class KNNeighbors:
         if self.__vptree:
             neighs = self.__vptree.knn_search((-1, point), self.__k_neighbors)
             return [x for (x, _) in neighs]
-        else:
-            return []
+        return []
 
     def get_params(self, deep=True):
         parameters = {}
@@ -91,7 +89,7 @@ class CubicNeighbors:
         return (np.array(x) - self.__minimum) / self.__delta
 
     def fit(self, data):
-        self._set_bounds(data) 
+        self._set_bounds(data)
         self.__data = [(n, self._normalize(x)) for n, x in enumerate(data)]
         self.__vptree = VPTree(
             self.__metric, self.__data, leaf_radius=self.__radius)
@@ -102,8 +100,7 @@ class CubicNeighbors:
             center = self._nearest_center(point)
             neighs = self.__vptree.ball_search((-1, center), self.__radius)
             return [x for (x, _) in neighs if x != -1]
-        else:
-            return []
+        return []
 
     def get_params(self, deep=True):
         parameters = {}
