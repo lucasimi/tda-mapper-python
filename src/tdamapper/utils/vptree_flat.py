@@ -34,14 +34,14 @@ class VPTree:
             if (mid - start - 1 > self.__leaf_size) and (v_radius > self.__leaf_radius):
                 stack.append((start + 1, mid))
 
-    def knn_search(self, point, neighbors):
-        search = _KNNSearch(self.__distance, point, neighbors)
-        stack = [_KNNSearchVisitPre(0, len(self.__dataset))]
-        return self._search_iter(search, stack)
-
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
         stack = [_BallSearchVisit(0, len(self.__dataset))]
+        return self._search_iter(search, stack)
+
+    def knn_search(self, point, neighbors):
+        search = _KNNSearch(self.__distance, point, neighbors)
+        stack = [_KNNSearchVisitPre(0, len(self.__dataset))]
         return self._search_iter(search, stack)
 
     def _search_iter(self, search, stack):
@@ -53,6 +53,41 @@ class VPTree:
             else:
                 visit.after(self.__dataset, stack, search)
         return search.get_items()
+
+
+class _BallSearch:
+
+    def __init__(self, distance, center, radius, inclusive):
+        self.__distance = distance
+        self.__center = center
+        self.__radius = radius
+        self.__items = []
+        self.__inside = self._inside_inclusive if inclusive else self._inside_not_inclusive
+
+    def get_items(self):
+        return self.__items
+
+    def get_radius(self):
+        return self.__radius
+
+    def process_all(self, values):
+        inside = [x for x in values if self.__inside(self._from_center(x))]
+        self.__items.extend(inside)
+
+    def process(self, value):
+        dist = self._from_center(value)
+        if self.__inside(dist):
+            self.__items.append(value)
+        return dist
+
+    def _from_center(self, value):
+        return self.__distance(self.__center, value)
+
+    def _inside_inclusive(self, dist):
+        return dist <= self.__radius
+
+    def _inside_not_inclusive(self, dist):
+        return dist < self.__radius
 
 
 class _KNNSearch:
@@ -94,41 +129,6 @@ class _KNNSearch:
             self.process(value)
 
 
-class _BallSearch:
-
-    def __init__(self, distance, center, radius, inclusive):
-        self.__distance = distance
-        self.__center = center
-        self.__radius = radius
-        self.__items = []
-        self.__inside = self._inside_inclusive if inclusive else self._inside_not_inclusive
-
-    def get_items(self):
-        return self.__items
-
-    def get_radius(self):
-        return self.__radius
-
-    def process_all(self, values):
-        inside = [x for x in values if self.__inside(self._from_center(x))]
-        self.__items.extend(inside)
-
-    def process(self, value):
-        dist = self._from_center(value)
-        if self.__inside(dist):
-            self.__items.append(value)
-        return dist
-
-    def _from_center(self, value):
-        return self.__distance(self.__center, value)
-
-    def _inside_inclusive(self, dist):
-        return dist <= self.__radius
-
-    def _inside_not_inclusive(self, dist):
-        return dist < self.__radius
-
-
 class _BallSearchVisit:
 
     def __init__(self, start, end):
@@ -151,7 +151,6 @@ class _BallSearchVisit:
         if abs(dist - v_radius) <= search.get_radius():
             stack.append(_BallSearchVisit(snd_start, snd_end))
         stack.append(_BallSearchVisit(fst_start, fst_end))
-
 
 
 class _KNNSearchVisitPre:
@@ -191,4 +190,3 @@ class _KNNSearchVisitPost:
         v_radius, _ = dataset[self.__start]
         if abs(self.__dist - v_radius) <= search.get_radius():
             stack.append(_KNNSearchVisitPre(self.__start, self.__end))
-

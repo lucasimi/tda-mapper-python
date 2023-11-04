@@ -12,12 +12,6 @@ class VPTree:
         self.__dataset = [(0.0, x) for x in dataset]
         self.__tree = self._build_rec(0, len(self.__dataset), True)
 
-    def get_tree(self):
-        return self.__tree
-
-    def get_height(self):
-        return self.__tree.get_height()
-
     def _update(self, v_point, start, end):
         for i in range(start + 1, end):
             _, point = self.__dataset[i]
@@ -135,12 +129,6 @@ class _BallSearch:
         inside = [x for x in values if self.__inside(self._from_center(x))]
         self.__items.extend(inside)
 
-    def process(self, value):
-        dist = self._from_center(value)
-        if self.__inside(dist):
-            self.__items.append(value)
-        return dist
-
     def _from_center(self, value):
         return self.__distance(self.__center, value)
 
@@ -159,7 +147,7 @@ class _KNNSearch:
         self.__neighbors = neighbors
         self.__items = MaxHeap()
 
-    def insert(self, value):
+    def _process(self, value):
         dist = self.__dist(self.__center, value)
         if dist >= self.get_radius():
             return
@@ -181,4 +169,4 @@ class _KNNSearch:
 
     def process_all(self, values):
         for val in values:
-            self.insert(val)
+            self._process(val)
