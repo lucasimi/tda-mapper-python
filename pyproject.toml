@@ -25,7 +25,7 @@ dependencies = [
 requires-python = ">=3.6"
 
 [project.optional-dependencies]
-dev = ["coverage"]
+dev = ["coverage", "pandas"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
