@@ -1,18 +1,53 @@
 """A class for fast knn and range searches, depending only on a given metric"""
+from random import randrange
 from .quickselect import quickselect_tuple
 from .heap import MaxHeap
 
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_size=None, leaf_radius=None):
+    def __init__(self, distance, dataset, leaf_size=None, leaf_radius=None, pivoting=None):
         self.__distance = distance
         self.__leaf_size = 1 if leaf_size is None else leaf_size
         self.__leaf_radius = float('inf') if leaf_radius is None else leaf_radius
         self.__dataset = [(0.0, x) for x in dataset]
+        self.__pivoting = self._pivoting_disabled
+        if pivoting == 'random':
+            self.__pivoting = self._pivoting_random
+        elif pivoting == 'furthest':
+            self.__pivoting = self._pivoting_furthest
         self._build_iter()
 
-    def _update(self, v_point, start, end):
+    def _pivoting_disabled(self, start, end):
+        pass
+
+    def _pivoting_random(self, start, end):
+        pivot = randrange(start, end)
+        if pivot > start:
+            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+
+    def _furthest(self, start, end, i):
+        furthest_dist = 0.0
+        furthest = start
+        _, i_point = self.__dataset[i]
+        for j in range(start, end):
+            _, j_point = self.__dataset[j]
+            j_dist = self.__distance(i_point, j_point)
+            if j_dist > furthest_dist:
+                furthest = j
+                furthest_dist = j_dist
+        return furthest
+
+    def _pivoting_furthest(self, start, end):
+        rnd = randrange(start, end)
+        furthest_rnd = self._furthest(start, end, rnd)
+        furthest = self._furthest(start, end, furthest_rnd)
+        if furthest > start:
+            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+
+    def _update(self, start, end):
+        self.__pivoting(start, end)
+        _, v_point = self.__dataset[start]
         for i in range(start + 1, end):
             _, point = self.__dataset[i]
             self.__dataset[i] = self.__distance(v_point, point), point
@@ -24,8 +59,8 @@ class VPTree:
         while stack:
             start, end = stack.pop()
             mid = (end + start) // 2
+            self._update(start, end)
             _, v_point = self.__dataset[start]
-            self._update(v_point, start, end)
             quickselect_tuple(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
@@ -172,21 +207,21 @@ class _KNNSearchVisitPre:
         else:
             fst_start, fst_end = mid, self.__end
             snd_start, snd_end = self.__start + 1, mid
-        stack.append(_KNNSearchVisitPost(snd_start, snd_end, dist))
+        stack.append(_KNNSearchVisitPost(snd_start, snd_end, dist, v_radius))
         stack.append(_KNNSearchVisitPre(fst_start, fst_end))
 
 
 class _KNNSearchVisitPost:
 
-    def __init__(self, start, end, dist):
+    def __init__(self, start, end, dist, v_radius):
         self.__start = start
         self.__end = end
         self.__dist = dist
+        self.__v_radius = v_radius
 
     def bounds(self):
         return self.__start, self.__end
 
-    def after(self, dataset, stack, search):
-        v_radius, _ = dataset[self.__start]
-        if abs(self.__dist - v_radius) <= search.get_radius():
+    def after(self, _, stack, search):
+        if abs(self.__dist - self.__v_radius) <= search.get_radius():
             stack.append(_KNNSearchVisitPre(self.__start, self.__end))

@@ -1,18 +1,53 @@
 """A class for fast knn and range searches, depending only on a given metric"""
+from random import randrange
 from .quickselect import quickselect_tuple
 from .heap import MaxHeap
 
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_size=None, leaf_radius=None):
+    def __init__(self, distance, dataset, leaf_size=None, leaf_radius=None, pivoting=None):
         self.__distance = distance
         self.__leaf_size = 1 if leaf_size is None else leaf_size
         self.__leaf_radius = float('inf') if leaf_radius is None else leaf_radius
         self.__dataset = [(0.0, x) for x in dataset]
+        self.__pivoting = self._pivoting_disabled
+        if pivoting == 'random':
+            self.__pivoting = self._pivoting_random
+        elif pivoting == 'furthest':
+            self.__pivoting = self._pivoting_furthest
         self.__tree = self._build_rec(0, len(self.__dataset), True)
 
-    def _update(self, v_point, start, end):
+    def _pivoting_disabled(self, start, end):
+        pass
+
+    def _pivoting_random(self, start, end):
+        pivot = randrange(start, end)
+        if pivot > start:
+            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+
+    def _furthest(self, start, end, i):
+        furthest_dist = 0.0
+        furthest = start
+        _, i_point = self.__dataset[i]
+        for j in range(start, end):
+            _, j_point = self.__dataset[j]
+            j_dist = self.__distance(i_point, j_point)
+            if j_dist > furthest_dist:
+                furthest = j
+                furthest_dist = j_dist
+        return furthest
+
+    def _pivoting_furthest(self, start, end):
+        rnd = randrange(start, end)
+        furthest_rnd = self._furthest(start, end, rnd)
+        furthest = self._furthest(start, end, furthest_rnd)
+        if furthest > start:
+            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+
+    def _update(self, start, end):
+        self.__pivoting(start, end)
+        _, v_point = self.__dataset[start]
         for i in range(start + 1, end):
             _, point = self.__dataset[i]
             self.__dataset[i] = self.__distance(v_point, point), point
@@ -21,9 +56,9 @@ class VPTree:
         if end - start <= self.__leaf_size:
             return _Tree([x for _, x in self.__dataset[start:end]])
         mid = (end + start) // 2
-        _, v_point = self.__dataset[start]
         if update:
-            self._update(v_point, start, end)
+            self._update(start, end)
+        _, v_point = self.__dataset[start]
         quickselect_tuple(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
         if v_radius <= self.__leaf_radius:
@@ -41,10 +76,7 @@ class VPTree:
     def knn_search(self, point, k):
         search = _KNNSearch(self.__distance, point, k)
         self._search_rec(self.__tree, search)
-        ballheap = search.get_heap()
-        while len(ballheap) > k:
-            ballheap.pop()
-        return [x for (_, x) in ballheap]
+        return search.get_items()
 
     def _search_rec(self, tree, search):
         if tree.is_terminal():
@@ -147,13 +179,10 @@ class _KNNSearch:
         self.__neighbors = neighbors
         self.__items = MaxHeap()
 
-    def _process(self, value):
-        dist = self.__dist(self.__center, value)
-        if dist >= self.get_radius():
-            return
-        self.__items.add(dist, value)
-        if len(self.__items) > self.__neighbors:
+    def get_items(self):
+        while len(self.__items) > self.__neighbors:
             self.__items.pop()
+        return [x for (_, x) in self.__items]
 
     def get_radius(self):
         if len(self.__items) < self.__neighbors:
@@ -164,8 +193,13 @@ class _KNNSearch:
     def get_center(self):
         return self.__center
 
-    def get_heap(self):
-        return self.__items
+    def _process(self, value):
+        dist = self.__dist(self.__center, value)
+        if dist >= self.get_radius():
+            return
+        self.__items.add(dist, value)
+        if len(self.__items) > self.__neighbors:
+            self.__items.pop()
 
     def process_all(self, values):
         for val in values:
