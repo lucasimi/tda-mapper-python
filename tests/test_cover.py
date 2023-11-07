@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from tdamapper.cover import TrivialCover, BallCover, KNNCover, CubicCover
+from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
 
 
 def dist(x, y):
@@ -40,6 +40,6 @@ class TestCover(unittest.TestCase):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
-        cover = CubicCover(2, 0.5)
+        cover = GridCover(2, 0.5)
         charts = list(cover.neighbors_net(data))
         self.assertEqual(4, len(charts))

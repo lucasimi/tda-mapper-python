@@ -1,4 +1,4 @@
-from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, CubicNeighbors
+from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, GridNeighbors
 
 
 class NeighborsCover:
@@ -31,16 +31,18 @@ class KNNCover(NeighborsCover):
         super().__init__(KNNeighbors(k_neighbors, metric))
 
 
-class CubicCover(NeighborsCover):
+class GridCover(NeighborsCover):
 
     def __init__(self, n_intervals, overlap_frac):
-        super().__init__(CubicNeighbors(n_intervals, overlap_frac))
+        super().__init__(GridNeighbors(n_intervals, overlap_frac))
 
 
 class TrivialCover(NeighborsCover):
 
     def __init__(self):
         super().__init__(TrivialNeighbors())
+
+
 
 
 
