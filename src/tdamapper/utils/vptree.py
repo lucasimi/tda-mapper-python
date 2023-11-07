@@ -86,12 +86,12 @@ class VPTree:
             v_radius, v_point = v_ball.get_radius(), v_ball.get_center()
             point = search.get_center()
             dist = self.__distance(v_point, point)
-            if dist < v_radius:
+            if dist <= v_radius:
                 fst, snd = tree.get_left(), tree.get_right()
             else:
                 fst, snd = tree.get_right(), tree.get_left()
             self._search_rec(fst, search)
-            if abs(dist - v_radius) < search.get_radius():
+            if abs(dist - v_radius) <= search.get_radius():
                 self._search_rec(snd, search)
 
 
