@@ -201,7 +201,7 @@ class _KNNSearchVisitPre:
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
-        if dist < v_radius:
+        if dist <= v_radius:
             fst_start, fst_end = self.__start + 1, mid
             snd_start, snd_end = mid, self.__end
         else:
