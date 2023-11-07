@@ -36,7 +36,7 @@ class TestCover(unittest.TestCase):
         charts = list(cover.neighbors_net(data))
         self.assertEqual(2, len(charts))
 
-    def testCubicCover(self):
+    def testGridCover(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]

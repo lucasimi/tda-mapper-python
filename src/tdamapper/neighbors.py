@@ -66,8 +66,8 @@ class GridNeighbors:
         metric = self._pullback(self._gamma_n, self._l_infty)
         self.__ball_neighbors = BallNeighbors(self.__radius, metric)
 
-    def _l_infty(self):
-        return lambda x, y: np.linalg.norm(x - y, ord=np.inf)
+    def _l_infty(self, x, y):
+        return np.linalg.norm(x - y, ord=np.inf)
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__minimum) / (self.__maximum - self.__minimum)
