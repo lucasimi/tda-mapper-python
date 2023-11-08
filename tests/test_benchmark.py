@@ -46,26 +46,43 @@ class TestBenchmark(unittest.TestCase):
     
     def _testCompare(self, data):
         self.logger.info('[build]')
-        vpt = self._testBuild(data, ' * VPT ', VPT)
-        fvpt = self._testBuild(data, ' * FVPT', FVPT)
+        vpt = self._testBuild(data, ' * VPT  ', VPT)
+        fvpt = self._testBuild(data, ' * FVPT ', FVPT)
         self.logger.info('[ball search]')
-        self._testBallSearch(data, ' * VPT ', vpt)
-        self._testBallSearch(data, ' * FVPT', fvpt)
+        self._testBallSearchNaive(data, ' * Naive ')
+        self._testBallSearch(data, ' * VPT  ', vpt)
+        self._testBallSearch(data, ' * FVPT ', fvpt)
         self.logger.info('[knn search]')
-        self._testKNNSearch(data, ' * VPT ', vpt)
-        self._testKNNSearch(data, ' * FVPT', fvpt)
+        self._testKNNSearchNaive(data, ' * Naive ')
+        self._testKNNSearch(data, ' * VPT  ', vpt)
+        self._testKNNSearch(data, ' * FVPT ', fvpt)
 
     def _testBuild(self, data, name, builder):
         t0 = time()
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_size=self.k)
+        vpt = builder(dist, data, leaf_radius=self.eps, leaf_size=self.k, pivoting='furthest')
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')
         return vpt
+
+    def _testBallSearchNaive(self, data, name):
+        t0 = time()
+        for val in data:
+            neigh = [x for x in data if dist(val, x) <= self.eps]
+        t1 = time()
+        self.logger.info(f'{name}: {t1 - t0}')
 
     def _testBallSearch(self, data, name, vpt):
         t0 = time()
         for val in data:
             neigh = vpt.ball_search(val, self.eps)
+        t1 = time()
+        self.logger.info(f'{name}: {t1 - t0}')
+
+    def _testKNNSearchNaive(self, data, name):
+        t0 = time()
+        for val in data:
+            data.sort(key=lambda x: dist(x, val))
+            neigh = [x for x in data[:self.k]]
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')
 
