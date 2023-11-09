@@ -55,7 +55,7 @@ iris_data = load_iris()
 X, y = iris_data.data, iris_data.target
 lens = PCA(2).fit_transform(X)
 
-cover = CubicCover(n_intervals=7, overlap_frac=0.25)
+cover = GridCover(n_intervals=7, overlap_frac=0.25)
 clustering = AgglomerativeClustering(n_clusters=2, linkage='single')
 
 mapper_algo = MapperAlgorithm(cover, clustering)
@@ -91,7 +91,7 @@ digits = load_digits()
 X, y = [np.array(x) for x in digits.data], digits.target
 lens = PCA(2).fit_transform(X)
 
-cover = CubicCover(n_intervals=15, overlap_frac=0.25)
+cover = GridCover(n_intervals=15, overlap_frac=0.25)
 clustering = KMeans(10, n_init='auto')
 
 mapper_algo = MapperAlgorithm(cover, clustering)
@@ -105,9 +105,6 @@ fig.show(config={'scrollZoom': True})
 ![The mapper graph of the digits dataset](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/digits.png)
 
 As you can see the mapper graph shows interesting patterns. Note that the shape of the graph is obtained by looking only at the 8x8 pictures, discarding any information about the actual label (the digit). You can see that those local clusters which share the same labels are located in the same area of the graph. This tells you (as you would expect) that the labelling is *compatible with the shape of data*.
-
-![Digits 4 and 7](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/digits_4_7.png)
-
 Moreover, by zooming in, you can see that some clusters are located next to others. For example in the picture you can see the details of digits '4' (cyan) and '7' (red) being located one next to the other.
 
 ### Development - Supported Features
