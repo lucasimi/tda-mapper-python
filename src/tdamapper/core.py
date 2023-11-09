@@ -1,4 +1,6 @@
+import logging
 import networkx as nx
+from joblib import Parallel, delayed
 
 
 _ATTR_IDS = 'ids'
@@ -8,7 +10,41 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def build_labels(X, y, cover, clustering):
+_logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    format = '%(asctime)s %(module)s %(levelname)s: %(message)s',
+    datefmt = '%m/%d/%Y %I:%M:%S %p',
+    level = logging.INFO)
+
+
+def build_labels_par(X, y, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
+    def _lbls(i, x):
+        try:
+            x_data = [X[j] for j in x]
+            return x, clustering.fit(x_data).labels_
+        except ValueError as err:
+            if verbose:
+                _logger.warning('Unable to perform clustering on local chart %d: %s', i, err)
+            if fail_fast:
+                raise err
+            return x, [0 for _ in x]
+    itr = enumerate(cover.neighbors_net(y))
+    par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(i, ids) for i, ids in itr)
+    max_lbl = 0
+    lbls = [[] for _ in X]
+    for neigh_ids, neigh_lbls in par:
+        max_neigh_lbl = 0
+        for neigh_id, neigh_lbl in zip(neigh_ids, neigh_lbls):
+            if neigh_lbl != -1:
+                if neigh_lbl > max_neigh_lbl:
+                    max_neigh_lbl = neigh_lbl
+                lbls[neigh_id].append(max_lbl + neigh_lbl)
+        max_lbl += max_neigh_lbl + 1
+    return lbls
+
+
+def build_labels(X, y, cover, clustering, verbose=False, fail_fast=False):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
     contains the cluster ids to which the item at position i belongs to.
@@ -16,14 +52,18 @@ def build_labels(X, y, cover, clustering):
     '''
     max_label = 0
     labels = [[] for _ in X]
-    for neigh_ids in cover.neighbors_net(y):
+    for i, neigh_ids in enumerate(cover.neighbors_net(y)):
         neigh_data = [X[j] for j in neigh_ids]
         try:
             neigh_labels = clustering.fit(neigh_data).labels_
-        except Exception:
+        except ValueError as err:
             neigh_labels = [0 for _ in neigh_data]
+            if verbose:
+                _logger.warning('Unable to perform clustering on local chart %d: %s', i, err)
+            if fail_fast:
+                return []
         max_neigh_label = 0
-        for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
+        for neigh_id, neigh_label in zip(neigh_ids, neigh_labels):
             if neigh_label != -1:
                 if neigh_label > max_neigh_label:
                     max_neigh_label = neigh_label
@@ -61,8 +101,9 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, y, cover, clustering):
-    labels = build_labels(X, y, cover, clustering)
+def build_graph(X, y, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
+    #labels = build_labels(X, y, cover, clustering, verbose, fail_fast)
+    labels = build_labels_par(X, y, cover, clustering, verbose, fail_fast, n_jobs)
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
@@ -107,9 +148,12 @@ def compute_local_interpolation(y, graph, agg):
 
 class MapperAlgorithm:
 
-    def __init__(self, cover, clustering):
+    def __init__(self, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
         self.__cover = cover
         self.__clustering = clustering
+        self.__verbose = verbose
+        self.__fail_fast = fail_fast
+        self.__n_jobs = n_jobs
         self.graph_ = None
 
     def fit(self, X, y=None):
@@ -117,7 +161,7 @@ class MapperAlgorithm:
         return self
 
     def fit_transform(self, X, y):
-        return build_graph(X, y, self.__cover, self.__clustering)
+        return build_graph(X, y, self.__cover, self.__clustering, self.__verbose, self.__fail_fast, self.__n_jobs)
 
 
 class MapperClassifier:

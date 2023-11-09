@@ -20,7 +20,8 @@ dependencies = [
     "networkx>=2.5",
     "numpy>=1.20.1",
     "scikit-learn>=0.24.1",
-    "plotly>=4.14.3"
+    "plotly>=4.14.3",
+    "joblib>=1.2.0"
 ]
 requires-python = ">=3.6"
 

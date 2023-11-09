@@ -9,13 +9,13 @@ class _HeapNode:
 
     def __lt__(self, other):
         return self.__key < other
-    
+
     def __le__(self, other):
         return self.__key <= other
 
     def __gt__(self, other):
         return self.__key > other
-    
+
     def __ge__(self, other):
         return self.__key >= other
 
@@ -24,6 +24,7 @@ class MaxHeap:
 
     def __init__(self):
         self.__heap = []
+        self.__iter = None
 
     def __iter__(self):
         self.__iter = iter(self.__heap)
