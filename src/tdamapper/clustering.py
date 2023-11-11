@@ -7,7 +7,7 @@ from tdamapper.cover import TrivialCover
 
 class TrivialClustering:
 
-    def TrivialClustering(self):
+    def __init__(self):
         pass
 
     def get_params(self, deep=True):

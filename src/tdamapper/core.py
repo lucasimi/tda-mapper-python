@@ -18,7 +18,7 @@ logging.basicConfig(
     level = logging.INFO)
 
 
-def build_labels_par(X, y, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
+def build_labels_par(X, y, cover, clustering, verbose=False, permissive=True, n_jobs=1):
     def _lbls(i, x):
         try:
             x_data = [X[j] for j in x]
@@ -26,7 +26,7 @@ def build_labels_par(X, y, cover, clustering, verbose=False, fail_fast=False, n_
         except ValueError as err:
             if verbose:
                 _logger.warning('Unable to perform clustering on local chart %d: %s', i, err)
-            if fail_fast:
+            if not permissive:
                 raise err
             return x, [0 for _ in x]
     itr = enumerate(cover.neighbors_net(y))
@@ -44,32 +44,32 @@ def build_labels_par(X, y, cover, clustering, verbose=False, fail_fast=False, n_
     return lbls
 
 
-def build_labels(X, y, cover, clustering, verbose=False, fail_fast=False):
+def build_labels(X, y, cover, clustering, verbose=False, permissive=True):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
     contains the cluster ids to which the item at position i belongs to.
     * Each list in the output is a sorted list of ints with no duplicate.
     '''
-    max_label = 0
-    labels = [[] for _ in X]
+    max_lbl = 0
+    lbls = [[] for _ in X]
     for i, neigh_ids in enumerate(cover.neighbors_net(y)):
         neigh_data = [X[j] for j in neigh_ids]
         try:
-            neigh_labels = clustering.fit(neigh_data).labels_
+            neigh_lbls = clustering.fit(neigh_data).labels_
         except ValueError as err:
-            neigh_labels = [0 for _ in neigh_data]
+            neigh_lbls = [0 for _ in neigh_data]
             if verbose:
                 _logger.warning('Unable to perform clustering on local chart %d: %s', i, err)
-            if fail_fast:
-                return []
-        max_neigh_label = 0
-        for neigh_id, neigh_label in zip(neigh_ids, neigh_labels):
-            if neigh_label != -1:
-                if neigh_label > max_neigh_label:
-                    max_neigh_label = neigh_label
-                labels[neigh_id].append(max_label + neigh_label)
-        max_label += max_neigh_label + 1
-    return labels
+            if not permissive:
+                raise err
+        max_neigh_lbl = 0
+        for neigh_id, neigh_lbl in zip(neigh_ids, neigh_lbls):
+            if neigh_lbl != -1:
+                if neigh_lbl > max_neigh_lbl:
+                    max_neigh_lbl = neigh_lbl
+                lbls[neigh_id].append(max_lbl + neigh_lbl)
+        max_lbl += max_neigh_lbl + 1
+    return lbls
 
 
 def build_adjaciency(labels):
@@ -101,9 +101,11 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, y, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
-    #labels = build_labels(X, y, cover, clustering, verbose, fail_fast)
-    labels = build_labels_par(X, y, cover, clustering, verbose, fail_fast, n_jobs)
+def build_graph(X, y, cover, clustering, verbose=False, permissive=True, n_jobs=1):
+    labels = build_labels_par(X, y, cover, clustering,
+        verbose=verbose,
+        permissive=permissive,
+        n_jobs=n_jobs)
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
@@ -148,11 +150,11 @@ def compute_local_interpolation(y, graph, agg):
 
 class MapperAlgorithm:
 
-    def __init__(self, cover, clustering, verbose=False, fail_fast=False, n_jobs=1):
+    def __init__(self, cover, clustering, verbose=False, permissive=True, n_jobs=1):
         self.__cover = cover
         self.__clustering = clustering
         self.__verbose = verbose
-        self.__fail_fast = fail_fast
+        self.__permissive = permissive
         self.__n_jobs = n_jobs
         self.graph_ = None
 
@@ -161,7 +163,10 @@ class MapperAlgorithm:
         return self
 
     def fit_transform(self, X, y):
-        return build_graph(X, y, self.__cover, self.__clustering, self.__verbose, self.__fail_fast, self.__n_jobs)
+        return build_graph(X, y, self.__cover, self.__clustering, 
+            self.__verbose, 
+            self.__permissive, 
+            self.__n_jobs)
 
 
 class MapperClassifier:
