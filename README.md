@@ -37,13 +37,13 @@ If you want to install the version from a specific branch, for example `develop`
 pip install git+https://github.com/lucasimi/tda-mapper-python.git@develop
 ```
 
-## How to use this package - An example
+## A worked out example
 
-In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented as dim-64 arrays (8x8 pictures)
+In this example we show how to use this package using the well known dataset of handwritten digits. This dataset consists of less than 2000 pictures of hand-written digits, represented as dim-64 arrays (8x8 pictures, more info [here](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html)).
 
 ```python
 from sklearn.datasets import load_digits
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 
 from tdamapper.core import *
@@ -58,7 +58,7 @@ X, y = [np.array(x) for x in digits.data], digits.target
 lens = PCA(2).fit_transform(X)
 
 mapper_algo = MapperAlgorithm(
-    cover=GridCover(n_intervals=15, overlap_frac=2.0),
+    cover=GridCover(n_intervals=10, overlap_frac=0.65),
     clustering=AgglomerativeClustering(10),
     verbose=True,
     n_jobs=8)
@@ -67,18 +67,36 @@ mapper_graph = mapper_algo.fit_transform(X, lens)
 mapper_plot = MapperPlot(X, mapper_graph,
     colors=y, 
     cmap='jet', 
-    agg=mode,
+    agg=np.nanmean,
     dim=2,
-    iterations=1000)
-fig = mapper_plot.plot(title='digit', width=800, height=800)
-fig.show(config={'scrollZoom': True})
+    iterations=400)
+fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
+fig_mean.show(config={'scrollZoom': True})
 ```
 
-![The mapper graph of the digits dataset](resources/digits.png)
+![The mapper graph of the digits dataset, colored according to mean value](resources/digits_mean.png)
+
+It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation
+
+```python
+fig_std = mapper_plot.with_colors(
+    colors=y, 
+    cmap='viridis', 
+    agg=np.nanstd,
+).plot(title='digit (std)', width=600, height=600)
+fig_std.show(config={'scrollZoom': True})
+```
+
+![The mapper graph of the digits dataset, colored according to std](resources/digits_std.png)
 
 The mapper graph of the digits dataset shows a few interesting patterns. For example, we can make the following observations:
-* Clusters that share the same color are all connected together, and located in the same area of the graph. Some clusters show this behavior more than others, for example 4 and 0. 
-* Arcs between clusters of different colors contain digits which in the handwritten text can become hard to tell apart, for example 7 and 2.
+
+* Clusters that share the same color are all connected together, and located in the same area of the graph. This behavior is present in those digits which are easy to tell apart from the others, for example digits 0 and 4.
+
+* Some clusters are not well separated and tend to overlap one on the other. This mixed behavior is present in those digits which can be easily confused one with the other, for example digits 5 and 6.
+
+* Clusters located across the "boundary" of two different digits show a transition either due to a change in distribution or due to distorsions in the hand written text, for example digits 8 and 2.
+
 
 ### Development - Supported Features
 

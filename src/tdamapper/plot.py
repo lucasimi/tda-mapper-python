@@ -32,11 +32,21 @@ class MapperPlot:
         item_colors = [np.nanmean(x) for x in self.__X] if colors is None else colors
         self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
         self.__dim = kwargs.get('dim', 2)
-        self.__pos = nx.spring_layout(self.__graph, **kwargs)
+        self.__kwargs = {}
+        self.__kwargs.update(kwargs)
+        self.__kwargs['dim'] = self.__dim
+        self.__pos = self._init_positions(self.__graph, **kwargs)
+        self.__kwargs['pos'] = self.__pos
+
+    def _init_positions(self, g, **kwargs):
+        pos = kwargs.get('pos')
+        if pos is None:
+            return nx.spring_layout(g, **kwargs)
+        return pos
 
     def with_colors(self, colors, agg=np.nanmean, cmap='jet'):
         return MapperPlot(self.__X, self.__graph,
-            colors=colors, cmap=cmap, agg=agg, pos=self.__pos, dim=self.__dim)
+            colors=colors, agg=agg, cmap=cmap, **self.__kwargs)
 
     def _plot_static(self, title='', ax=None):
         if ax is None:
