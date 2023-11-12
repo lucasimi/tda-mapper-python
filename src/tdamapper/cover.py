@@ -1,12 +1,12 @@
 from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, GridNeighbors, CubicNeighbors
 
 
-class NeighborsCover:
+class ProximityNetCover:
 
     def __init__(self, neighbors):
         self.__neighbors = neighbors
 
-    def neighbors_net(self, X):
+    def proximity_net(self, X):
         covered_ids = set()
         self.__neighbors.fit(X)
         for i, xi in enumerate(X):
@@ -19,31 +19,31 @@ class NeighborsCover:
         return self.__neighbors.get_params(deep)
 
 
-class BallCover(NeighborsCover):
+class BallCover(ProximityNetCover):
 
     def __init__(self, radius, metric):
         super().__init__(BallNeighbors(radius, metric))
 
 
-class KNNCover(NeighborsCover):
+class KNNCover(ProximityNetCover):
 
     def __init__(self, k_neighbors, metric):
         super().__init__(KNNeighbors(k_neighbors, metric))
 
 
-class GridCover(NeighborsCover):
+class GridCover(ProximityNetCover):
 
     def __init__(self, n_intervals, overlap_frac):
         super().__init__(GridNeighbors(n_intervals, overlap_frac))
 
 
-class CubicCover(NeighborsCover):
+class CubicCover(ProximityNetCover):
 
     def __init__(self, n_intervals, overlap_frac):
         super().__init__(CubicNeighbors(n_intervals, overlap_frac))
 
 
-class TrivialCover(NeighborsCover):
+class TrivialCover(ProximityNetCover):
 
     def __init__(self):
         super().__init__(TrivialNeighbors())

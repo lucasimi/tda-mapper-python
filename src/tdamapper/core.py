@@ -29,7 +29,7 @@ def build_labels_par(X, y, cover, clustering, verbose=False, permissive=True, n_
             if not permissive:
                 raise err
             return x, [0 for _ in x]
-    itr = enumerate(cover.neighbors_net(y))
+    itr = enumerate(cover.proximity_net(y))
     par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(i, ids) for i, ids in itr)
     max_lbl = 0
     lbls = [[] for _ in X]
@@ -52,7 +52,7 @@ def build_labels(X, y, cover, clustering, verbose=False, permissive=True):
     '''
     max_lbl = 0
     lbls = [[] for _ in X]
-    for i, neigh_ids in enumerate(cover.neighbors_net(y)):
+    for i, neigh_ids in enumerate(cover.proximity_net(y)):
         neigh_data = [X[j] for j in neigh_ids]
         try:
             neigh_lbls = clustering.fit(neigh_data).labels_
