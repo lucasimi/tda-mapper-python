@@ -39,11 +39,11 @@ pip install git+https://github.com/lucasimi/tda-mapper-python.git@develop
 
 ## A worked out example
 
-In this example we show how to use this package using the well known dataset of handwritten digits. This dataset consists of less than 2000 pictures of hand-written digits, represented as dim-64 arrays (8x8 pictures, more info [here](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html)).
+In order to show how to use this package, we perform some analysis on the the well known dataset of hand written digits (more info [here](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html)), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
 
 ```python
 from sklearn.datasets import load_digits
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
 from tdamapper.core import *
