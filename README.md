@@ -42,6 +42,8 @@ pip install git+https://github.com/lucasimi/tda-mapper-python.git@develop
 In order to show how to use this package, we perform some analysis on the the well known dataset of hand written digits (more info [here](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html)), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
 
 ```python
+import numpy as np
+
 from sklearn.datasets import load_digits
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
@@ -101,13 +103,20 @@ The mapper graph of the digits dataset shows a few interesting patterns. For exa
 ### Development - Supported Features
 
 - [x] Topology
-    - [x] Any custom lens
-    - [x] Any custom metric
+    - [x] custom lenses
+    - [x] custom metrics
+
 - [x] Cover algorithms:
-    - [x] Cubic Cover
-    - [x] Ball Cover
-    - [x] Knn Cover
+    - [x] `GridCover`
+    - [x] `BallCover`
+    - [x] `KnnCover`
+
 - [x] Clustering algoritms
-    - [x] Any sklearn clustering algorithm
-    - [x] Skip clustering
-    - [x] Clustering induced by cover
+    - [x] `sklearn.cluster`-compatible algorithms
+    - [x] `TrivialClustering` to skip clustering
+    - [x] `CoverClustering` for clustering induced by cover
+
+- [x] Plot
+    - [x] 2d interactive plot
+    - [x] 3d interactive plot
+    - [ ] HTML embeddable plot
