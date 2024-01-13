@@ -1,4 +1,9 @@
-from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, GridNeighbors, CubicNeighbors
+from tdamapper.proximity import (
+    BallProximity,
+    KNNProximity,
+    TrivialProximity,
+    GridProximity,
+    CubicalProximity)
 
 
 class ProximityNetCover:
@@ -22,28 +27,28 @@ class ProximityNetCover:
 class BallCover(ProximityNetCover):
 
     def __init__(self, radius, metric):
-        super().__init__(BallNeighbors(radius, metric))
+        super().__init__(BallProximity(radius, metric))
 
 
 class KNNCover(ProximityNetCover):
 
     def __init__(self, k_neighbors, metric):
-        super().__init__(KNNeighbors(k_neighbors, metric))
+        super().__init__(KNNProximity(k_neighbors, metric))
 
 
 class GridCover(ProximityNetCover):
 
     def __init__(self, n_intervals, overlap_frac):
-        super().__init__(GridNeighbors(n_intervals, overlap_frac))
+        super().__init__(GridProximity(n_intervals, overlap_frac))
 
 
 class CubicCover(ProximityNetCover):
 
     def __init__(self, n_intervals, overlap_frac):
-        super().__init__(CubicNeighbors(n_intervals, overlap_frac))
+        super().__init__(CubicalProximity(n_intervals, overlap_frac))
 
 
 class TrivialCover(ProximityNetCover):
 
     def __init__(self):
-        super().__init__(TrivialNeighbors())
+        super().__init__(TrivialProximity())

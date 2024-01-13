@@ -2,7 +2,7 @@ import numpy as np
 from .utils.vptree_flat import VPTree
 
 
-class BallNeighbors:
+class BallProximity:
 
     def __init__(self, radius, metric):
         self.__metric = lambda x, y: metric(x[1], y[1])
@@ -29,52 +29,52 @@ class BallNeighbors:
         return parameters
 
 
-class KNNeighbors:
+class KNNProximity:
 
-    def __init__(self, k_neighbors, metric):
-        self.__k_neighbors = k_neighbors
-        self.__metric = lambda x, y: metric(x[1], y[1])
+    def __init__(self, neighbors, metric):
+        self.neighbors = neighbors
+        self.metric = lambda x, y: metric(x[1], y[1])
         self.__vptree = None
         self.__data = None
 
     def fit(self, data):
         self.__data = list(enumerate(data))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__k_neighbors)
+        self.__vptree = VPTree(self.metric, self.__data, leaf_size=self.neighbors)
         return self
 
     def search(self, point):
         if self.__vptree:
-            neighs = self.__vptree.knn_search((-1, point), self.__k_neighbors)
+            neighs = self.__vptree.knn_search((-1, point), self.neighbors)
             return [x for (x, _) in neighs]
         return []
 
     def get_params(self, deep=True):
         parameters = {}
-        parameters['k_neighbors'] = self.__k_neighbors
-        parameters['metric'] = self.__metric
+        parameters['neighbors'] = self.neighbors
+        parameters['metric'] = self.metric
         return parameters
 
 
-class GridNeighbors:
+class GridProximity:
 
-    def __init__(self, n_intervals, overlap_frac):
-        self.__n_intervals = n_intervals
-        self.__overlap_frac = overlap_frac
+    def __init__(self, intervals, overlap_frac):
+        self.intervals = intervals
+        self.overlap_frac = overlap_frac
         self.__radius = (1.0 + overlap_frac) / 2.0
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
         metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_neighbors = BallNeighbors(self.__radius, metric)
+        self.__ball_proximity = BallProximity(self.__radius, metric)
 
     def _l_infty(self, x, y):
         return np.linalg.norm(x - y, ord=np.inf)
 
     def _gamma_n(self, x):
-        return self.__n_intervals * (x - self.__minimum) / self.__delta
+        return self.intervals * (x - self.__minimum) / self.__delta
 
     def _gamma_n_inv(self, x):
-        return self.__minimum + self.__delta * x / self.__n_intervals
+        return self.__minimum + self.__delta * x / self.intervals
 
     def _rho(self, x):
         return x.round()
@@ -102,26 +102,26 @@ class GridNeighbors:
 
     def fit(self, data):
         self._set_bounds(data)
-        self.__ball_neighbors.fit(data)
+        self.__ball_proximity.fit(data)
         return
 
     def search(self, point):
-        return self.__ball_neighbors.search(self._phi(point))
+        return self.__ball_proximity.search(self._phi(point))
 
     def get_params(self, deep=True):
         parameters = {}
-        parameters['n_intervals'] = self.__n_intervals
-        parameters['overlap_frac'] = self.__overlap_frac
+        parameters['intervals'] = self.intervals
+        parameters['overlap_frac'] = self.overlap_frac
         return parameters
 
 
-class CubicNeighbors:
+class CubicalProximity:
 
-    def __init__(self, n_intervals, overlap_frac):
+    def __init__(self, intervals, overlap_frac):
         self.__metric = lambda x, y: np.linalg.norm(x[1] - y[1], ord=np.inf)
-        self.__n_intervals = n_intervals
-        self.__overlap_frac = overlap_frac
-        self.__radius = (1.0 + self.__overlap_frac) / 2.0
+        self.intervals = intervals
+        self.overlap_frac = overlap_frac
+        self.__radius = (1.0 + self.overlap_frac) / 2.0
         self.__vptree = None
         self.__data = None
         self.__minimum = None
@@ -139,7 +139,7 @@ class CubicNeighbors:
         self.__minimum = minimum
         self.__maximum = maximum
         eps = np.finfo(np.float64).eps
-        delta = (self.__maximum - self.__minimum) / self.__n_intervals
+        delta = (self.__maximum - self.__minimum) / self.intervals
         self.__delta = np.array([max(x, eps) for x in delta])
 
     def _nearest_center(self, x):
@@ -165,15 +165,15 @@ class CubicNeighbors:
 
     def get_params(self, deep=True):
         parameters = {}
-        parameters['n_intervals'] = self.__n_intervals
-        parameters['overlap_frac'] = self.__overlap_frac
+        parameters['intervals'] = self.intervals
+        parameters['overlap_frac'] = self.overlap_frac
         return parameters
 
 
-class TrivialNeighbors:
+class TrivialProximity:
 
     def __init__(self):
-        self.__data = None
+        pass
 
     def fit(self, data):
         self.__data = data
@@ -183,5 +183,4 @@ class TrivialNeighbors:
         return list(range(len(self.__data)))
 
     def get_params(self, deep=True):
-        parameters = {}
-        return parameters
+        return {}
