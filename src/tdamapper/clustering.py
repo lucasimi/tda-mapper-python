@@ -33,11 +33,11 @@ class PermissiveClustering:
         try:
             self.__clustering.fit(X, y)
             self.labels_ = self.__clustering.labels_
-            return self
         except ValueError as err:
             if self.__verbose:
                 _logger.warning('Unable to perform clustering on local chart: %s', err)
             self.labels_ = [0 for _ in X]
+        return self
 
 
 class CoverClustering:
