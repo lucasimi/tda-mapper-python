@@ -5,7 +5,7 @@ from sklearn.utils.estimator_checks import check_estimator
 
 from tdamapper.estimator import MapperEstimator
 from tdamapper.clustering import TrivialClustering, CoverClustering
-from tdamapper.cover import BallCover, KNNCover, GridCover
+from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
 
 
 def euclidean(x, y):
@@ -13,6 +13,9 @@ def euclidean(x, y):
 
 
 class ClusteringEstimator:
+
+    def get_clustering(self):
+        return TrivialClustering()
 
     def fit(self, X, y=None):
         X, y = check_X_y(X, y)
@@ -36,6 +39,9 @@ class ClusteringEstimator:
 
 
 class CoverClusteringEstimator(ClusteringEstimator):
+
+    def get_cover(self):
+        return TrivialCover()
 
     def get_clustering(self):
         return CoverClustering(cover=self.get_cover())
