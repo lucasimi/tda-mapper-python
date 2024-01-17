@@ -109,18 +109,43 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(x_dist in dists)
 
     def testVPTree(self):
-        vptree = VPTree(euclidean, X, leaf_size=1)
+        vptree = VPTree(euclidean, X[:80], leaf_size=5)
         neigh = vptree.knn_search(x, 5)
         dists = [euclidean(x, y) for y in neigh]
         x_dist = euclidean(x, X[5])
+        self.check_vptree(vptree)
         self.assertTrue(x_dist in dists)
 
     def testVPTreeSimple(self):
-        XX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        def met(x, y):
-            return abs(x - y)
-        vptree = VPTree(met, XX, leaf_size=1)
-        xx = 7
+        XX = array([array([x, x/2]) for x in range(30)])
+        vptree = VPTree(euclidean, XX, leaf_size=5, leaf_radius=0.0)
+        xx = array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
-        dists = [met(xx, y) for y in neigh]
+        dists = [euclidean(xx, y) for y in neigh]
+        self.check_vptree(vptree)
         self.assertTrue(0.0 in dists)
+
+    def check_vptree(self, vpt):
+        data = vpt._VPTree__dataset
+        dist = vpt._VPTree__distance
+        leaf_size = vpt._VPTree__leaf_size
+        leaf_radius = vpt._VPTree__leaf_radius
+        def check_sub(start, end):
+            v_radius, v_point = data[start]
+            mid = (start + end) // 2
+            for i in range(start + 1, mid):
+                _, y = data[i]
+                self.assertTrue(dist(v_point, y) <= v_radius)
+            for i in range(mid, end):
+                _, y = data[i]
+                self.assertTrue(dist(v_point, y) >= v_radius)
+        def check_rec(start, end):
+            v_radius, v_point = data[start]
+            if (end - start > leaf_size) and (v_radius > leaf_radius):
+                check_sub(start, end)
+                mid = (start + end) // 2
+                check_rec(start + 1, mid)
+                check_rec(mid, end)
+        check_rec(0, len(data))
+            
+            
