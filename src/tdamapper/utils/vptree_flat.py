@@ -6,11 +6,11 @@ from .heap import MaxHeap
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_size=None, leaf_radius=None, pivoting=None):
+    def __init__(self, distance, dataset, leaf_size=1, leaf_radius=0.0, pivoting=None):
         self.__distance = distance
-        self.__leaf_size = 1 if leaf_size is None else leaf_size
-        self.__leaf_radius = float('inf') if leaf_radius is None else leaf_radius
         self.__dataset = [(0.0, x) for x in dataset]
+        self.__leaf_size = leaf_size
+        self.__leaf_radius = leaf_radius
         self.__pivoting = self._pivoting_disabled
         if pivoting == 'random':
             self.__pivoting = self._pivoting_random
@@ -83,7 +83,8 @@ class VPTree:
         while stack:
             visit = stack.pop()
             start, end = visit.bounds()
-            if end - start <= self.__leaf_size:
+            v_radius, _ = self.__dataset[start]
+            if (end - start <= self.__leaf_size) or (v_radius <= self.__leaf_radius):
                 search.process_all([x for _, x in self.__dataset[start:end]])
             else:
                 visit.after(self.__dataset, stack, search)
