@@ -1,10 +1,13 @@
 import unittest
+
 import numpy as np
+
 from sklearn.utils import check_X_y
 from sklearn.utils.estimator_checks import check_estimator
+from sklearn.cluster import KMeans
 
 from tdamapper.estimator import MapperEstimator
-from tdamapper.clustering import TrivialClustering, CoverClustering
+from tdamapper.clustering import TrivialClustering, CoverClustering, PermissiveClustering
 from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
 
 
@@ -45,6 +48,15 @@ class CoverClusteringEstimator(ClusteringEstimator):
 
     def get_clustering(self):
         return CoverClustering(cover=self.get_cover())
+
+
+class PermissiveKMeans(ClusteringEstimator):
+
+    def __init__(self, n=8):
+        self.n = n
+
+    def get_clustering(self):
+        return PermissiveClustering(KMeans(n_clusters=self.n, n_init='auto'), verbose=False)
 
 
 class TrivialClusteringEstimator(ClusteringEstimator):
@@ -96,6 +108,9 @@ class TestSklearn(unittest.TestCase):
 
     def testKNN(self):
         check_estimator(KNNCoverEstimator())
+
+    def testPermissive(self):
+        check_estimator(PermissiveKMeans())
 
     def testMapper(self):
         mapper_est = MapperEstimator()
