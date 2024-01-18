@@ -56,39 +56,32 @@ class VPTree:
         stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
-            mid = (end + start) // 2
             if end - start <= self.__leaf_size:
                 continue
+            mid = (end + start) // 2
             self._update(start, end)
             _, v_point = self.__dataset[start]
-            quickselect_tuple(self.__dataset, start + 1, end, end - 1)
-            m_radius, _ = self.__dataset[end - 1]
-            if m_radius <= self.__leaf_radius:
-                continue
-            quickselect_tuple(self.__dataset, start + 1, end - 1, mid)
+            quickselect_tuple(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
-            #self.__dataset[start] = (v_radius, v_point)
-            stack.append((mid + 1, end - 1))
-            stack.append((start + 1, mid))
+            self.__dataset[start] = (v_radius, v_point)
+            stack.append((mid, end))
+            if v_radius > self.__leaf_radius:
+                stack.append((start + 1, mid))
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
-        stack = [_BallSearchVisit(0, len(self.__dataset))]
+        stack = [_BallSearchVisit(0, len(self.__dataset), float('inf'))]
         return self._search_iter(search, stack)
 
     def knn_search(self, point, neighbors):
         search = _KNNSearch(self.__distance, point, neighbors)
-        stack = [_KNNSearchVisitPre(0, len(self.__dataset))]
+        stack = [_KNNSearchVisitPre(0, len(self.__dataset), float('inf'))]
         return self._search_iter(search, stack)
 
     def _search_iter(self, search, stack):
         while stack:
             visit = stack.pop()
-            start, end = visit.bounds()
-            mid = (end + start) // 2
-            _, v_point = self.__dataset[start]
-            v_radius, _ = self.__dataset[mid]
-            m_radius, _ = self.__dataset[end - 1]
+            start, end, m_radius = visit.bounds()
             if (end - start <= self.__leaf_size) or (m_radius <= self.__leaf_radius):
                 search.process_all([x for _, x in self.__dataset[start:end]])
             else:
@@ -172,62 +165,65 @@ class _KNNSearch:
 
 class _BallSearchVisit:
 
-    def __init__(self, start, end):
+    def __init__(self, start, end, m_radius):
         self.__start = start
         self.__end = end
+        self.__m_radius = m_radius
 
     def bounds(self):
-        return self.__start, self.__end
-
-    def after(self, dataset, stack, search):
-        v_radius, v_point = dataset[self.__start]
-        dist = search.process(v_point)
-        mid = (self.__end + self.__start) // 2
-        if dist < v_radius:
-            fst_start, fst_end = self.__start + 1, mid
-            snd_start, snd_end = mid, self.__end
-        else:
-            fst_start, fst_end = mid, self.__end
-            snd_start, snd_end = self.__start + 1, mid
-        if abs(dist - v_radius) <= search.get_radius():
-            stack.append(_BallSearchVisit(snd_start, snd_end))
-        stack.append(_BallSearchVisit(fst_start, fst_end))
-
-
-class _KNNSearchVisitPre:
-
-    def __init__(self, start, end):
-        self.__start = start
-        self.__end = end
-
-    def bounds(self):
-        return self.__start, self.__end
+        return self.__start, self.__end, self.__m_radius
 
     def after(self, dataset, stack, search):
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
         if dist <= v_radius:
-            fst_start, fst_end = self.__start + 1, mid
-            snd_start, snd_end = mid, self.__end
+            fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
+            snd_start, snd_end, snd_radius = mid, self.__end, float('inf')
         else:
-            fst_start, fst_end = mid, self.__end
-            snd_start, snd_end = self.__start + 1, mid
-        stack.append(_KNNSearchVisitPost(snd_start, snd_end, dist, v_radius))
-        stack.append(_KNNSearchVisitPre(fst_start, fst_end))
+            fst_start, fst_end, fst_radius = mid, self.__end, float('inf')
+            snd_start, snd_end, snd_radius = self.__start + 1, mid, v_radius
+        if abs(dist - v_radius) <= search.get_radius():
+            stack.append(_BallSearchVisit(snd_start, snd_end, snd_radius))
+        stack.append(_BallSearchVisit(fst_start, fst_end, fst_radius))
+
+
+class _KNNSearchVisitPre:
+
+    def __init__(self, start, end, m_radius):
+        self.__start = start
+        self.__end = end
+        self.__m_radius = m_radius
+
+    def bounds(self):
+        return self.__start, self.__end, self.__m_radius
+
+    def after(self, dataset, stack, search):
+        v_radius, v_point = dataset[self.__start]
+        dist = search.process(v_point)
+        mid = (self.__end + self.__start) // 2
+        if dist <= v_radius:
+            fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
+            snd_start, snd_end, snd_radius = mid, self.__end, float('inf')
+        else:
+            fst_start, fst_end, fst_radius = mid, self.__end, float('inf')
+            snd_start, snd_end, snd_radius = self.__start + 1, mid, v_radius
+        stack.append(_KNNSearchVisitPost(snd_start, snd_end, snd_radius, dist, v_radius))
+        stack.append(_KNNSearchVisitPre(fst_start, fst_end, fst_radius))
 
 
 class _KNNSearchVisitPost:
 
-    def __init__(self, start, end, dist, v_radius):
+    def __init__(self, start, end, m_radius, dist, v_radius):
         self.__start = start
         self.__end = end
+        self.__m_radius = m_radius
         self.__dist = dist
         self.__v_radius = v_radius
 
     def bounds(self):
-        return self.__start, self.__end
+        return self.__start, self.__end, self.__m_radius
 
     def after(self, _, stack, search):
         if abs(self.__dist - self.__v_radius) <= search.get_radius():
-            stack.append(_KNNSearchVisitPre(self.__start, self.__end))
+            stack.append(_KNNSearchVisitPre(self.__start, self.__end, self.__m_radius))
