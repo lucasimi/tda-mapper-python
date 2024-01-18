@@ -52,7 +52,7 @@ class KNNCover(ProximityCover):
 
     def fit(self, X):
         self.__data = list(enumerate(X))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_size=self.__neighbors)
+        self.__vptree = VPTree(self.__metric, self.__data, leaf_capacity=self.__neighbors)
         return self
 
     def search(self, x):

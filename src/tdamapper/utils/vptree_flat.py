@@ -6,10 +6,10 @@ from .heap import MaxHeap
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_size=1, leaf_radius=0.0, pivoting=None):
+    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
         self.__distance = distance
         self.__dataset = [(0.0, x) for x in dataset]
-        self.__leaf_size = leaf_size
+        self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
         self.__pivoting = self._pivoting_disabled
         if pivoting == 'random':
@@ -56,7 +56,7 @@ class VPTree:
         stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
-            if end - start <= self.__leaf_size:
+            if end - start <= self.__leaf_capacity:
                 continue
             mid = (end + start) // 2
             self._update(start, end)
@@ -64,8 +64,9 @@ class VPTree:
             quickselect_tuple(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            stack.append((mid, end))
-            if v_radius > self.__leaf_radius:
+            if end - mid > self.__leaf_capacity:
+                stack.append((mid, end))
+            if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                 stack.append((start + 1, mid))
 
     def ball_search(self, point, eps, inclusive=True):
@@ -82,7 +83,7 @@ class VPTree:
         while stack:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
-            if (end - start <= self.__leaf_size) or (m_radius <= self.__leaf_radius):
+            if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
                 search.process_all([x for _, x in self.__dataset[start:end]])
             else:
                 visit.after(self.__dataset, stack, search)
