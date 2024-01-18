@@ -109,7 +109,7 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(x_dist in dists)
 
     def testVPTree(self):
-        vptree = VPTree(euclidean, X[:80], leaf_size=5)
+        vptree = VPTree(euclidean, X[:80], leaf_capacity=5)
         neigh = vptree.knn_search(x, 5)
         dists = [euclidean(x, y) for y in neigh]
         x_dist = euclidean(x, X[5])
@@ -118,7 +118,7 @@ class TestKNN(unittest.TestCase):
 
     def testVPTreeSimple(self):
         XX = array([array([x, x/2]) for x in range(30)])
-        vptree = VPTree(euclidean, XX, leaf_size=5, leaf_radius=0.0)
+        vptree = VPTree(euclidean, XX, leaf_capacity=5, leaf_radius=0.0)
         xx = array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
         dists = [euclidean(xx, y) for y in neigh]
@@ -128,7 +128,7 @@ class TestKNN(unittest.TestCase):
     def check_vptree(self, vpt):
         data = vpt._VPTree__dataset
         dist = vpt._VPTree__distance
-        leaf_size = vpt._VPTree__leaf_size
+        leaf_capacity = vpt._VPTree__leaf_capacity
         leaf_radius = vpt._VPTree__leaf_radius
         def check_sub(start, end):
             v_radius, v_point = data[start]
@@ -141,7 +141,7 @@ class TestKNN(unittest.TestCase):
                 self.assertTrue(dist(v_point, y) >= v_radius)
         def check_rec(start, end):
             v_radius, v_point = data[start]
-            if (end - start > leaf_size) and (v_radius > leaf_radius):
+            if (end - start > leaf_capacity) and (v_radius > leaf_radius):
                 check_sub(start, end)
                 mid = (start + end) // 2
                 check_rec(start + 1, mid)
