@@ -48,26 +48,28 @@ class VPTree:
     def _update(self, start, end):
         self.__pivoting(start, end)
         _, v_point = self.__dataset[start]
-        for i in range(start + 1, end):
+        for i in range(start, end):
             _, point = self.__dataset[i]
             self.__dataset[i] = self.__distance(v_point, point), point
 
     def _build_iter(self):
-        stack = []
-        if len(self.__dataset) > self.__leaf_size:
-            stack.append((0, len(self.__dataset)))
+        stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
             mid = (end + start) // 2
+            if end - start <= self.__leaf_size:
+                continue
             self._update(start, end)
             _, v_point = self.__dataset[start]
-            quickselect_tuple(self.__dataset, start + 1, end, mid)
+            quickselect_tuple(self.__dataset, start + 1, end, end - 1)
+            m_radius, _ = self.__dataset[end - 1]
+            if m_radius <= self.__leaf_radius:
+                continue
+            quickselect_tuple(self.__dataset, start + 1, end - 1, mid)
             v_radius, _ = self.__dataset[mid]
-            self.__dataset[start] = (v_radius, v_point)
-            if end - mid > self.__leaf_size:
-                stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_size) and (v_radius > self.__leaf_radius):
-                stack.append((start + 1, mid))
+            #self.__dataset[start] = (v_radius, v_point)
+            stack.append((mid + 1, end - 1))
+            stack.append((start + 1, mid))
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
@@ -83,8 +85,11 @@ class VPTree:
         while stack:
             visit = stack.pop()
             start, end = visit.bounds()
-            v_radius, _ = self.__dataset[start]
-            if (end - start <= self.__leaf_size) or (v_radius <= self.__leaf_radius):
+            mid = (end + start) // 2
+            _, v_point = self.__dataset[start]
+            v_radius, _ = self.__dataset[mid]
+            m_radius, _ = self.__dataset[end - 1]
+            if (end - start <= self.__leaf_size) or (m_radius <= self.__leaf_radius):
                 search.process_all([x for _, x in self.__dataset[start:end]])
             else:
                 visit.after(self.__dataset, stack, search)
