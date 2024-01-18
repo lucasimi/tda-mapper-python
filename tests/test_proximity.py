@@ -4,7 +4,7 @@ import random
 import unittest
 import numpy as np
 
-from tdamapper.neighbors import BallNeighbors, KNNeighbors
+from tdamapper.cover import BallCover, KNNCover
 
 
 logger = logging.getLogger()
@@ -23,7 +23,7 @@ class TestSearch(unittest.TestCase):
 
     def testTrivial(self):
         data = dataset(dim=1, num=100)
-        bs = BallNeighbors(10, dist)
+        bs = BallCover(10, dist)
         bs.fit(data)
         for x in data:
             result = bs.search(x)
@@ -33,8 +33,8 @@ class TestSearch(unittest.TestCase):
     def testBench(self):
         times = 10
         data = dataset()
-        bs = BallNeighbors(0.0005, dist)
-        ks = KNNeighbors(10, dist)
+        bs = BallCover(0.0005, dist)
+        ks = KNNCover(10, dist)
         t0 = time.time()
         for _ in range(times):
             bs.fit(data)
