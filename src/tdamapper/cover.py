@@ -1,5 +1,5 @@
 import numpy as np
-from .utils.vptree_flat import VPTree
+from tdamapper.utils.vptree_flat import VPTree
 
 
 class ProximityCover:

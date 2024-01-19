@@ -6,8 +6,7 @@ from sklearn.utils import check_X_y
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.cluster import KMeans
 
-from tdamapper.estimator import MapperEstimator
-from tdamapper.clustering import TrivialClustering, CoverClustering, PermissiveClustering
+from tdamapper.clustering import TrivialClustering, CoverClustering, PermissiveClustering, MapperGraphClustering
 from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
 
 
@@ -15,17 +14,7 @@ def euclidean(x, y):
     return np.linalg.norm(x - y)
 
 
-class ClusteringEstimator:
-
-    def get_clustering(self):
-        return TrivialClustering()
-
-    def fit(self, X, y=None):
-        X, y = check_X_y(X, y)
-        clustering = self.get_clustering()
-        self.labels_ = clustering.fit(X, y).labels_
-        self.n_features_in_ = X.shape[1]
-        return self
+class Estimator:
 
     def get_params(self, deep=True):
         params = {}
@@ -38,6 +27,19 @@ class ClusteringEstimator:
         for k, v in parmeters.items():
             if not k.startswith('_'):
                 setattr(self, k, v)
+        return self
+
+
+class ClusteringEstimator(Estimator):
+
+    def get_clustering(self):
+        return TrivialClustering()
+
+    def fit(self, X, y=None):
+        X, y = check_X_y(X, y)
+        clustering = self.get_clustering()
+        self.labels_ = clustering.fit(X, y).labels_
+        self.n_features_in_ = X.shape[1]
         return self
 
 
@@ -95,6 +97,15 @@ class KNNCoverEstimator(CoverClusteringEstimator):
         return KNNCover(neighbors=self.neighbors, metric=self.metric)
 
 
+class MapperSklearnEstimator(MapperGraphClustering, Estimator):
+
+    def fit(self, X, y=None):
+        X, y = check_X_y(X, y)
+        self.labels_ = super().fit(X, y).labels_
+        self.n_features_in_ = X.shape[1]
+        return self
+
+
 class TestSklearn(unittest.TestCase):
 
     def testClustering(self):
@@ -113,5 +124,5 @@ class TestSklearn(unittest.TestCase):
         check_estimator(PermissiveKMeans())
 
     def testMapper(self):
-        mapper_est = MapperEstimator()
+        mapper_est = MapperSklearnEstimator()
         check_estimator(mapper_est)

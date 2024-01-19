@@ -1,8 +1,9 @@
 import networkx as nx
 from joblib import Parallel, delayed
 
-_ATTR_IDS = 'ids'
-_ATTR_SIZE = 'size'
+
+ATTR_IDS = 'ids'
+ATTR_SIZE = 'size'
 
 _ID_IDS = 0
 _ID_NEIGHS = 1
@@ -67,7 +68,7 @@ def build_graph(X, y, cover, clustering, n_jobs=1):
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
-        graph.add_node(source, **{_ATTR_SIZE: len(items), _ATTR_IDS: items})
+        graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
     edges = set()
     for source, (_, target_ids) in adjaciency.items():
         for target in target_ids:
@@ -90,7 +91,7 @@ def build_connected_components(graph):
     item_cc = {}
     for connected_component in nx.connected_components(graph):
         for node in connected_component:
-            for item_id in graph.nodes[node][_ATTR_IDS]:
+            for item_id in graph.nodes[node][ATTR_IDS]:
                 item_cc[item_id] = cc_id
         cc_id += 1
     return item_cc
@@ -100,7 +101,7 @@ def compute_local_interpolation(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [y[i] for i in nodes[node_id][_ATTR_IDS]]
+        node_values = [y[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
@@ -108,7 +109,7 @@ def compute_local_interpolation(y, graph, agg):
 
 class MapperAlgorithm:
 
-    def __init__(self, cover=None, clustering=None, n_jobs=1):
+    def __init__(self, cover, clustering, n_jobs=1):
         self.__cover = cover
         self.__clustering = clustering
         self.__n_jobs = n_jobs

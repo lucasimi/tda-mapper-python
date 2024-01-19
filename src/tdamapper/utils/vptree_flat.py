@@ -1,7 +1,7 @@
 """A class for fast knn and range searches, depending only on a given metric"""
 from random import randrange
-from .quickselect import quickselect_tuple
-from .heap import MaxHeap
+from tdamapper.utils.quickselect import quickselect_tuple
+from tdamapper.utils.heap import MaxHeap
 
 
 class VPTree:
