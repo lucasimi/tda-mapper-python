@@ -1,35 +1,54 @@
 import networkx as nx
+from joblib import Parallel, delayed
 
 
-_ATTR_IDS = 'ids'
-_ATTR_SIZE = 'size'
+ATTR_IDS = 'ids'
+ATTR_SIZE = 'size'
 
 _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def build_labels(X, y, cover, clustering):
+class ProximityNet:
+
+    def __init__(self, cover):
+        self.__cover = cover
+
+    def proximity_net(self, X):
+        covered_ids = set()
+        proximity = self.__cover.proximity()
+        proximity.fit(X)
+        for i, xi in enumerate(X):
+            if i not in covered_ids:
+                neigh_ids = proximity.search(xi)
+                covered_ids.update(neigh_ids)
+                if neigh_ids:
+                    yield neigh_ids
+
+
+def build_labels_par(X, y, cover, clustering, n_jobs):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
     contains the cluster ids to which the item at position i belongs to.
     * Each list in the output is a sorted list of ints with no duplicate.
     '''
-    max_label = 0
-    labels = [[] for _ in X]
-    for neigh_ids in cover.neighbors_net(y):
-        neigh_data = [X[j] for j in neigh_ids]
-        try:
-            neigh_labels = clustering.fit(neigh_data).labels_
-        except Exception:
-            neigh_labels = [0 for _ in neigh_data]
-        max_neigh_label = 0
-        for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
-            if neigh_label != -1:
-                if neigh_label > max_neigh_label:
-                    max_neigh_label = neigh_label
-                labels[neigh_id].append(max_label + neigh_label)
-        max_label += max_neigh_label + 1
-    return labels
+    def _lbls(x_ids):
+        x_data = [X[j] for j in x_ids]
+        x_lbls = clustering.fit(x_data).labels_
+        return x_ids, x_lbls
+    net = ProximityNet(cover).proximity_net(y)
+    par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
+    max_lbl = 0
+    lbls = [[] for _ in X]
+    for neigh_ids, neigh_lbls in par:
+        max_neigh_lbl = 0
+        for neigh_id, neigh_lbl in zip(neigh_ids, neigh_lbls):
+            if neigh_lbl != -1:
+                if neigh_lbl > max_neigh_lbl:
+                    max_neigh_lbl = neigh_lbl
+                lbls[neigh_id].append(max_lbl + neigh_lbl)
+        max_lbl += max_neigh_lbl + 1
+    return lbls
 
 
 def build_adjaciency(labels):
@@ -61,12 +80,12 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, y, cover, clustering):
-    labels = build_labels(X, y, cover, clustering)
+def build_graph(X, y, cover, clustering, n_jobs=1):
+    labels = build_labels_par(X, y, cover, clustering, n_jobs)
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
-        graph.add_node(source, **{_ATTR_SIZE: len(items), _ATTR_IDS: items})
+        graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
     edges = set()
     for source, (_, target_ids) in adjaciency.items():
         for target in target_ids:
@@ -89,7 +108,7 @@ def build_connected_components(graph):
     item_cc = {}
     for connected_component in nx.connected_components(graph):
         for node in connected_component:
-            for item_id in graph.nodes[node][_ATTR_IDS]:
+            for item_id in graph.nodes[node][ATTR_IDS]:
                 item_cc[item_id] = cc_id
         cc_id += 1
     return item_cc
@@ -99,7 +118,7 @@ def compute_local_interpolation(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [y[i] for i in nodes[node_id][_ATTR_IDS]]
+        node_values = [y[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
@@ -107,9 +126,10 @@ def compute_local_interpolation(y, graph, agg):
 
 class MapperAlgorithm:
 
-    def __init__(self, cover, clustering):
+    def __init__(self, cover, clustering, n_jobs=1):
         self.__cover = cover
         self.__clustering = clustering
+        self.__n_jobs = n_jobs
         self.graph_ = None
 
     def fit(self, X, y=None):
@@ -117,20 +137,4 @@ class MapperAlgorithm:
         return self
 
     def fit_transform(self, X, y):
-        return build_graph(X, y, self.__cover, self.__clustering)
-
-
-class MapperClassifier:
-
-    def __init__(self, mapper_algo):
-        self.__mapper_algo = mapper_algo
-        self.labels_ = None
-
-    def fit(self, X, y=None):
-        self.labels_ = self.fit_predict(X, y)
-        return self
-
-    def fit_predict(self, X, y):
-        graph = self.__mapper_algo.fit_transform(X, y)
-        ccs = build_connected_components(graph)
-        return [ccs[i] for i, _ in enumerate(X)]
+        return build_graph(X, y, self.__cover, self.__clustering, self.__n_jobs)
