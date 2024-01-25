@@ -7,7 +7,7 @@ from sklearn.utils.estimator_checks import check_estimator
 from sklearn.cluster import KMeans
 
 from tdamapper.clustering import TrivialClustering, CoverClustering, PermissiveClustering, MapperGraphClustering
-from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
+from tdamapper.cover import TrivialCover, BallCover, KNNCover, CubicalCover
 
 
 def euclidean(x, y):
@@ -77,14 +77,14 @@ class BallCoverEstimator(CoverClusteringEstimator):
         return BallCover(radius=self.radius, metric=self.metric)
 
 
-class GridCoverEstimator(CoverClusteringEstimator):
+class CubicalCoverEstimator(CoverClusteringEstimator):
 
     def __init__(self, n_intervals=10, overlap_frac=0.25):
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
 
     def get_cover(self):
-        return GridCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
+        return CubicalCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
 
 
 class KNNCoverEstimator(CoverClusteringEstimator):
@@ -114,8 +114,8 @@ class TestSklearn(unittest.TestCase):
     def testBall(self):
         check_estimator(BallCoverEstimator())
 
-    def testGrid(self):
-        check_estimator(GridCoverEstimator())
+    def testCubical(self):
+        check_estimator(CubicalCoverEstimator())
 
     def testKNN(self):
         check_estimator(KNNCoverEstimator())

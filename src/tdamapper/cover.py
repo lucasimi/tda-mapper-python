@@ -64,69 +64,6 @@ class KNNProximity:
         return [x for (x, _) in neighs]
 
 
-class GridCover:
-
-    def __init__(self, n_intervals, overlap_frac):
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-
-    def proximity(self):
-        return GridProximity(self.n_intervals, self.overlap_frac)
-
-
-class GridProximity:
-
-    def __init__(self, n_intervals, overlap_frac):
-        self.__n_intervals = n_intervals
-        self.__overlap_frac = overlap_frac
-        self.__radius = (1.0 + self.__overlap_frac) / 2.0
-        self.__minimum = None
-        self.__maximum = None
-        self.__delta = None
-        metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_proximity = BallCover(self.__radius, metric).proximity()
-
-    def _l_infty(self, x, y):
-        return np.max(np.abs(x - y)) # in alternative: np.linalg.norm(x - y, ord=np.inf)
-
-    def _gamma_n(self, x):
-        return self.__n_intervals * (x - self.__minimum) / self.__delta
-
-    def _gamma_n_inv(self, x):
-        return self.__minimum + self.__delta * x / self.__n_intervals
-
-    def _rho(self, x):
-        return x.round()
-
-    def _phi(self, x):
-        return self._gamma_n_inv(self._rho(self._gamma_n(x)))
-
-    def _pullback(self, fun, dist):
-        return lambda x, y: dist(fun(x), fun(y))
-
-    def _set_bounds(self, data):
-        if (data is None) or len(data) == 0:
-            return
-        minimum, maximum = data[0], data[0]
-        eps = np.finfo(np.float64).eps
-        for w in data:
-            minimum = np.minimum(minimum, np.array(w))
-            maximum = np.maximum(maximum, np.array(w))
-        self.__minimum = np.nan_to_num(minimum, nan=-eps)
-        self.__maximum = np.nan_to_num(maximum, nan=eps)
-        delta = self.__maximum - self.__minimum
-        eps = np.finfo(np.float64).eps
-        self.__delta = np.maximum(eps, delta)
-
-    def fit(self, X):
-        self._set_bounds(X)
-        self.__ball_proximity.fit(X)
-        return
-
-    def search(self, x):
-        return self.__ball_proximity.search(self._phi(x))
-
-
 class CubicalCover:
 
     def __init__(self, n_intervals, overlap_frac):

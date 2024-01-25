@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from tdamapper.core import build_labels_par, build_connected_components, MapperAlgorithm
 from tdamapper.utils.unionfind import UnionFind
-from tdamapper.cover import TrivialCover, GridCover, BallCover, KNNCover
+from tdamapper.cover import TrivialCover, CubicalCover, BallCover, KNNCover
 
 
 _logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class CoverClustering:
 class MapperGraphClustering:
 
     def __init__(self,
-            cover='grid',
+            cover='cubical',
             n_intervals=10,
             overlap_frac=0.25,
             radius=0.5,
@@ -104,8 +104,8 @@ class MapperGraphClustering:
     def __get_cover(self):
         if self.cover == 'trivial':
             return TrivialCover()
-        elif self.cover == 'grid':
-            return GridCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
+        elif self.cover == 'cubical':
+            return CubicalCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
         elif self.cover == 'ball':
             return BallCover(radius=self.radius, metric=self.metric)
         elif self.cover == 'knn':
