@@ -9,6 +9,23 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
+class ProximityNet:
+
+    def __init__(self, cover):
+        self.__cover = cover
+
+    def proximity_net(self, X):
+        covered_ids = set()
+        proximity = self.__cover.proximity()
+        proximity.fit(X)
+        for i, xi in enumerate(X):
+            if i not in covered_ids:
+                neigh_ids = proximity.search(xi)
+                covered_ids.update(neigh_ids)
+                if neigh_ids:
+                    yield neigh_ids
+
+
 def build_labels_par(X, y, cover, clustering, n_jobs):
     '''
     Takes a dataset, returns a list of lists, where the list at position i
@@ -19,7 +36,7 @@ def build_labels_par(X, y, cover, clustering, n_jobs):
         x_data = [X[j] for j in x_ids]
         x_lbls = clustering.fit(x_data).labels_
         return x_ids, x_lbls
-    net = cover.proximity_net(y)
+    net = ProximityNet(cover).proximity_net(y)
     par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
     max_lbl = 0
     lbls = [[] for _ in X]

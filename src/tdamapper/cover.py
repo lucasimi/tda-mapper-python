@@ -2,26 +2,18 @@ import numpy as np
 from tdamapper.utils.vptree_flat import VPTree
 
 
-class ProximityCover:
+class BallCover:
 
-    def proximity_net(self, X):
-        covered_ids = set()
-        self.fit(X)
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
+    def __init__(self, radius, metric):
+        self.metric = metric
+        self.radius = radius
 
-    def fit(self, X):
-        pass
-
-    def search(self, x):
-        return []
+    def proximity(self):
+        return BallProximity(self.radius, self.metric)
 
 
-class BallCover(ProximityCover):
+
+class BallProximity:
 
     def __init__(self, radius, metric):
         self.__metric = lambda x, y: metric(x[1], y[1])
@@ -42,7 +34,17 @@ class BallCover(ProximityCover):
         return []
 
 
-class KNNCover(ProximityCover):
+class KNNCover:
+
+    def __init__(self, neighbors, metric):
+        self.neighbors = neighbors
+        self.metric = metric
+
+    def proximity(self):
+        return KNNProximity(self.neighbors, self.metric)
+
+
+class KNNProximity:
 
     def __init__(self, neighbors, metric):
         self.__neighbors = neighbors
@@ -62,7 +64,17 @@ class KNNCover(ProximityCover):
         return [x for (x, _) in neighs]
 
 
-class GridCover(ProximityCover):
+class GridCover:
+
+    def __init__(self, n_intervals, overlap_frac):
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+
+    def proximity(self):
+        return GridProximity(self.n_intervals, self.overlap_frac)
+
+
+class GridProximity:
 
     def __init__(self, n_intervals, overlap_frac):
         self.__n_intervals = n_intervals
@@ -72,7 +84,7 @@ class GridCover(ProximityCover):
         self.__maximum = None
         self.__delta = None
         metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_proximity = BallCover(self.__radius, metric)
+        self.__ball_proximity = BallCover(self.__radius, metric).proximity()
 
     def _l_infty(self, x, y):
         return np.max(np.abs(x - y)) # in alternative: np.linalg.norm(x - y, ord=np.inf)
@@ -115,7 +127,17 @@ class GridCover(ProximityCover):
         return self.__ball_proximity.search(self._phi(x))
 
 
-class CubicalCover(ProximityCover):
+class CubicalCover:
+
+    def __init__(self, n_intervals, overlap_frac):
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+
+    def proximity(self):
+        return CubicalProximity(self.n_intervals, self.overlap_frac)
+
+
+class CubicalProximity:
 
     def __init__(self, n_intervals, overlap_frac):
         self.__n_intervals = n_intervals
@@ -125,7 +147,7 @@ class CubicalCover(ProximityCover):
         self.__maximum = None
         self.__delta = None
         metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_proximity = BallCover(self.__radius, metric)
+        self.__ball_proximity = BallCover(self.__radius, metric).proximity()
 
     def _l_infty(self, x, y):
         return np.max(np.abs(x - y)) # in alternative: np.linalg.norm(x - y, ord=np.inf)
@@ -168,7 +190,13 @@ class CubicalCover(ProximityCover):
         return self.__ball_proximity.search(self._phi(x))
 
 
-class TrivialCover(ProximityCover):
+class TrivialCover:
+    
+    def proximity(self):
+        return TrivialProximity()
+
+
+class TrivialProximity:
 
     def fit(self, X):
         self.__data = X

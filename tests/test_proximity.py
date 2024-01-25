@@ -24,9 +24,10 @@ class TestSearch(unittest.TestCase):
     def testTrivial(self):
         data = dataset(dim=1, num=100)
         bs = BallCover(10, dist)
-        bs.fit(data)
+        bs_prox = bs.proximity()
+        bs_prox.fit(data)
         for x in data:
-            result = bs.search(x)
+            result = bs_prox.search(x)
             expected = [y for y in data if dist(x, y) <= 10]
             self.assertEqual(len(expected), len(result))
 
@@ -34,21 +35,23 @@ class TestSearch(unittest.TestCase):
         times = 10
         data = dataset()
         bs = BallCover(0.0005, dist)
+        bs_prox = bs.proximity()
         ks = KNNCover(10, dist)
+        ks_prox = ks.proximity()
         t0 = time.time()
         for _ in range(times):
-            bs.fit(data)
+            bs_prox.fit(data)
         t1 = time.time()
         for _ in range(times):
-            ks.fit(data)
+            ks_prox.fit(data)
         t2 = time.time()
         for _ in range(times):
             x = random.choice(data)
-            bsResults = bs.search(x)
+            bsResults = bs_prox.search(x)
         t3 = time.time()
         for _ in range(times):
             x = random.choice(data)
-            knnResults = ks.search(x)
+            knnResults = ks_prox.search(x)
         t4 = time.time()
         logger.debug(f'Ball Search: {len(bsResults)} results, fit in {t1 - t0}s, search in {t3 - t2}s')
         logger.debug(f'KNN Search: {len(knnResults)} results, fit in {t2 - t1}s, search in {t4 - t3}s')
