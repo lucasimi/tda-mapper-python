@@ -39,55 +39,12 @@ pip install git+https://github.com/lucasimi/tda-mapper-python.git@develop
 
 ## A worked out example
 
-In order to show how to use this package, we perform some analysis on the the well known dataset of hand written digits (more info [here](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html)), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
-
-```python
-import numpy as np
-
-from sklearn.datasets import load_digits
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.decomposition import PCA
-
-from tdamapper.core import *
-from tdamapper.cover import *
-from tdamapper.clustering import *
-from tdamapper.plot import *
-
-import matplotlib
-
-digits = load_digits()
-X, y = [np.array(x) for x in digits.data], digits.target
-lens = PCA(2).fit_transform(X)
-
-mapper_algo = MapperAlgorithm(
-    cover=GridCover(n_intervals=10, overlap_frac=0.65),
-    clustering=AgglomerativeClustering(10),
-    verbose=True,
-    n_jobs=8)
-mapper_graph = mapper_algo.fit_transform(X, lens)
-
-mapper_plot = MapperPlot(X, mapper_graph,
-    colors=y, 
-    cmap='jet', 
-    agg=np.nanmean,
-    dim=2,
-    iterations=400)
-fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
-fig_mean.show(config={'scrollZoom': True})
-```
+![In this file](tests/example.py) you can find a worked out example that shows how to use this package.
+We perform some analysis on the the well known dataset of ![hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
 
 ![The mapper graph of the digits dataset, colored according to mean value](resources/digits_mean.png)
 
 It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation
-
-```python
-fig_std = mapper_plot.with_colors(
-    colors=y, 
-    cmap='viridis', 
-    agg=np.nanstd,
-).plot(title='digit (std)', width=600, height=600)
-fig_std.show(config={'scrollZoom': True})
-```
 
 ![The mapper graph of the digits dataset, colored according to std](resources/digits_std.png)
 
@@ -107,7 +64,7 @@ The mapper graph of the digits dataset shows a few interesting patterns. For exa
     - [x] custom metrics
 
 - [x] Cover algorithms:
-    - [x] `GridCover`
+    - [x] `CubicalCover`
     - [x] `BallCover`
     - [x] `KnnCover`
 

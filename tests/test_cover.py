@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from tdamapper.cover import TrivialCover, BallCover, KNNCover, GridCover
+from tdamapper.cover import TrivialCover, BallCover, KNNCover, CubicalCover
 from tdamapper.core import ProximityNet
 
 
@@ -37,10 +37,10 @@ class TestCover(unittest.TestCase):
         charts = list(ProximityNet(cover).proximity_net(data))
         self.assertEqual(2, len(charts))
 
-    def testGridCover(self):
+    def testCubicalCover(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
-        cover = GridCover(2, 0.5)
+        cover = CubicalCover(2, 0.5)
         charts = list(ProximityNet(cover).proximity_net(data))
         self.assertEqual(4, len(charts))
