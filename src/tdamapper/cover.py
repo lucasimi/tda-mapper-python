@@ -96,7 +96,7 @@ class CubicalProximity:
         return self.__minimum + self.__delta * x / self.__n_intervals
 
     def _rho(self, x):
-        return x.round() + 0.5
+        return np.floor(x) + 0.5
 
     def _phi(self, x):
         return self._gamma_n_inv(self._rho(self._gamma_n(x)))
