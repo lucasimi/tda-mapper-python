@@ -1,7 +1,7 @@
 import unittest
 import random
-
 from tdamapper.utils.quickselect import partition, quickselect
+
 
 class TestQuickSelect(unittest.TestCase):
 

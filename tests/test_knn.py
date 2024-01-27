@@ -1,13 +1,10 @@
 import unittest
-
 import numpy as np
-from numpy import array
-
 from tdamapper.cover import KNNCover
 from tdamapper.utils.vptree_flat import VPTree
 
 
-X = array([
+X = np.array([
     [ 99.30543214,  99.85036546],
     [ 98.82687659, 101.94362119],
     [ 99.260437  , 101.5430146 ],
@@ -91,7 +88,7 @@ X = array([
 ])
 
 
-x = array([ 99.73199663, 100.8024564 ])
+x = np.array([ 99.73199663, 100.8024564 ])
 
 
 def euclidean(x, y):
@@ -118,9 +115,9 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(x_dist in dists)
 
     def testVPTreeSimple(self):
-        XX = array([array([x, x/2]) for x in range(30)])
+        XX = np.array([np.array([x, x/2]) for x in range(30)])
         vptree = VPTree(euclidean, XX, leaf_capacity=5, leaf_radius=0.0)
-        xx = array([3, 3/2])
+        xx = np.array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
         dists = [euclidean(xx, y) for y in neigh]
         self.check_vptree(vptree)

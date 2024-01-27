@@ -9,27 +9,23 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-class ProximityNet:
+def proximity_net(X, proximity):
     '''
     Compute the proximity-net for a given open cover.
 
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
     :param cover: A cover algorithm
     :type cover: A class from tdamapper.cover
     '''
-
-    def __init__(self, cover):
-        self.__cover = cover
-
-    def proximity_net(self, X):
-        covered_ids = set()
-        proximity = self.__cover.proximity()
-        proximity.fit(X)
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = proximity.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
+    covered_ids = set()
+    proximity.fit(X)
+    for i, xi in enumerate(X):
+        if i not in covered_ids:
+            neigh_ids = proximity.search(xi)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield neigh_ids
 
 
 def build_labels_par(X, y, cover, clustering, n_jobs):
@@ -55,7 +51,7 @@ def build_labels_par(X, y, cover, clustering, n_jobs):
         x_data = [X[j] for j in x_ids]
         x_lbls = clustering.fit(x_data).labels_
         return x_ids, x_lbls
-    net = ProximityNet(cover).proximity_net(y)
+    net = proximity_net(y, cover.proximity())
     par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
     max_lbl = 0
     lbls = [[] for _ in X]
@@ -70,7 +66,7 @@ def build_labels_par(X, y, cover, clustering, n_jobs):
     return lbls
 
 
-def __build_adjaciency(labels):
+def build_adjaciency(labels):
     '''
     Takes a list of lists of items, returns a dict where each item is
     mapped to a couple. Inside each couple the first entry is the list 
@@ -102,7 +98,7 @@ def __build_adjaciency(labels):
     return adj
 
 
-def __build_graph(X, y, cover, clustering, n_jobs=1):
+def build_graph(X, y, cover, clustering, n_jobs=1):
     ''' 
     Computes the Mapper Graph
 
@@ -114,7 +110,7 @@ def __build_graph(X, y, cover, clustering, n_jobs=1):
     :rtype: networkx.Graph
     '''
     labels = build_labels_par(X, y, cover, clustering, n_jobs)
-    adjaciency = __build_adjaciency(labels)
+    adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
         graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
@@ -199,4 +195,4 @@ class MapperAlgorithm:
         :return: The Mapper Graph
         :rtype: networkx.Graph
         '''
-        return __build_graph(X, y, self.__cover, self.__clustering, self.__n_jobs)
+        return build_graph(X, y, self.__cover, self.__clustering, self.__n_jobs)

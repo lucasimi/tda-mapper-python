@@ -1,13 +1,14 @@
 import unittest
 import random
-
 from tdamapper.utils.heap import MaxHeap
+
 
 def maxheap(data):
     m = MaxHeap()
     for x in data:
         m.add(x, x)
     return m
+
 
 class TestMaxHeap(unittest.TestCase):
 

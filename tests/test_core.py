@@ -1,8 +1,6 @@
 import unittest
 import numpy as np
-
 from sklearn.cluster import DBSCAN
-
 from tdamapper.core import MapperAlgorithm, build_connected_components
 from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
