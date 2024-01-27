@@ -12,7 +12,6 @@ class BallCover:
         return BallProximity(self.radius, self.metric)
 
 
-
 class BallProximity:
 
     def __init__(self, radius, metric):
