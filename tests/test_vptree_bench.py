@@ -1,10 +1,8 @@
 import unittest
 import logging
 from time import time
-
 import numpy as np
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
-
 from tdamapper.utils.vptree import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
