@@ -1,4 +1,4 @@
-name: deploy
+name: deploy-test
 
 on:
   push:
@@ -23,9 +23,9 @@ jobs:
         run: | 
           python -m build
           python -m twine check dist/*
-      - name: Upload package to PyPI
+      - name: Upload package to TestPyPI
         run: | 
-          python -m twine upload -r pypi dist/* --verbose
+          python -m twine upload -r testpypi dist/* --verbose
         env:
-          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME_TEST }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD_TEST }}
