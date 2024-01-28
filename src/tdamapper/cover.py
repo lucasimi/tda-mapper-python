@@ -1,48 +1,64 @@
-from tdamapper.neighbors import BallNeighbors, KNNeighbors, TrivialNeighbors, CubicNeighbors
+import numpy as np
+from tdamapper.utils.vptree_flat import VPTree
+from tdamapper.proximity import BallProximity, KNNProximity, CubicalProximity, TrivialProximity
 
 
-class NeighborsCover:
+class BallCover:
+    '''
+    Create an open cover made of overlapping open balls of fixed radius
 
-    def __init__(self, neighbors):
-        self.__neighbors = neighbors
-
-    def neighbors_net(self, X):
-        covered_ids = set()
-        self.__neighbors.fit(X)
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self.__neighbors.search(xi)
-                covered_ids.update(neigh_ids)
-                yield neigh_ids
-
-    def get_params(self, deep=True):
-        return self.__neighbors.get_params(deep)
-
-
-class BallCover(NeighborsCover):
+    :param radius: The radius of open balls
+    :type radius: float
+    :param metric: The metric used to define open balls
+    :type metric: function
+    '''
 
     def __init__(self, radius, metric):
-        super().__init__(BallNeighbors(radius, metric))
+        self.metric = metric
+        self.radius = radius
+
+    def proximity(self):
+        return BallProximity(self.radius, self.metric)
 
 
-class KNNCover(NeighborsCover):
+class KNNCover:
+    '''
+    Create an open cover where each open set containes a fixed number of neighbors, using KNN.
 
-    def __init__(self, k_neighbors, metric):
-        super().__init__(KNNeighbors(k_neighbors, metric))
+    :param neighbors: The number of neighbors
+    :type neighbors: int
+    :param metric: The metric used to search neighbors
+    :type metric: function
+    '''
+
+    def __init__(self, neighbors, metric):
+        self.neighbors = neighbors
+        self.metric = metric
+
+    def proximity(self):
+        return KNNProximity(self.neighbors, self.metric)
 
 
-class CubicCover(NeighborsCover):
+class CubicalCover:
+    '''
+    Create an open cover of hypercubes of given 
+
+    :param neighbors: The number of neighbors
+    :type neighbors: int
+    :param metric: The metric used to search neighbors
+    :type metric: function
+    '''
 
     def __init__(self, n_intervals, overlap_frac):
-        super().__init__(CubicNeighbors(n_intervals, overlap_frac))
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+
+    def proximity(self):
+        return CubicalProximity(self.n_intervals, self.overlap_frac)
 
 
-class TrivialCover(NeighborsCover):
-
-    def __init__(self):
-        super().__init__(TrivialNeighbors())
-
-
-
-
+class TrivialCover:
+    
+    def proximity(self):
+        return TrivialProximity()
 

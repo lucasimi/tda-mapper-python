@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tda-mapper"
-version = "0.0.2" 
-description = "A simple and efficient implementation of the Mapper Algorithm for Topological Data Analysis (TDA)"
+version = "0.1.0" 
+description = "A simple and efficient implementation of the Mapper Algorithm from Topological Data Analysis (TDA)"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 license = { file = "LICENSE" } 
@@ -19,13 +19,13 @@ dependencies = [
     "matplotlib>=3.3.4",
     "networkx>=2.5",
     "numpy>=1.20.1",
-    "scikit-learn>=0.24.1",
-    "plotly>=4.14.3"
+    "plotly>=4.14.3",
+    "joblib>=1.2.0"
 ]
 requires-python = ">=3.6"
 
 [project.optional-dependencies]
-dev = ["coverage"]
+dev = ["coverage", "pandas", "scikit-learn"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"

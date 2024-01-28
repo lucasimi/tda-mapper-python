@@ -1,14 +1,11 @@
 import math
-
 import numpy as np
-import plotly.graph_objects as go
 import networkx as nx
+import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+from tdamapper.core import ATTR_SIZE, compute_local_interpolation
 
-import tdamapper.core
-import tdamapper.cover
-from tdamapper.core import compute_local_interpolation
 
 _NODE_OUTER_WIDTH = 0.75
 _NODE_OUTER_COLOR = '#777'
@@ -21,51 +18,62 @@ _TICKS_NUM = 10
 
 class MapperPlot:
 
-    def __init__(self, 
-        X, graph, colors=None, agg=np.nanmean, cmap='jet', iterations=50,
-        pos2d=None, pos3d=None):
+    def __init__(self, X, graph,
+        colors=None,
+        agg=np.nanmean,
+        cmap='jet',
+        **kwargs):
         self.__X = X
         self.__graph = graph
         self.__cmap = cmap
-        if colors is None:
-            item_colors = [np.nanmean(x) for x in self.__X]
-            self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
-        else:
-            self.__colors = colors
-        if pos2d is None:
-            self.__pos2d = nx.spring_layout(self.__graph, dim=2, iterations=iterations)
-        else:
-            self.__pos2d = pos2d
-        if pos3d is None:
-            self.__pos3d = nx.spring_layout(self.__graph, dim=3, iterations=iterations)
-        else:
-            self.__pos3d = pos3d
+        item_colors = [np.nanmean(x) for x in self.__X] if colors is None else colors
+        self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
+        self.__dim = kwargs.get('dim', 2)
+        self.__kwargs = {}
+        self.__kwargs.update(kwargs)
+        self.__kwargs['dim'] = self.__dim
+        self.__pos = self._init_positions(self.__graph, **kwargs)
+        self.__kwargs['pos'] = self.__pos
+
+    def _init_positions(self, g, **kwargs):
+        pos = kwargs.get('pos')
+        if pos is None:
+            return nx.spring_layout(g, **kwargs)
+        return pos
 
     def with_colors(self, colors, agg=np.nanmean, cmap='jet'):
-        node_colors = compute_local_interpolation(colors, self.__graph, agg)
-        return MapperPlot(
-            self.__X, self.__graph, colors=node_colors, cmap=cmap,
-            pos2d=self.__pos2d, pos3d=self.__pos3d)
+        return MapperPlot(self.__X, self.__graph,
+            colors=colors, agg=agg, cmap=cmap, **self.__kwargs)
 
-    def plot_static(self, title='', ax=None):
+    def _plot_static(self, title='', ax=None):
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(6, 6))
         return self._plot_matplotlib(title, ax)
 
-    def plot_interactive_2d(self, title='', width=512, height=512):
+    def plot(self, *args, style='interactive', **kwargs):
+        if not self.__pos:
+            return
+        if self.__dim == 2:
+            if style == 'interactive':
+                return self._plot_interactive_2d(*args, **kwargs)
+            return self._plot_static(*args, **kwargs)
+        if self.__dim == 3:
+            return self._plot_interactive_3d(*args, **kwargs)
+
+    def _plot_interactive_2d(self, title='', width=512, height=512):
         return self._plot_plotly_2d(title, width, height)
 
-    def plot_interactive_3d(self, title='', width=512, height=512):
+    def _plot_interactive_3d(self, title='', width=512, height=512):
         return self._plot_plotly_3d(title, width, height)
 
     def _plot_matplotlib_nodes(self, title, ax):
         nodes = self.__graph.nodes()
-        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values())
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
-        nodes_x = [self.__pos2d[node][0] for node in nodes]
-        nodes_y = [self.__pos2d[node][1] for node in nodes]
+        nodes_x = [self.__pos[node][0] for node in nodes]
+        nodes_y = [self.__pos[node][1] for node in nodes]
         nodes_c = [self.__colors[node] for node in nodes]
         nodes_s = [250.0 * math.sqrt(sizes[node]/max_size) for node in nodes]
         verts = ax.scatter(
@@ -101,7 +109,7 @@ class MapperPlot:
 
     def _plot_matplotlib_edges(self, ax):
         edges = self.__graph.edges()
-        segments = [(self.__pos2d[edge[0]], self.__pos2d[edge[1]]) for edge in edges]
+        segments = [(self.__pos[edge[0]], self.__pos[edge[1]]) for edge in edges]
         lines = LineCollection(
             segments,
             color=_EDGE_COLOR,
@@ -149,8 +157,8 @@ class MapperPlot:
     def _plot_plotly_2d_edges(self):
         edge_x, edge_y = [], []
         for edge in self.__graph.edges():
-            x0, y0 = self.__pos2d[edge[0]]
-            x1, y1 = self.__pos2d[edge[1]]
+            x0, y0 = self.__pos[edge[0]]
+            x1, y1 = self.__pos[edge[1]]
             edge_x.append(x0)
             edge_x.append(x1)
             edge_x.append(None)
@@ -198,10 +206,10 @@ class MapperPlot:
         node_x, node_y = [], []
         node_captions = []
         for node in nodes:
-            x, y = self.__pos2d[node]
+            x, y = self.__pos[node]
             node_x.append(x)
             node_y.append(y)
-            size = nodes[node][tdamapper.core._ATTR_SIZE]
+            size = nodes[node][ATTR_SIZE]
             node_label = self._plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter(
@@ -225,7 +233,7 @@ class MapperPlot:
         colors = [self.__colors[node] for node in nodes]
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
-        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
         return go.scatter.Marker(
@@ -315,8 +323,8 @@ class MapperPlot:
     def _plot_plotly_3d_edges(self):
         edge_x, edge_y, edge_z = [], [], []
         for edge in self.__graph.edges():
-            x0, y0, z0 = self.__pos3d[edge[0]]
-            x1, y1, z1 = self.__pos3d[edge[1]]
+            x0, y0, z0 = self.__pos[edge[0]]
+            x1, y1, z1 = self.__pos[edge[1]]
             edge_x.append(x0)
             edge_x.append(x1)
             edge_x.append(None)
@@ -362,7 +370,7 @@ class MapperPlot:
         colors = [self.__colors[node] for node in nodes]
         min_color = min(self.__colors.values())
         max_color = max(self.__colors.values())
-        sizes = nx.get_node_attributes(self.__graph, tdamapper.core._ATTR_SIZE)
+        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(sizes.values()) if sizes else 1.0
         node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
         return go.scatter3d.Marker(
@@ -385,11 +393,11 @@ class MapperPlot:
         node_x, node_y, node_z = [], [], []
         node_captions = []
         for node in nodes:
-            x, y, z = self.__pos3d[node]
+            x, y, z = self.__pos[node]
             node_x.append(x)
             node_y.append(y)
             node_z.append(z)
-            size = nodes[node][tdamapper.core._ATTR_SIZE]
+            size = nodes[node][ATTR_SIZE]
             node_label = self._plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter3d(

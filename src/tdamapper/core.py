@@ -1,35 +1,69 @@
 import networkx as nx
+from joblib import Parallel, delayed
 
 
-_ATTR_IDS = 'ids'
-_ATTR_SIZE = 'size'
+ATTR_IDS = 'ids'
+ATTR_SIZE = 'size'
 
 _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def build_labels(X, y, cover, clustering):
+def proximity_net(X, proximity):
     '''
-    Takes a dataset, returns a list of lists, where the list at position i
-    contains the cluster ids to which the item at position i belongs to.
-    * Each list in the output is a sorted list of ints with no duplicate.
+    Compute the proximity-net for a given open cover.
+
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
+    :param cover: A cover algorithm
+    :type cover: A class from tdamapper.cover
     '''
-    max_label = 0
-    labels = [[] for _ in X]
-    for neigh_ids in cover.neighbors_net(y):
-        neigh_data = [X[j] for j in neigh_ids]
-        try:
-            neigh_labels = clustering.fit(neigh_data).labels_
-        except Exception:
-            neigh_labels = [0 for _ in neigh_data]
-        max_neigh_label = 0
-        for (neigh_id, neigh_label) in zip(neigh_ids, neigh_labels):
-            if neigh_label != -1:
-                if neigh_label > max_neigh_label:
-                    max_neigh_label = neigh_label
-                labels[neigh_id].append(max_label + neigh_label)
-        max_label += max_neigh_label + 1
-    return labels
+    covered_ids = set()
+    proximity.fit(X)
+    for i, xi in enumerate(X):
+        if i not in covered_ids:
+            neigh_ids = proximity.search(xi)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield neigh_ids
+
+
+def build_labels_par(X, y, cover, clustering, n_jobs):
+    '''
+    Computes the local cluster labels for each element of the dataset and stores them in a list.
+    Each item in the returned list is a sorted list of ints with no duplicate.
+    The list at position i contains the cluster ids to which the point at position i belongs to. 
+
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
+    :param y: lens values
+    :type y: numpy.ndarray or list-like
+    :param cover: A cover algorithm
+    :type cover: A class from tdamapper.cover
+    :param clustering: A clustering algorithm
+    :type clustering: A class from tdamapper.clustering or a class from sklearn.cluster
+    :param n_jobs: The number of parallel jobs for clustering
+    :type n_jobs: int
+    :return: The labels list
+    :rtype: list[list[int]]
+    '''
+    def _lbls(x_ids):
+        x_data = [X[j] for j in x_ids]
+        x_lbls = clustering.fit(x_data).labels_
+        return x_ids, x_lbls
+    net = proximity_net(y, cover.proximity())
+    par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
+    max_lbl = 0
+    lbls = [[] for _ in X]
+    for neigh_ids, neigh_lbls in par:
+        max_neigh_lbl = 0
+        for neigh_id, neigh_lbl in zip(neigh_ids, neigh_lbls):
+            if neigh_lbl != -1:
+                if neigh_lbl > max_neigh_lbl:
+                    max_neigh_lbl = neigh_lbl
+                lbls[neigh_id].append(max_lbl + neigh_lbl)
+        max_lbl += max_neigh_lbl + 1
+    return lbls
 
 
 def build_adjaciency(labels):
@@ -38,6 +72,9 @@ def build_adjaciency(labels):
     mapped to a couple. Inside each couple the first entry is the list 
     of positions where the item is present, the second entry is the list
     of items which appear in any of the lists where the key is present.
+
+    :param labels: A list of lists 
+    :type labels: list[list[int]]
     '''
     adj = {}
     for n, clusters in enumerate(labels):
@@ -61,12 +98,22 @@ def build_adjaciency(labels):
     return adj
 
 
-def build_graph(X, y, cover, clustering):
-    labels = build_labels(X, y, cover, clustering)
+def build_graph(X, y, cover, clustering, n_jobs=1):
+    ''' 
+    Computes the Mapper Graph
+
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
+    :param y: Lens values
+    :type y: numpy.ndarray or list-like
+    :return: The Mapper Graph
+    :rtype: networkx.Graph
+    '''
+    labels = build_labels_par(X, y, cover, clustering, n_jobs)
     adjaciency = build_adjaciency(labels)
     graph = nx.Graph()
     for source, (items, _) in adjaciency.items():
-        graph.add_node(source, **{_ATTR_SIZE: len(items), _ATTR_IDS: items})
+        graph.add_node(source, **{ATTR_SIZE: len(items), ATTR_IDS: items})
     edges = set()
     for source, (_, target_ids) in adjaciency.items():
         for target in target_ids:
@@ -84,12 +131,15 @@ def build_connected_components(graph):
     from the dataset, returns a list of integers, where position i is the id
     of the connected component of the graph where the element at position i 
     from the dataset lies.
+
+    :param graph: Any graph
+    :type graph: networkx.Graph
     '''
     cc_id = 1
     item_cc = {}
     for connected_component in nx.connected_components(graph):
         for node in connected_component:
-            for item_id in graph.nodes[node][_ATTR_IDS]:
+            for item_id in graph.nodes[node][ATTR_IDS]:
                 item_cc[item_id] = cc_id
         cc_id += 1
     return item_cc
@@ -99,38 +149,50 @@ def compute_local_interpolation(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [y[i] for i in nodes[node_id][_ATTR_IDS]]
+        node_values = [y[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
 
 
 class MapperAlgorithm:
+    ''' 
+    Main class for performing the Mapper Algorithm.
 
-    def __init__(self, cover, clustering):
+    :param cover: A cover algorithm
+    :type cover: A class from tdamapper.cover
+    :param clustering: A clustering algorithm
+    :type clustering: A class from tdamapper.clustering or a class from sklearn.cluster
+    '''
+
+    def __init__(self, cover, clustering, n_jobs=1):
         self.__cover = cover
         self.__clustering = clustering
+        self.__n_jobs = n_jobs
         self.graph_ = None
 
     def fit(self, X, y=None):
+        ''' 
+        Computes the Mapper Graph
+
+        :param X: A dataset
+        :type X: numpy.ndarray or list-like
+        :param y: Lens values
+        :type y: numpy.ndarray or list-like
+        :return: self
+        '''
         self.graph_ = self.fit_transform(X, y)
         return self
 
     def fit_transform(self, X, y):
-        return build_graph(X, y, self.__cover, self.__clustering)
+        ''' 
+        Computes the Mapper Graph
 
-
-class MapperClassifier:
-
-    def __init__(self, mapper_algo):
-        self.__mapper_algo = mapper_algo
-        self.labels_ = None
-
-    def fit(self, X, y=None):
-        self.labels_ = self.fit_predict(X, y)
-        return self
-
-    def fit_predict(self, X, y):
-        graph = self.__mapper_algo.fit_transform(X, y)
-        ccs = build_connected_components(graph)
-        return [ccs[i] for i, _ in enumerate(X)]
+        :param X: A dataset
+        :type X: numpy.ndarray or list-like
+        :param y: Lens values
+        :type y: numpy.ndarray or list-like
+        :return: The Mapper Graph
+        :rtype: networkx.Graph
+        '''
+        return build_graph(X, y, self.__cover, self.__clustering, self.__n_jobs)

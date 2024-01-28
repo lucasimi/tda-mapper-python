@@ -1,125 +1,90 @@
-# tda-mapper-python 
+# tda-mapper
 
-![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg) [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
+![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg) 
+[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
+[![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=latest)](https://tda-mapper.readthedocs.io/en/latest/?badge=latest)
 
-In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core principle of TDA is to gain insights from data by using topological methods, as they show good resilience to noise, and they are often more stable than many traditional techniques. This Python package provides an implementation of the **Mapper Algorithm**, one of the most common tools from TDA. 
+In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core idea of TDA is to gain insights from data by using topological methods that are proved to be reliable with respect to noise, and that behave nicely with respect to dimension. This Python package provides an implementation of the **Mapper Algorithm**, a well-known tool from TDA. 
 
-The mapper algorithm takes any dataset $X$ (usually high dimensional), and returns a graph $G$, called **Mapper Graph**. Surprisingly enough, despite living in a 2-dimensional space, the mapper graph $G$ represents a reliable summary for the shape of $X$ (they share the same number of connected components). This feature makes the mapper algorithm a very appealing choice over more traditional approaches, for example those based on projections, because they often give you no way to control shape distortions. Moreover, preventing artifacts is especially important for data visualization: the mapper graph is often a capable tool, which can help you identify hidden patterns in high-dimensional data.
+The Mapper Algorithm takes any dataset $X$ and returns a *shape-summary* in the form a graph $G$, called **Mapper Graph**. It's possible to prove, under reasonable conditions, that $X$ and $G$ share the same number of connected components.
 
-## Basics
+For an in-depth description of Mapper please read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). 
 
-Here we'll give just a brief description of the core ideas around the mapper, but the interested reader is advised to take a look at the original [paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). The Mapper Algorithm follows these steps:
+* Installation from package: TBD
+* Installation from sources: clone this repo and run ```python -m pip install .```
+* Documentation: https://tda-mapper.readthedocs.io/en/latest/ 
 
-1. Take any *lens* you want. A lens is just a continuous map $f \colon X \to Y$, where $Y$ is any parameter space, usually having dimension lower than $X$. You can think of $f$ as a set of KPIs, or features of particular interest for the domain of study. Some common choices for $f$ are *statistics* (of any order), *projections*, *entropy*, *density*, *eccentricity*, and so forth.
 
-![Step 1](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/mapper_1.png)
+## Usage
 
-2. Build an *open cover* for $f(X)$. An open cover is a collection of open sets (like open balls, or open intervals) whose union makes the whole image $f(X)$, and can possibly intersect.
-
-![Step 2](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/mapper_2.png)
-
-3. For each element $U$ of the open cover of $f(X)$, let $f^{-1}(U)$ be the preimage of $U$ under $f$. Then the collection of all the $f^{-1}(U)$'s makes an open cover of $X$. At this point, split every preimage $f^{-1}(U)$ into clusters, by running any chosen *clustering* algorithm, and keep track of all the local clusters obtained. All these local clusters together make a *refined open cover* for $X$.
-
-![Step 3](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/mapper_3.png)
-
-4. Build the mapper graph $G$ by taking a node for each local cluster, and by drawing an edge between two nodes whenever their corresponding local clusters intersect.
-
-![Step 4](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/mapper_4.png)
-
-N.B.: The choice of the lens $f$ has a deep practical impact on the mapper graph. Theoretically, if clusters were able to perfectly identify connected components (and if they were "reasonably well behaved"), chosing any $f$ would give the same mapper graph (see the [Nerve Theorem](https://en.wikipedia.org/wiki/Nerve_complex#Nerve_theorems) for a more precise statement). In this case, there would be no need for a tool like the mapper, since clustering algorithms would provide a complete tool to understand the shape of data. Unfortunately, clustering algorithms are not that good. Think for example about the case of $f$ being a constant function: in this case computing the mapper graph would be equivalent to performing clustering on the whole dataset. For this reason a good choice for $f$ would be any continuous map which is somewhat *sensible* to data: the more sublevel sets are apart, the higher the chance of a good local clustering.
-
-## Installation
-
-First, clone this repo, `cd` into the local repo, and install via `pip` from your local repo
-```
-python -m pip install .
-```
-
-## How to use this package - A First Example
-
-In the following example, we use the mapper to perform some analysis on the famous Iris dataset. This dataset consists of 150 records, having 4 numerical features and a label which represents a class. As lens, we chose the PCA on two components. 
+![In this file](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find a worked out example that shows how to use this package. We perform some analysis on the the well known dataset of ![hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
 
 ```python
-from sklearn.datasets import load_iris
+import numpy as np
+
+from sklearn.datasets import load_digits
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
-import matplotlib
+from tdamapper.core import MapperAlgorithm
+from tdamapper.cover import CubicalCover
+from tdamapper.clustering import PermissiveClustering
+from tdamapper.plot import MapperPlot
 
-from tdamapper.core import *
-from tdamapper.cover import *
-from tdamapper.clustering import *
-from tdamapper.plot import *
+# We load a labelled dataset
+X, y = load_digits(return_X_y=True)             
+# We compute the lens values
+lens = PCA(2).fit_transform(X)                  
 
-iris_data = load_iris()
-X, y = iris_data.data, iris_data.target
-lens = PCA(2).fit_transform(X)
-
-cover = CubicCover(n_intervals=7, overlap_frac=0.25)
-clustering = AgglomerativeClustering(n_clusters=2, linkage='single')
-
-mapper_algo = MapperAlgorithm(cover, clustering)
+mapper_algo = MapperAlgorithm(
+    cover=CubicalCover(
+        n_intervals=10,
+        overlap_frac=0.65),
+    # We prevent clustering failures
+    clustering=PermissiveClustering(            
+        clustering=AgglomerativeClustering(10),
+        verbose=False),
+    n_jobs=1)
 mapper_graph = mapper_algo.fit_transform(X, lens)
-mapper_plot = MapperPlot(X, mapper_graph)
-colored = mapper_plot.with_colors(colors=list(y), agg=np.nanmedian)
 
-fig, ax = plt.subplots(1, 1, figsize=(7, 7))
-colored.plot_static(title='class', ax=ax)
+mapper_plot = MapperPlot(X, mapper_graph,
+    # We color according to digit values
+    colors=y,                                   
+    # Jet colormap, used for classes
+    cmap='jet',                                 
+    # We aggregate on graph nodes according to mean
+    agg=np.nanmean,                             
+    dim=2,
+    iterations=400)
+fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
+fig_mean.show(config={'scrollZoom': True})     
+
 ```
 
-![The mapper graph of the iris dataset](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/iris.png)
+![Mapper Graph of the digits dataset, colored according to mean value](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_mean.png)
 
-As you can see from the plot, we can identify two major connected components, one which corresponds precisely to a single class, and the other which is shared by the other two classes.
+It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation
 
-## A Second Example
-
-In this second example we try to take a look at the shape of the digits dataset. This dataset consists of less than 2000 pictures of handwritten digits, represented as dim-64 arrays (8x8 pictures)
 
 ```python
-from sklearn.datasets import load_digits
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
+# We reuse the graph plot with the same positions
+fig_std = mapper_plot.with_colors(              
+    colors=y,
+    # Viridis colormap, used for ranges
+    cmap='viridis',                             
+    # We aggregate on graph nodes according to std
+    agg=np.nanstd,                              
+).plot(title='digit (std)', width=600, height=600)
+fig_std.show(config={'scrollZoom': True})      
 
-from tdamapper.core import *
-from tdamapper.cover import *
-from tdamapper.clustering import *
-from tdamapper.plot import *
-
-import matplotlib
-
-digits = load_digits()
-X, y = [np.array(x) for x in digits.data], digits.target
-lens = PCA(2).fit_transform(X)
-
-cover = CubicCover(n_intervals=15, overlap_frac=0.25)
-clustering = KMeans(10, n_init='auto')
-
-mapper_algo = MapperAlgorithm(cover, clustering)
-mapper_graph = mapper_algo.fit_transform(X, lens)
-mapper_plot = MapperPlot(X, mapper_graph, iterations=100)
-
-fig = mapper_plot.with_colors(colors=y, cmap='jet', agg=np.nanmedian).plot_interactive_2d(title='digit', width=512, height=512)
-fig.show(config={'scrollZoom': True})
 ```
 
-![The mapper graph of the digits dataset](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/digits.png)
+![Mapper Graph of the digits dataset, colored according to std](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_std.png)
 
-As you can see the mapper graph shows interesting patterns. Note that the shape of the graph is obtained by looking only at the 8x8 pictures, discarding any information about the actual label (the digit). You can see that those local clusters which share the same labels are located in the same area of the graph. This tells you (as you would expect) that the labelling is *compatible with the shape of data*.
+The mapper graph of the digits dataset shows a few interesting patterns. For example, we can make the following observations:
 
-![Digits 4 and 7](https://raw.githubusercontent.com/lucasimi/tda-mapper-python/main/resources/digits_4_7.png)
+* Clusters that share the same color are all connected together, and located in the same area of the graph. This behavior is present in those digits which are easy to tell apart from the others, for example digits 0 and 4.
 
-Moreover, by zooming in, you can see that some clusters are located next to others. For example in the picture you can see the details of digits '4' (cyan) and '7' (red) being located one next to the other.
+* Some clusters are not well separated and tend to overlap one on the other. This mixed behavior is present in those digits which can be easily confused one with the other, for example digits 5 and 6.
 
-### Development - Supported Features
-
-- [x] Topology
-    - [x] Any custom lens
-    - [x] Any custom metric
-- [x] Cover algorithms:
-    - [x] Cubic Cover
-    - [x] Ball Cover
-    - [x] Knn Cover
-- [x] Clustering algoritms
-    - [x] Any sklearn clustering algorithm
-    - [x] Skip clustering
-    - [x] Clustering induced by cover
+* Clusters located across the "boundary" of two different digits show a transition either due to a change in distribution or due to distorsions in the hand written text, for example digits 8 and 2.
