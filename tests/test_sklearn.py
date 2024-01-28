@@ -1,11 +1,8 @@
 import unittest
-
 import numpy as np
-
 from sklearn.utils import check_X_y
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.cluster import KMeans
-
 from tdamapper.clustering import TrivialClustering, CoverClustering, PermissiveClustering, MapperGraphClustering
 from tdamapper.cover import TrivialCover, BallCover, KNNCover, CubicalCover
 

@@ -1,5 +1,4 @@
 import unittest
-
 from tdamapper.utils.unionfind import UnionFind
 
 

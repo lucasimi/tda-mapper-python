@@ -4,6 +4,7 @@
 **/*.egg-info
 **/.ipynb_checkpoints
 **/*.log
+**/docs/build
 
 .coverage
 .vscode

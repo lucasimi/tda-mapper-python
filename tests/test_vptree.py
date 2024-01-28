@@ -1,7 +1,6 @@
 import unittest
 import random
 import numpy as np
-
 from tdamapper.utils.vptree import VPTree
 from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
 
