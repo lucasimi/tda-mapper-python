@@ -1,6 +1,29 @@
-import numpy as np
-from tdamapper.utils.vptree_flat import VPTree
 from tdamapper.proximity import BallProximity, KNNProximity, CubicalProximity, TrivialProximity
+
+
+class ProximityNet:
+
+    def __init__(self, X, proximity):
+        self.__X = X
+        self.__proximity = proximity
+
+    def __iter__(self):
+        '''
+        Compute the proximity-net for a given open cover.
+
+        :param X: A dataset
+        :type X: numpy.ndarray or list-like
+        :param cover: A cover algorithm
+        :type cover: A class from tdamapper.cover
+        '''
+        covered_ids = set()
+        self.__proximity.fit(self.__X)
+        for i, xi in enumerate(self.__X):
+            if i not in covered_ids:
+                neigh_ids = self.__proximity.search(xi)
+                covered_ids.update(neigh_ids)
+                if neigh_ids:
+                    yield neigh_ids
 
 
 class BallCover:
@@ -17,8 +40,9 @@ class BallCover:
         self.metric = metric
         self.radius = radius
 
-    def proximity(self):
-        return BallProximity(self.radius, self.metric)
+    def build(self, X):
+        prox = BallProximity(self.radius, self.metric)
+        return iter(ProximityNet(X, prox))
 
 
 class KNNCover:
@@ -35,8 +59,9 @@ class KNNCover:
         self.neighbors = neighbors
         self.metric = metric
 
-    def proximity(self):
-        return KNNProximity(self.neighbors, self.metric)
+    def build(self, X):
+        prox = KNNProximity(self.neighbors, self.metric)
+        return iter(ProximityNet(X, prox))
 
 
 class CubicalCover:
@@ -53,12 +78,13 @@ class CubicalCover:
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
 
-    def proximity(self):
-        return CubicalProximity(self.n_intervals, self.overlap_frac)
+    def build(self, X):
+        prox = CubicalProximity(self.n_intervals, self.overlap_frac)
+        return iter(ProximityNet(X, prox))
 
 
 class TrivialCover:
-    
-    def proximity(self):
-        return TrivialProximity()
 
+    def build(self, X):
+        prox = TrivialProximity()
+        return iter(ProximityNet(X, prox))

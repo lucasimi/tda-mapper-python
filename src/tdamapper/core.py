@@ -9,23 +9,25 @@ _ID_IDS = 0
 _ID_NEIGHS = 1
 
 
-def proximity_net(X, proximity):
-    '''
-    Compute the proximity-net for a given open cover.
+class RefinedNet:
 
-    :param X: A dataset
-    :type X: numpy.ndarray or list-like
-    :param cover: A cover algorithm
-    :type cover: A class from tdamapper.cover
-    '''
-    covered_ids = set()
-    proximity.fit(X)
-    for i, xi in enumerate(X):
-        if i not in covered_ids:
-            neigh_ids = proximity.search(xi)
-            covered_ids.update(neigh_ids)
-            if neigh_ids:
-                yield neigh_ids
+    def __init__(self, X, proximity_net, clustering):
+        self.__X = X
+        self.__proximity_net = proximity_net
+        self.__clustering = clustering
+
+    def __iter__(self):
+        max_lbl = 0
+        for ids in self.__proximity_net:
+            x_data = [self.__X[j] for j in ids]
+            labels = self.__clustering.fit(x_data).labels_
+            lbls = [l + max_lbl for l in labels] #TODO: handle when l < 0
+            max_neigh_lbl = 0
+            for neigh_lbl in labels:
+                if (neigh_lbl != -1) and (neigh_lbl > max_neigh_lbl):
+                    max_neigh_lbl = neigh_lbl
+            max_lbl += max_neigh_lbl + 1
+            yield lbls
 
 
 def build_labels_par(X, y, cover, clustering, n_jobs):
@@ -51,7 +53,7 @@ def build_labels_par(X, y, cover, clustering, n_jobs):
         x_data = [X[j] for j in x_ids]
         x_lbls = clustering.fit(x_data).labels_
         return x_ids, x_lbls
-    net = proximity_net(y, cover.proximity())
+    net = cover.build(y)
     par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
     max_lbl = 0
     lbls = [[] for _ in X]
