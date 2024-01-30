@@ -4,9 +4,6 @@ import networkx as nx
 ATTR_IDS = 'ids'
 ATTR_SIZE = 'size'
 
-_ID_IDS = 0
-_ID_NEIGHS = 1
-
 
 def cover_labels(X, cover_ids, clustering):
     '''
@@ -97,27 +94,7 @@ def mapper_graph(X, y, cover, clustering):
     return graph
 
 
-def build_connected_components(graph):
-    '''
-    Takes a dataset and a graph, where each node represents a sets of elements
-    from the dataset, returns a list of integers, where position i is the id
-    of the connected component of the graph where the element at position i 
-    from the dataset lies.
-
-    :param graph: Any graph
-    :type graph: networkx.Graph
-    '''
-    cc_id = 1
-    item_cc = {}
-    for connected_component in nx.connected_components(graph):
-        for node in connected_component:
-            for item_id in graph.nodes[node][ATTR_IDS]:
-                item_cc[item_id] = cc_id
-        cc_id += 1
-    return item_cc
-
-
-def compute_local_interpolation(y, graph, agg):
+def aggregate_graph(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:

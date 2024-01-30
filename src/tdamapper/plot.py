@@ -4,7 +4,7 @@ import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from tdamapper.core import ATTR_SIZE, compute_local_interpolation
+from tdamapper.core import ATTR_SIZE, aggregate_graph
 
 
 _NODE_OUTER_WIDTH = 0.75
@@ -27,7 +27,7 @@ class MapperPlot:
         self.__graph = graph
         self.__cmap = cmap
         item_colors = [np.nanmean(x) for x in self.__X] if colors is None else colors
-        self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
+        self.__colors = aggregate_graph(item_colors, self.__graph, agg)
         self.__dim = kwargs.get('dim', 2)
         self.__kwargs = {}
         self.__kwargs.update(kwargs)

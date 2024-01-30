@@ -1,6 +1,7 @@
 import logging
+import networkx as nx
 import numpy as np
-from tdamapper.core import item_labels, build_connected_components, MapperAlgorithm
+from tdamapper.core import ATTR_IDS, item_labels, MapperAlgorithm
 from tdamapper.utils.unionfind import UnionFind
 from tdamapper.cover import TrivialCover, CubicalCover, BallCover, KNNCover
 
@@ -116,5 +117,12 @@ class MapperGraphClustering:
         clustering = CoverClustering(self.__get_cover())
         mapper_algo = MapperAlgorithm(cover=cover, clustering=clustering)
         graph = mapper_algo.fit_transform(X, y)
-        ccs = build_connected_components(graph)
-        return [ccs[i] for i, _ in enumerate(X)]
+
+        cc_id = 1
+        item_cc = {}
+        for cc in nx.connected_components(graph):
+            for node in cc:
+                for itm_id in graph.nodes[node][ATTR_IDS]:
+                    item_cc[itm_id] = cc_id
+            cc_id += 1
+        return [item_cc[i] for i, _ in enumerate(X)]
