@@ -21,8 +21,7 @@ mapper_algo = MapperAlgorithm(
     # We prevent clustering failures
     clustering=PermissiveClustering(            
         clustering=AgglomerativeClustering(10),
-        verbose=False),
-    n_jobs=1)
+        verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
 mapper_plot = MapperPlot(X, mapper_graph,

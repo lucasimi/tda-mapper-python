@@ -1,29 +1,9 @@
-from tdamapper.proximity import BallProximity, KNNProximity, CubicalProximity, TrivialProximity
-
-
-class ProximityNet:
-
-    def __init__(self, X, proximity):
-        self.__X = X
-        self.__proximity = proximity
-
-    def __iter__(self):
-        '''
-        Compute the proximity-net for a given open cover.
-
-        :param X: A dataset
-        :type X: numpy.ndarray or list-like
-        :param cover: A cover algorithm
-        :type cover: A class from tdamapper.cover
-        '''
-        covered_ids = set()
-        self.__proximity.fit(self.__X)
-        for i, xi in enumerate(self.__X):
-            if i not in covered_ids:
-                neigh_ids = self.__proximity.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
+from tdamapper.proximity import (
+    proximity_net,
+    BallProximity,
+    KNNProximity,
+    CubicalProximity,
+    TrivialProximity)
 
 
 class BallCover:
@@ -40,9 +20,9 @@ class BallCover:
         self.metric = metric
         self.radius = radius
 
-    def build(self, X):
-        prox = BallProximity(self.radius, self.metric)
-        return iter(ProximityNet(X, prox))
+    def apply(self, X):
+        proximity = BallProximity(self.radius, self.metric)
+        return proximity_net(X, proximity)
 
 
 class KNNCover:
@@ -59,9 +39,9 @@ class KNNCover:
         self.neighbors = neighbors
         self.metric = metric
 
-    def build(self, X):
-        prox = KNNProximity(self.neighbors, self.metric)
-        return iter(ProximityNet(X, prox))
+    def apply(self, X):
+        proximity = KNNProximity(self.neighbors, self.metric)
+        return proximity_net(X, proximity)
 
 
 class CubicalCover:
@@ -78,13 +58,16 @@ class CubicalCover:
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
 
-    def build(self, X):
-        prox = CubicalProximity(self.n_intervals, self.overlap_frac)
-        return iter(ProximityNet(X, prox))
+    def apply(self, X):
+        proximity = CubicalProximity(self.n_intervals, self.overlap_frac)
+        return proximity_net(X, proximity)
 
 
 class TrivialCover:
+    '''
+    Create an open cover made of a single open set that contains the whole dataset
+    '''
 
-    def build(self, X):
-        prox = TrivialProximity()
-        return iter(ProximityNet(X, prox))
+    def apply(self, X):
+        proximity = TrivialProximity()
+        return proximity_net(X, proximity)

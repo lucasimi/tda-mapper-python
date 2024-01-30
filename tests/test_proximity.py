@@ -1,10 +1,6 @@
-import time
-import logging
-import random
 import unittest
 import numpy as np
-from tdamapper.proximity import TrivialProximity, BallProximity, KNNProximity, CubicalProximity
-from tdamapper.cover import ProximityNet
+from tdamapper.proximity import proximity_net, TrivialProximity, BallProximity, KNNProximity, CubicalProximity
 
 
 def dist(x, y):
@@ -20,7 +16,7 @@ class TestProximity(unittest.TestCase):
     def testTrivialProximity(self):
         data = dataset()
         proximity = TrivialProximity()
-        charts = list(ProximityNet(data, proximity))
+        charts = list(proximity_net(data, proximity))
         self.assertEqual(1, len(charts))
 
     def testBallProximity(self):
@@ -28,7 +24,7 @@ class TestProximity(unittest.TestCase):
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
         proximity = BallProximity(radius=1.1, metric=dist)
-        charts = list(ProximityNet(data, proximity))
+        charts = list(proximity_net(data, proximity))
         self.assertEqual(2, len(charts))
 
     def testKnnProximity(self):
@@ -36,7 +32,7 @@ class TestProximity(unittest.TestCase):
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
         proximity = KNNProximity(neighbors=2, metric=dist)
-        charts = list(ProximityNet(data, proximity))
+        charts = list(proximity_net(data, proximity))
         self.assertEqual(2, len(charts))
 
     def testCubicalProximity(self):
@@ -44,5 +40,5 @@ class TestProximity(unittest.TestCase):
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
         proximity = CubicalProximity(n_intervals=2, overlap_frac=0.5)
-        charts = list(ProximityNet(data, proximity))
+        charts = list(proximity_net(data, proximity))
         self.assertEqual(4, len(charts))

@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from tdamapper.core import build_labels_par, build_connected_components, MapperAlgorithm
+from tdamapper.core import item_labels, build_connected_components, MapperAlgorithm
 from tdamapper.utils.unionfind import UnionFind
 from tdamapper.cover import TrivialCover, CubicalCover, BallCover, KNNCover
 
@@ -63,18 +63,18 @@ class CoverClustering:
             cover = self.cover
         else:
             cover = TrivialCover()
-        multilabels = build_labels_par(X, X, cover, TrivialClustering(), 1)
+        itm_lbls = item_labels(X, X, cover, TrivialClustering())
         label_values = set()
-        for labels in multilabels:
-            label_values.update(labels)
+        for lbls in itm_lbls:
+            label_values.update(lbls)
         uf = UnionFind(label_values)
         self.labels_ = []
-        for labels in multilabels:
-            if len(labels) > 1:
-                for first, second in zip(labels, labels[1:]):
+        for lbls in itm_lbls:
+            if len(lbls) > 1:
+                for first, second in zip(lbls, lbls[1:]):
                     root = uf.union(first, second)
             else:
-                root = uf.find(labels[0])
+                root = uf.find(lbls[0])
             self.labels_.append(root)
         return self
 
@@ -87,15 +87,13 @@ class MapperGraphClustering:
             overlap_frac=0.25,
             radius=0.5,
             neighbors=5,
-            metric=euclidean,
-            n_jobs=1):
+            metric=euclidean):
         self.cover = cover
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
         self.radius = radius
         self.neighbors = neighbors
         self.metric = metric
-        self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
         self.labels_ = self.fit_predict(X, y)
@@ -116,7 +114,7 @@ class MapperGraphClustering:
     def fit_predict(self, X, y):
         cover = self.__get_cover()
         clustering = CoverClustering(self.__get_cover())
-        mapper_algo = MapperAlgorithm(cover=cover, clustering=clustering, n_jobs=self.n_jobs)
+        mapper_algo = MapperAlgorithm(cover=cover, clustering=clustering)
         graph = mapper_algo.fit_transform(X, y)
         ccs = build_connected_components(graph)
         return [ccs[i] for i, _ in enumerate(X)]

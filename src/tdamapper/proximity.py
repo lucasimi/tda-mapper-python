@@ -2,6 +2,25 @@ import numpy as np
 from tdamapper.utils.vptree_flat import VPTree
 
 
+def proximity_net(X, proximity):
+    '''
+    Compute the proximity-net for a given open cover.
+
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
+    :param proximity: A proximity function
+    :type proximity: A class from tdamapper.proximity
+    '''
+    covered_ids = set()
+    proximity.fit(X)
+    for i, xi in enumerate(X):
+        if i not in covered_ids:
+            neigh_ids = proximity.search(xi)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield neigh_ids
+
+
 class BallProximity:
 
     def __init__(self, radius, metric):
