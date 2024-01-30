@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from tdamapper.cover import KNNCover
+from tdamapper.proximity import KNNProximity
 from tdamapper.utils.vptree_flat import VPTree
 
 
@@ -98,8 +98,7 @@ def euclidean(x, y):
 class TestKNN(unittest.TestCase):
 
     def testKNNSearch(self):
-        knn_cover = KNNCover(neighbors=5, metric=euclidean)
-        knn_prox = knn_cover.proximity()
+        knn_prox = KNNProximity(neighbors=5, metric=euclidean)
         knn_prox.fit(X)
         neigh_ids = knn_prox.search(x)
         dists = [euclidean(x, X[j]) for j in neigh_ids]

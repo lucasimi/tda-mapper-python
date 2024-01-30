@@ -11,23 +11,32 @@ _ID_NEIGHS = 1
 
 class RefinedNet:
 
-    def __init__(self, X, proximity_net, clustering):
+    def __init__(self, X, proximity_net, clustering, n_jobs):
         self.__X = X
         self.__proximity_net = proximity_net
         self.__clustering = clustering
+        self.__n_jobs = n_jobs
+
+    def __labels(self, ids):
+        x_data = [self.__X[j] for j in ids]
+        return self.__clustering.fit(x_data).labels_
+        #lbls = [l + max_lbl for l in labels] #TODO: handle when l < 0
+
+    def __reindex(self, lbls):
+        max_lbl = 0
+        for local_lbls in lbls:
+            global_lbls = [lbl + max_lbl for lbl in local_lbls] #TODO: handle when l < 0
+            max_local_lbl = 0
+            for lbl in local_lbls:
+                if lbl > max_local_lbl:
+                    max_local_lbl = lbl
+            max_lbl += max_local_lbl + 1
+            yield global_lbls
 
     def __iter__(self):
-        max_lbl = 0
-        for ids in self.__proximity_net:
-            x_data = [self.__X[j] for j in ids]
-            labels = self.__clustering.fit(x_data).labels_
-            lbls = [l + max_lbl for l in labels] #TODO: handle when l < 0
-            max_neigh_lbl = 0
-            for neigh_lbl in labels:
-                if (neigh_lbl != -1) and (neigh_lbl > max_neigh_lbl):
-                    max_neigh_lbl = neigh_lbl
-            max_lbl += max_neigh_lbl + 1
-            yield lbls
+        parallel = Parallel(n_jobs=self.__n_jobs)
+        lbls = parallel(delayed(self.__labels)(ids) for ids in self.__proximity_net)
+        return self.__reindex(lbls)
 
 
 def build_labels_par(X, y, cover, clustering, n_jobs):
@@ -49,23 +58,13 @@ def build_labels_par(X, y, cover, clustering, n_jobs):
     :return: The labels list
     :rtype: list[list[int]]
     '''
-    def _lbls(x_ids):
-        x_data = [X[j] for j in x_ids]
-        x_lbls = clustering.fit(x_data).labels_
-        return x_ids, x_lbls
-    net = cover.build(y)
-    par = Parallel(n_jobs=n_jobs)(delayed(_lbls)(ids) for ids in net)
-    max_lbl = 0
-    lbls = [[] for _ in X]
-    for neigh_ids, neigh_lbls in par:
-        max_neigh_lbl = 0
-        for neigh_id, neigh_lbl in zip(neigh_ids, neigh_lbls):
-            if neigh_lbl != -1:
-                if neigh_lbl > max_neigh_lbl:
-                    max_neigh_lbl = neigh_lbl
-                lbls[neigh_id].append(max_lbl + neigh_lbl)
-        max_lbl += max_neigh_lbl + 1
-    return lbls
+    net = list(cover.build(y))
+    net_lbls = list(RefinedNet(X, net, clustering, n_jobs))
+    itm_lbls = [[] for _ in X]
+    for ids, lbls in zip(net, net_lbls):
+        for itm_id, itm_lbl in zip(ids, lbls):
+            itm_lbls[itm_id].append(itm_lbl)
+    return itm_lbls
 
 
 def build_adjaciency(labels):

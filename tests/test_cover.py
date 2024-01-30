@@ -1,14 +1,13 @@
 import unittest
 import math
-from tdamapper.cover import BallCover, KNNCover, CubicalCover
+from tdamapper.proximity import BallProximity, KNNProximity, CubicalProximity
 
 
 class TestCover(unittest.TestCase):
 
     def testBallCover(self):
         data = list(range(100))
-        cover = BallCover(radius=10, metric=lambda x,y: abs(x - y))
-        prox = cover.proximity()
+        prox = BallProximity(radius=10, metric=lambda x,y: abs(x - y))
         prox.fit(data)
         for x in data:
             result = prox.search(x)
@@ -17,8 +16,7 @@ class TestCover(unittest.TestCase):
 
     def testKNNCover(self):
         data = list(range(100))
-        cover = KNNCover(neighbors=11, metric=lambda x,y: abs(x - y))
-        prox = cover.proximity()
+        prox = KNNProximity(neighbors=11, metric=lambda x,y: abs(x - y))
         prox.fit(data)
         for x in range(5, 94):
             result = prox.search(x)
@@ -32,8 +30,7 @@ class TestCover(unittest.TestCase):
         w = (M - m) / (n * (1.0 - p))
         delta = p * w
         data = list(range(m, M + 1))
-        cover = CubicalCover(n_intervals=n, overlap_frac=p)
-        prox = cover.proximity()
+        prox = CubicalProximity(n_intervals=n, overlap_frac=p)
         prox.fit(data)
         for x in data:
             result = prox.search(x)
