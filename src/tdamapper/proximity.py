@@ -22,6 +22,16 @@ def proximity_net(X, proximity):
 
 
 class BallProximity:
+    '''
+    A class for the Ball Proximity function. After calling fit on X, 
+    the search method returns all the points with distance 
+    less then or equal to radius from the target point.
+
+    :param radius: The ball radius
+    :type radius: float
+    :param metric: A metric function
+    :type metric: callable
+    '''
 
     def __init__(self, radius, metric):
         self.__metric = lambda x, y: metric(x[1], y[1])
@@ -43,6 +53,15 @@ class BallProximity:
 
 
 class KNNProximity:
+    '''
+    A class for the KNN Proximity function. After calling fit on X,
+    the search method returns the k nearest points to the target point.
+
+    :param neighbors: The number of neighbors
+    :type neighbors: int
+    :param metric: A metric function
+    :type metric: callable
+    '''
 
     def __init__(self, neighbors, metric):
         self.__neighbors = neighbors
@@ -63,6 +82,17 @@ class KNNProximity:
 
 
 class CubicalProximity:
+    '''
+    A class for the Cubical Proximity function. After calling fit on X,
+    the search method returns the hypercube whose center is nearest to
+    the target point. Each hypercube is the product of 1-dimensional intervals
+    with the same lenght and overlap.
+
+    :param neighbors: The number of neighbors
+    :type neighbors: int
+    :param metric: A metric function
+    :type metric: callable
+    '''
 
     def __init__(self, n_intervals, overlap_frac):
         self.__n_intervals = n_intervals

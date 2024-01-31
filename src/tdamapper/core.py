@@ -80,7 +80,7 @@ def mapper_graph(X, y, cover, clustering):
         for lbl in lbls:
             if not graph.has_node(lbl):
                 graph.add_node(lbl, **{ATTR_SIZE: 0, ATTR_IDS: []})
-            nodes = graph.nodes
+            nodes = graph.nodes()
             nodes[lbl][ATTR_SIZE] += 1
             nodes[lbl][ATTR_IDS].append(n)
     for lbls in itm_lbls:

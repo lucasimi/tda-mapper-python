@@ -1,9 +1,20 @@
 import logging
+
 import networkx as nx
 import numpy as np
-from tdamapper.core import ATTR_IDS, item_labels, MapperAlgorithm
+
 from tdamapper.utils.unionfind import UnionFind
-from tdamapper.cover import TrivialCover, CubicalCover, BallCover, KNNCover
+from tdamapper.core import (
+    ATTR_IDS,
+    item_labels,
+    MapperAlgorithm,
+)
+from tdamapper.cover import (
+    TrivialCover,
+    CubicalCover,
+    BallCover,
+    KNNCover,
+)
 
 
 _logger = logging.getLogger(__name__)

@@ -3,7 +3,8 @@ from tdamapper.proximity import (
     BallProximity,
     KNNProximity,
     CubicalProximity,
-    TrivialProximity)
+    TrivialProximity,
+)
 
 
 class BallCover:
