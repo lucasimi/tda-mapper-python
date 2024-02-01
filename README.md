@@ -53,7 +53,8 @@ mapper_plot = MapperPlot(X, mapper_graph,
     # We aggregate on graph nodes according to mean
     agg=np.nanmean,                             
     dim=2,
-    iterations=400)
+    iterations=400,
+    seed=42)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})     
 

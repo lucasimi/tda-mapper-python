@@ -1,4 +1,5 @@
 import numpy as np
+
 from tdamapper.utils.vptree_flat import VPTree
 
 

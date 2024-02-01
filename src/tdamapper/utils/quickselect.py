@@ -7,6 +7,7 @@ def partition(data, start, end, p, fun=lambda x: x):
             higher += 1
     return higher
 
+
 def partition_tuple(data, start, end, p):
     higher = start
     p_ord, _ = p
@@ -16,6 +17,7 @@ def partition_tuple(data, start, end, p):
             data[higher], data[j] = data[j], data[higher]
             higher += 1
     return higher
+
 
 def quickselect(data, start, end, k, fun=lambda x: x):
     start_, end_, higher = start, end, None
@@ -28,6 +30,7 @@ def quickselect(data, start, end, k, fun=lambda x: x):
             end_ = higher
         else:
             start_ = higher
+
 
 def quickselect_tuple(data, start, end, k):
     start_, end_, higher = start, end, None
