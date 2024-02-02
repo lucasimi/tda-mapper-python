@@ -1,7 +1,10 @@
 import unittest
+
 import numpy as np
+import networkx as nx
 from sklearn.cluster import DBSCAN
-from tdamapper.core import MapperAlgorithm, build_connected_components
+
+from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
 
@@ -22,8 +25,8 @@ class TestMapper(unittest.TestCase):
         g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         self.assertEqual([], list(g.neighbors(0)))
-        ccs = build_connected_components(g)
-        self.assertEqual(1, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1, len(ccs))
 
     def testBallSmallRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
@@ -32,8 +35,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-        ccs = build_connected_components(g)
-        self.assertEqual(1000, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1000, len(ccs))
 
     def testBallSmallRadiusList(self):
         data = [np.array([float(i)]) for i in range(1000)]
@@ -43,8 +46,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1000, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-        ccs = build_connected_components(g)
-        self.assertEqual(1000, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1000, len(ccs))
 
     def testBallLargeRadius(self):
         data = np.array([[float(i)] for i in range(1000)])
@@ -54,8 +57,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(1, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-        ccs = build_connected_components(g)
-        self.assertEqual(1, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1, len(ccs))
 
     def testTwoDisconnectedClusters(self):
         data = [np.array([float(i), 0.0]) for i in range(100)]
@@ -67,8 +70,8 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual([], list(g.neighbors(node)))
-        ccs = build_connected_components(g)
-        self.assertEqual(2, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(2, len(ccs))
 
     def testTwoConnectedClusters(self):
         data = [
@@ -80,5 +83,5 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(2, len(g))
         for node in g.nodes():
             self.assertEqual(1, len(list(g.neighbors(node))))
-        ccs = build_connected_components(g)
-        self.assertEqual(1, len(set(ccs.values())))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1, len(ccs))

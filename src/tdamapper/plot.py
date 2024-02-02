@@ -1,10 +1,15 @@
 import math
+
 import numpy as np
 import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from tdamapper.core import ATTR_SIZE, compute_local_interpolation
+
+from tdamapper.core import (
+    ATTR_SIZE,
+    aggregate_graph,
+)
 
 
 _NODE_OUTER_WIDTH = 0.75
@@ -17,17 +22,35 @@ _TICKS_NUM = 10
 
 
 class MapperPlot:
+    '''
+    Create a plot for the Mapper graph, and turn it into a displayable figure.
 
-    def __init__(self, X, graph,
+    :param X: A dataset
+    :type X: numpy.ndarray or list-like
+    :param graph: The Mapper graph
+    :type graph: networkx.Graph
+    :param colors: A dataset of values to plot as nodes color
+    :type colors: numpy.ndarray or list-like
+    :param agg: Aggregation function that computes nodes color
+    :type agg: Callable on the values of colors
+    :param cmap: A colormap, to convert values into colors
+    :type cmap: str
+    :param **kwargs: Additional arguments to networkx.spring_layout
+    :type: dict
+    '''
+
+    def __init__(
+        self, X, graph,
         colors=None,
         agg=np.nanmean,
         cmap='jet',
-        **kwargs):
+        **kwargs
+    ):
         self.__X = X
         self.__graph = graph
         self.__cmap = cmap
         item_colors = [np.nanmean(x) for x in self.__X] if colors is None else colors
-        self.__colors = compute_local_interpolation(item_colors, self.__graph, agg)
+        self.__colors = aggregate_graph(item_colors, self.__graph, agg)
         self.__dim = kwargs.get('dim', 2)
         self.__kwargs = {}
         self.__kwargs.update(kwargs)
@@ -51,6 +74,16 @@ class MapperPlot:
         return self._plot_matplotlib(title, ax)
 
     def plot(self, *args, style='interactive', **kwargs):
+        '''
+        Turn the plot object into a displayable figure.
+
+        :param *args: Arguments to supply
+        :type *args: list
+        :param style: The type of plot, can either be 'interactive' or 'static'
+        :type style: str
+        :param **kwargs: Additional arguments to supply
+        :type: dict
+        '''
         if not self.__pos:
             return
         if self.__dim == 2:

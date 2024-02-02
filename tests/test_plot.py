@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import BallCover
 from tdamapper.clustering import TrivialClustering

@@ -1,23 +1,22 @@
 # tda-mapper
 
-![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg) 
-[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
+[![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
+[![deploy](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml)
 [![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=latest)](https://tda-mapper.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
 
-In recent years, an ever growing interest in **Topological Data Analysis** (TDA) emerged in the field of data science. The core idea of TDA is to gain insights from data by using topological methods that are proved to be reliable with respect to noise, and that behave nicely with respect to dimension. This Python package provides an implementation of the **Mapper Algorithm**, a well-known tool from TDA. 
+The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph. Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation. For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). 
 
-The Mapper Algorithm takes any dataset $X$ and returns a *shape-summary* in the form a graph $G$, called **Mapper Graph**. It's possible to prove, under reasonable conditions, that $X$ and $G$ share the same number of connected components.
+This Python package provides a simple yet efficient implementation of the Mapper algorithm.
 
-For an in-depth description of Mapper please read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). 
-
-* Installation from package: TBD
+* Installation from package: ```python -m pip install tda-mapper```
 * Installation from sources: clone this repo and run ```python -m pip install .```
 * Documentation: https://tda-mapper.readthedocs.io/en/latest/ 
 
 
 ## Usage
 
-![In this file](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find a worked out example that shows how to use this package. We perform some analysis on the the well known dataset of ![hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html), consisting of less than 2000 8x8 pictures represented as arrays of 64 elements.
+![In this file](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find a worked out example that shows how to use this package. In the example we perform some analysis on the the well known dataset of ![hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
 
 ```python
 import numpy as np
@@ -43,8 +42,7 @@ mapper_algo = MapperAlgorithm(
     # We prevent clustering failures
     clustering=PermissiveClustering(            
         clustering=AgglomerativeClustering(10),
-        verbose=False),
-    n_jobs=1)
+        verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
 mapper_plot = MapperPlot(X, mapper_graph,
@@ -55,7 +53,8 @@ mapper_plot = MapperPlot(X, mapper_graph,
     # We aggregate on graph nodes according to mean
     agg=np.nanmean,                             
     dim=2,
-    iterations=400)
+    iterations=400,
+    seed=42)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})     
 
