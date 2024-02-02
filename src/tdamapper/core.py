@@ -1,40 +1,13 @@
 import networkx as nx
 
+from tdamapper.utils.unionfind import UnionFind
+
 
 ATTR_IDS = 'ids'
 ATTR_SIZE = 'size'
 
 
-def cover_labels(X, cover_ids, clustering):
-    '''
-    Perform local clustering on subsets of a dataset open cover.
-
-    :param X: A dataset
-    :type X: numpy.ndarray or list-like
-    :param cover_ids: An open cover, expressed as a list of lists. 
-    Each item in cover_ids is a list of ids of points from X.
-    :type cover_ids: list[list[int]]
-    :param clustering: A clustering algorithm
-    :type clustering: A class from tdamapper.clustering or a class from sklearn.cluster
-    :return: A list where each item is a list of labels.
-    If i < j, the labels at position i are strictly less then those at position j.
-    :rtype: list[list[int]]
-    '''
-    def get_labels(ids):
-        return clustering.fit([X[j] for j in ids]).labels_
-    lbls = [get_labels(ids) for ids in cover_ids]
-    max_lbl = 0
-    for local_lbls in lbls:
-        global_lbls = [lbl + max_lbl for lbl in local_lbls] #TODO: handle when l < 0
-        max_local_lbl = 0
-        for lbl in local_lbls:
-            if lbl > max_local_lbl:
-                max_local_lbl = lbl
-        max_lbl += max_local_lbl + 1
-        yield global_lbls
-
-
-def item_labels(X, y, cover, clustering):
+def mapper_labels(X, y, cover, clustering):
     '''
     Computes the open cover, then perform local clustering on each open set from the cover.
 
@@ -47,16 +20,43 @@ def item_labels(X, y, cover, clustering):
     :param clustering: A clustering algorithm
     :type clustering: A class from tdamapper.clustering or a class from sklearn.cluster
     :return: A list where each item is a sorted list of ints with no duplicate.
-    The list at position i contains the cluster labels to which the point at position i in X belongs to. 
+    The list at position i contains the cluster labels to which the point at position i in X 
+    belongs to. If i < j, the labels at position i are strictly less then those at position j.
     :rtype: list[list[int]]
     '''
-    cover_ids = list(cover.apply(y))
-    cover_lbls = list(cover_labels(X, cover_ids, clustering))
     itm_lbls = [[] for _ in X]
-    for ids, lbls in zip(cover_ids, cover_lbls):
-        for itm_id, itm_lbl in zip(ids, lbls):
-            itm_lbls[itm_id].append(itm_lbl)
+    max_lbl = 0
+    for local_ids in cover.apply(y):
+        local_lbls = clustering.fit([X[j] for j in local_ids]).labels_
+        max_local_lbl = 0
+        for local_id, local_lbl in zip(local_ids, local_lbls):
+            if local_lbl >= 0:
+                itm_lbls[local_id].append(max_lbl + local_lbl)
+            if local_lbl > max_local_lbl:
+                max_local_lbl = local_lbl
+        max_lbl += max_local_lbl + 1
     return itm_lbls
+
+
+def mapper_connected_components(X, y, cover, clustering):
+    itm_lbls = mapper_labels(X, y, cover, clustering)
+    label_values = set()
+    for lbls in itm_lbls:
+        label_values.update(lbls)
+    uf = UnionFind(label_values)
+    labels = []
+    for lbls in itm_lbls:
+        len_lbls = len(lbls)
+        # noise points
+        if len_lbls == 0:
+            root = -1
+        elif len_lbls == 1:
+            root = uf.find(lbls[0])
+        else:
+            for first, second in zip(lbls, lbls[1:]):
+                root = uf.union(first, second)
+        labels.append(root)
+    return labels
 
 
 def mapper_graph(X, y, cover, clustering):
@@ -74,7 +74,7 @@ def mapper_graph(X, y, cover, clustering):
     :return: The Mapper graph
     :rtype: networkx.Graph
     '''
-    itm_lbls = item_labels(X, y, cover, clustering)
+    itm_lbls = mapper_labels(X, y, cover, clustering)
     graph = nx.Graph()
     for n, lbls in enumerate(itm_lbls):
         for lbl in lbls:

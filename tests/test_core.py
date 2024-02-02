@@ -1,7 +1,9 @@
 import unittest
+
 import numpy as np
 import networkx as nx
 from sklearn.cluster import DBSCAN
+
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
