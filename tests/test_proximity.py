@@ -1,10 +1,6 @@
-import time
-import logging
-import random
 import unittest
 import numpy as np
-from tdamapper.proximity import TrivialProximity, BallProximity, KNNProximity, CubicalProximity
-from tdamapper.core import proximity_net
+from tdamapper.proximity import proximity_net, TrivialProximity, BallProximity, KNNProximity, CubicalProximity
 
 
 def dist(x, y):

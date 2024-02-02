@@ -42,8 +42,7 @@ mapper_algo = MapperAlgorithm(
     # We prevent clustering failures
     clustering=PermissiveClustering(            
         clustering=AgglomerativeClustering(10),
-        verbose=False),
-    n_jobs=1)
+        verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
 mapper_plot = MapperPlot(X, mapper_graph,
@@ -54,7 +53,8 @@ mapper_plot = MapperPlot(X, mapper_graph,
     # We aggregate on graph nodes according to mean
     agg=np.nanmean,                             
     dim=2,
-    iterations=400)
+    iterations=400,
+    seed=42)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})     
 

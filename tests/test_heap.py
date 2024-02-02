@@ -1,5 +1,6 @@
 import unittest
 import random
+
 from tdamapper.utils.heap import MaxHeap
 
 
