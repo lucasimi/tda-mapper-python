@@ -1,7 +1,8 @@
 '''A module containing the logic for building open covers for the Mapper algorithm.'''
 import numpy as np
 
-from tdamapper.utils.vptree_flat import VPTree
+from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree import VPTree as VPT
 
 
 def proximity_net(X, proximity):
@@ -62,18 +63,26 @@ class BallCover(ProximityNetCover):
     :type radius: float.
     :param metric: The metric used to define open balls.
     :type metric: Callable.
+    :param flat: Set to True to use flat vptrees.
+    :type flat: bool.
     '''
 
-    def __init__(self, radius, metric):
+    def __init__(self, radius, metric, flat=True):
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__radius = radius
         self.__data = None
         self.__vptree = None
+        self.__flat = flat
+
+    def __flat_vpt(self):
+        return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
+
+    def __vpt(self):
+        return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def fit(self, X):
         self.__data = list(enumerate(X))
-        self.__vptree = VPTree(
-            self.__metric, self.__data, leaf_radius=self.__radius)
+        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
@@ -93,17 +102,26 @@ class KNNCover(ProximityNetCover):
     :type neighbors: int.
     :param metric: The metric used to search neighbors.
     :type metric: function.
+    :param flat: Set to True to use flat vptrees.
+    :type flat: bool.
     '''
 
-    def __init__(self, neighbors, metric):
+    def __init__(self, neighbors, metric, flat=True):
         self.__neighbors = neighbors
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__data = None
         self.__vptree = None
+        self.__flat = flat
+
+    def __flat_vpt(self):
+        return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+
+    def __vpt(self):
+        return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         self.__data = list(enumerate(X))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
@@ -125,16 +143,18 @@ class CubicalCover(ProximityNetCover):
     :type n_intervals: int.
     :param overlap_frac: The overlap fraction.
     :type overlap_frac: float in (0.0, 1.0).
+    :param flat: Set to True to use flat vptrees.
+    :type flat: bool.
     '''
 
-    def __init__(self, n_intervals, overlap_frac):
+    def __init__(self, n_intervals, overlap_frac, flat=True):
         self.__n_intervals = n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
         metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_proximity = BallCover(self.__radius, metric)
+        self.__ball_proximity = BallCover(self.__radius, metric, flat=flat)
 
     def _l_infty(self, x, y):
         return np.max(np.abs(x - y)) # in alternative: np.linalg.norm(x - y, ord=np.inf)
