@@ -129,7 +129,6 @@ class CubicalCover(ProximityNetCover):
 
     def __init__(self, n_intervals, overlap_frac):
         self.__n_intervals = n_intervals
-        self.__overlap_frac = overlap_frac
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
@@ -163,16 +162,15 @@ class CubicalCover(ProximityNetCover):
         for w in data:
             minimum = np.minimum(minimum, np.array(w))
             maximum = np.maximum(maximum, np.array(w))
-        self.__minimum = np.nan_to_num(minimum, nan=-eps)
-        self.__maximum = np.nan_to_num(maximum, nan=eps)
+        self.__minimum = np.nan_to_num(minimum, nan=-float(eps))
+        self.__maximum = np.nan_to_num(maximum, nan=float(eps))
         delta = self.__maximum - self.__minimum
-        eps = np.finfo(np.float64).eps
         self.__delta = np.maximum(eps, delta)
 
     def fit(self, X):
         self._set_bounds(X)
         self.__ball_proximity.fit(X)
-        return
+        return self
 
     def search(self, x):
         return self.__ball_proximity.search(self._phi(x))
