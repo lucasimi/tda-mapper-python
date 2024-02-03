@@ -1,21 +1,28 @@
+'''A module containing the logic for building open covers for the Mapper algorithm.'''
 import numpy as np
 
 from tdamapper.utils.vptree_flat import VPTree
 
 
-class __ProximityNetCover:
+class ProximityNetCover:
+    '''
+    This class serves as a blueprint for proximity-based cover algorithm
+    and implements proximity-net in the `ProximityNetCover.apply` method.
+    Subclasses are expected to override the methods `ProximityNetCover.fit` 
+    and `ProximityNetCover.search`.
+    '''
 
     def __init__(self):
         pass
 
     def apply(self, X):
         '''
-        Compute the proximity-net for a given open cover.
+        Compute proximity-net for a given open cover.
+        Returns a generator where each item is a subset of ids
+        of points from `X`.
 
-        :param X: A dataset
-        :type X: numpy.ndarray or list-like
-        :param proximity: A proximity function
-        :type proximity: A class from tdamapper.proximity
+        :param X: A dataset.
+        :type X: `numpy.ndarray` or list-like.
         '''
         covered_ids = set()
         self.fit(X)
@@ -33,16 +40,16 @@ class __ProximityNetCover:
         return []
 
 
-class BallCover(__ProximityNetCover):
+class BallCover(ProximityNetCover):
     '''
-    Create an open cover made of overlapping open balls of fixed radius.
+    Creates an open cover made of overlapping open balls of fixed radius.
     This class implements the Ball Proximity function: after calling fit on X, 
-    the search method returns all the points within a ball centered in the target point.
+    the `BallCover.search` method returns all the points within a ball centered in the target point.
 
     :param radius: The radius of open balls
-    :type radius: float
-    :param metric: The metric used to define open balls
-    :type metric: function
+    :type radius: float.
+    :param metric: The metric used to define open balls.
+    :type metric: Callable.
     '''
 
     def __init__(self, radius, metric):
@@ -58,22 +65,22 @@ class BallCover(__ProximityNetCover):
         return self
 
     def search(self, x):
-        if self.__vptree:
-            neighs = self.__vptree.ball_search((-1, x), self.__radius)
-            return [x for (x, _) in neighs]
-        return []
+        if self.__vptree is None:
+            return []
+        neighs = self.__vptree.ball_search((-1, x), self.__radius)
+        return [x for (x, _) in neighs]
 
 
-class KNNCover(__ProximityNetCover):
+class KNNCover(ProximityNetCover):
     '''
-    Create an open cover where each open set containes a fixed number of neighbors, using KNN.
+    Creates an open cover where each open set containes a fixed number of neighbors, using KNN.
     This class implements the KNN Proximity function: after calling fit on X,
-    the search method returns the k nearest points to the target point.
+    the `KNNCover.search` method returns the k nearest points to the target point.
 
-    :param neighbors: The number of neighbors
-    :type neighbors: int
-    :param metric: The metric used to search neighbors
-    :type metric: function
+    :param neighbors: The number of neighbors.
+    :type neighbors: int.
+    :param metric: The metric used to search neighbors.
+    :type metric: function.
     '''
 
     def __init__(self, neighbors, metric):
@@ -94,18 +101,18 @@ class KNNCover(__ProximityNetCover):
         return [x for (x, _) in neighs]
 
 
-class CubicalCover(__ProximityNetCover):
+class CubicalCover(ProximityNetCover):
     '''
-    Create an open cover of hypercubes of evenly-sized sides and overlap.
+    Creates an open cover of hypercubes of evenly-sized sides and overlap.
     This class implements the Cubical Proximity function: after calling fit on X,
-    the search method returns the hypercube whose center is nearest to
+    the `CubicalCover.search` method returns the hypercube whose center is nearest to
     the target point. Each hypercube is the product of 1-dimensional intervals
     with the same lenght and overlap.
 
-    :param n_intervals: The number of intervals on each dimension
-    :type n_intervals: int
-    :param overlap_frac: The overlap fracion
-    :type overlap_frac: float in (0.0, 1.0)
+    :param n_intervals: The number of intervals on each dimension.
+    :type n_intervals: int.
+    :param overlap_frac: The overlap fraction.
+    :type overlap_frac: float in (0.0, 1.0).
     '''
 
     def __init__(self, n_intervals, overlap_frac):
@@ -159,9 +166,9 @@ class CubicalCover(__ProximityNetCover):
         return self.__ball_proximity.search(self._phi(x))
 
 
-class TrivialCover(__ProximityNetCover):
+class TrivialCover(ProximityNetCover):
     '''
-    Create an open cover made of a single open set that contains the whole dataset.
+    Creates an open cover made of a single open set that contains the whole dataset.
     '''
 
     def fit(self, X):

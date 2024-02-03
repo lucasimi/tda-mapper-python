@@ -23,20 +23,20 @@ _TICKS_NUM = 10
 
 class MapperPlot:
     '''
-    Create a plot for the Mapper graph, and turn it into a displayable figure.
+    Creates a plot for the Mapper graph, and turn it into a displayable figure.
 
-    :param X: A dataset
-    :type X: numpy.ndarray or list-like
-    :param graph: The Mapper graph
-    :type graph: networkx.Graph
-    :param colors: A dataset of values to plot as nodes color
-    :type colors: numpy.ndarray or list-like
-    :param agg: Aggregation function that computes nodes color
-    :type agg: Callable on the values of colors
-    :param cmap: A colormap, to convert values into colors
-    :type cmap: str
-    :param **kwargs: Additional arguments to networkx.spring_layout
-    :type: dict
+    :param X: A dataset.
+    :type X: `numpy.ndarray` or list-like.
+    :param graph: The Mapper graph.
+    :type graph: `networkx.Graph`.
+    :param colors: A dataset of values to plot as nodes color.
+    :type colors: `numpy.ndarray` or list-like.
+    :param agg: Aggregation function that computes nodes color.
+    :type agg: Callable on the values of colors.
+    :param cmap: A colormap, to convert values into colors.
+    :type cmap: `str`.
+    :param **kwargs: Additional arguments to networkx.spring_layout.
+    :type: `dict`.
     '''
 
     def __init__(
@@ -75,14 +75,14 @@ class MapperPlot:
 
     def plot(self, *args, style='interactive', **kwargs):
         '''
-        Turn the plot object into a displayable figure.
+        Turns the plot object into a displayable figure.
 
-        :param *args: Arguments to supply
-        :type *args: list
-        :param style: The type of plot, can either be 'interactive' or 'static'
-        :type style: str
-        :param **kwargs: Additional arguments to supply
-        :type: dict
+        :param *args: Arguments to supply.
+        :type *args: `list`.
+        :param style: The type of plot, can either be 'interactive' or 'static'.
+        :type style: `str`.
+        :param **kwargs: Additional arguments to supply.
+        :type: `dict`.
         '''
         if not self.__pos:
             return
