@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from tdamapper.clustering import (
     TrivialClustering,
     MapperClustering,
-    PermissiveClustering
+    FailSafeClustering
 )
 from tdamapper.cover import (
     TrivialCover,
@@ -86,7 +86,7 @@ class PermissiveKMeans(Estimator):
         self.n = n
 
     def get_clustering(self):
-        return PermissiveClustering(KMeans(n_clusters=self.n, n_init='auto'), verbose=False)
+        return FailSafeClustering(KMeans(n_clusters=self.n, n_init='auto'), verbose=False)
 
 
 class TrivialClusteringEstimator(Estimator):

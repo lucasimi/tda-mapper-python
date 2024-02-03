@@ -1,6 +1,5 @@
+'''A module containing the logic related to clustering for the Mapper algorithm.'''
 import logging
-
-import numpy as np
 
 from tdamapper.core import mapper_connected_components
 from tdamapper.cover import TrivialCover
@@ -14,11 +13,10 @@ logging.basicConfig(
     level = logging.INFO)
 
 
-def euclidean(x, y):
-    return np.linalg.norm(x - y)
-
-
 class TrivialClustering:
+    '''
+    A clustering algorithm that returns a single cluster.
+    '''
 
     def __init__(self):
         self.labels_ = None
@@ -28,7 +26,17 @@ class TrivialClustering:
         return self
 
 
-class PermissiveClustering:
+class FailSafeClustering:
+    '''
+    A delegating clustering algorithm that prevents failure.
+    When clustering fails, instead of throwing an exception,
+    a single cluster, containing all points, is returned.
+
+    :param clustering: A clustering algorithm to delegate to.
+    :type clustering: Anything compatible with a `sklearn.cluster` class.
+    :param verbose: Set to `True` to log exceptions.
+    :type verbose: `bool`
+    '''
 
     def __init__(self, clustering, verbose=True):
         self.__clustering = clustering
@@ -47,6 +55,19 @@ class PermissiveClustering:
 
 
 class MapperClustering:
+    '''
+    A clustering algorithm based on the Mapper graph.
+    The Mapper algorithm returns a graph where each point is eventually contained 
+    in multiple nodes. In this case all those nodes are connected in the Mapper graph,
+    therefore they share the same connected component. For this reason the notion of
+    connected component is well-defined for any point of the dataset. This class 
+    clusters point according to their connected component in the Mapper graph.
+
+    :type cover: A cover algorithm.
+    :type cover: Anything compatible with a `tdamapper.cover` class.
+    :param clustering: A clustering algorithm.
+    :type clustering: Anything compatible with a `sklearn.cluster` class.
+    '''
 
     def __init__(self, cover=None, clustering=None):
         self.cover = cover
