@@ -4,40 +4,52 @@ import numpy as np
 from tdamapper.utils.vptree_flat import VPTree
 
 
-class ProximityNetCover:
+def proximity_net(X, proximity):
     '''
-    This class serves as a blueprint for proximity-based cover algorithm
-    and implements proximity-net in the `ProximityNetCover.apply` method.
-    Subclasses are expected to override the methods `ProximityNetCover.fit` 
-    and `ProximityNetCover.search`.
+    Compute proximity-net for a given proximity function.
+    Returns a generator where each item is a subset of ids
+    of points from `X`.
+
+    :param X: A dataset.
+    :type X: `numpy.ndarray` or list-like.
+    :param proximity: A proximity function.
+    :type proximity: `tdamapper.cover.Proximity`.
+    '''
+    covered_ids = set()
+    proximity.fit(X)
+    for i, xi in enumerate(X):
+        if i not in covered_ids:
+            neigh_ids = proximity.search(xi)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield neigh_ids
+
+
+class Proximity:
+    '''
+    This class serves as a blueprint for proximity functions used inside 
+    `tdamapper.cover.proximity_net`. Subclasses are expected to override 
+    the methods `fit` and `search`.
+    '''
+
+    def fit(self, X):
+        self.__X = X
+        return self
+
+    def search(self, x):
+        return [i for i, _ in enumerate(self.__X)]
+
+
+class ProximityNetCover(Proximity):
+    '''
+    This class serves as a blueprint for cover algorithm based on proximity-net.
     '''
 
     def __init__(self):
         pass
 
     def apply(self, X):
-        '''
-        Compute proximity-net for a given open cover.
-        Returns a generator where each item is a subset of ids
-        of points from `X`.
-
-        :param X: A dataset.
-        :type X: `numpy.ndarray` or list-like.
-        '''
-        covered_ids = set()
-        self.fit(X)
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
-
-    def fit(self, X):
-        return self
-
-    def search(self, x):
-        return []
+        return proximity_net(X, self)
 
 
 class BallCover(ProximityNetCover):
