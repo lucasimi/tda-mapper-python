@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover
-from tdamapper.clustering import PermissiveClustering
+from tdamapper.clustering import FailSafeClustering
 from tdamapper.plot import MapperPlot
 
 # We load a labelled dataset
@@ -19,7 +19,7 @@ mapper_algo = MapperAlgorithm(
         n_intervals=10,
         overlap_frac=0.65),
     # We prevent clustering failures
-    clustering=PermissiveClustering(            
+    clustering=FailSafeClustering(            
         clustering=AgglomerativeClustering(10),
         verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
