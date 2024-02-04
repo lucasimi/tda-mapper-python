@@ -8,13 +8,13 @@ from tdamapper.utils.vptree import VPTree as VPT
 def proximity_net(X, proximity):
     '''
     Compute proximity-net for a given proximity function.
-    Returns a generator where each item is a subset of ids
-    of points from `X`.
+    
+    Returns a generator where each item is a subset of ids of points from `X`.
 
     :param X: A dataset.
     :type X: `numpy.ndarray` or list-like.
     :param proximity: A proximity function.
-    :type proximity: `tdamapper.cover.Proximity`.
+    :type proximity: `tdamapper.cover.Proximity`
     '''
     covered_ids = set()
     proximity.fit(X)
@@ -28,9 +28,9 @@ def proximity_net(X, proximity):
 
 class Proximity:
     '''
-    This class serves as a blueprint for proximity functions used inside 
-    `tdamapper.cover.proximity_net`. Subclasses are expected to override 
-    the methods `fit` and `search`.
+    This class serves as a blueprint for proximity functions used inside `proximity_net`.
+    
+    Subclasses are expected to override the methods `fit` and `search`.
     '''
 
     def fit(self, X):
@@ -56,15 +56,16 @@ class ProximityNetCover(Proximity):
 class BallCover(ProximityNetCover):
     '''
     Creates an open cover made of overlapping open balls of fixed radius.
-    This class implements the Ball Proximity function: after calling fit on X, 
-    the `BallCover.search` method returns all the points within a ball centered in the target point.
+
+    This class implements the Ball Proximity function: after calling `fit`, the `search` method 
+    returns all the points within a ball centered in the target point.
 
     :param radius: The radius of open balls
     :type radius: float.
     :param metric: The metric used to define open balls.
     :type metric: Callable.
     :param flat: Set to True to use flat vptrees.
-    :type flat: bool.
+    :type flat: `bool`
     '''
 
     def __init__(self, radius, metric, flat=True):
@@ -95,15 +96,16 @@ class BallCover(ProximityNetCover):
 class KNNCover(ProximityNetCover):
     '''
     Creates an open cover where each open set containes a fixed number of neighbors, using KNN.
-    This class implements the KNN Proximity function: after calling fit on X,
-    the `KNNCover.search` method returns the k nearest points to the target point.
+
+    This class implements the KNN Proximity function: after calling `fit`, the `search` method 
+    returns the k nearest points to the target point.
 
     :param neighbors: The number of neighbors.
     :type neighbors: int.
     :param metric: The metric used to search neighbors.
     :type metric: function.
     :param flat: Set to True to use flat vptrees.
-    :type flat: bool.
+    :type flat: `bool`
     '''
 
     def __init__(self, neighbors, metric, flat=True):
@@ -134,17 +136,17 @@ class KNNCover(ProximityNetCover):
 class CubicalCover(ProximityNetCover):
     '''
     Creates an open cover of hypercubes of evenly-sized sides and overlap.
-    This class implements the Cubical Proximity function: after calling fit on X,
-    the `CubicalCover.search` method returns the hypercube whose center is nearest to
-    the target point. Each hypercube is the product of 1-dimensional intervals
-    with the same lenght and overlap.
+
+    This class implements the Cubical Proximity function: after calling `fit`, the `search` method 
+    returns the hypercube whose center is nearest to the target point. Each hypercube is the 
+    product of 1-dimensional intervals with the same lenght and overlap.
 
     :param n_intervals: The number of intervals on each dimension.
     :type n_intervals: int.
     :param overlap_frac: The overlap fraction.
-    :type overlap_frac: float in (0.0, 1.0).
+    :type overlap_frac: `float` in (0.0, 1.0).
     :param flat: Set to True to use flat vptrees.
-    :type flat: bool.
+    :type flat: `bool`
     '''
 
     def __init__(self, n_intervals, overlap_frac, flat=True):

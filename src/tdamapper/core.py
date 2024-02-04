@@ -21,10 +21,11 @@ def mapper_labels(X, y, cover, clustering):
     :type cover: A class from `tdamapper.cover`.
     :param clustering: A clustering algorithm.
     :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
-    :return: A list where each item is a sorted list of ints with no duplicate.
-    The list at position `i` contains the cluster labels to which the point at position `i` in `X`
-    belongs to. If `i < j`, the labels at position `i` are strictly less then those at position `j`.
-    :rtype: `list[list[int]]`.
+    :return: A list where each item is a sorted list of ints with no duplicate. The list at 
+        position `i` contains the cluster labels to which the point at position `i` in `X` 
+        belongs to. If `i < j`, the labels at position `i` are strictly less then those at 
+        position `j`.
+    :rtype: `list[list[int]]`
     '''
     itm_lbls = [[] for _ in X]
     max_lbl = 0
@@ -43,9 +44,10 @@ def mapper_labels(X, y, cover, clustering):
 def mapper_connected_components(X, y, cover, clustering):
     ''' 
     Computes the connected components of the Mapper graph.
-    The algorithm computes the connected components using a union-find data structure.
-    This approach should be faster than computing the Mapper graph by first calling
-    `tdamapper.core.mapper_graph` and then calling `networkx.connected_components` on it.
+    
+    The algorithm computes the connected components using a union-find data structure. This 
+    approach should be faster than computing the Mapper graph by first calling `mapper_graph` 
+    and then calling `networkx.connected_components` on it.
 
     :param X: A dataset.
     :type X: `numpy.ndarray` or list-like.
@@ -55,9 +57,9 @@ def mapper_connected_components(X, y, cover, clustering):
     :type cover: A class from `tdamapper.cover`.
     :param clustering: A clustering algorithm.
     :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
-    :return: A list of labels, where the value at position `i` identifies
-    the connected component of the point `X[i]`.
-    :rtype: `list[int]`.
+    :return: A list of labels, where the value at position `i` identifies the connected 
+        component of the point `X[i]`.
+    :rtype: `list[int]`
     '''
     itm_lbls = mapper_labels(X, y, cover, clustering)
     label_values = set()
@@ -91,7 +93,7 @@ def mapper_graph(X, y, cover, clustering):
     :param clustering: A clustering algorithm.
     :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
     :return: The Mapper graph.
-    :rtype: `networkx.Graph`.
+    :rtype: `networkx.Graph`
     '''
     itm_lbls = mapper_labels(X, y, cover, clustering)
     graph = nx.Graph()
@@ -124,7 +126,7 @@ def aggregate_graph(y, graph, agg):
     :param agg: An aggregation function.
     :type agg: Callable.
     :return: A dict of values, where each node is mapped to its aggregation.
-    :rtype: `dict`.
+    :rtype: `dict`
     '''
     agg_values = {}
     nodes = graph.nodes()
@@ -142,7 +144,8 @@ class MapperAlgorithm:
     :param cover: A cover algorithm.
     :type cover: A class from `tdamapper.cover`.
     :param clustering: A clustering algorithm.
-    :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
+    :type clustering: A class from `tdamapper.clustering` 
+        or a class from `sklearn.cluster`
     '''
 
     def __init__(self, cover, clustering):
@@ -152,7 +155,7 @@ class MapperAlgorithm:
 
     def fit(self, X, y=None):
         ''' 
-        Computes the Mapper Graph
+        Computes the Mapper Graph.
 
         :param X: A dataset.
         :type X: `numpy.ndarray` or list-like.
