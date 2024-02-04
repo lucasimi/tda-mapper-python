@@ -1,3 +1,4 @@
+'''A module for plotting the Mapper graph.'''
 import math
 
 import numpy as np
@@ -28,15 +29,15 @@ class MapperPlot:
     :param X: A dataset.
     :type X: `numpy.ndarray` or list-like.
     :param graph: The Mapper graph.
-    :type graph: `networkx.Graph`.
+    :type graph: `networkx.Graph`
     :param colors: A dataset of values to plot as nodes color.
     :type colors: `numpy.ndarray` or list-like.
     :param agg: Aggregation function that computes nodes color.
     :type agg: Callable on the values of colors.
     :param cmap: A colormap, to convert values into colors.
-    :type cmap: `str`.
-    :param **kwargs: Additional arguments to networkx.spring_layout.
-    :type: `dict`.
+    :type cmap: `str`
+    :param kwargs: Additional arguments to networkx.spring_layout.
+    :type: `dict`
     '''
 
     def __init__(
@@ -77,12 +78,12 @@ class MapperPlot:
         '''
         Turns the plot object into a displayable figure.
 
-        :param *args: Arguments to supply.
-        :type *args: `list`.
+        :param args: Arguments to supply.
+        :type args: `list`
         :param style: The type of plot, can either be 'interactive' or 'static'.
-        :type style: `str`.
-        :param **kwargs: Additional arguments to supply.
-        :type: `dict`.
+        :type style: `str`
+        :param kwargs: Additional arguments to supply.
+        :type kwargs: `dict`
         '''
         if not self.__pos:
             return
