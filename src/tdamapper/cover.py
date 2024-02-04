@@ -1,19 +1,20 @@
 '''A module containing the logic for building open covers for the Mapper algorithm.'''
 import numpy as np
 
-from tdamapper.utils.vptree_flat import VPTree
+from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree import VPTree as VPT
 
 
 def proximity_net(X, proximity):
     '''
     Compute proximity-net for a given proximity function.
-    Returns a generator where each item is a subset of ids
-    of points from `X`.
+    
+    Returns a generator where each item is a subset of ids of points from `X`.
 
     :param X: A dataset.
     :type X: `numpy.ndarray` or list-like.
     :param proximity: A proximity function.
-    :type proximity: `tdamapper.cover.Proximity`.
+    :type proximity: `tdamapper.cover.Proximity`
     '''
     covered_ids = set()
     proximity.fit(X)
@@ -27,9 +28,9 @@ def proximity_net(X, proximity):
 
 class Proximity:
     '''
-    This class serves as a blueprint for proximity functions used inside 
-    `tdamapper.cover.proximity_net`. Subclasses are expected to override 
-    the methods `fit` and `search`.
+    This class serves as a blueprint for proximity functions used inside `proximity_net`.
+    
+    Subclasses are expected to override the methods `fit` and `search`.
     '''
 
     def fit(self, X):
@@ -55,25 +56,34 @@ class ProximityNetCover(Proximity):
 class BallCover(ProximityNetCover):
     '''
     Creates an open cover made of overlapping open balls of fixed radius.
-    This class implements the Ball Proximity function: after calling fit on X, 
-    the `BallCover.search` method returns all the points within a ball centered in the target point.
+
+    This class implements the Ball Proximity function: after calling `fit`, the `search` method 
+    returns all the points within a ball centered in the target point.
 
     :param radius: The radius of open balls
     :type radius: float.
     :param metric: The metric used to define open balls.
     :type metric: Callable.
+    :param flat: Set to True to use flat vptrees.
+    :type flat: `bool`
     '''
 
-    def __init__(self, radius, metric):
+    def __init__(self, radius, metric, flat=True):
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__radius = radius
         self.__data = None
         self.__vptree = None
+        self.__flat = flat
+
+    def __flat_vpt(self):
+        return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
+
+    def __vpt(self):
+        return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def fit(self, X):
         self.__data = list(enumerate(X))
-        self.__vptree = VPTree(
-            self.__metric, self.__data, leaf_radius=self.__radius)
+        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
@@ -86,24 +96,34 @@ class BallCover(ProximityNetCover):
 class KNNCover(ProximityNetCover):
     '''
     Creates an open cover where each open set containes a fixed number of neighbors, using KNN.
-    This class implements the KNN Proximity function: after calling fit on X,
-    the `KNNCover.search` method returns the k nearest points to the target point.
+
+    This class implements the KNN Proximity function: after calling `fit`, the `search` method 
+    returns the k nearest points to the target point.
 
     :param neighbors: The number of neighbors.
     :type neighbors: int.
     :param metric: The metric used to search neighbors.
     :type metric: function.
+    :param flat: Set to True to use flat vptrees.
+    :type flat: `bool`
     '''
 
-    def __init__(self, neighbors, metric):
+    def __init__(self, neighbors, metric, flat=True):
         self.__neighbors = neighbors
         self.__metric = lambda x, y: metric(x[1], y[1])
         self.__data = None
         self.__vptree = None
+        self.__flat = flat
+
+    def __flat_vpt(self):
+        return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+
+    def __vpt(self):
+        return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         self.__data = list(enumerate(X))
-        self.__vptree = VPTree(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
@@ -116,26 +136,27 @@ class KNNCover(ProximityNetCover):
 class CubicalCover(ProximityNetCover):
     '''
     Creates an open cover of hypercubes of evenly-sized sides and overlap.
-    This class implements the Cubical Proximity function: after calling fit on X,
-    the `CubicalCover.search` method returns the hypercube whose center is nearest to
-    the target point. Each hypercube is the product of 1-dimensional intervals
-    with the same lenght and overlap.
+
+    This class implements the Cubical Proximity function: after calling `fit`, the `search` method 
+    returns the hypercube whose center is nearest to the target point. Each hypercube is the 
+    product of 1-dimensional intervals with the same lenght and overlap.
 
     :param n_intervals: The number of intervals on each dimension.
     :type n_intervals: int.
     :param overlap_frac: The overlap fraction.
-    :type overlap_frac: float in (0.0, 1.0).
+    :type overlap_frac: `float` in (0.0, 1.0).
+    :param flat: Set to True to use flat vptrees.
+    :type flat: `bool`
     '''
 
-    def __init__(self, n_intervals, overlap_frac):
+    def __init__(self, n_intervals, overlap_frac, flat=True):
         self.__n_intervals = n_intervals
-        self.__overlap_frac = overlap_frac
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
         metric = self._pullback(self._gamma_n, self._l_infty)
-        self.__ball_proximity = BallCover(self.__radius, metric)
+        self.__ball_proximity = BallCover(self.__radius, metric, flat=flat)
 
     def _l_infty(self, x, y):
         return np.max(np.abs(x - y)) # in alternative: np.linalg.norm(x - y, ord=np.inf)
@@ -163,16 +184,15 @@ class CubicalCover(ProximityNetCover):
         for w in data:
             minimum = np.minimum(minimum, np.array(w))
             maximum = np.maximum(maximum, np.array(w))
-        self.__minimum = np.nan_to_num(minimum, nan=-eps)
-        self.__maximum = np.nan_to_num(maximum, nan=eps)
+        self.__minimum = np.nan_to_num(minimum, nan=-float(eps))
+        self.__maximum = np.nan_to_num(maximum, nan=float(eps))
         delta = self.__maximum - self.__minimum
-        eps = np.finfo(np.float64).eps
         self.__delta = np.maximum(eps, delta)
 
     def fit(self, X):
         self._set_bounds(X)
         self.__ball_proximity.fit(X)
-        return
+        return self
 
     def search(self, x):
         return self.__ball_proximity.search(self._phi(x))
