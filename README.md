@@ -7,7 +7,7 @@
 
 The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph. Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation. For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). 
 
-This Python package provides a simple yet efficient implementation of the Mapper algorithm.
+This Python package provides a simple and efficient implementation of the Mapper algorithm.
 
 * Installation from package: ```python -m pip install tda-mapper```
 * Installation from sources: clone this repo and run ```python -m pip install .```
