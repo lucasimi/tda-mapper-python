@@ -19,17 +19,16 @@ This Python package provides a simple and efficient implementation of the Mapper
 
 ## Usage
 
-[Here](https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/tests/example.py) you can find a worked out example that shows how to use this package. 
+[Here](https://github.com/lucasimi/tda-mapper-python/blob/main/tests/example.py) you can find a worked out example that shows how to use this package. 
 In the example we perform some analysis on the the well known dataset of [hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
 
-https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/tests/example.py#L1-L48
+https://github.com/lucasimi/tda-mapper-python/blob/main/tests/example.py#L1-L48
 
-
-![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/resources/digits_mean.png)
+![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_mean.png)
 
 It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation.
 
-![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/resources/digits_std.png)
+![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_std.png)
 
 The mapper graph of the digits dataset shows a few interesting patterns. For example, we can make the following observations:
 
