@@ -22,7 +22,7 @@ This Python package provides a simple and efficient implementation of the Mapper
 [Here](https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/tests/example.py) you can find a worked out example that shows how to use this package. 
 In the example we perform some analysis on the the well known dataset of [hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
 
-https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/tests/example.py
+https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/tests/example.py#L1-L48
 
 
 ![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/7cd3814034eea4cb7be8917bfc9b5ee2357ed8d1/resources/digits_mean.png)
