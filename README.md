@@ -61,7 +61,13 @@ mapper_plot = MapperPlot(X, mapper_graph,
     seed=42)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})
+```
 
+![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_mean.png)
+
+It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation.
+
+```python
 # We reuse the graph plot with the same positions
 fig_std = mapper_plot.with_colors(
     colors=y,
@@ -72,10 +78,6 @@ fig_std = mapper_plot.with_colors(
 ).plot(title='digit (std)', width=600, height=600)
 fig_std.show(config={'scrollZoom': True})
 ```
-
-![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_mean.png)
-
-It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation.
 
 ![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_std.png)
 
