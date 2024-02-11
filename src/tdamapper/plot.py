@@ -1,4 +1,4 @@
-'''A module for plotting the Mapper graph.'''
+"""A module for plotting the Mapper graph."""
 import math
 
 import numpy as np
@@ -12,7 +12,6 @@ from tdamapper.core import (
     aggregate_graph,
 )
 
-
 _NODE_OUTER_WIDTH = 0.75
 _NODE_OUTER_COLOR = '#777'
 
@@ -22,8 +21,66 @@ _EDGE_COLOR = '#777'
 _TICKS_NUM = 10
 
 
+def _plotly_colorbar_2d(title):
+    return go.scatter.marker.ColorBar(
+        showticklabels=True,
+        outlinewidth=1,
+        borderwidth=0,
+        orientation='v',
+        thickness=0.025,
+        thicknessmode='fraction',
+        title=title,
+        xanchor='left',
+        titleside='right',
+        ypad=0,
+        xpad=0,
+        tickwidth=1,
+        tickformat='.2g',
+        nticks=_TICKS_NUM,
+        tickmode='auto',
+    )
+
+
+def _fmt(x, max_len=3):
+    fmt = f'.{max_len}g'
+    return f'{x:{fmt}}'
+
+
+def _plotly_label(node_id, size, color):
+    node_label_size = _fmt(size, 5)
+    node_label_color = _fmt(color, 3)
+    return f'color: {node_label_color}<br>node: {node_id}<br>size: {node_label_size}'
+
+
+def _plotly_colorbar_3d(title):
+    return go.scatter3d.marker.ColorBar(
+        showticklabels=True,
+        outlinewidth=1,
+        borderwidth=0,
+        orientation='v',
+        thickness=0.025,
+        thicknessmode='fraction',
+        title=title,
+        xanchor='left',
+        titleside='right',
+        ypad=0,
+        xpad=0,
+        tickwidth=1,
+        tickformat='.2g',
+        nticks=_TICKS_NUM,
+        tickmode='auto',
+    )
+
+
+def _init_positions(g, **kwargs):
+    pos = kwargs.get('pos')
+    if pos is None:
+        return nx.spring_layout(g, **kwargs)
+    return pos
+
+
 class MapperPlot:
-    '''
+    """
     Creates a plot for the Mapper graph, and turn it into a displayable figure.
 
     :param X: A dataset.
@@ -36,16 +93,16 @@ class MapperPlot:
     :type agg: Callable on the values of colors.
     :param cmap: A colormap, to convert values into colors.
     :type cmap: `str`
-    :param kwargs: Additional arguments to networkx.spring_layout.
+    :param kwargs: Additional arguments to `networkx.spring_layout`.
     :type: `dict`
-    '''
+    """
 
     def __init__(
-        self, X, graph,
-        colors=None,
-        agg=np.nanmean,
-        cmap='jet',
-        **kwargs
+            self, X, graph,
+            colors=None,
+            agg=np.nanmean,
+            cmap='jet',
+            **kwargs
     ):
         self.__X = X
         self.__graph = graph
@@ -56,18 +113,12 @@ class MapperPlot:
         self.__kwargs = {}
         self.__kwargs.update(kwargs)
         self.__kwargs['dim'] = self.__dim
-        self.__pos = self._init_positions(self.__graph, **kwargs)
+        self.__pos = _init_positions(self.__graph, **kwargs)
         self.__kwargs['pos'] = self.__pos
-
-    def _init_positions(self, g, **kwargs):
-        pos = kwargs.get('pos')
-        if pos is None:
-            return nx.spring_layout(g, **kwargs)
-        return pos
 
     def with_colors(self, colors, agg=np.nanmean, cmap='jet'):
         return MapperPlot(self.__X, self.__graph,
-            colors=colors, agg=agg, cmap=cmap, **self.__kwargs)
+                          colors=colors, agg=agg, cmap=cmap, **self.__kwargs)
 
     def _plot_static(self, title='', ax=None):
         if ax is None:
@@ -75,7 +126,7 @@ class MapperPlot:
         return self._plot_matplotlib(title, ax)
 
     def plot(self, *args, style='interactive', **kwargs):
-        '''
+        """
         Turns the plot object into a displayable figure.
 
         :param args: Arguments to supply.
@@ -84,9 +135,7 @@ class MapperPlot:
         :type style: `str`
         :param kwargs: Additional arguments to supply.
         :type kwargs: `dict`
-        '''
-        if not self.__pos:
-            return
+        """
         if self.__dim == 2:
             if style == 'interactive':
                 return self._plot_interactive_2d(*args, **kwargs)
@@ -109,7 +158,7 @@ class MapperPlot:
         nodes_x = [self.__pos[node][0] for node in nodes]
         nodes_y = [self.__pos[node][1] for node in nodes]
         nodes_c = [self.__colors[node] for node in nodes]
-        nodes_s = [250.0 * math.sqrt(sizes[node]/max_size) for node in nodes]
+        nodes_s = [250.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
         verts = ax.scatter(
             x=nodes_x,
             y=nodes_y,
@@ -212,29 +261,6 @@ class MapperPlot:
         )
         return edge_trace
 
-    def _fmt(self, x, max_len=3):
-        fmt = f'.{max_len}g'
-        return f'{x:{fmt}}'
-
-    def _plotly_colorbar_2d(self, title):
-        return go.scatter.marker.ColorBar(
-            showticklabels=True,
-            outlinewidth=1,
-            borderwidth=0,
-            orientation='v',
-            thickness=0.025,
-            thicknessmode='fraction',
-            title=title,
-            xanchor='left',
-            titleside='right',
-            ypad=0,
-            xpad=0,
-            tickwidth=1,
-            tickformat='.2g',
-            nticks=_TICKS_NUM,
-            tickmode='auto',
-        )
-
     def _plot_plotly_2d_nodes(self, title):
         nodes = self.__graph.nodes()
         node_x, node_y = [], []
@@ -244,7 +270,7 @@ class MapperPlot:
             node_x.append(x)
             node_y.append(y)
             size = nodes[node][ATTR_SIZE]
-            node_label = self._plotly_label(node, size, self.__colors[node])
+            node_label = _plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter(
             x=node_x,
@@ -256,11 +282,6 @@ class MapperPlot:
             text=node_captions,
         )
         return node_trace
-
-    def _plotly_label(self, node_id, size, color):
-        node_label_size = self._fmt(size, 5)
-        node_label_color = self._fmt(color, 3)
-        return f'color: {node_label_color}<br>node: {node_id}<br>size: {node_label_size}'
 
     def _plotly_node_marker_2d(self, title):
         nodes = self.__graph.nodes()
@@ -279,7 +300,7 @@ class MapperPlot:
             cmin=min_color,
             opacity=1.0,
             size=node_sizes,
-            colorbar=self._plotly_colorbar_2d(title),
+            colorbar=_plotly_colorbar_2d(title),
             line_width=_NODE_OUTER_WIDTH,
             line_color=_NODE_OUTER_COLOR,
         )
@@ -380,25 +401,6 @@ class MapperPlot:
         )
         return edge_trace
 
-    def _plotly_colorbar_3d(self, title):
-        return go.scatter3d.marker.ColorBar(
-            showticklabels=True,
-            outlinewidth=1,
-            borderwidth=0,
-            orientation='v',
-            thickness=0.025,
-            thicknessmode='fraction',
-            title=title,
-            xanchor='left',
-            titleside='right',
-            ypad=0,
-            xpad=0,
-            tickwidth=1,
-            tickformat='.2g',
-            nticks=_TICKS_NUM,
-            tickmode='auto',
-        )
-
     def _plotly_node_marker_3d(self, title):
         nodes = self.__graph.nodes()
         colors = [self.__colors[node] for node in nodes]
@@ -416,7 +418,7 @@ class MapperPlot:
             cmin=min_color,
             opacity=1.0,
             size=node_sizes,
-            colorbar=self._plotly_colorbar_3d(title),
+            colorbar=_plotly_colorbar_3d(title),
             line_width=_NODE_OUTER_WIDTH,
             line_color=_NODE_OUTER_COLOR,
             line_colorscale=self.__cmap,
@@ -432,7 +434,7 @@ class MapperPlot:
             node_y.append(y)
             node_z.append(z)
             size = nodes[node][ATTR_SIZE]
-            node_label = self._plotly_label(node, size, self.__colors[node])
+            node_label = _plotly_label(node, size, self.__colors[node])
             node_captions.append(node_label)
         node_trace = go.Scatter3d(
             x=node_x,

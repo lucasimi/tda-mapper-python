@@ -1,48 +1,45 @@
 import numpy as np
 
-from sklearn.datasets import load_digits
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.datasets import make_circles
 from sklearn.decomposition import PCA
+from sklearn.cluster import DBSCAN
 
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover
-from tdamapper.clustering import FailSafeClustering
 from tdamapper.plot import MapperPlot
 
-# We load a labelled dataset
-X, y = load_digits(return_X_y=True)
-# We compute the lens values
+X, y = make_circles(                # load a labelled dataset
+    n_samples=5000,
+    noise=0.05,
+    factor=0.3,
+    random_state=42)
 lens = PCA(2).fit_transform(X)
 
 mapper_algo = MapperAlgorithm(
     cover=CubicalCover(
         n_intervals=10,
-        overlap_frac=0.65),
-    # We prevent clustering failures
-    clustering=FailSafeClustering(            
-        clustering=AgglomerativeClustering(10),
-        verbose=False))
+        overlap_frac=0.3),
+    clustering=DBSCAN())
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
-mapper_plot = MapperPlot(X, mapper_graph,
-    # We color according to digit values
-    colors=y,
-    # Jet colormap, used for classes
-    cmap='jet',
-    # We aggregate on graph nodes according to mean
-    agg=np.nanmean,
+mapper_plot = MapperPlot(
+    X, mapper_graph,
+    colors=y,                       # color according to categorical values
+    cmap='jet',                     # Jet colormap, for classes
+    agg=np.nanmean,                 # aggregate on nodes according to mean
     dim=2,
-    iterations=400,
+    iterations=60,
     seed=42)
-fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
+fig_mean = mapper_plot.plot(
+    width=600,
+    height=600)
 fig_mean.show(config={'scrollZoom': True})
 
-# We reuse the graph plot with the same positions
-fig_std = mapper_plot.with_colors(
+fig_std = mapper_plot.with_colors(  # reuse the plot with the same positions
     colors=y,
-    # Viridis colormap, used for ranges
-    cmap='viridis',
-    # We aggregate on graph nodes according to std
-    agg=np.nanstd,
-).plot(title='digit (std)', width=600, height=600)
+    cmap='viridis',                 # viridis colormap, for ranges
+    agg=np.nanstd,                  # aggregate on nodes according to std
+).plot(
+    width=600,
+    height=600)
 fig_std.show(config={'scrollZoom': True})
