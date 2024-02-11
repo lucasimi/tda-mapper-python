@@ -10,6 +10,7 @@ Welcome to tda-mapper's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   notebooks
    modules
 
 Indices and tables
