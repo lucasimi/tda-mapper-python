@@ -1,3 +1,15 @@
+def _left(i):
+    return 2 * i + 1
+
+
+def _right(i):
+    return 2 * i + 2
+
+
+def _parent(i):
+    return max(0, (i - 1) // 2)
+
+
 class _HeapNode:
 
     def __init__(self, key, value):
@@ -57,8 +69,8 @@ class MaxHeap:
 
     def _get_local_max(self, i):
         heap_len = len(self.__heap)
-        left = self._left(i)
-        right = self._right(i)
+        left = _left(i)
+        right = _right(i)
         if left >= heap_len:
             return i
         if right >= heap_len:
@@ -80,7 +92,7 @@ class MaxHeap:
         return i
 
     def _fix_up(self, i):
-        parent = self._parent(i)
+        parent = _parent(i)
         if self.__heap[parent] < self.__heap[i]:
             self.__heap[i], self.__heap[parent] = self.__heap[parent], self.__heap[i]
             return parent
@@ -101,12 +113,3 @@ class MaxHeap:
             local_max = self._fix_up(current)
             done = local_max == current
             current = local_max
-
-    def _left(self, i):
-        return 2 * i + 1
-
-    def _right(self, i):
-        return 2 * i + 2
-
-    def _parent(self, i):
-        return max(0, (i - 1) // 2)

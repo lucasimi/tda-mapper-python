@@ -19,12 +19,13 @@ mapper_algo = MapperAlgorithm(
         n_intervals=10,
         overlap_frac=0.65),
     # We prevent clustering failures
-    clustering=FailSafeClustering(            
+    clustering=FailSafeClustering(
         clustering=AgglomerativeClustering(10),
         verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
-mapper_plot = MapperPlot(X, mapper_graph,
+mapper_plot = MapperPlot(
+    X, mapper_graph,
     # We color according to digit values
     colors=y,
     # Jet colormap, used for classes
@@ -32,8 +33,8 @@ mapper_plot = MapperPlot(X, mapper_graph,
     # We aggregate on graph nodes according to mean
     agg=np.nanmean,
     dim=2,
-    iterations=400,
-    seed=42)
+    iterations=50,
+    seed=123)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})
 

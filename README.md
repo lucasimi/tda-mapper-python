@@ -21,7 +21,7 @@ This Python package provides a simple and efficient implementation of Mapper alg
 
 ## Usage
 
-[Here](https://github.com/lucasimi/tda-mapper-python/blob/main/tests/example.py) you can find a worked out example that shows how to use this package. 
+[Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find a worked out example that shows how to use this package. 
 In the example we perform some analysis on the the well known dataset of [hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
 
 ```python
@@ -46,12 +46,13 @@ mapper_algo = MapperAlgorithm(
         n_intervals=10,
         overlap_frac=0.65),
     # We prevent clustering failures
-    clustering=FailSafeClustering(            
+    clustering=FailSafeClustering(
         clustering=AgglomerativeClustering(10),
         verbose=False))
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
-mapper_plot = MapperPlot(X, mapper_graph,
+mapper_plot = MapperPlot(
+    X, mapper_graph,
     # We color according to digit values
     colors=y,
     # Jet colormap, used for classes
@@ -59,17 +60,11 @@ mapper_plot = MapperPlot(X, mapper_graph,
     # We aggregate on graph nodes according to mean
     agg=np.nanmean,
     dim=2,
-    iterations=400,
-    seed=42)
+    iterations=50,
+    seed=123)
 fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
 fig_mean.show(config={'scrollZoom': True})
-```
 
-![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_mean.png)
-
-It's also possible to obtain a new plot colored according to different values, while keeping the same computed geometry. For example, if we want to visualize how much dispersion we have on each cluster, we could plot colors according to the standard deviation.
-
-```python
 # We reuse the graph plot with the same positions
 fig_std = mapper_plot.with_colors(
     colors=y,
@@ -81,14 +76,6 @@ fig_std = mapper_plot.with_colors(
 fig_std.show(config={'scrollZoom': True})
 ```
 
-![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/blob/main/resources/digits_std.png)
-
-The mapper graph of the digits dataset shows a few interesting patterns. For example, we can make the following observations:
-
-* Clusters that share the same color are all connected together, and located in the same area of the graph. 
-This behavior is present in those digits which are easy to tell apart from the others, for example digits 0 and 4.
-
-* Some clusters are not well separated and tend to overlap one on the other. 
-This mixed behavior is present in those digits which can be easily confused one with the other, for example digits 5 and 6.
-
-* Clusters located across the "boundary" of two different digits show a transition either due to a change in distribution or due to distorsions in the hand written text, for example digits 8 and 2.
+| Average class                                                                                                                          | Standard deviation of class                                                                                                          |
+|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| ![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_mean.png) | ![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_std.png) |

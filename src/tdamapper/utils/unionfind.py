@@ -1,8 +1,8 @@
 class UnionFind:
 
     def __init__(self, X):
-        self.__parent = {x:x for x in X}
-        self.__size = {x:1 for x in X}
+        self.__parent = {x: x for x in X}
+        self.__size = {x: 1 for x in X}
 
     def find(self, x):
         y = x
