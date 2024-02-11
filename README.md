@@ -7,75 +7,79 @@
 [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
 
-The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
-Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
-For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf). 
-
 This Python package provides a simple and efficient implementation of Mapper algorithm.
 
 * Installation from package: ```python -m pip install tda-mapper```
 
 * Installation from sources: clone this repo and run ```python -m pip install .```
 
-* Documentation: https://tda-mapper.readthedocs.io/en/latest/ 
+* Documentation: https://tda-mapper.readthedocs.io/en/latest/
+
+## About Mapper
+
+The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
+Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
+For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+
+| Step 1                                                                                 | Step 2                                                                                   | Step 3                                                                                   | Step 4                                                                                   |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+|![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
+|Chose a lens | Cover the image of the lens                                                              | Perform clustering on the pullback cover                                                 | Build the Mapper graph                                                                   |
 
 ## Usage
 
-[Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find a worked out example that shows how to use this package. 
-In the example we perform some analysis on the the well known dataset of [hand written digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
+[Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find an example to use to kickstart your analysis.
+In this toy-example we use a two-dimensional dataset of two concentric circles.
+The Mapper graph is a topological summary of the whole point cloud.
 
 ```python
 import numpy as np
 
-from sklearn.datasets import load_digits
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.datasets import make_circles
 from sklearn.decomposition import PCA
+from sklearn.cluster import DBSCAN
 
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover
-from tdamapper.clustering import FailSafeClustering
 from tdamapper.plot import MapperPlot
 
-# We load a labelled dataset
-X, y = load_digits(return_X_y=True)
-# We compute the lens values
+X, y = make_circles(                # load a labelled dataset
+    n_samples=5000,
+    noise=0.05,
+    factor=0.3,
+    random_state=42)
 lens = PCA(2).fit_transform(X)
 
 mapper_algo = MapperAlgorithm(
     cover=CubicalCover(
         n_intervals=10,
-        overlap_frac=0.65),
-    # We prevent clustering failures
-    clustering=FailSafeClustering(
-        clustering=AgglomerativeClustering(10),
-        verbose=False))
+        overlap_frac=0.3),
+    clustering=DBSCAN())
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
 mapper_plot = MapperPlot(
     X, mapper_graph,
-    # We color according to digit values
-    colors=y,
-    # Jet colormap, used for classes
-    cmap='jet',
-    # We aggregate on graph nodes according to mean
-    agg=np.nanmean,
+    colors=y,                       # color according to categorical values
+    cmap='jet',                     # Jet colormap, for classes
+    agg=np.nanmean,                 # aggregate on nodes according to mean
     dim=2,
-    iterations=50,
-    seed=123)
-fig_mean = mapper_plot.plot(title='digit (mean)', width=600, height=600)
+    iterations=60,
+    seed=42)
+fig_mean = mapper_plot.plot(
+    width=600,
+    height=600)
 fig_mean.show(config={'scrollZoom': True})
 
-# We reuse the graph plot with the same positions
-fig_std = mapper_plot.with_colors(
+fig_std = mapper_plot.with_colors(  # reuse the plot with the same positions
     colors=y,
-    # Viridis colormap, used for ranges
-    cmap='viridis',
-    # We aggregate on graph nodes according to std
-    agg=np.nanstd,
-).plot(title='digit (std)', width=600, height=600)
+    cmap='viridis',                 # viridis colormap, for ranges
+    agg=np.nanstd,                  # aggregate on nodes according to std
+).plot(
+    width=600,
+    height=600)
 fig_std.show(config={'scrollZoom': True})
 ```
 
-| Average class                                                                                                                          | Standard deviation of class                                                                                                          |
-|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| ![Mapper graph of digits, colored according to mean](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_mean.png) | ![Mapper graph of digits, colored according to std](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/digits_std.png) |
+| Average class                                                                                                                         | Standard deviation of class                                                                                                |
+|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ![Mapper graph colored according to average class](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph colored according to std](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
