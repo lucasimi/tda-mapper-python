@@ -24,5 +24,7 @@ class TestMapperPlot(unittest.TestCase):
         mp_plot1 = MapperPlot(data, g, dim=2)
         mp_plot1.plot(backend='matplotlib')
         mp_plot1.plot(backend='plotly')
+        mp_plot1.plot(backend='plotly_gl')
         mp_plot2 = MapperPlot(data, g, dim=3)
         mp_plot2.plot()
+        mp_plot2.plot(backend='plotly')

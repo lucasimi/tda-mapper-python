@@ -39,7 +39,7 @@ def _init_positions(g, **kwargs):
     return pos
 
 
-class Plot:
+class _Plot:
 
     def __init__(self, dim, graph, pos, colors, cmap):
         self.dim = dim
@@ -49,7 +49,7 @@ class Plot:
         self.cmap = cmap
 
 
-class PlotPlotly3D(Plot):
+class _PlotPlotly3D(_Plot):
 
     def plot(self, title, width, height):
         edge_trace = self._plot_edges()
@@ -143,7 +143,7 @@ class PlotPlotly3D(Plot):
             opacity=1.0,
             line_width=_EDGE_WIDTH,
             line_color=_EDGE_COLOR,
-            hoverinfo='none'
+            hoverinfo='skip'
         )
         return edge_trace
 
@@ -214,7 +214,7 @@ class PlotPlotly3D(Plot):
         )
 
 
-class PlotPlotly2D(Plot):
+class _PlotPlotly2D(_Plot):
 
     def plot(self, title, width, height):
         edge_trace = self._plot_edges()
@@ -332,7 +332,125 @@ class PlotPlotly2D(Plot):
         )
 
 
-class PlotMatplotlib(Plot):
+class _PlotPlotlyGL2D(_Plot):
+
+    def plot(self, title, width, height):
+        edge_trace = self._plot_edges()
+        node_trace = self._plot_nodes(title)
+        axis = dict(
+            showline=True,
+            linecolor='black',
+            linewidth=1,
+            mirror=True,
+            visible=True,
+            showticklabels=False,
+        )
+        layout = go.Layout(
+            width=width,
+            height=height,
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            autosize=False,
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=10, l=10, r=10, t=10),
+            xaxis=axis,
+            yaxis=axis,
+        )
+        fig = go.Figure(
+            data=[edge_trace, node_trace],
+            layout=layout
+        )
+        return fig
+
+    def _plot_edges(self):
+        edge_x, edge_y = [], []
+        for edge in self.graph.edges():
+            x0, y0 = self.pos[edge[0]]
+            x1, y1 = self.pos[edge[1]]
+            edge_x.append(x0)
+            edge_x.append(x1)
+            edge_x.append(None)
+            edge_y.append(y0)
+            edge_y.append(y1)
+            edge_y.append(None)
+        edge_trace = go.Scattergl(
+            x=edge_x,
+            y=edge_y,
+            mode='lines',
+            opacity=1.0,
+            line=dict(
+                width=_EDGE_WIDTH,
+                color=_EDGE_COLOR
+            ),
+            hoverinfo='skip'
+        )
+        return edge_trace
+
+    def _plot_nodes(self, title):
+        nodes = self.graph.nodes()
+        node_x, node_y = [], []
+        node_captions = []
+        for node in nodes:
+            x, y = self.pos[node]
+            node_x.append(x)
+            node_y.append(y)
+            size = nodes[node][ATTR_SIZE]
+            node_label = _plotly_label(node, size, self.colors[node])
+            node_captions.append(node_label)
+        node_trace = go.Scattergl(
+            x=node_x,
+            y=node_y,
+            mode='markers',
+            hoverinfo='text',
+            opacity=1.0,
+            marker=self._node_marker(title),
+            text=node_captions,
+        )
+        return node_trace
+
+    def _node_marker(self, title):
+        nodes = self.graph.nodes()
+        colors = [self.colors[node] for node in nodes]
+        min_color = min(self.colors.values())
+        max_color = max(self.colors.values())
+        sizes = nx.get_node_attributes(self.graph, ATTR_SIZE)
+        max_size = max(sizes.values()) if sizes else 1.0
+        node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
+        return go.scattergl.Marker(
+            showscale=True,
+            colorscale=self.cmap,
+            reversescale=False,
+            color=colors,
+            cmax=max_color,
+            cmin=min_color,
+            opacity=1.0,
+            size=node_sizes,
+            colorbar=self._colorbar(title),
+            line_width=_NODE_OUTER_WIDTH,
+            line_color=_NODE_OUTER_COLOR,
+        )
+
+    def _colorbar(self, title):
+        return go.scattergl.marker.ColorBar(
+            showticklabels=True,
+            outlinewidth=1,
+            borderwidth=0,
+            orientation='v',
+            thickness=0.025,
+            thicknessmode='fraction',
+            title=title,
+            xanchor='left',
+            titleside='right',
+            ypad=0,
+            xpad=0,
+            tickwidth=1,
+            tickformat='.2g',
+            nticks=_TICKS_NUM,
+            tickmode='auto',
+        )
+
+
+class _PlotMatplotlib(_Plot):
     def plot(self, title, width, height):
         px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
         fig, ax = plt.subplots(figsize=(width * px, height * px))
@@ -449,13 +567,13 @@ class MapperPlot:
         :param height: The height of the figure expressed in pixels.
         :type height: `int`
         :param backend: The type of backend used for drawing.
-        :type backend: 'matplotlib' or 'plotly'.
+        :type backend: 'matplotlib' or 'plotly' or 'plotly_gl'.
         :param kwargs: Additional arguments to supply.
         :type kwargs: `dict`
         """
         if self.__dim == 2:
             if backend == 'matplotlib':
-                return PlotMatplotlib(
+                return _PlotMatplotlib(
                     dim=self.__dim,
                     graph=self.__graph,
                     pos=self.__pos,
@@ -465,7 +583,7 @@ class MapperPlot:
                         width=width,
                         height=height)
             elif backend == 'plotly':
-                return PlotPlotly2D(
+                return _PlotPlotly2D(
                     dim=self.__dim,
                     graph=self.__graph,
                     pos=self.__pos,
@@ -474,8 +592,18 @@ class MapperPlot:
                         title=title,
                         width=width,
                         height=height)
+            elif backend == 'plotly_gl':
+                return _PlotPlotlyGL2D(
+                    dim=self.__dim,
+                    graph=self.__graph,
+                    pos=self.__pos,
+                    colors=self.__colors,
+                    cmap=self.__cmap).plot(
+                    title=title,
+                    width=width,
+                    height=height)
         elif backend == 'plotly':
-            return PlotPlotly3D(
+            return _PlotPlotly3D(
                 dim=self.__dim,
                 graph=self.__graph,
                 pos=self.__pos,
@@ -484,177 +612,3 @@ class MapperPlot:
                     title=title,
                     width=width,
                     height=height)
-
-    def _plotly_colorbar(self, title, gl):
-        if self.__dim == 3:
-            colorbar = go.scatter3d.marker.ColorBar
-        else:
-            if gl:
-                colorbar = go.scattergl.marker.ColorBar
-            else:
-                colorbar = go.scatter.marker.ColorBar
-        return colorbar(
-            showticklabels=True,
-            outlinewidth=1,
-            borderwidth=0,
-            orientation='v',
-            thickness=0.025,
-            thicknessmode='fraction',
-            title=title,
-            xanchor='left',
-            titleside='right',
-            ypad=0,
-            xpad=0,
-            tickwidth=1,
-            tickformat='.2g',
-            nticks=_TICKS_NUM,
-            tickmode='auto',
-        )
-
-    def _plot_plotly(self, title, width, height, gl):
-        edge_trace = self._plot_plotly_edges(gl)
-        node_trace = self._plot_plotly_nodes(title, gl)
-        axis = dict(
-            showline=True,
-            linecolor='black',
-            linewidth=1,
-            mirror=True,
-            visible=True,
-            showticklabels=False,
-        )
-        layout = go.Layout(
-            width=width,
-            height=height,
-            plot_bgcolor='rgba(0, 0, 0, 0)',
-            autosize=False,
-            showlegend=False,
-            hovermode='closest',
-            margin=dict(b=10, l=10, r=10, t=10),
-            xaxis=axis,
-            yaxis=axis,
-        )
-        fig = go.Figure(
-            data=[edge_trace, node_trace],
-            layout=layout
-        )
-        return fig
-
-    def _plotly_node_marker(self, title, gl):
-        nodes = self.__graph.nodes()
-        colors = [self.__colors[node] for node in nodes]
-        min_color = min(self.__colors.values())
-        max_color = max(self.__colors.values())
-        sizes = nx.get_node_attributes(self.__graph, ATTR_SIZE)
-        max_size = max(sizes.values()) if sizes else 1.0
-        node_sizes = [25.0 * math.sqrt(sizes[node] / max_size) for node in nodes]
-        if self.__dim == 3:
-            marker = go.scatter3d.Marker
-        else:
-            if gl:
-                marker = go.scattergl.Marker
-            else:
-                marker = go.scatter.Marker
-        return marker(
-            showscale=True,
-            colorscale=self.__cmap,
-            reversescale=False,
-            color=colors,
-            cmax=max_color,
-            cmin=min_color,
-            opacity=1.0,
-            size=node_sizes,
-            colorbar=self._plotly_colorbar(title, gl),
-            line_width=_NODE_OUTER_WIDTH,
-            line_color=_NODE_OUTER_COLOR,
-        )
-
-    def _plot_plotly_nodes(self, title, gl):
-        nodes = self.__graph.nodes()
-        node_pos = [[] for _ in range(self.__dim)]
-        node_captions = []
-        for node in nodes:
-            pos = self.__pos[node]
-            node_pos.append(pos)
-            size = nodes[node][ATTR_SIZE]
-            node_label = _plotly_label(node, size, self.__colors[node])
-            node_captions.append(node_label)
-        if self.__dim == 3:
-            return go.Scatter3d(
-                x=node_pos[0],
-                y=node_pos[1],
-                z=node_pos[2],
-                mode='markers',
-                hoverinfo='text',
-                opacity=1.0,
-                marker=self._plotly_node_marker(title, gl),
-                text=node_captions,
-            )
-        elif self.__dim == 2:
-            if gl:
-                return go.Scattergl(
-                    x=node_pos[0],
-                    y=node_pos[1],
-                    mode='markers',
-                    hoverinfo='text',
-                    opacity=1.0,
-                    marker=self._plotly_node_marker(title, gl),
-                    text=node_captions,
-                )
-            else:
-                return go.Scatter(
-                    x=node_pos[0],
-                    y=node_pos[1],
-                    mode='markers',
-                    hoverinfo='text',
-                    opacity=1.0,
-                    marker=self._plotly_node_marker(title, gl),
-                    text=node_captions,
-                )
-
-    def _plot_plotly_edges(self, gl):
-        edge_pos = [[] for _ in range(self.__dim)]
-        for edge in self.__graph.edges():
-            pos0 = self.__pos[edge[0]]
-            pos1 = self.__pos[edge[1]]
-            for i in range(self.__dim):
-                edge_pos[i].append(pos0[i])
-                edge_pos[i].append(pos1[i])
-                edge_pos[i].append(None)
-        if self.__dim == 3:
-            return go.Scatter3d(
-                x=edge_pos[0],
-                y=edge_pos[1],
-                z=edge_pos[1],
-                mode='lines',
-                opacity=1.0,
-                line=dict(
-                    width=_EDGE_WIDTH,
-                    color=_EDGE_COLOR
-                ),
-                hoverinfo='skip'
-            )
-        if self.__dim == 2:
-            if gl:
-                return go.Scattergl(
-                    x=edge_pos[0],
-                    y=edge_pos[1],
-                    mode='lines',
-                    opacity=1.0,
-                    line=dict(
-                        width=_EDGE_WIDTH,
-                        color=_EDGE_COLOR
-                    ),
-                    hoverinfo='skip'
-                )
-            else:
-                return go.Scatter(
-                    x=edge_pos[0],
-                    y=edge_pos[1],
-                    mode='lines',
-                    opacity=1.0,
-                    line=dict(
-                        width=_EDGE_WIDTH,
-                        color=_EDGE_COLOR
-                    ),
-                    hoverinfo='skip'
-                )
