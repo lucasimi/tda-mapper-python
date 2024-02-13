@@ -4,17 +4,15 @@
 [![downloads](https://img.shields.io/pypi/dm/tda-mapper)](https://pypi.python.org/pypi/tda-mapper/)
 [![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
 [![deploy](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml)
-[![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=latest)](https://tda-mapper.readthedocs.io/en/latest/?badge=latest)
+[![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=main)](https://tda-mapper.readthedocs.io/en/main/?badge=main)
 [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
 
 This Python package provides a simple and efficient implementation of Mapper algorithm.
 
-* Installation from package: ```python -m pip install tda-mapper```
+* **Installation**: `pip install tda-mapper`
 
-* Installation from sources: clone this repo and run ```python -m pip install .```
-
-* Documentation: https://tda-mapper.readthedocs.io/en/latest/
+* **Documentation**: https://tda-mapper.readthedocs.io/en/main/
 
 ## About Mapper
 
