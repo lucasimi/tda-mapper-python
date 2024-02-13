@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 from sklearn.cluster import DBSCAN
 
-from tdamapper.core import MapperAlgorithm, mapper_connected_components
+from tdamapper.core import MapperAlgorithm, mapper_connected_components, mapper_labels
 from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
 
@@ -114,19 +114,40 @@ class TestMapper(unittest.TestCase):
 
     def testCCS(self):
         data = [0, 1, 2, 3]
+
         class MockCover:
 
             def apply(self, X):
                 yield [0, 3]
-                yield [1]
-                yield [2]
-                yield [0, 1, 2]
+                yield [1, 3]
+                yield [1, 2]
+                yield [0, 1, 3]
 
         cover = MockCover()
         clustering = TrivialClustering()
         ccs = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs))
-        self.assertEqual(0, ccs[0])
-        self.assertEqual(0, ccs[1])
-        self.assertEqual(0, ccs[2])
-        self.assertEqual(0, ccs[3])
+        cc0 = ccs[0]
+        self.assertEqual(cc0, ccs[1])
+        self.assertEqual(cc0, ccs[2])
+        self.assertEqual(cc0, ccs[3])
+
+    def testLabels(self):
+        data = [0, 1, 2, 3]
+
+        class MockCover:
+
+            def apply(self, X):
+                yield [0, 3]
+                yield [1, 3]
+                yield [1, 2]
+                yield [0, 1, 3]
+
+        cover = MockCover()
+        clustering = TrivialClustering()
+        labels = mapper_labels(data, data, cover, clustering)
+        self.assertEqual(len(data), len(labels))
+        self.assertEqual([0, 3], labels[0])
+        self.assertEqual([1, 2, 3], labels[1])
+        self.assertEqual([2], labels[2])
+        self.assertEqual([0, 1, 3], labels[3])
