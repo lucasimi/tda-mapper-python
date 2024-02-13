@@ -4,4 +4,4 @@ Examples
 .. toctree::
    :maxdepth: 4
 
-   notebooks/digits
+   notebooks/digits_online
