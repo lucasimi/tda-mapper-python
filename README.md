@@ -1,6 +1,7 @@
 # tda-mapper
 
 [![PyPI version](https://badge.fury.io/py/tda-mapper.svg)](https://badge.fury.io/py/tda-mapper)
+[![downloads](https://img.shields.io/pypi/dm/tda-mapper)](https://pypi.python.org/pypi/tda-mapper/)
 [![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
 [![deploy](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml)
 [![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=latest)](https://tda-mapper.readthedocs.io/en/latest/?badge=latest)
@@ -21,10 +22,10 @@ The Mapper algorithm is a well-known technique in the field of topological data 
 Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
 For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
-| Step 1                                                                                 | Step 2                                                                                   | Step 3                                                                                   | Step 4                                                                                   |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-|![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
-|Chose a lens | Cover the image of the lens                                                              | Perform clustering on the pullback cover                                                 | Build the Mapper graph                                                                   |
+| Step 1                                                                                   | Step 2                                                                                   | Step 3                                                                                   | Step 4                                                                                   |
+|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
+| Chose a lens                                                                             | Cover the image of the lens                                                              | Perform clustering on the pullback cover                                                 | Build the Mapper graph                                                                   |
 
 ## Usage
 
@@ -80,6 +81,6 @@ fig_std = mapper_plot.with_colors(  # reuse the plot with the same positions
 fig_std.show(config={'scrollZoom': True})
 ```
 
-| Dataset                                                                                          | Average class                                                                                                                         | Standard deviation of class                                                                                                |
-|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| ![Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper graph colored according to average class](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph colored according to std](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
+| Dataset                                                                                          | Mapper graph (average)                                                                                       | Mapper graph (deviation)                                                                                               |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| ![Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper graph (average)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph (standard deviation)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
