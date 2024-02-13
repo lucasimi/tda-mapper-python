@@ -66,17 +66,15 @@ def mapper_connected_components(X, y, cover, clustering):
     for lbls in itm_lbls:
         label_values.update(lbls)
     uf = UnionFind(label_values)
-    labels = [-1 for _ in X]
     for lbls in itm_lbls:
-        len_lbls = len(lbls)
-        root = -1
-        # noise points
-        if len_lbls == 1:
-            root = uf.find(lbls[0])
-        elif len_lbls > 1:
+        if len(lbls) > 1:
             for first, second in zip(lbls, lbls[1:]):
-                root = uf.union(first, second)
-        labels.append(root)
+                uf.union(first, second)
+    labels = [-1 for _ in X]
+    for i, lbls in enumerate(itm_lbls):
+        # assign -1 to noise points
+        root = uf.find(lbls[0]) if lbls else -1
+        labels[i] = root
     return labels
 
 
