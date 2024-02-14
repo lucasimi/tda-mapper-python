@@ -5,6 +5,7 @@
 **/.ipynb_checkpoints
 **/*.log
 **/docs/build
+**/*.ipynb
 
 .coverage
 .vscode
