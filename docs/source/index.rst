@@ -30,32 +30,20 @@ paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
 | |Step 1|        | |Step 2|        | |Step 3|        | |image1|        |
 +-----------------+-----------------+-----------------+-----------------+
 
-Examples
-========
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Examples
 
    notebooks/circles_online
    notebooks/digits_online
 
-API Reference
-=============
-.. toctree::
-   :maxdepth: 1
-
-   tdamapper
-
 Citations
-=========
+^^^^^^^^^
 
 To cite **tda-mapper** in your work you can use the Zenodo archive
-```https://doi.org/10.5281/zenodo.10642381`` <https://doi.org/10.5281/zenodo.10642381>`__.
-
+`https://doi.org/10.5281/zenodo.10642381 <https://doi.org/10.5281/zenodo.10642381>`__.
 In the archive you can find a permanent reference to the exact version
-you used in your work.
-
-For example, to cite version v0.4.0 you can use:
+you used in your work. For example, to cite version ``v0.4.0`` you can use:
 
 ::
 
@@ -75,6 +63,12 @@ BibTeX entry:
      doi          = {10.5281/zenodo.10655755},
      url          = {https://doi.org/10.5281/zenodo.10655755}
    }
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   tdamapper
 
 .. |PyPI version| image:: https://badge.fury.io/py/tda-mapper.svg
    :target: https://badge.fury.io/py/tda-mapper

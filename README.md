@@ -14,8 +14,6 @@ A simple and efficient implementation of Mapper algorithm for Topological Data A
 
 * **Documentation**: https://tda-mapper.readthedocs.io/en/main/
 
-### About Mapper
-
 The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
 Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
 For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
@@ -25,7 +23,7 @@ For an in-depth coverage of Mapper you can read [the original paper](https://res
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Chose a lens                                                                             | Cover the image of the lens                                                              | Perform clustering on the pullback cover                                                 | Build the Mapper graph                                                                   |
 
-## Usage
+## Example
 
 [Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find an example to use to kickstart your analysis.
 In this toy-example we use a two-dimensional dataset of two concentric circles.
