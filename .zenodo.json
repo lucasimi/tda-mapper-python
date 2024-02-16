@@ -1,6 +1,6 @@
 {
     "title": "tda-mapper",
-    "description": "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis",
+    "description": "A simple and efficient implementation of Mapper algorithm for Topological Data Analysis",
     "license": "Apache-2.0",
     "upload_type": "software",
     "creators": [

@@ -1,20 +1,20 @@
-# tda-mapper
-
 [![PyPI version](https://badge.fury.io/py/tda-mapper.svg)](https://badge.fury.io/py/tda-mapper)
 [![downloads](https://img.shields.io/pypi/dm/tda-mapper)](https://pypi.python.org/pypi/tda-mapper/)
 [![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
 [![deploy](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml)
 [![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=main)](https://tda-mapper.readthedocs.io/en/main/?badge=main)
-[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python) 
+[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
 
-This Python package provides a simple and efficient implementation of Mapper algorithm.
+# tda-mapper
+
+A simple and efficient implementation of Mapper algorithm for Topological Data Analysis
 
 * **Installation**: `pip install tda-mapper`
 
 * **Documentation**: https://tda-mapper.readthedocs.io/en/main/
 
-## About Mapper
+### About Mapper
 
 The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
 Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
@@ -82,3 +82,28 @@ fig_std.show(config={'scrollZoom': True})
 | Dataset                                                                                          | Mapper graph (average)                                                                                       | Mapper graph (deviation)                                                                                               |
 |--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | ![Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper graph (average)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph (standard deviation)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
+
+More examples can be found in the documentation https://tda-mapper.readthedocs.io/en/main/.
+
+## Citations
+
+To cite **tda-mapper** in your work you can use the Zenodo archive https://doi.org/10.5281/zenodo.10642381.
+
+In the archive you can find a permanent reference to the exact version you used in your work.
+
+For example, to cite version `v0.4.0` you can use:
+
+    Simi, L. (2024). tda-mapper (v0.4.0). Zenodo. https://doi.org/10.5281/zenodo.10655755
+
+BibTeX entry:
+
+    @software{tda-mapper_v0.4.0,
+      author       = {Simi, Luca},
+      title        = {tda-mapper},
+      month        = feb,
+      year         = 2024,
+      publisher    = {Zenodo},
+      version      = {v0.4.0},
+      doi          = {10.5281/zenodo.10655755},
+      url          = {https://doi.org/10.5281/zenodo.10655755}
+    }
