@@ -1,29 +1,29 @@
-tdamapper.core Mapper Algorithm
--------------------------------
+tdamapper.core
+--------------
 
 .. automodule:: tdamapper.core
    :members:
    :undoc-members:
    :show-inheritance:
 
-tdamapper.cover Cover Algorithms
---------------------------------
+tdamapper.cover
+---------------
 
 .. automodule:: tdamapper.cover
    :members:
    :undoc-members:
    :show-inheritance:
 
-tdamapper.clustering Clustering Algorithms
-------------------------------------------
+tdamapper.clustering
+--------------------
 
 .. automodule:: tdamapper.clustering
    :members:
    :undoc-members:
    :show-inheritance:
 
-tdamapper.plot Mapper Plot
---------------------------
+tdamapper.plot
+--------------
 
 .. automodule:: tdamapper.plot
    :members:
