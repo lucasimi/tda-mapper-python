@@ -13,7 +13,7 @@ author = 'Luca Simi'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'nbsphinx']
+extensions = ['sphinx.ext.autodoc', 'sphinx_rtd_theme', 'nbsphinx']
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -22,15 +22,9 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 html_theme_options = {
-    #'logo': 'logo.png',
-    'github_user': 'lucasimi',
-    'github_repo': 'tda-mapper',
-    'github_button': True,
-    'fixed_sidebar': True,
-    'page_width': '60%'
+    'sticky_navigation': True,
 }
-
