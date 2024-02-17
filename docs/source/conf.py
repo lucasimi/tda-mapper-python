@@ -28,7 +28,7 @@ html_static_path = ['_static']
 html_theme_options = {
     #'logo': 'logo.png',
     'github_user': 'lucasimi',
-    'github_repo': 'tda-mapper',
+    'github_repo': 'tda-mapper-python',
     'github_button': True,
     'fixed_sidebar': True,
     'page_width': '60%'
