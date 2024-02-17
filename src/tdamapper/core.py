@@ -51,9 +51,9 @@ def mapper_labels(X, y, cover, clustering):
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n_samples,) or list-like
     :param cover: The cover algorithm to apply to the lens.
-    :type cover: An instance of a cover algorithm from `tdamapper.cover`.
+    :type cover: An instance of a cover algorithm from :mod:`tdamapper.cover`.
     :param clustering: The clustering algorithm to apply to each subset of the dataset.
-    :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
+    :type clustering: A class from :mod:`tdamapper.clustering` or a class from :mod:`sklearn.cluster`.
     :return: A list of node labels for each point in the dataset.
     :rtype: `list[list[int]]`
 
@@ -82,16 +82,16 @@ def mapper_connected_components(X, y, cover, clustering):
     The function uses a union-find data structure to efficiently keep track of the
     connected components as it scans the nodes of the Mapper graph. This approach
     should be faster than computing the Mapper graph by first calling `mapper_graph`
-    and then calling `networkx.connected_components` on it.
+    and then calling :func:`networkx.connected_components` on it.
 
     :param X: The dataset to be mapped.
     :type X: array-like of shape (n_samples, n_features) or list-like
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n_samples,) or list-like
     :param cover: The cover algorithm to apply to the lens.
-    :type cover: An instance of a cover algorithm from `tdamapper.cover`.
+    :type cover: An instance of a cover algorithm from :mod:`tdamapper.cover`.
     :param clustering: The clustering algorithm to apply to each subset of the dataset.
-    :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
+    :type clustering: A class from :mod:`tdamapper.clustering` or a class from :mod:`sklearn.cluster`.
     :return: A list of labels. The label at position i identifies the connected component
         of the point at position i in the dataset.
     :rtype: `list[int]`
@@ -140,11 +140,11 @@ def mapper_graph(X, y, cover, clustering):
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n_samples,) or list-like
     :param cover: The cover algorithm to apply to the lens.
-    :type cover: An instance of a cover algorithm from `tdamapper.cover`.
+    :type cover: An instance of a cover algorithm from :mod:`tdamapper.cover`.
     :param clustering: The clustering algorithm to apply to each subset of the dataset.
-    :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
+    :type clustering: A class from :mod:`tdamapper.clustering` or a class from :mod:`sklearn.cluster`.
     :return: The Mapper graph.
-    :rtype: `networkx.Graph`
+    :rtype: :class:`networkx.Graph`
 
     """
     itm_lbls = mapper_labels(X, y, cover, clustering)
@@ -182,11 +182,11 @@ def aggregate_graph(y, graph, agg):
     :param y: The dataset to be aggregated.
     :type y: array-like of shape (n_samples,) or list-like
     :param graph: The graph to apply the aggregation function to.
-    :type graph: `networkx.Graph`.
+    :type graph: :class:`networkx.Graph`.
     :param agg: The aggregation function to use.
     :type agg: Callable.
     :return: A dictionary of node-aggregation pairs.
-    :rtype: `dict`
+    :rtype: :class:`dict`
 
     """
     agg_values = {}
@@ -202,9 +202,9 @@ class MapperAlgorithm:
     """A class for creating and analyzing Mapper graphs.
 
     :param cover: The cover algorithm to apply to the lens.
-    :type cover: An instance of a cover algorithm from `tdamapper.cover`.
+    :type cover: An instance of a cover algorithm from :mod:`tdamapper.cover`.
     :param clustering: The clustering algorithm to apply to each subset of the dataset.
-    :type clustering: A class from `tdamapper.clustering` or a class from `sklearn.cluster`.
+    :type clustering: A class from :mod:`tdamapper.clustering` or a class from :mod:`sklearn.cluster`.
 
     """
 
@@ -221,7 +221,7 @@ class MapperAlgorithm:
         to a cluster of points having similar values in the lens space. Each edge connects
         two nodes that share some points in their corresponding clusters.
 
-        This method stores the result of `mapper_graph` in the attribute `graph_` and
+        This method stores the result of :func:`mapper_graph` in the attribute `graph_` and
         returns a reference to the calling object.
 
         :param X: The dataset to be mapped.
@@ -242,14 +242,14 @@ class MapperAlgorithm:
         to a cluster of points having similar values in the lens space. Each edge connects
         two nodes that share some points in their corresponding clusters.
 
-        This method is equivalent to calling `mapper_graph`.
+        This method is equivalent to calling :func:`mapper_graph`.
 
         :param X: The dataset to be mapped.
         :type X: array-like of shape (n_samples, n_features) or list-like
         :param y: The lens values for each point in the dataset.
         :type y: array-like of shape (n_samples,) or list-like
         :return: The Mapper graph.
-        :rtype: `networkx.Graph`
+        :rtype: :class:`networkx.Graph`
 
         """
         return mapper_graph(X, y, self.__cover, self.__clustering)
