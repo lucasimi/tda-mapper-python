@@ -8,7 +8,7 @@
 
 # tda-mapper
 
-A simple and efficient implementation of Mapper algorithm for Topological Data Analysis
+A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis
 
 * **Installation**: `pip install tda-mapper`
 
