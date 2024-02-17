@@ -1,4 +1,16 @@
-"""A module containing the logic for building open covers for the Mapper algorithm."""
+"""This module implements the open cover construction for the Mapper algorithm.
+
+The Mapper algorithm consists of three main steps: filtering, covering, and clustering.
+First, the data points are mapped to a lower-dimensional space using a lens function.
+Then, the lens space is covered by overlapping open sets, using an open cover algorithm.
+Finally, the data points in each open set are clustered using a clustering algorithm,
+and the clusters are connected by edges if they share points in the overlap.
+
+The open cover construction is a key step in the Mapper algorithm that partitions
+the data into overlapping subsets based on the values of a lens function.
+
+"""
+
 import numpy as np
 
 from tdamapper.utils.vptree_flat import VPTree as FVPT
@@ -18,15 +30,28 @@ def _l_infty(x, y):
 
 
 def proximity_net(X, proximity):
-    """
-    Compute proximity-net for a given proximity function.
+    """Compute proximity-net for a given proximity function.
 
-    Returns a generator where each item is a subset of ids of points from `X`.
+    This function uses an iterative algorithm to construct the proximity-net.
+    It starts with an arbitrary point and builds an open cover around it based
+    on the proximity function. Then it discards the covered points and repeats
+    the process on the remaining points until all points are covered.
 
-    :param X: A dataset.
-    :type X: `numpy.ndarray` or list-like.
-    :param proximity: A proximity function.
-    :type proximity: `tdamapper.cover.Proximity`
+    This function applies an iterative algorithm to create the proximity-net.
+    It picks an arbitrary point and forms an open cover calling the proximity
+    function on the chosen point. The points contained in the open cover are
+    then marked as covered, and discarded in the following steps. The procedure
+    is repeated on the leftover points until every point is eventually covered.
+
+    This function returns a generator that yields each element of the proximity-net
+    as a list of ids. The ids are the indices of the points in the original dataset.
+
+    :param X: A dataset of n points.
+    :type X: :class:`numpy.ndarray` of shape (n, d) or list-like of length n.
+    :param proximity: A proximity function 
+    :type proximity: :class:`tdamapper.cover.Proximity`.
+    :returns: A generator of lists of ids.
+    :rtype: generator of lists of ints
     """
     covered_ids = set()
     proximity.fit(X)
@@ -39,23 +64,51 @@ def proximity_net(X, proximity):
 
 
 class Proximity:
-    """
-    This class serves as a blueprint for proximity functions used inside `proximity_net`.
+    """This class defines an abstract interface for proximity functions.
 
-    Subclasses are expected to override the methods `fit` and `search`.
+    Proximity functions are used as arguments of :func:`proximity_net`.
+    This is a naive implementation. Subclasses should override the methods
+    of this class to implement more meaningful proximity functions.
+
     """
 
     def fit(self, X):
+        """Train internal parameters needed by the :func:`search` method.
+
+        This is a naive implementation that stores the dataset as an attribute
+        of the object. This method should be overridden by subclasses to implement
+        more meaningful proximity functions.
+
+        :param X: A dataset of n points used to extract parameters and perform training.
+        :type X: :class:`numpy.ndarray` of shape (n, d) or list-like of length n.
+        :returns: the object itself
+        :rtype: self
+
+        """
         self.__X = X
         return self
 
     def search(self, x):
+        """Call the proximity function on a query point and return a list of neighbors.
+
+        This is a naive implementation that returns all the points in the dataset
+        as neighbors. This method should be overridden by subclasses to implement
+        more meaningful proximity functions.
+
+        :param x: A query point for which we want to find neighbors.
+        :type x: Any
+        :returns: The indices of the neighbors contained in the dataset.
+        :rtype: list[int]
+
+        """
         return [i for i, _ in enumerate(self.__X)]
 
 
 class ProximityNetCover(Proximity):
-    """
+    """A generic cover algorithm based on proximity-net.
+
     This class serves as a blueprint for cover algorithm based on proximity-net.
+    This is a naive implementation.
     """
 
     def apply(self, X):
@@ -63,18 +116,28 @@ class ProximityNetCover(Proximity):
 
 
 class BallCover(ProximityNetCover):
-    """
-    Creates an open cover made of overlapping open balls of fixed radius.
+    """A class that creates an open cover of a data set using open balls of a fixed radius.
 
-    This class implements the Ball Proximity function: after calling `fit`, the `search` method
-    returns all the points within a ball centered in the target point.
+    An open cover is a collection of subsets of a data set such that the union of the
+    subsets contains the whole data set. An open ball is a subset of points that are
+    within a certain distance from a center point, according to a given metric. This class
+    implements the Ball Proximity function to find the points that belong to each open ball.
 
-    :param radius: The radius of open balls
-    :type radius: float.
-    :param metric: The metric used to define open balls.
-    :type metric: Callable.
-    :param flat: Set to True to use flat vptrees.
-    :type flat: `bool`
+    After initializing the class with a radius, a metric, and a flat option, the `fit` method
+    builds a data structure (either a flat or a hierarchical vantage point tree) that allows
+    efficient queries of the data set. The `search` method takes a target point as input and
+    returns a list of points that are within the radius from the target point, according to
+    the metric.
+
+    :param radius: The radius of the open balls, must be positive.
+    :type radius: float
+    :param metric: The (pseudo-)metric function that defines the distance between points,
+        must be symmetric.
+    :type metric: Callable
+    :param flat: A flag that indicates whether to use a flat or a hierarchical vantage point
+        tree, defaults to False.
+    :type flat: bool, optional
+
     """
 
     def __init__(self, radius, metric, flat=True):
@@ -91,11 +154,31 @@ class BallCover(ProximityNetCover):
         return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def fit(self, X):
+        """Train internal parameters needed by the :func:`search` method.
+
+        This method creates a vptree on the dataset.
+
+        :param X: A dataset of n points used to extract parameters and perform training.
+        :type X: :class:`numpy.ndarray` of shape (n, d) or list-like of length n.
+        :returns: the object itself
+        :rtype: self
+
+        """
         self.__data = list(enumerate(X))
         self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
+        """Call the proximity function on a query point and return a list of neighbors.
+
+        This method queries the internal vptree in order to perform fast range queries.
+
+        :param x: A query point for which we want to find neighbors.
+        :type x: Any
+        :returns: The indices of the neighbors contained in the dataset.
+        :rtype: list[int]
+
+        """
         if self.__vptree is None:
             return []
         neighs = self.__vptree.ball_search((-1, x), self.__radius)
@@ -103,18 +186,29 @@ class BallCover(ProximityNetCover):
 
 
 class KNNCover(ProximityNetCover):
-    """
-    Creates an open cover where each open set contains a fixed number of neighbors, using KNN.
+    """A class that creates an open cover of a data set using k-nearest neighbors (KNN).
 
-    This class implements the KNN Proximity function: after calling `fit`, the `search` method
-    returns the k nearest points to the target point.
+    An open cover is a collection of subsets of a data set such that the union of the
+    subsets contains the whole data set. This class uses the KNN Proximity function to
+    find the k closest points to each point in the data set, according to a given metric.
+    The open sets are then defined as the sets of points that share the same k neighbors.
 
-    :param neighbors: The number of neighbors.
-    :type neighbors: int.
-    :param metric: The metric used to search neighbors.
-    :type metric: function.
-    :param flat: Set to True to use flat vptrees.
-    :type flat: `bool`
+    After initializing the class with a number of neighbors, a metric, and a flat option,
+    the `fit` method builds a data structure (either a flat or a hierarchical vantage point
+    tree) that allows efficient queries of the data set. The `search` method takes a target
+    point as input and returns a list of points that are within the same open set as the
+    target point.
+
+    :param neighbors: The number of neighbors to use for the KNN Proximity function, must be
+        positive and less than the size of the data set.
+    :type neighbors: int
+    :param metric: The (pseudo-)metric function that defines the distance between points,
+        must be symmetric.
+    :type metric: Callable
+    :param flat: A flag that indicates whether to use a flat or a hierarchical vantage point
+        tree, defaults to False.
+    :type flat: bool, optional
+
     """
 
     def __init__(self, neighbors, metric, flat=True):
@@ -131,11 +225,31 @@ class KNNCover(ProximityNetCover):
         return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
+        """Train internal parameters needed by the :func:`search` method.
+
+        This method creates a vptree on the dataset.
+
+        :param X: A dataset of n points used to extract parameters and perform training.
+        :type X: :class:`numpy.ndarray` of shape (n, d) or list-like of length n.
+        :returns: the object itself
+        :rtype: self
+
+        """
         self.__data = list(enumerate(X))
         self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
         return self
 
     def search(self, x):
+        """Call the proximity function on a query point and return a list of neighbors.
+
+        This method queries the internal vptree in order to perform fast KNN queries.
+
+        :param x: A query point for which we want to find neighbors.
+        :type x: Any
+        :returns: The indices of the neighbors contained in the dataset.
+        :rtype: list[int]
+
+        """
         if self.__vptree is None:
             return []
         neighs = self.__vptree.knn_search((-1, x), self.__neighbors)
@@ -143,21 +257,33 @@ class KNNCover(ProximityNetCover):
 
 
 class CubicalCover(ProximityNetCover):
+    """A class that creates an open cover of a data set using hypercubes with equal sides and overlap.
+
+    An open cover is a collection of subsets of a data set such that the union of the
+    subsets contains the whole data set. A hypercube is a multidimensional generalization
+    of a square or a cube. This class implements the Cubical Proximity function to cover
+    the data set with hypercubes of the same size and overlap on each dimension. The size
+    and overlap of the hypercubes are determined by the number of intervals and the overlap
+    fraction parameters.
+
+    After initializing the class with the number of intervals, the overlap fraction, and the
+    flat option, the `fit` method builds a data structure (either a flat or a hierarchical
+    vantage point tree) that allows efficient queries of the data set. The `search` method
+    takes a target point as input and returns the hypercube that contains the target point,
+    or the hypercube whose center is closest to the target point if the target point is
+    outside the data set.
+
+    :param n_intervals: The number of intervals to use for each dimension, must be positive
+        and less than or equal to the size of the data set.
+    :type n_intervals: int
+    :param overlap_frac: The fraction of overlap between adjacent intervals on each dimension,
+        must be in the range (0.0, 1.0).
+    :type overlap_frac: float
+    :param flat: A flag that indicates whether to use a flat or a hierarchical vantage point
+        tree, defaults to False.
+    :type flat: bool, optional
+
     """
-    Creates an open cover of hypercubes of evenly-sized sides and overlap.
-
-    This class implements the Cubical Proximity function: after calling `fit`, the `search` method
-    returns the hypercube whose center is nearest to the target point. Each hypercube is the
-    product of 1-dimensional intervals with the same length and overlap.
-
-    :param n_intervals: The number of intervals on each dimension.
-    :type n_intervals: int.
-    :param overlap_frac: The overlap fraction.
-    :type overlap_frac: `float` in (0.0, 1.0).
-    :param flat: Set to True to use flat vptrees.
-    :type flat: `bool`
-    """
-
     def __init__(self, n_intervals, overlap_frac, flat=True):
         self.__n_intervals = n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
@@ -199,8 +325,21 @@ class CubicalCover(ProximityNetCover):
 
 
 class TrivialCover(ProximityNetCover):
-    """
-    Creates an open cover made of a single open set that contains the whole dataset.
+    """A class that creates an open cover of a data set using a single open set.
+
+    An open cover is a collection of subsets of a data set such that the union of the subsets
+    contains the whole data set. This class implements the Trivial Proximity function to create
+    a single open set that contains all the points in the data set.
+
+    After initializing the class, the `fit` method stores the data set as an attribute. The
+    `search` method takes a target point as input and returns a list of all the indices of the
+    data set.
+
+    :param x: The target point to be searched, must be a one-dimensional array-like object with
+        the same length as the data set's features.
+    :type x: array-like
+    :return: A list of all the indices of the data set.
+    :rtype: list
     """
 
     def fit(self, X):
