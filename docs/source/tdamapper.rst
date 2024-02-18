@@ -15,7 +15,7 @@ tdamapper.cover
    :show-inheritance:
 
 tdamapper.proximity
----------------
+-------------------
 
 .. automodule:: tdamapper.proximity
    :members:
