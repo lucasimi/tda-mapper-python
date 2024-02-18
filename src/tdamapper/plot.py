@@ -1,4 +1,7 @@
-"""A module for plotting the Mapper graph."""
+"""
+This module provides functionalities to visualize the Mapper graph.
+"""
+
 import math
 
 import numpy as np
@@ -517,20 +520,31 @@ class _PlotMatplotlib(_Plot):
 
 class MapperPlot:
     """
-    Creates a plot for the Mapper graph, and turn it into a displayable figure.
+    Class for generating and visualizing a the Mapper graph.
+    
+    This class creates a metric embedding of the Mapper graph, in 2d or 3d, and
+    converts it into a figure suitable for display.
 
-    :param X: A dataset.
-    :type X: `numpy.ndarray` or list-like.
-    :param graph: The Mapper graph.
-    :type graph: `networkx.Graph`
-    :param colors: A dataset of values to plot as nodes color.
-    :type colors: `numpy.ndarray` or list-like.
-    :param agg: Aggregation function that computes nodes color.
-    :type agg: Callable on the values of colors.
-    :param cmap: A colormap, to convert values into colors.
-    :type cmap: `str`
-    :param kwargs: Additional arguments to `networkx.spring_layout`.
-    :type: `dict`
+    :param X: The input data used to create the Mapper graph.
+    :type X: array-like of shape (n, m) or list-like of size n
+    :param graph: The precomputed Mapper graph to be embedded. This can be
+        obtained by calling :func:`tdamapper.core.mapper_graph` or
+        :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
+    :type graph: :class:`networkx.Graph`, required
+    :param colors: An array of values that determine the color of each node in
+        the graph, which is useful for highlighting different features of the
+        data.
+    :type colors: array-like of shape (n,) or list-like of size n
+    :param agg: A function used to aggregate the `colors` data when multiple
+        points are mapped to a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :type agg: Callable, optional
+    :param cmap: The name of a colormap used to map `color` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :type cmap: str, optional
+    :param kwargs: A dictionary of additional layout arguments for the function
+        :func:`networkx.spring_layout`.
+    :type kwargs: dict, optional
     """
 
     def __init__(
@@ -558,19 +572,35 @@ class MapperPlot:
 
     def plot(self, title=None, width=512, height=512, backend='plotly', **kwargs):
         """
-        Turns the plot object into a displayable figure.
-
-        :param title: Title displayed on the figure.
-        :type title: `str`
-        :param width: The width of the figure expressed in pixels.
-        :type width: `int`
-        :param height: The height of the figure expressed in pixels.
-        :type height: `int`
-        :param backend: The type of backend used for drawing.
-        :type backend: 'matplotlib' or 'plotly' or 'plotly_gl'.
-        :param kwargs: Additional arguments to supply.
-        :type kwargs: `dict`
+        Provides a figure ready for display.
+        
+        This function takes a plot object and transforms it into a figure that
+        can be displayed using various backends. 
+        
+        :param title: The title to be displayed aside the figure.
+        :type title: str, optional
+        :param width: The desired width of the figure in pixels.
+        :type width: int, optional. Defaults to 512
+        :param height: The desired height of the figure in pixels.
+        :type height: int, optional. Defaults to 512
+        :param backend: The graphics backend to use for rendering the figure, 
+            with options including 'matplotlib' for static images, 'plotly' for 
+            interactive plots, and 'plotly_gl' for WebGL-accelerated graphics. 
+        :type backend: {'matplotlib', 'plotly', 'plotly_gl'}, optional. Defaults
+            to 'plotly'
+        :param kwargs: A dictionary of additional keyword arguments specific to 
+            the chosen backend.
+        :type kwargs: dict, optional
+        :return: A figure object configured with the specified title, 
+            dimensions, and rendering backend. The returned object depends on
+            the backend used, providing flexibility in how the figure is 
+            rendered and displayed.
+        :rtype: Depending on the backend, returns a 
+            :class:`matplotlib.figure.Figure`, 
+            :class:`plotly.graph_objects.Figure`, or 
+            :class:`plotly.graph_objects.Figure` with WebGL support.
         """
+
         if self.__dim == 2:
             if backend == 'matplotlib':
                 return _PlotMatplotlib(
