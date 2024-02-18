@@ -1,16 +1,14 @@
 """
-Open cover construction for the Mapper algorithm.
+Proximity functions for open cover algorithms.
 
-The Mapper algorithm consists of three main steps: filtering, covering, and
-clustering. First, the data points are mapped to a lower dimensional space using
-a lens function. Then, the lens space is covered by overlapping open sets, using
-an open cover algorithm. Finally, the data points in each open set are clustered
-using a clustering algorithm, and the clusters are connected by edges if they
-share points in the overlap.
+A proximity function is a function that maps each point into a subset of the
+dataset that contains the point itself.
 
-The open cover construction is a key step in the Mapper algorithm that
-partitions the data into overlapping subsets based on the values of a lens
-function.
+Proximity functions, implemented as subclasses of class
+:class:`tdamapper.proximity.Proximity`, are a convenient way to implement open
+cover algorithms by using the `proximity_net` construction. Proximity-net is
+implemented by function :func:`tdamapper.proximity.proximity_net`, and used by
+the class :class:`tdamapper.cover.ProximityCover`.
 """
 
 import numpy as np
@@ -70,21 +68,18 @@ def _l_infty(x, y):
 
 class Proximity:
     """
-    This class defines an abstract interface for proximity functions.
+    Abstract interface for proximity functions.
 
-    Proximity functions are used as arguments of
-    :func:`tdamapper.cover.proximity_net`. This is a naive implementation.
-    Subclasses should override the methods of this class to implement more
-    meaningful proximity functions.
+    This is a naive implementation. Subclasses should override the methods of
+    this class to implement more meaningful proximity functions.
     """
 
     def fit(self, X):
         """
-        Train internal parameters needed by the :func:`search` method.
+        Train internal parameters.
 
-        This is a naive implementation that stores the dataset as an attribute
-        of the object. This method should be overridden by subclasses to
-        implement more meaningful proximity functions.
+        This is a naive implementation that should be overridden by subclasses
+        to implement more meaningful proximity functions.
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
@@ -97,8 +92,7 @@ class Proximity:
 
     def search(self, x):
         """
-        Call the proximity function on a query point and return a list of
-        neighbors.
+        Return a list of neighbors for the query point.
 
         This is a naive implementation that returns all the points in the
         dataset as neighbors. This method should be overridden by subclasses to
@@ -106,24 +100,18 @@ class Proximity:
 
         :param x: A query point for which we want to find neighbors.
         :type x: Any
-        :return: The indices of the neighbors contained in the dataset.
+        :return: A list containing all the indices of the points in the dataset.
         :rtype: list[int]
         """
-        return [i for i, _ in enumerate(self.__X)]
+        return list(range(0, len(self.__X)))
 
 class BallProximity(Proximity):
     """
-    A class for a proximity function based on open balls of fixed radius.
+    Proximity function based on open balls of fixed radius.
 
-    An open ball is a subset of points that are within a certain distance from a
-    center point, according to a given metric. This class implements the Ball
-    Proximity function to find the points that belong to each open ball.
-
-    After initializing the class with a radius, a metric, and a flat option, the
-    `fit` method builds a data structure (either a flat or a hierarchical
-    vantage point tree) that allows efficient queries of the data set. The
-    `search` method takes a target point as input and returns a list of points
-    that are within the radius from the target point, according to the metric.
+    An open ball is a set of points placed within a certain distance from a
+    center. This class maps each point to the open ball of fixed radius centered
+    on the point itself.
 
     :param radius: The radius of the open balls, must be positive.
     :type radius: float
@@ -153,9 +141,11 @@ class BallProximity(Proximity):
 
     def fit(self, X):
         """
-        Train internal parameters needed by the :func:`search` method.
+        Train internal parameters.
 
-        This method creates a vptree on the dataset.
+        This method creates a vptree on the dataset in order to perform fast
+        range queries in the func:`tdamapper.proximity.BallProximity.search`
+        method.
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
@@ -169,11 +159,9 @@ class BallProximity(Proximity):
 
     def search(self, x):
         """
-        Call the proximity function on a query point and return a list of
-        neighbors.
+        Return a list of neighbors for the query point.
 
-        This method queries the internal vptree in order to perform fast range
-        queries.
+        This method uses the internal vptree to perform fast range queries.
 
         :param x: A query point for which we want to find neighbors.
         :type x: Any
@@ -188,20 +176,10 @@ class BallProximity(Proximity):
 
 class KNNProximity(Proximity):
     """
-    A class that creates an open cover of a data set using k-nearest neighbors
-    (KNN).
+    Proximity function based on k-nearest neighbors (KNN).
 
-    An open cover is a collection of subsets of a data set such that the union
-    of the subsets contains the whole data set. This class uses the KNN
-    Proximity function to find the k closest points to each point in the data
-    set, according to a given metric. The open sets are then defined as the sets
-    of points that share the same k neighbors.
-
-    After initializing the class with a number of neighbors, a metric, and a
-    flat option, the `fit` method builds a data structure (either a flat or a
-    hierarchical vantage point tree) that allows efficient queries of the data
-    set. The `search` method takes a target point as input and returns a list of
-    points that are within the same open set as the target point.
+    This class maps each point to the set of the k nearest neighbors to the
+    point itself.
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the size of the data set.
@@ -232,9 +210,11 @@ class KNNProximity(Proximity):
 
     def fit(self, X):
         """
-        Train internal parameters needed by the :func:`search` method.
+        Train internal parameters.
 
-        This method creates a vptree on the dataset.
+        This method creates a vptree on the dataset in order to perform fast
+        KNN queries in the func:`tdamapper.proximity.BallProximity.search`
+        method.
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
@@ -248,8 +228,7 @@ class KNNProximity(Proximity):
 
     def search(self, x):
         """
-        Call the proximity function on a query point and return a list of
-        neighbors.
+        Return a list of neighbors for the query point.
 
         This method queries the internal vptree in order to perform fast KNN
         queries.
@@ -266,16 +245,12 @@ class KNNProximity(Proximity):
 
 class CubicalProximity(Proximity):
     """
-    A class that creates an open cover of a data set using hypercubes with equal
-    sides and overlap.
+    Proximity function based on open hypercubes of uniform size and overlap.
 
-    An open cover is a collection of subsets of a data set such that the union
-    of the subsets contains the whole data set. A hypercube is a
-    multidimensional generalization of a square or a cube. This class implements
-    the Cubical Proximity function to cover the data set with hypercubes of the
-    same size and overlap on each dimension. The size and overlap of the
-    hypercubes are determined by the number of intervals and the overlap
-    fraction parameters.
+    A hypercube is a multidimensional generalization of a square or a cube.
+    The size and overlap of the hypercubes are determined by the number of
+    intervals and the overlap fraction parameters. This class maps each point to
+    the hypercube with the nearest center.
 
     :param n_intervals: The number of intervals to use for each dimension, must
         be positive and less than or equal to the size of the data set.
@@ -321,8 +296,10 @@ class CubicalProximity(Proximity):
 
     def fit(self, X):
         """
+        Train internal parameters.
+
         This method builds an internal :class:`tdamapper.cover.BallCover`
-        attribute structure that allows efficient queries of the data set.
+        attribute that allows efficient queries of the data set.
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
@@ -336,9 +313,10 @@ class CubicalProximity(Proximity):
 
     def search(self, x):
         """
-        This method takes a target point as input and returns the hypercube that
-        contains the target point, or the hypercube whose center is closest to
-        the target point if the target point is outside the data set.
+        Return a list of neighbors for the query point.
+
+        This method takes a target point as input and returns the hypercube
+        whose center is closest to the target point.
 
         :param x: A query point for which we want to find neighbors.
         :type x: Any
@@ -350,21 +328,15 @@ class CubicalProximity(Proximity):
 
 class TrivialProximity(Proximity):
     """
-    A class that creates an open cover of a data set using a single open set.
+    Proximity function that returns the whole dataset.
 
-    An open cover is a collection of subsets of a data set such that the union
-    of the subsets contains the whole data set. This class implements the
-    Trivial Proximity function to create a single open set that contains all the
-    points in the data set.
-
-    After initializing the class, the `fit` method stores the data set as an
-    attribute. The `search` method takes a target point as input and returns a
-    list of all the indices of the data set.
+    This class creates a single open set that contains all the points in the
+    data set.
     """
 
     def fit(self, X):
         """
-        Train internal parameters needed by the :func:`search` method.
+        Train internal parameters.
 
         This method stores the dataset in an internal attribute.
 
@@ -379,8 +351,7 @@ class TrivialProximity(Proximity):
 
     def search(self, x):
         """
-        Call the proximity function on a query point and return a list of
-        neighbors.
+        Return a list of neighbors for the query point.
 
         This method returns a list of all the ids ranging from zero to the
         length of the dataset.

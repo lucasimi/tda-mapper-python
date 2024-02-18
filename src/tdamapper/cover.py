@@ -26,9 +26,10 @@ from tdamapper.proximity import (
 
 class Cover:
     """
-    A generic cover algorithm.
+    Abstract interface for cover algorithms.
 
-    This class serves as a blueprint for more meaningful cover algorithms.
+    This is a naive implementation. Subclasses should override the methods of
+    this class to implement more meaningful cover algorithms.
     """
 
     def apply(self, X):
@@ -49,7 +50,7 @@ class Cover:
 
 class ProximityCover(Cover):
     """
-    A cover algorithm based on proximity-net.
+    Cover algorithm based on proximity-net.
 
     This class creates an open cover by calling the function
     :func:`tdamapper.proximity.proximity_net`.
@@ -81,7 +82,7 @@ class ProximityCover(Cover):
 
 class BallCover(ProximityCover):
     """
-    A cover algorithm based on :class:`tdamapper.proximity.BallProximity`.
+    Cover algorithm based on :class:`tdamapper.proximity.BallProximity`.
 
     :param radius: The radius of the open balls, must be positive.
     :type radius: float
@@ -103,7 +104,7 @@ class BallCover(ProximityCover):
 
 class KNNCover(ProximityCover):
     """
-    A cover algorithm based on :class:`tdamapper.proximity.KNNProximity`.
+    Cover algorithm based on :class:`tdamapper.proximity.KNNProximity`.
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the size of the data set.
@@ -127,7 +128,7 @@ class KNNCover(ProximityCover):
 
 class CubicalCover(ProximityCover):
     """
-    A cover algorithm based on :class:`tdamapper.proximity.CubicalProximity`.
+    Cover algorithm based on :class:`tdamapper.proximity.CubicalProximity`.
 
     :param n_intervals: The number of intervals to use for each dimension, must
         be positive and less than or equal to the size of the data set.
@@ -151,7 +152,7 @@ class CubicalCover(ProximityCover):
 
 class TrivialCover(ProximityCover):
     """
-    A cover algorithm based on :class:`tdamapper.proximity.TrivialProximity`.
+    Cover algorithm based on :class:`tdamapper.proximity.TrivialProximity`.
     """
 
     def __init__(self):
