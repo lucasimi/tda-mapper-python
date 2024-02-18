@@ -14,6 +14,14 @@ tdamapper.cover
    :undoc-members:
    :show-inheritance:
 
+tdamapper.proximity
+---------------
+
+.. automodule:: tdamapper.proximity
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tdamapper.clustering
 --------------------
 
