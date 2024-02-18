@@ -1,4 +1,13 @@
-"""A module containing the logic related to clustering for the Mapper algorithm."""
+"""
+Clustering module for the Mapper algorithm.
+
+This module implements some tools for the clustering step of Mapper algorithm,
+which groups the data points in each open set into clusters using a clustering
+algorithm of choice. The clusters are then used to form the nodes of the Mapper
+graph, and are connected by edges if they share points in the overlap.
+
+"""
+
 import logging
 
 from tdamapper.core import mapper_connected_components
@@ -15,12 +24,27 @@ logging.basicConfig(
 class TrivialClustering:
     """
     A clustering algorithm that returns a single cluster.
+
+    This class implements a trivial clustering algorithm that assigns all data
+    points to the same cluster. It can be used as an argument of the class
+    :class:`tdamapper.core.MapperAlgorithm` to skip clustering in the
+    construction of the Mapper graph.
+
     """
 
     def __init__(self):
         self.labels_ = None
 
     def fit(self, X, y=None):
+        """
+        Fit the clustering algorithm to the data.
+
+        :param X: The dataset to be mapped.
+        :type X: array-like of shape (n_samples, n_features) or list-like
+        :param y: Ignored.
+        :returns: `self`.
+
+        """
         self.labels_ = [0 for _ in X]
         return self
 
@@ -28,13 +52,17 @@ class TrivialClustering:
 class FailSafeClustering:
     """
     A delegating clustering algorithm that prevents failure.
-    When clustering fails, instead of throwing an exception,
-    a single cluster, containing all points, is returned.
 
+    This class wraps a clustering algorithm and handles any exceptions that may
+    occur during the fitting process. If the clustering algorithm fails, instead
+    of throwing an exception, a single cluster containing all points is
+    returned. This can be useful for robustness and debugging purposes.
+    
     :param clustering: A clustering algorithm to delegate to.
-    :type clustering: Anything compatible with a `sklearn.cluster` class.
-    :param verbose: Set to `True` to log exceptions.
-    :type verbose: `bool`
+    :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
+    :param verbose: Set to `True` to log exceptions. The default is `True`.
+    :type verbose: bool
+
     """
 
     def __init__(self, clustering, verbose=True):
@@ -56,16 +84,22 @@ class FailSafeClustering:
 class MapperClustering:
     """
     A clustering algorithm based on the Mapper graph.
-    The Mapper algorithm returns a graph where each point is eventually contained
-    in multiple nodes. In this case all those nodes are connected in the Mapper graph,
-    therefore they share the same connected component. For this reason the notion of
-    connected component is well-defined for any point of the dataset. This class
-    clusters point according to their connected component in the Mapper graph.
 
-    :type cover: A cover algorithm.
-    :type cover: Anything compatible with a `tdamapper.cover` class.
-    :param clustering: A clustering algorithm.
-    :type clustering: Anything compatible with a `sklearn.cluster` class.
+    The Mapper algorithm constructs a graph from a dataset, where each node
+    represents a cluster of points and each edge represents an overlap between
+    clusters. Each point in the dataset belongs to one or more nodes in the
+    graph. These nodes are therefore all connected and share the same connected
+    component in the Mapper graph. This class clusters point according to their
+    connected component in the Mapper graph calling the function
+    :func:`core.mapper_connected_components`.
+
+    :type cover: A cover algorithm the covers the lens space in overlapping open
+        subsets.
+    :type cover: Anything compatible with a :mod:`tdamapper.cover` class.
+    :param clustering: A clustering algorithm that groups the points in each
+        subset into clusters.
+    :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
+
     """
 
     def __init__(self, cover=None, clustering=None):
