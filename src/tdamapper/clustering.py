@@ -5,7 +5,6 @@ This module implements some tools for the clustering step of Mapper algorithm,
 which groups the data points in each open set into clusters using a clustering
 algorithm of choice. The clusters are then used to form the nodes of the Mapper
 graph, and are connected by edges if they share points in the overlap.
-
 """
 
 import logging
@@ -29,7 +28,6 @@ class TrivialClustering:
     points to the same cluster. It can be used as an argument of the class
     :class:`tdamapper.core.MapperAlgorithm` to skip clustering in the
     construction of the Mapper graph.
-
     """
 
     def __init__(self):
@@ -40,10 +38,9 @@ class TrivialClustering:
         Fit the clustering algorithm to the data.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n_samples, n_features) or list-like
+        :type X: array-like of shape (n, m) or list-like of size n
         :param y: Ignored.
-        :returns: `self`.
-
+        :return: self
         """
         self.labels_ = [0 for _ in X]
         return self
@@ -62,7 +59,6 @@ class FailSafeClustering:
     :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
     :param verbose: Set to `True` to log exceptions. The default is `True`.
     :type verbose: bool
-
     """
 
     def __init__(self, clustering, verbose=True):
@@ -91,15 +87,14 @@ class MapperClustering:
     graph. These nodes are therefore all connected and share the same connected
     component in the Mapper graph. This class clusters point according to their
     connected component in the Mapper graph calling the function
-    :func:`core.mapper_connected_components`.
+    :func:`tdamapper.core.mapper_connected_components`.
 
-    :type cover: A cover algorithm the covers the lens space in overlapping open
-        subsets.
-    :type cover: Anything compatible with a :mod:`tdamapper.cover` class.
-    :param clustering: A clustering algorithm that groups the points in each
-        subset into clusters.
-    :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
-
+    :param cover: The cover algorithm to apply to lens space.
+    :type cover: A class from :mod:`tdamapper.cover`
+    :param clustering: The clustering algorithm to apply to each subset of the
+        dataset.
+    :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
+        :mod:`sklearn.cluster`
     """
 
     def __init__(self, cover=None, clustering=None):
