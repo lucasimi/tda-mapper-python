@@ -1,19 +1,9 @@
 """
 Open cover construction for the Mapper algorithm.
 
-An open cover is a collection of subsets of a data set such that the union of
-the subsets contains the whole data set.
-
-The Mapper algorithm consists of three main steps: filtering, covering, and
-clustering. First, the data points are mapped to a lower dimensional space using
-a lens function. Then, the lens space is covered by overlapping open sets, using
-an open cover algorithm. Finally, the data points in each open set are clustered
-using a clustering algorithm, and the clusters are connected by edges if they
-share points in the overlap.
-
-The open cover construction is a key step in the Mapper algorithm that
-partitions the data into overlapping subsets based on the values of a lens
-function.
+An open cover is a collection of open subsets of a dataset whose union spans the
+whole dataset. Unlike clustering, open subsets do not need to be disjoint.
+Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
 from tdamapper.proximity import (
@@ -40,9 +30,9 @@ class Cover:
         to implement more meaningful cover algorithms.
 
         :param X: A dataset of n points to be covered with open subsets.
-        :type X: array-like of shape (n, m) or list-like of size n
-        :return: A generator yielding a single list ranging from zero to the
-            length of the dataset.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator that produces a single list of ints whose elements
+            are the indices of the data points, ranging from 0 to n - 1.
         :rtype: generator of lists of ints
         """
         yield list(range(0, len(X)))
@@ -72,9 +62,9 @@ class ProximityCover(Cover):
         picked from :func:`tdamapper.proximity.proximity_net`.
 
         :param X: A dataset of n points to be covered with open subsets.
-        :type X: array-like of shape (n, m) or list-like of size n
-        :return: A generator yielding a single list ranging from zero to the
-            length of the dataset.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator yielding lists of ints whose elements are the
+            indices of the data points.
         :rtype: generator of lists of ints
         """
         return proximity_net(X, self.__proximity)
@@ -82,7 +72,8 @@ class ProximityCover(Cover):
 
 class BallCover(ProximityCover):
     """
-    Cover algorithm based on :class:`tdamapper.proximity.BallProximity`.
+    Cover algorithm based on `ball proximity function` implemented as
+    :class:`tdamapper.proximity.BallProximity`.
 
     :param radius: The radius of the open balls, must be positive.
     :type radius: float
@@ -104,10 +95,11 @@ class BallCover(ProximityCover):
 
 class KNNCover(ProximityCover):
     """
-    Cover algorithm based on :class:`tdamapper.proximity.KNNProximity`.
+    Cover algorithm based on `knn proximity function` implemented as
+    :class:`tdamapper.proximity.KNNProximity`.
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
-        function, must be positive and less than the size of the data set.
+        function, must be positive and less than the length of the dataset.
     :type neighbors: int
     :param metric: The (pseudo-)metric function that defines the distance
         between points, must be symmetric, positive, and satisfy the
@@ -125,13 +117,13 @@ class KNNCover(ProximityCover):
         super().__init__(proximity=prox)
 
 
-
 class CubicalCover(ProximityCover):
     """
-    Cover algorithm based on :class:`tdamapper.proximity.CubicalProximity`.
+    Cover algorithm based on the `cubical proximity function` implemented as
+    :class:`tdamapper.proximity.CubicalProximity`.
 
     :param n_intervals: The number of intervals to use for each dimension, must
-        be positive and less than or equal to the size of the data set.
+        be positive and less than or equal to the length of the dataset.
     :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 1.0).
@@ -149,10 +141,10 @@ class CubicalCover(ProximityCover):
         super().__init__(proximity=prox)
 
 
-
 class TrivialCover(ProximityCover):
     """
-    Cover algorithm based on :class:`tdamapper.proximity.TrivialProximity`.
+    Cover algorithm based on the `trivial proximity function` implemented as
+    :class:`tdamapper.proximity.TrivialProximity`.
     """
 
     def __init__(self):

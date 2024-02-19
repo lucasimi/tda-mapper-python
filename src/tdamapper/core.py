@@ -47,9 +47,9 @@ def mapper_labels(X, y, cover, clustering):
     those at position j.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
     :type cover: A class from :mod:`tdamapper.cover`
     :param clustering: The clustering algorithm to apply to each subset of the
@@ -89,9 +89,9 @@ def mapper_connected_components(X, y, cover, clustering):
     :func:`networkx.connected_components` on it.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
     :type cover: A class from :mod:`tdamapper.cover`
     :param clustering: The clustering algorithm to apply to each subset of the
@@ -136,9 +136,9 @@ def mapper_graph(X, y, cover, clustering):
     cluster.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
     :type cover: A class from :mod:`tdamapper.cover`
     :param clustering: The clustering algorithm to apply to each subset of the
@@ -231,9 +231,9 @@ class MapperAlgorithm:
         the attribute `graph_` and returns a reference to the calling object.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :param y: The lens values for each point in the dataset.
-        :type y: array-like of shape (n, k) or list-like of size n
+        :type y: array-like of shape (n, k) or list-like of length n
         :return: `self`.
         """
         self.graph_ = self.fit_transform(X, y)
@@ -253,9 +253,9 @@ class MapperAlgorithm:
         :func:`tdamapper.core.mapper_graph`.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :param y: The lens values for each point in the dataset.
-        :type y: array-like of shape (n, k) or list-like of size n
+        :type y: array-like of shape (n, k) or list-like of length n
         :return: The Mapper graph.
         :rtype: :class:`networkx.Graph`
         """
