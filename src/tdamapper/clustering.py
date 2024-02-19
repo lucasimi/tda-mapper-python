@@ -38,7 +38,7 @@ class TrivialClustering:
         Fit the clustering algorithm to the data.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Ignored.
         :return: self
         """

@@ -37,7 +37,7 @@ def proximity_net(X, proximity):
     original dataset.
 
     :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param proximity: A proximity function
     :type proximity: :class:`tdamapper.cover.Proximity`
     :return: A generator of lists of ids.
@@ -83,7 +83,7 @@ class Proximity:
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
@@ -104,6 +104,7 @@ class Proximity:
         :rtype: list[int]
         """
         return list(range(0, len(self.__X)))
+
 
 class BallProximity(Proximity):
     """
@@ -149,7 +150,7 @@ class BallProximity(Proximity):
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
@@ -182,7 +183,7 @@ class KNNProximity(Proximity):
     point itself.
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
-        function, must be positive and less than the size of the data set.
+        function, must be positive and less than the length of the dataset.
     :type neighbors: int
     :param metric: The (pseudo-)metric function that defines the distance
         between points, must be symmetric, positive, and satisfy the
@@ -218,7 +219,7 @@ class KNNProximity(Proximity):
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
@@ -243,6 +244,7 @@ class KNNProximity(Proximity):
         neighs = self.__vptree.knn_search((-1, x), self.__neighbors)
         return [x for (x, _) in neighs]
 
+
 class CubicalProximity(Proximity):
     """
     Proximity function based on open hypercubes of uniform size and overlap.
@@ -253,7 +255,7 @@ class CubicalProximity(Proximity):
     the hypercube with the nearest center.
 
     :param n_intervals: The number of intervals to use for each dimension, must
-        be positive and less than or equal to the size of the data set.
+        be positive and less than or equal to the length of the dataset.
     :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 1.0).
@@ -299,11 +301,11 @@ class CubicalProximity(Proximity):
         Train internal parameters.
 
         This method builds an internal :class:`tdamapper.cover.BallCover`
-        attribute that allows efficient queries of the data set.
+        attribute that allows efficient queries of the dataset.
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
@@ -331,7 +333,7 @@ class TrivialProximity(Proximity):
     Proximity function that returns the whole dataset.
 
     This class creates a single open set that contains all the points in the
-    data set.
+    dataset.
     """
 
     def fit(self, X):
@@ -342,7 +344,7 @@ class TrivialProximity(Proximity):
 
         :param X: A dataset of n points used to extract parameters and perform
             training.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
