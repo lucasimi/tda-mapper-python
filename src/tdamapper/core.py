@@ -44,10 +44,10 @@ def mapper_labels(X, y, cover, clustering):
     The function first covers the lens space with overlapping sets, using the
     cover algorithm provided. Then, for each set, it clusters the points of the
     dataset that have lens values within that set, using the clustering
-    algorithm provided. The clusters are labeled with unique integers, starting
-    from zero for each set. The function then adds an offset to the cluster
-    labels, such that the labels are distinct across all sets. The offset is
-    equal to the maximum label of the previous set plus one.
+    algorithm provided. The clusters are then labeled with unique integers,
+    starting from zero for each set. The function then adds an offset to the
+    cluster labels, such that the labels are distinct across all sets. The
+    offset is equal to the maximum label of the previous set plus one.
 
     The function returns a list of node labels for each point in the dataset.
     The list at position i contains the labels of the nodes that the point at
@@ -86,13 +86,13 @@ def mapper_connected_components(X, y, cover, clustering):
     """
     Identify the connected components of the Mapper graph.
 
-    This function assigns a unique integer label to each point in the dataset,
-    based on the connected component of the Mapper graph that it belongs to. A
-    connected component is a maximal set of nodes that are reachable from each
-    other by following the edges.
+    A connected component is a maximal set of nodes that are reachable from each
+    other by following the edges. This function assigns a unique integer label
+    to each point in the dataset, based on the connected component of the Mapper
+    graph that it belongs to.
 
     This function uses a union-find data structure to efficiently keep track of
-    the connected components as it scans the nodes of the Mapper graph. This
+    the connected components as it scans the points of the dataset. This
     approach should be faster than computing the Mapper graph by first calling
     :func:`tdamapper.core.mapper_graph` and then calling
     :func:`networkx.connected_components` on it.
@@ -176,7 +176,7 @@ def mapper_graph(X, y, cover, clustering):
     return graph
 
 
-def aggregate_graph(y, graph, agg):
+def aggregate_graph(X, graph, agg):
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -190,8 +190,8 @@ def aggregate_graph(y, graph, agg):
     aggregation value. The keys of the dictionary are the nodes of the graph,
     and the values are the aggregation values.
 
-    :param y: The dataset to be aggregated.
-    :type y: array-like of shape (n, d) or list-like
+    :param X: The dataset to be aggregated.
+    :type X: array-like of shape (n, m) or list-like
     :param graph: The graph to apply the aggregation function to.
     :type graph: :class:`networkx.Graph`.
     :param agg: The aggregation function to use.
@@ -202,7 +202,7 @@ def aggregate_graph(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [y[i] for i in nodes[node_id][ATTR_IDS]]
+        node_values = [X[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
@@ -211,6 +211,17 @@ def aggregate_graph(y, graph, agg):
 class MapperAlgorithm:
     """
     A class for creating and analyzing Mapper graphs.
+
+    This class provides two methods :func:`fit` and :func:`fit_transform`. Once
+    fitted, the Mapper graph is stored in the attribute `graph_` as a
+    :class:`networkx.Graph` object.
+
+    This class adopts the same interface as scikit-learn's estimators for ease
+    and consistency of use. However, it's important to note that this is not a
+    proper scikit-learn estimator as it does not validata the input in the same
+    way as a scikit-learn estimator is required to do. This class can work
+    with datasets whose elements are arbitrary objects when feasible for the
+    supplied parameters.
 
     :param cover: The cover algorithm to apply to lens space.
     :type cover: A class compatible with :class:`tdamapper.cover.Cover`
@@ -227,7 +238,7 @@ class MapperAlgorithm:
 
     def fit(self, X, y=None):
         """
-        Create the Mapper graph.
+        Create the Mapper graph and store it for later use.
 
         This method stores the result of :func:`tdamapper.core.mapper_graph` in
         the attribute `graph_` and returns a reference to the calling object.
