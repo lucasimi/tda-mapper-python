@@ -8,7 +8,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
 from tdamapper.core import MapperAlgorithm
-from tdamapper.cover import CubicalCover, BallCover
+from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperPlot
 
@@ -49,7 +49,7 @@ def get_data():
         if fetch_button:
             df_X, df_y = load_data_openml(dataset_name)
             st.session_state['df_X'] = df_X
-            st.session_state['df_y'] = df_y
+            st.session_state['df_y'] = pd.DataFrame(df_y)
     elif source == 'CSV':
         upload = st.file_uploader('Upload CSV', label_visibility='collapsed')
         if upload:
@@ -62,14 +62,15 @@ def get_data():
             if example == 'digits':
                 df_X, df_y = load_digits(return_X_y=True, as_frame=True)
                 st.session_state['df_X'] = df_X
-                st.session_state['df_y'] = df_y
+                st.session_state['df_y'] = pd.DataFrame(df_y)
             elif example == 'iris':
                 df_X, df_y = load_iris(return_X_y=True, as_frame=True)
                 st.session_state['df_X'] = df_X
-                st.session_state['df_y'] = df_y
+                st.session_state['df_y'] = pd.DataFrame(df_y)
 
 
 def get_mapper_lens():
+    lens_func = lambda x: x
     with st.expander('🔎 Lens'):
         lens_type = st.selectbox('Lens', options=['Identity', 'PCA'], label_visibility='collapsed')
         if lens_type == 'Identity':
@@ -81,6 +82,7 @@ def get_mapper_lens():
 
 
 def get_mapper_cover():
+    mapper_cover = TrivialCover()
     with st.expander('🌐 Cover'):
         cover_type = st.selectbox('Cover', options=['Ball', 'Cubical'], label_visibility='collapsed')
         if cover_type == 'Ball':
@@ -99,13 +101,14 @@ def get_mapper_cover():
 
 
 def get_mapper_clustering():
+    mapper_clustering = TrivialClustering()
     with st.expander('🧮 Clustering'):
         clustering_type = st.selectbox('Clustering', options=['Trivial', 'Agglomerative'], label_visibility='collapsed')
         if clustering_type == 'Trivial':
             mapper_clustering = TrivialClustering()
         if clustering_type == 'Agglomerative':
             clustering_agglomerative_n = st.number_input('clusters', value=2, min_value=1)
-            mapper_clustering = AgglomerativeClustering(n_clusters=clustering_agglomerative_n)
+            mapper_clustering = AgglomerativeClustering(n_clusters=int(clustering_agglomerative_n))
     return mapper_clustering
 
 
@@ -133,62 +136,79 @@ def render_graph():
     lens = st.session_state['lens']
     if 'df_y' in st.session_state:
         df_y = st.session_state['df_y']
-        color = df_y.to_numpy
+        colors = df_y.to_numpy()
     else:
-        color = lens
+        colors = lens
     mapper_graph = st.session_state['mapper_graph']
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
-    enable_3d = st.toggle('Enable 3d')
+    #enable_3d = st.toggle('Enable 3d')
+    enable_3d=True
     dim = 3 if enable_3d else 2
     if nodes_num > MAX_NODES:
-        st.warning(f'This graph contains {nodes_num} nodes, which is more than the maximum allowed of {MAX_NODES}. This may take time to display or make your browser run slow.')
-        show_anyway = st.button('Show me the damn graph!')
+        st.warning(f'''
+            This graph contains {nodes_num} nodes, 
+            which is more than the maximum allowed of {MAX_NODES}. 
+            This may take time to display, make your browser run slow or either crash.
+            Are you sure you want to proceed?
+            ''')
+        show_anyway = st.button('Go on and show me the damn graph!', type='primary')
         if show_anyway:
-            draw_graph(X, lens, color, mapper_graph, dim)
+            draw_graph(X, mapper_graph, colors, dim)
     else:
-        draw_graph(X, lens, color, mapper_graph, dim)
+        draw_graph(X, mapper_graph, colors, dim)
 
 
-def draw_graph(X, lens, color, mapper_graph, dim):
-    mapper_plot = MapperPlot(X, mapper_graph, colors=lens, dim=dim, seed=42)
-    mapper_fig = mapper_plot.plot(backend='plotly', height=500, width=500)
+def draw_graph(X, mapper_graph, colors, dim, seed=42):
+    mapper_plot = MapperPlot(X, mapper_graph, colors=colors, dim=dim, seed=seed)
+    mapper_fig = mapper_plot.plot(backend='plotly', height=600, width=800)
     st.plotly_chart(mapper_fig, use_container_width=True)
 
 
+def display_data_source():
+    if 'df_X' in st.session_state:
+        df_X = st.session_state['df_X']
+        df_all = df_X.head()
+        caption = f'{len(df_X)} samples, {len(df_X.columns)} source features'
+        if 'df_y' in st.session_state:
+            df_y = st.session_state['df_y']
+            df_all = pd.concat([df_X.head(), df_y.head()], axis=1)
+            caption = f'''
+                {len(df_X)} samples, 
+                {len(df_X.columns)} source features, 
+                {len(df_y.columns)} target features
+            '''
+        st.caption(caption)
+        st.dataframe(df_all, hide_index=True, height=100)
+    else:
+        st.write(
+            '''
+            Select you Data Source: submit a dataset as a csv file
+            or use a publicly available one from 
+            [OpenML](https://www.openml.org/search?type=data&sort=runs&status=active).
+            ''')
+
+
 def main():
-    st.set_page_config(layout='wide', page_icon='🚀', menu_items={
+    st.set_page_config(layout='wide', page_icon='🚀', page_title='tda-mapper-app', menu_items={
         'Report a bug': 'https://github.com/lucasimi/tda-mapper-python/issues',
         'About': 'https://github.com/lucasimi/tda-mapper-python/README.md'
     })
-    st.title('tda-mapper-demo')
-    tab_input, tab_output = st.tabs(['📊 Data Source', '🔥 Mapper Graph'])
+    st.title('tda-mapper-app')
     with st.sidebar:
         st.write('## 📊 Data Source')
         get_data()
         st.write('## ⚙️ Mapper Settings')
         run_mapper()
-    if 'df_X' in st.session_state:
-        df_X = st.session_state['df_X']
-        with tab_input:
-            st.caption(f'{len(df_X)} samples, {len(df_X.columns)} features')
-            st.dataframe(df_X)
-    else:
-        with tab_input:
-            st.write(
-                '''
-                Select you Data Source: submit a dataset as a csv file or use a publicly available one from [OpenML](https://www.openml.org/search?type=data&sort=runs&status=active).
-                ''')
+    display_data_source()
     if 'mapper_graph' in st.session_state:
-        with tab_output:
-            render_graph()
+        render_graph()
     else:
-        with tab_output:
-            st.write(
-                '''
-                Experiment with Mapper Settings and hit Run
-                ''')
+        st.write(
+            '''
+            Experiment with Mapper Settings and hit Run
+            ''')
 
 
 main()
