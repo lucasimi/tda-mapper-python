@@ -14,27 +14,37 @@ from tdamapper.plot import MapperPlot
 
 MAX_NODES = 1000
 
+MAPPER_EMOJI = '🔮'
+
+
+def fix_data(data):
+    df = pd.DataFrame(data)
+    df = df.select_dtypes(include='number')
+    df.dropna(axis=1, how='all', inplace=True)
+    df.fillna(df.mean(), inplace=True)
+    return df
+
 
 @st.cache_data
-def load_data_example():
-    X, y = load_digits(return_X_y=True, as_frame=True)
-    df_X = pd.DataFrame(X)
-    df_y = pd.DataFrame(y)
-    return df_X, df_y
+def load_data_example(example):
+    X, y = pd.DataFrame(), pd.DataFrame()
+    if example == 'digits':
+        X, y = load_digits(return_X_y=True, as_frame=True)
+    elif example == 'iris':
+        X, y = load_iris(return_X_y=True, as_frame=True)
+    return fix_data(X), fix_data(y)
 
 
 @st.cache_data
 def load_data_openml(source):
     X, y = fetch_openml(source, return_X_y=True, as_frame=True)
-    df_X = pd.DataFrame(X)
-    df_y = pd.DataFrame(y)
-    return df_X, df_y
+    return fix_data(X), fix_data(y)
 
 
 @st.cache_data
 def load_data_csv(upload):
-    df_X = pd.read_csv(upload)
-    return df_X, df_X
+    df = pd.read_csv(upload)
+    return fix_data(df)
 
 
 def lp_metric(p):
@@ -42,31 +52,26 @@ def lp_metric(p):
 
 
 def get_data():
-    source = st.radio('Data Source', options=['CSV', 'OpenML', 'Example'], horizontal=True, label_visibility='collapsed')
+    source = st.radio('Data Source', options=['Example', 'OpenML', 'CSV'], horizontal=True, label_visibility='collapsed')
     if source == 'OpenML':
         dataset_name = st.text_input('Dataset Name', label_visibility='collapsed', placeholder='Dataset Name')
         fetch_button = st.button('Fetch from OpenML')
         if fetch_button:
             df_X, df_y = load_data_openml(dataset_name)
             st.session_state['df_X'] = df_X
-            st.session_state['df_y'] = pd.DataFrame(df_y)
+            st.session_state['df_y'] = df_y
     elif source == 'CSV':
         upload = st.file_uploader('Upload CSV', label_visibility='collapsed')
         if upload:
-            df_X = pd.read_csv(upload)
+            df_X = load_data_csv(upload)
             st.session_state['df_X'] = df_X
     elif source == 'Example':
-        example = st.selectbox('Example', options=['digits', 'iris'])
+        example = st.selectbox('Example', options=['digits', 'iris'], label_visibility='collapsed')
         load_button = st.button('Load Example')
         if load_button:
-            if example == 'digits':
-                df_X, df_y = load_digits(return_X_y=True, as_frame=True)
-                st.session_state['df_X'] = df_X
-                st.session_state['df_y'] = pd.DataFrame(df_y)
-            elif example == 'iris':
-                df_X, df_y = load_iris(return_X_y=True, as_frame=True)
-                st.session_state['df_X'] = df_X
-                st.session_state['df_y'] = pd.DataFrame(df_y)
+            df_X, df_y = load_data_example(example)
+            st.session_state['df_X'] = df_X
+            st.session_state['df_y'] = df_y
 
 
 def get_mapper_lens():
@@ -120,7 +125,7 @@ def run_mapper():
         cover=mapper_cover,
         clustering=FailSafeClustering(mapper_clustering))
     df_X = st.session_state.get('df_X')
-    compute = st.button('🚀 Run', use_container_width=True, disabled=df_X is None)
+    compute = st.button('✨ Run', use_container_width=True, disabled=df_X is None)
     if compute:
         X = df_X.to_numpy()
         lens = mapper_lens(X)
@@ -148,12 +153,12 @@ def render_graph():
     dim = 3 if enable_3d else 2
     if nodes_num > MAX_NODES:
         st.warning(f'''
-            This graph contains {nodes_num} nodes, 
+            ⚠️ This graph contains {nodes_num} nodes, 
             which is more than the maximum allowed of {MAX_NODES}. 
             This may take time to display, make your browser run slow or either crash.
             Are you sure you want to proceed?
             ''')
-        show_anyway = st.button('Go on and show me the damn graph!', type='primary')
+        show_anyway = st.button('💣 Go on and show me the damn graph!', type='primary')
         if show_anyway:
             draw_graph(X, mapper_graph, colors, dim)
     else:
@@ -171,6 +176,7 @@ def display_data_source():
         df_X = st.session_state['df_X']
         df_all = df_X.head()
         caption = f'{len(df_X)} samples, {len(df_X.columns)} source features'
+        help = 'Non-numeric and NaN features are dropped, NaN rows are replaced by mean'
         if 'df_y' in st.session_state:
             df_y = st.session_state['df_y']
             df_all = pd.concat([df_X.head(), df_y.head()], axis=1)
@@ -179,19 +185,22 @@ def display_data_source():
                 {len(df_X.columns)} source features, 
                 {len(df_y.columns)} target features
             '''
-        st.caption(caption)
+        st.caption(caption, help=help)
         st.dataframe(df_all, hide_index=True, height=100)
     else:
         st.write(
             '''
-            Select you Data Source: submit a dataset as a csv file
-            or use a publicly available one from 
-            [OpenML](https://www.openml.org/search?type=data&sort=runs&status=active).
+            To begin select you data source: 
+            
+            * Select an example to see how this works 
+            * You can submit a csv to try on you data
+            * Or you can use a publicly available dataset from 
+              [OpenML](https://www.openml.org/search?type=data&sort=runs&status=active).
             ''')
 
 
 def main():
-    st.set_page_config(layout='wide', page_icon='🚀', page_title='tda-mapper-app', menu_items={
+    st.set_page_config(layout='wide', page_icon=MAPPER_EMOJI, page_title='tda-mapper-app', menu_items={
         'Report a bug': 'https://github.com/lucasimi/tda-mapper-python/issues',
         'About': 'https://github.com/lucasimi/tda-mapper-python/README.md'
     })
@@ -199,7 +208,7 @@ def main():
     with st.sidebar:
         st.write('## 📊 Data Source')
         get_data()
-        st.write('## ⚙️ Mapper Settings')
+        st.write(f'## {MAPPER_EMOJI} Mapper Settings')
         run_mapper()
     display_data_source()
     if 'mapper_graph' in st.session_state:
@@ -207,7 +216,7 @@ def main():
     else:
         st.write(
             '''
-            Experiment with Mapper Settings and hit Run
+            Experiment with Mapper Settings and hit Run when you're ready!
             ''')
 
 
