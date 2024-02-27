@@ -1,7 +1,14 @@
 import streamlit as st
+
 import pandas as pd
 
 import numpy as np
+
+import networkx as nx
+
+import json
+
+import time
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import AgglomerativeClustering
@@ -13,8 +20,6 @@ from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperPlot
 
 MAX_NODES = 1000
-
-MAPPER_EMOJI = '🔮'
 
 
 def fix_data(data):
@@ -50,25 +55,49 @@ def load_data_csv(upload):
 def lp_metric(p):
     return lambda x, y: np.linalg.norm(x - y, ord=p)
 
+import io
+import gzip
+import zipfile
+
+
+def gzip_bytes(string, encoding='utf-8'):
+    fileobj = io.BytesIO()
+    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
+    gzf.write(string.encode(encoding))
+    gzf.close()
+    return fileobj.getvalue()
+
+
+def clear_session_data():
+    st.session_state.pop('df_X', None)
+    st.session_state.pop('df_y', None)
+    st.session_state.pop('X', None)
+    st.session_state.pop('lens', None)
+    st.session_state.pop('mapper_graph', None)
+
 
 def get_data():
+    st.write('## 📊 Data Source')
     source = st.radio('Data Source', options=['Example', 'OpenML', 'CSV'], horizontal=True, label_visibility='collapsed')
     if source == 'OpenML':
         dataset_name = st.text_input('Dataset Name', label_visibility='collapsed', placeholder='Dataset Name')
         fetch_button = st.button('Fetch from OpenML')
         if fetch_button:
+            clear_session_data()
             df_X, df_y = load_data_openml(dataset_name)
             st.session_state['df_X'] = df_X
             st.session_state['df_y'] = df_y
     elif source == 'CSV':
         upload = st.file_uploader('Upload CSV', label_visibility='collapsed')
         if upload:
+            clear_session_data()
             df_X = load_data_csv(upload)
             st.session_state['df_X'] = df_X
     elif source == 'Example':
         example = st.selectbox('Example', options=['digits', 'iris'], label_visibility='collapsed')
         load_button = st.button('Load Example')
         if load_button:
+            clear_session_data()
             df_X, df_y = load_data_example(example)
             st.session_state['df_X'] = df_X
             st.session_state['df_y'] = df_y
@@ -118,6 +147,7 @@ def get_mapper_clustering():
 
 
 def run_mapper():
+    st.write(f'## 🔮 Mapper Settings')
     mapper_lens = get_mapper_lens()
     mapper_cover = get_mapper_cover()
     mapper_clustering = get_mapper_clustering()
@@ -130,7 +160,7 @@ def run_mapper():
         X = df_X.to_numpy()
         lens = mapper_lens(X)
         mapper_graph = mapper.fit_transform(X, lens)
-        st.toast('Mapper graph computed!', icon='🎉')
+        st.toast('Mapper Graph Computed!', icon='🎉')
         st.session_state['X'] = X
         st.session_state['lens'] = lens
         st.session_state['mapper_graph'] = mapper_graph
@@ -148,8 +178,7 @@ def render_graph():
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
-    #enable_3d = st.toggle('Enable 3d')
-    enable_3d=True
+    enable_3d = st.toggle('Enable 3d', value=True)
     dim = 3 if enable_3d else 2
     if nodes_num > MAX_NODES:
         st.warning(f'''
@@ -199,20 +228,28 @@ def display_data_source():
             ''')
 
 
+def download_graph():
+    mapper_graph = st.session_state['mapper_graph']
+    mapper_adj = nx.readwrite.json_graph.adjacency_data(mapper_graph)
+    mapper_json = json.dumps(mapper_adj)
+    mapper_bytes = gzip_bytes(mapper_json)
+    t = int(time.time())
+    st.download_button('📥 Download Mapper Graph', data=mapper_bytes, file_name=f'mapper_graph_{t}.gzip', use_container_width=True)
+
+
 def main():
-    st.set_page_config(layout='wide', page_icon=MAPPER_EMOJI, page_title='tda-mapper-app', menu_items={
+    st.set_page_config(layout='wide', page_icon='🔮', page_title='tda-mapper-app', menu_items={
         'Report a bug': 'https://github.com/lucasimi/tda-mapper-python/issues',
         'About': 'https://github.com/lucasimi/tda-mapper-python/README.md'
     })
-    st.title('tda-mapper-app')
+    st.title(f'tda-mapper-app')
     with st.sidebar:
-        st.write('## 📊 Data Source')
         get_data()
-        st.write(f'## {MAPPER_EMOJI} Mapper Settings')
         run_mapper()
     display_data_source()
     if 'mapper_graph' in st.session_state:
         render_graph()
+        download_graph()
     else:
         st.write(
             '''
