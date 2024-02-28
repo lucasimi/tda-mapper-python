@@ -18,22 +18,55 @@ from tdamapper.plot import MapperPlot
 
 MAX_NODES = 1000
 
-DATA_HELP = '''
+OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
+
+DATA_HELP = f'''
     To begin select you data source: 
     
     * Select an example to see how this works 
     * You can submit a csv to try on you data
-    * Or you can use a publicly available dataset from 
-      [OpenML](https://www.openml.org/search?type=data&sort=runs&status=active).
+    * Or you can use a publicly available dataset from [OpenML]({OPENML_URL}).
 '''
 
-MAPPER_HELP = '''
-    Experiment with Mapper Settings and hit Run when you're ready!
-'''
+DATA_INFO = 'Non-numeric and NaN features are dropped. NaN rows are replaced by mean'
 
-REPORT_BUG = 'https://github.com/lucasimi/tda-mapper-python/issues'
+MAPPER_HELP = "Experiment with Mapper Settings and hit Run when you're ready!"
 
-ABOUT = 'https://github.com/lucasimi/tda-mapper-python/README.md'
+MAPPER_PROCEED = '💣 Go on and show me the damn graph!'
+
+MAPPER_COMPUTED = 'Mapper Graph Computed!'
+
+GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
+
+REPORT_BUG = f'{GIT_REPO_URL}/issues'
+
+ABOUT = f'{GIT_REPO_URL}/README.md'
+
+
+def mapper_warning(nodes_num):
+    return f'''
+        ⚠️ This graph contains {nodes_num} nodes, 
+        which is more than the maximum allowed of {MAX_NODES}. 
+        This may take time to display, make your browser run slow or either crash.
+        Are you sure you want to proceed?
+    '''
+
+
+def data_caption(df_X, df_y):
+    caption = f'{len(df_X)} samples, {len(df_X.columns)} source features'
+    if df_y is not None:
+        caption = f'''
+            {len(df_X)} samples, 
+            {len(df_X.columns)} source features, 
+            {len(df_y.columns)} target features
+        '''
+    return caption
+
+
+def data_concat_head(df_X, df_y):
+    if df_y is None:
+        return df_X.head()
+    return pd.concat([df_X.head(), df_y.head()], axis=1)
 
 
 def fix_data(data):
@@ -60,6 +93,12 @@ def get_data_openml(source):
     return fix_data(X), fix_data(y)
 
 
+@st.cache_data
+def get_data_csv(upload):
+    df = pd.read_csv(upload)
+    return fix_data(df)
+
+
 def load_data_openml(source):
     clear_session_data()
     df_X, df_y = get_data_openml(source)
@@ -81,12 +120,6 @@ def load_data_example(source):
     st.session_state['df_y'] = df_y
 
 
-@st.cache_data
-def get_data_csv(upload):
-    df = pd.read_csv(upload)
-    return fix_data(df)
-
-
 def lp_metric(p):
     return lambda x, y: np.linalg.norm(x - y, ord=p)
 
@@ -99,34 +132,68 @@ def gzip_bytes(string, encoding='utf-8'):
     return fileobj.getvalue()
 
 
-def clear_session_data():
+def clear_session_source():
     st.session_state.pop('df_X', None)
     st.session_state.pop('df_y', None)
     st.session_state.pop('X', None)
     st.session_state.pop('lens', None)
+
+
+def clear_session_mapper():
     st.session_state.pop('mapper_graph', None)
+    st.session_state.pop('mapper_fig', None)
+
+
+def clear_session_data():
+    clear_session_source()
+    clear_session_mapper()
 
 
 def get_data():
     st.write('## 📊 Data Source')
-    source = st.radio('Data Source', options=['Example', 'OpenML', 'CSV'], horizontal=True, label_visibility='collapsed')
+    source = st.radio(
+        'Data Source',
+        options=['Example', 'OpenML', 'CSV'],
+        horizontal=True,
+        label_visibility='collapsed')
     if source == 'OpenML':
-        name = st.text_input('Dataset Name', label_visibility='collapsed', placeholder='Dataset Name')
-        st.button('Fetch from OpenML', on_click=load_data_openml, args=(name,))
+        name = st.text_input(
+            'Dataset Name',
+            label_visibility='collapsed',
+            placeholder='Dataset Name')
+        st.button(
+            'Fetch from OpenML',
+            on_click=load_data_openml,
+            args=(name,))
     elif source == 'CSV':
-        st.file_uploader('Upload CSV', label_visibility='collapsed', on_change=load_data_csv)
+        st.file_uploader(
+            'Upload CSV',
+            label_visibility='collapsed',
+            on_change=load_data_csv)
     elif source == 'Example':
-        example = st.selectbox('Example', options=['digits', 'iris'], label_visibility='collapsed')
-        st.button('Load Example', on_click=load_data_example, args=(example,))
+        example = st.selectbox(
+            'Example',
+            options=['digits', 'iris'],
+            label_visibility='collapsed')
+        st.button(
+            'Load Example',
+            on_click=load_data_example,
+            args=(example,))
 
 
 def get_mapper_lens():
     lens_func = lambda x: x
-    lens_type = st.selectbox('Lens', options=['Identity', 'PCA'], label_visibility='collapsed')
+    lens_type = st.selectbox(
+        'Lens',
+        options=['Identity', 'PCA'],
+        label_visibility='collapsed')
     if lens_type == 'Identity':
         lens_func = lambda x: x
     if lens_type == 'PCA':
-        lens_pca_n = st.number_input('PCA components', value=1, min_value=1)
+        lens_pca_n = st.number_input(
+            'PCA components',
+            value=1,
+            min_value=1)
         lens_func = lambda x: PCA(lens_pca_n).fit_transform(x)
     return lens_func
 
@@ -178,15 +245,17 @@ def get_mapper_clustering():
             'clusters',
             value=2,
             min_value=1)
-        mapper_clustering = AgglomerativeClustering(n_clusters=int(clustering_agglomerative_n))
+        mapper_clustering = AgglomerativeClustering(
+            n_clusters=int(clustering_agglomerative_n))
     return mapper_clustering
 
 
 def compute_mapper(X, lens, mapper):
     mapper_graph = mapper.fit_transform(X, lens)
-    st.toast('Mapper Graph Computed!', icon='🎉')
+    st.toast(MAPPER_COMPUTED, icon='🎉')
     st.session_state['X'] = X
     st.session_state['lens'] = lens
+    clear_session_mapper()
     st.session_state['mapper_graph'] = mapper_graph
 
 
@@ -219,36 +288,34 @@ def render_graph(X, mapper_graph, colors):
     enable_3d = st.toggle('Enable 3d', value=True)
     dim = 3 if enable_3d else 2
     if nodes_num > MAX_NODES:
-        st.warning(f'''
-            ⚠️ This graph contains {nodes_num} nodes, 
-            which is more than the maximum allowed of {MAX_NODES}. 
-            This may take time to display, make your browser run slow or either crash.
-            Are you sure you want to proceed?
-            ''')
-        st.button('💣 Go on and show me the damn graph!', type='primary', on_click=draw_graph, args=(X, mapper_graph, colors, dim,))
+        st.warning(mapper_warning(nodes_num))
+        proceed = st.button(
+            MAPPER_PROCEED,
+            type='primary')
+        if proceed:
+            plot_graph(X, mapper_graph, colors, dim)
     else:
-        draw_graph(X, mapper_graph, colors, dim)
+        plot_graph(X, mapper_graph, colors, dim)
 
 
-def draw_graph(X, mapper_graph, colors, dim, seed=42):
-    mapper_plot = MapperPlot(X, mapper_graph, colors=colors, dim=dim, seed=seed)
-    mapper_fig = mapper_plot.plot(backend='plotly', height=600, width=800)
-    st.plotly_chart(mapper_fig, use_container_width=True)
+def plot_graph(X, mapper_graph, colors, dim, seed=42):
+    mapper_plot = MapperPlot(X, mapper_graph,
+        colors=colors,
+        dim=dim,
+        seed=seed)
+    mapper_fig = mapper_plot.plot(
+        backend='plotly',
+        height=600,
+        width=800)
+    st.session_state['mapper_fig'] = mapper_fig
 
 
 def display_data_source(df_X, df_y):
-    df_all = df_X.head()
-    caption = f'{len(df_X)} samples, {len(df_X.columns)} source features'
-    hlp = 'Non-numeric and NaN features are dropped, NaN rows are replaced by mean'
-    if df_y is not None:
-        df_all = pd.concat([df_X.head(), df_y.head()], axis=1)
-        caption = f'''
-            {len(df_X)} samples, 
-            {len(df_X.columns)} source features, 
-            {len(df_y.columns)} target features
-        '''
-    st.caption(caption, help=hlp)
-    st.dataframe(df_all, hide_index=True, height=100)
+    st.caption(data_caption(df_X, df_y),
+        help=DATA_INFO)
+    st.dataframe(data_concat_head(df_X, df_y),
+        hide_index=True,
+        height=100)
 
 
 def download_graph(mapper_graph):
@@ -257,15 +324,14 @@ def download_graph(mapper_graph):
     st.download_button(
         '📥 Download Mapper Graph',
         data=gzip_bytes(mapper_json),
-        file_name=f'mapper_graph_{int(time.time())}.json.gzip',
-        use_container_width=True)
+        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
 def main():
     st.set_page_config(
-        layout='wide', 
-        page_icon='🔮', 
-        page_title='tda-mapper-app', 
+        layout='wide',
+        page_icon='🔮',
+        page_title='tda-mapper-app',
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT
@@ -283,13 +349,17 @@ def main():
     if 'mapper_graph' in st.session_state:
         mapper_graph = st.session_state['mapper_graph']
         df_X = st.session_state['df_X']
-        X = df_X.to_numpy()
         lens = st.session_state['lens']
-        colors = st.session_state['df_y'].to_numpy() if 'df_y' in st.session_state else lens
-        render_graph(X, mapper_graph, colors)
-        download_graph(mapper_graph)
+        df_y = st.session_state.get('df_y', None)
+        colors = lens if df_y is None else df_y.to_numpy()
+        render_graph(df_X, mapper_graph, colors)
     else:
         st.write(MAPPER_HELP)
+    if 'mapper_fig' in st.session_state:
+        mapper_graph = st.session_state['mapper_graph']
+        mapper_fig = st.session_state['mapper_fig']
+        st.plotly_chart(mapper_fig, use_container_width=True)
+        download_graph(mapper_graph)
 
 
 main()
