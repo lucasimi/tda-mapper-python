@@ -18,6 +18,10 @@ from tdamapper.plot import MapperPlot
 
 MAX_NODES = 1000
 
+MAX_SAMPLES = 1000
+
+SAMPLE_FRAC = 0.1
+
 OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
 
 DATA_HELP = f'''
@@ -53,20 +57,17 @@ def mapper_warning(nodes_num):
 
 
 def data_caption(df_X, df_y):
-    caption = f'{len(df_X)} samples, {len(df_X.columns)} source features'
-    if df_y is not None:
-        caption = f'''
-            {len(df_X)} samples, 
-            {len(df_X.columns)} source features, 
-            {len(df_y.columns)} target features
-        '''
-    return caption
+    if df_y.empty:
+        return f'{len(df_X)} instance, {len(df_X.columns)} features'
+    return f'''
+        {len(df_X)} instances, {len(df_X.columns)} + {len(df_y.columns)} features
+    '''
 
 
-def data_concat_head(df_X, df_y):
+def data_concat(df_X, df_y):
     if df_y is None:
-        return df_X.head()
-    return pd.concat([df_X.head(), df_y.head()], axis=1)
+        return df_X
+    return pd.concat([df_X, df_y], axis=1)
 
 
 def fix_data(data):
@@ -75,6 +76,11 @@ def fix_data(data):
     df.dropna(axis=1, how='all', inplace=True)
     df.fillna(df.mean(), inplace=True)
     return df
+
+
+@st.cache_data
+def get_sample(df, frac=0.1):
+    return df.sample(frac=frac)
 
 
 @st.cache_data
@@ -151,47 +157,39 @@ def clear_session_data():
 
 def get_data():
     st.write('## 📊 Data Source')
-    source = st.radio(
-        'Data Source',
+    source = st.radio('Data Source',
         options=['Example', 'OpenML', 'CSV'],
         horizontal=True,
         label_visibility='collapsed')
     if source == 'OpenML':
-        name = st.text_input(
-            'Dataset Name',
+        name = st.text_input('Dataset Name',
             label_visibility='collapsed',
             placeholder='Dataset Name')
-        st.button(
-            'Fetch from OpenML',
+        st.button('Fetch from OpenML',
             on_click=load_data_openml,
             args=(name,))
     elif source == 'CSV':
-        st.file_uploader(
-            'Upload CSV',
+        st.file_uploader('Upload CSV',
             label_visibility='collapsed',
             on_change=load_data_csv)
     elif source == 'Example':
-        example = st.selectbox(
-            'Example',
+        example = st.selectbox('Example',
             options=['digits', 'iris'],
             label_visibility='collapsed')
-        st.button(
-            'Load Example',
+        st.button('Load Example',
             on_click=load_data_example,
             args=(example,))
 
 
 def get_mapper_lens():
     lens_func = lambda x: x
-    lens_type = st.selectbox(
-        'Lens',
+    lens_type = st.selectbox('Lens',
         options=['Identity', 'PCA'],
         label_visibility='collapsed')
     if lens_type == 'Identity':
         lens_func = lambda x: x
     if lens_type == 'PCA':
-        lens_pca_n = st.number_input(
-            'PCA components',
+        lens_pca_n = st.number_input('PCA components',
             value=1,
             min_value=1)
         lens_func = lambda x: PCA(lens_pca_n).fit_transform(x)
@@ -200,29 +198,24 @@ def get_mapper_lens():
 
 def get_mapper_cover():
     mapper_cover = TrivialCover()
-    cover_type = st.selectbox(
-        'Cover',
+    cover_type = st.selectbox('Cover',
         options=['Ball', 'Cubical'],
         label_visibility='collapsed')
     if cover_type == 'Ball':
-        cover_ball_radius = st.number_input(
-            'Ball radius',
+        cover_ball_radius = st.number_input('Ball radius',
             value=100.0,
             min_value=0.0)
-        cover_ball_metric_p = st.number_input(
-            'Lp metric',
+        cover_ball_metric_p = st.number_input('Lp metric',
             value=2,
             min_value=1)
         mapper_cover = BallCover(
             radius=cover_ball_radius,
             metric=lp_metric(cover_ball_metric_p))
     elif cover_type == 'Cubical':
-        cover_cubical_n = st.number_input(
-            'intervals',
+        cover_cubical_n = st.number_input('intervals',
             value=2,
             min_value=0)
-        cover_cubical_overlap = st.number_input(
-            'overlap',
+        cover_cubical_overlap = st.number_input('overlap',
             value=0.10,
             min_value=0.0,
             max_value=1.0)
@@ -234,15 +227,13 @@ def get_mapper_cover():
 
 def get_mapper_clustering():
     mapper_clustering = TrivialClustering()
-    clustering_type = st.selectbox(
-        'Clustering',
+    clustering_type = st.selectbox('Clustering',
         options=['Trivial', 'Agglomerative'],
         label_visibility='collapsed')
     if clustering_type == 'Trivial':
         mapper_clustering = TrivialClustering()
     if clustering_type == 'Agglomerative':
-        clustering_agglomerative_n = st.number_input(
-            'clusters',
+        clustering_agglomerative_n = st.number_input('clusters',
             value=2,
             min_value=1)
         mapper_clustering = AgglomerativeClustering(
@@ -257,6 +248,48 @@ def compute_mapper(X, lens, mapper):
     st.session_state['lens'] = lens
     clear_session_mapper()
     st.session_state['mapper_graph'] = mapper_graph
+    compute_mapper_plot()
+
+
+def compute_mapper_plot():
+    mapper_graph = st.session_state['mapper_graph']
+    nodes_num = mapper_graph.number_of_nodes()
+    edges_num = mapper_graph.number_of_edges()
+    proceed = True
+    if nodes_num > MAX_NODES:
+        st.warning(mapper_warning(nodes_num))
+        proceed_butt = st.button(MAPPER_PROCEED,
+            type='primary')
+        if proceed_butt:
+            proceed = True
+    if proceed:
+        df_X = st.session_state['df_X']
+        X = st.session_state['X']
+        lens = st.session_state['lens']
+        df_y = st.session_state.get('df_y', pd.DataFrame())
+        enable_3d = st.session_state.get('enable_3d', False)
+        seed = st.session_state.get('seed')
+        plot_color = st.session_state.get('plot_color')
+        colors = lens
+        if plot_color in df_X.columns:
+            colors = df_X[plot_color].to_numpy()
+        if plot_color in df_y.columns:
+            colors = df_y[plot_color].to_numpy()
+        mapper_plot = MapperPlot(X, mapper_graph,
+            colors=colors,
+            dim=3 if enable_3d else 2,
+            seed=seed)
+        st.session_state['mapper_plot'] = mapper_plot
+        compute_mapper_figure()
+
+
+def compute_mapper_figure():
+    mapper_plot = st.session_state['mapper_plot']
+    mapper_fig = mapper_plot.plot(
+        backend='plotly',
+        height=600,
+        width=800)
+    st.session_state['mapper_fig'] = mapper_fig
 
 
 def run_mapper():
@@ -269,62 +302,46 @@ def run_mapper():
         mapper_clustering = get_mapper_clustering()
     mapper = MapperAlgorithm(
         cover=mapper_cover,
-        clustering=FailSafeClustering(mapper_clustering))
+        clustering=FailSafeClustering(mapper_clustering,
+            verbose=False))
     df_X = st.session_state.get('df_X', pd.DataFrame())
     X = df_X.to_numpy()
     lens = mapper_lens(X)
-    st.button(
-        '✨ Run',
+    st.button('✨ Run',
         use_container_width=True,
         disabled=df_X.empty,
         on_click=compute_mapper,
-        args=(X, lens, mapper,))
-
-
-def render_graph(X, mapper_graph, colors):
-    nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
-    st.caption(f'{nodes_num} nodes, {edges_num} edges')
-    enable_3d = st.toggle('Enable 3d', value=True)
-    dim = 3 if enable_3d else 2
-    if nodes_num > MAX_NODES:
-        st.warning(mapper_warning(nodes_num))
-        proceed = st.button(
-            MAPPER_PROCEED,
-            type='primary')
-        if proceed:
-            plot_graph(X, mapper_graph, colors, dim)
-    else:
-        plot_graph(X, mapper_graph, colors, dim)
-
-
-def plot_graph(X, mapper_graph, colors, dim, seed=42):
-    mapper_plot = MapperPlot(X, mapper_graph,
-        colors=colors,
-        dim=dim,
-        seed=seed)
-    mapper_fig = mapper_plot.plot(
-        backend='plotly',
-        height=600,
-        width=800)
-    st.session_state['mapper_fig'] = mapper_fig
+        args=(X, lens, mapper))
 
 
 def display_data_source(df_X, df_y):
+    df_all = data_concat(get_sample(df_X), get_sample(df_y))
     st.caption(data_caption(df_X, df_y),
         help=DATA_INFO)
-    st.dataframe(data_concat_head(df_X, df_y),
+    df_summary = data_summary(df_all)
+    return st.dataframe(df_summary,
         hide_index=True,
-        height=100)
+        column_config={
+            "hist": st.column_config.BarChartColumn(),
+        })
 
 
 def download_graph(mapper_graph):
     mapper_adj = nx.readwrite.json_graph.adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj)
-    st.download_button(
-        '📥 Download Mapper Graph',
+    st.download_button('📥 Download Mapper Graph',
         data=gzip_bytes(mapper_json),
+        use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+
+
+def data_summary(df):
+    df_hist = pd.DataFrame({x: df[x].value_counts(bins=10, sort=False).values for x in df.columns}).T
+    df_summary = pd.DataFrame({
+        'feature': df.columns,
+        'hist': df_hist.values.tolist()
+    })
+    return df_summary
 
 
 def main():
@@ -337,29 +354,62 @@ def main():
             'About': ABOUT
         })
     st.title('tda-mapper-app')
+
     with st.sidebar:
+        cont_data_source = st.container()
+        cont_mapper_settings = st.container()
+    col0, col1 = st.columns([1, 5])
+    with col0:
+        cont_data_summary = st.container()
+        cont_mapper_tools = st.container()
+    with col1:
+        cont_mapper_graph = st.container()
+
+    with cont_data_source:
         get_data()
+    with cont_mapper_settings:
         run_mapper()
-    if 'df_X' in st.session_state:
-        df_X = st.session_state['df_X']
-        df_y = st.session_state.get('df_y', None)
-        display_data_source(df_X, df_y)
-    else:
-        st.write(DATA_HELP)
-    if 'mapper_graph' in st.session_state:
-        mapper_graph = st.session_state['mapper_graph']
-        df_X = st.session_state['df_X']
-        lens = st.session_state['lens']
-        df_y = st.session_state.get('df_y', None)
-        colors = lens if df_y is None else df_y.to_numpy()
-        render_graph(df_X, mapper_graph, colors)
-    else:
-        st.write(MAPPER_HELP)
-    if 'mapper_fig' in st.session_state:
-        mapper_graph = st.session_state['mapper_graph']
-        mapper_fig = st.session_state['mapper_fig']
-        st.plotly_chart(mapper_fig, use_container_width=True)
-        download_graph(mapper_graph)
+
+    with cont_data_summary:
+        if 'df_X' in st.session_state:
+            df_X = st.session_state['df_X']
+            df_y = st.session_state.get('df_y', pd.DataFrame())
+            display_data_source(df_X, df_y)
+        else:
+            st.write(DATA_HELP)
+
+    with cont_mapper_tools:
+        if 'df_X' in st.session_state:
+            df_X = st.session_state['df_X']
+            df_y = st.session_state.get('df_y', pd.DataFrame())
+            st.toggle('Enable 3d',
+                value=True,
+                key='enable_3d',
+                on_change=compute_mapper_plot)
+            st.number_input('Seed',
+                value=42,
+                key='seed',
+                on_change=compute_mapper_plot)
+            cols = ['lens'] + [x for x in df_X.columns] + [x for x in df_y.columns]
+            st.selectbox('Plot color',
+                options=cols,
+                key='plot_color',
+                on_change=compute_mapper_plot)
+        if 'mapper_graph' in st.session_state:
+            mapper_graph = st.session_state['mapper_graph']
+            download_graph(mapper_graph)
+
+    with cont_mapper_graph:
+        if 'mapper_fig' in st.session_state:
+            mapper_graph = st.session_state['mapper_graph']
+            nodes_num = mapper_graph.number_of_nodes()
+            edges_num = mapper_graph.number_of_edges()
+            mapper_fig = st.session_state['mapper_fig']
+            st.caption(f'{nodes_num} nodes, {edges_num} edges')
+            st.plotly_chart(mapper_fig,
+                use_container_width=True)
+        else:
+            st.write(MAPPER_HELP)
 
 
 main()
