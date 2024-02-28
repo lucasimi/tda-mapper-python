@@ -46,6 +46,44 @@ REPORT_BUG = f'{GIT_REPO_URL}/issues'
 
 ABOUT = f'{GIT_REPO_URL}/README.md'
 
+LENS_IDENTITY = 'Identity'
+
+LENS_PCA = 'PCA'
+
+COVER_TRIVIAL = 'Trivial'
+
+COVER_BALL = 'Ball'
+
+COVER_CUBICAL = 'Cubical'
+
+CLUSTERING_TRIVIAL = 'Trivial'
+
+CLUSTERING_AGGLOMERATIVE = 'Agglomerative'
+
+KEY_LENS_TYPE = 'key_lens_type'
+
+KEY_LENS_PCA_N = 'key_lens_pca_n'
+
+KEY_COVER_TYPE = 'key_cover_type'
+
+KEY_COVER_BALL_RADIUS = 'key_cover_ball_radius'
+
+KEY_COVER_BALL_METRIC_P = 'key_cover_metric_p'
+
+KEY_COVER_CUBICAL_N = 'key_cover_cubical_n'
+
+KEY_COVER_CUBICAL_OVERLAP = 'key_cover_cubical_overlap'
+
+KEY_CLUSTERING_TYPE = 'key_clustering_type'
+
+KEY_CLUSTERING_AGGLOMERATIVE_N = 'key_clustering_agglomerative_n'
+
+KEY_ENABLE_3D = 'key_enable_3d'
+
+KEY_SEED = 'key_seed'
+
+KEY_PLOT_COLOR = 'key_plot_color'
+
 
 def mapper_warning(nodes_num):
     return f'''
@@ -56,6 +94,10 @@ def mapper_warning(nodes_num):
     '''
 
 
+def lp_metric(p):
+    return lambda x, y: np.linalg.norm(x - y, ord=p)
+
+
 def data_caption(df_X, df_y):
     if df_y.empty:
         return f'{len(df_X)} instance, {len(df_X.columns)} features'
@@ -64,18 +106,20 @@ def data_caption(df_X, df_y):
     '''
 
 
-def data_concat(df_X, df_y):
-    if df_y is None:
-        return df_X
-    return pd.concat([df_X, df_y], axis=1)
-
-
 def fix_data(data):
     df = pd.DataFrame(data)
     df = df.select_dtypes(include='number')
     df.dropna(axis=1, how='all', inplace=True)
     df.fillna(df.mean(), inplace=True)
     return df
+
+
+def get_gzip_bytes(string, encoding='utf-8'):
+    fileobj = io.BytesIO()
+    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
+    gzf.write(string.encode(encoding))
+    gzf.close()
+    return fileobj.getvalue()
 
 
 @st.cache_data
@@ -126,18 +170,6 @@ def load_data_example(source):
     st.session_state['df_y'] = df_y
 
 
-def lp_metric(p):
-    return lambda x, y: np.linalg.norm(x - y, ord=p)
-
-
-def gzip_bytes(string, encoding='utf-8'):
-    fileobj = io.BytesIO()
-    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
-    gzf.write(string.encode(encoding))
-    gzf.close()
-    return fileobj.getvalue()
-
-
 def clear_session_source():
     st.session_state.pop('df_X', None)
     st.session_state.pop('df_y', None)
@@ -155,193 +187,267 @@ def clear_session_data():
     clear_session_mapper()
 
 
-def get_data():
-    st.write('## 📊 Data Source')
-    source = st.radio('Data Source',
-        options=['Example', 'OpenML', 'CSV'],
-        horizontal=True,
-        label_visibility='collapsed')
-    if source == 'OpenML':
-        name = st.text_input('Dataset Name',
-            label_visibility='collapsed',
-            placeholder='Dataset Name')
-        st.button('Fetch from OpenML',
-            on_click=load_data_openml,
-            args=(name,))
-    elif source == 'CSV':
-        st.file_uploader('Upload CSV',
-            label_visibility='collapsed',
-            on_change=load_data_csv)
-    elif source == 'Example':
-        example = st.selectbox('Example',
-            options=['digits', 'iris'],
-            label_visibility='collapsed')
-        st.button('Load Example',
-            on_click=load_data_example,
-            args=(example,))
-
-
-def get_mapper_lens():
-    lens_func = lambda x: x
-    lens_type = st.selectbox('Lens',
-        options=['Identity', 'PCA'],
-        label_visibility='collapsed')
-    if lens_type == 'Identity':
-        lens_func = lambda x: x
-    if lens_type == 'PCA':
-        lens_pca_n = st.number_input('PCA components',
-            value=1,
-            min_value=1)
-        lens_func = lambda x: PCA(lens_pca_n).fit_transform(x)
-    return lens_func
-
-
-def get_mapper_cover():
-    mapper_cover = TrivialCover()
-    cover_type = st.selectbox('Cover',
-        options=['Ball', 'Cubical'],
-        label_visibility='collapsed')
-    if cover_type == 'Ball':
-        cover_ball_radius = st.number_input('Ball radius',
-            value=100.0,
-            min_value=0.0)
-        cover_ball_metric_p = st.number_input('Lp metric',
-            value=2,
-            min_value=1)
-        mapper_cover = BallCover(
-            radius=cover_ball_radius,
-            metric=lp_metric(cover_ball_metric_p))
-    elif cover_type == 'Cubical':
-        cover_cubical_n = st.number_input('intervals',
-            value=2,
-            min_value=0)
-        cover_cubical_overlap = st.number_input('overlap',
-            value=0.10,
-            min_value=0.0,
-            max_value=1.0)
-        mapper_cover = CubicalCover(
-            n_intervals=cover_cubical_n,
-            overlap_frac=cover_cubical_overlap)
-    return mapper_cover
-
-
-def get_mapper_clustering():
-    mapper_clustering = TrivialClustering()
-    clustering_type = st.selectbox('Clustering',
-        options=['Trivial', 'Agglomerative'],
-        label_visibility='collapsed')
-    if clustering_type == 'Trivial':
-        mapper_clustering = TrivialClustering()
-    if clustering_type == 'Agglomerative':
-        clustering_agglomerative_n = st.number_input('clusters',
-            value=2,
-            min_value=1)
-        mapper_clustering = AgglomerativeClustering(
-            n_clusters=int(clustering_agglomerative_n))
-    return mapper_clustering
-
-
-def compute_mapper(X, lens, mapper):
-    mapper_graph = mapper.fit_transform(X, lens)
-    st.toast(MAPPER_COMPUTED, icon='🎉')
-    st.session_state['X'] = X
-    st.session_state['lens'] = lens
-    clear_session_mapper()
-    st.session_state['mapper_graph'] = mapper_graph
-    compute_mapper_plot()
-
-
-def compute_mapper_plot():
-    mapper_graph = st.session_state['mapper_graph']
-    nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
-    proceed = True
-    if nodes_num > MAX_NODES:
-        st.warning(mapper_warning(nodes_num))
-        proceed_butt = st.button(MAPPER_PROCEED,
-            type='primary')
-        if proceed_butt:
-            proceed = True
-    if proceed:
-        df_X = st.session_state['df_X']
-        X = st.session_state['X']
-        lens = st.session_state['lens']
-        df_y = st.session_state.get('df_y', pd.DataFrame())
-        enable_3d = st.session_state.get('enable_3d', False)
-        seed = st.session_state.get('seed')
-        plot_color = st.session_state.get('plot_color')
-        colors = lens
-        if plot_color in df_X.columns:
-            colors = df_X[plot_color].to_numpy()
-        if plot_color in df_y.columns:
-            colors = df_y[plot_color].to_numpy()
-        mapper_plot = MapperPlot(X, mapper_graph,
-            colors=colors,
-            dim=3 if enable_3d else 2,
-            seed=seed)
-        st.session_state['mapper_plot'] = mapper_plot
-        compute_mapper_figure()
-
-
-def compute_mapper_figure():
-    mapper_plot = st.session_state['mapper_plot']
-    mapper_fig = mapper_plot.plot(
-        backend='plotly',
-        height=600,
-        width=800)
-    st.session_state['mapper_fig'] = mapper_fig
-
-
-def run_mapper():
-    st.write('## 🔮 Mapper Settings')
-    with st.expander('🔎 Lens'):
-        mapper_lens = get_mapper_lens()
-    with st.expander('🌐 Cover'):
-        mapper_cover = get_mapper_cover()
-    with st.expander('🧮 Clustering'):
-        mapper_clustering = get_mapper_clustering()
-    mapper = MapperAlgorithm(
-        cover=mapper_cover,
-        clustering=FailSafeClustering(mapper_clustering,
-            verbose=False))
-    df_X = st.session_state.get('df_X', pd.DataFrame())
-    X = df_X.to_numpy()
-    lens = mapper_lens(X)
-    st.button('✨ Run',
-        use_container_width=True,
-        disabled=df_X.empty,
-        on_click=compute_mapper,
-        args=(X, lens, mapper))
-
-
-def display_data_source(df_X, df_y):
-    df_all = data_concat(get_sample(df_X), get_sample(df_y))
-    st.caption(data_caption(df_X, df_y),
-        help=DATA_INFO)
-    df_summary = data_summary(df_all)
-    return st.dataframe(df_summary,
-        hide_index=True,
-        column_config={
-            "hist": st.column_config.BarChartColumn(),
-        })
-
-
-def download_graph(mapper_graph):
-    mapper_adj = nx.readwrite.json_graph.adjacency_data(mapper_graph)
-    mapper_json = json.dumps(mapper_adj)
-    st.download_button('📥 Download Mapper Graph',
-        data=gzip_bytes(mapper_json),
-        use_container_width=True,
-        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
-
-
-def data_summary(df):
+def get_data_summary(df):
     df_hist = pd.DataFrame({x: df[x].value_counts(bins=10, sort=False).values for x in df.columns}).T
     df_summary = pd.DataFrame({
         'feature': df.columns,
         'hist': df_hist.values.tolist()
     })
     return df_summary
+
+
+def download_graph(mapper_graph):
+    mapper_adj = nx.readwrite.json_graph.adjacency_data(mapper_graph)
+    mapper_json = json.dumps(mapper_adj)
+    st.download_button('📥 Download Mapper Graph',
+        data=get_gzip_bytes(mapper_json),
+        use_container_width=True,
+        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+
+
+def add_data_source_csv():
+    st.file_uploader('Upload CSV',
+        label_visibility='collapsed',
+        on_change=load_data_csv)
+
+
+def add_data_source_example():
+    example = st.selectbox('Example',
+        options=['digits', 'iris'],
+        label_visibility='collapsed')
+    st.button('Load Example',
+        on_click=load_data_example,
+        args=(example,))
+
+
+def add_data_source_openml():
+    name = st.text_input('Dataset Name',
+        label_visibility='collapsed',
+        placeholder='Dataset Name')
+    st.button('Fetch from OpenML',
+        on_click=load_data_openml,
+        args=(name,))
+
+
+def add_data_source():
+    st.write('## 📊 Data Source')
+    source = st.radio('Data Source',
+        options=['Example', 'OpenML', 'CSV'],
+        horizontal=True,
+        label_visibility='collapsed')
+    if source == 'OpenML':
+        add_data_source_openml()
+    elif source == 'CSV':
+        add_data_source_csv()
+    elif source == 'Example':
+        add_data_source_example()
+
+
+def add_mapper_settings():
+    st.write('## 🔮 Mapper Settings')
+    with st.expander('🔎 Lens'):
+        add_lens_settings()
+    with st.expander('🌐 Cover'):
+        add_cover_settings()
+    with st.expander('🧮 Clustering'):
+        add_clustering_settings()
+    st.button('✨ Run',
+        use_container_width=True,
+        disabled='df_X' not in st.session_state,
+        on_click=compute_mapper)
+
+
+def add_lens_settings():
+    lens_type = st.selectbox('Lens',
+        options=[LENS_IDENTITY, LENS_PCA],
+        label_visibility='collapsed',
+        key=KEY_LENS_TYPE)
+    if lens_type == LENS_PCA:
+        st.number_input('PCA components',
+            value=1,
+            min_value=1,
+            key=KEY_LENS_PCA_N)
+
+
+def get_lens_func():
+    lens_type = st.session_state.get(KEY_LENS_TYPE, LENS_IDENTITY)
+    if lens_type == LENS_IDENTITY:
+        return lambda x: x
+    elif lens_type == LENS_PCA:
+        n = st.session_state.get(KEY_LENS_PCA_N, 1)
+        return lambda x: PCA(n).fit_transform(x)
+    else:
+        return lambda x: x
+
+
+def add_cover_settings():
+    cover_type = st.selectbox('Cover',
+        options=[COVER_BALL, COVER_CUBICAL, COVER_TRIVIAL],
+        label_visibility='collapsed',
+        key=KEY_COVER_TYPE)
+    if cover_type == COVER_BALL:
+        st.number_input('Ball radius',
+            value=100.0,
+            min_value=0.0,
+            key=KEY_COVER_BALL_RADIUS)
+        st.number_input('Lp metric',
+            value=2,
+            min_value=1,
+            key=KEY_COVER_BALL_METRIC_P)
+    elif cover_type == COVER_CUBICAL:
+        st.number_input('intervals',
+            value=2,
+            min_value=0,
+            key=KEY_COVER_CUBICAL_N)
+        st.number_input('overlap',
+            value=0.10,
+            min_value=0.0,
+            max_value=1.0,
+            key=KEY_COVER_CUBICAL_OVERLAP)
+
+
+def get_cover_algo():
+    cover_type = st.session_state.get(KEY_COVER_TYPE, COVER_TRIVIAL)
+    if cover_type == COVER_TRIVIAL:
+        return TrivialCover()
+    elif cover_type == COVER_BALL:
+        radius = st.session_state.get(KEY_COVER_BALL_RADIUS, 100.0)
+        p = st.session_state.get(KEY_COVER_BALL_METRIC_P, 2)
+        return BallCover(radius=radius, metric=lp_metric(p))
+    elif cover_type == COVER_CUBICAL:
+        n = st.session_state.get(KEY_COVER_CUBICAL_N, 10)
+        p = st.session_state.get(KEY_COVER_CUBICAL_OVERLAP, 0.5)
+        return CubicalCover(n_intervals=n, overlap_frac=p)
+
+
+def add_clustering_settings():
+    clustering_type = st.selectbox('Clustering',
+        options=[CLUSTERING_TRIVIAL, CLUSTERING_AGGLOMERATIVE],
+        label_visibility='collapsed',
+        key=KEY_CLUSTERING_TYPE)
+    if clustering_type == CLUSTERING_AGGLOMERATIVE:
+        st.number_input('clusters',
+            value=2,
+            min_value=1,
+            key=KEY_CLUSTERING_AGGLOMERATIVE_N)
+
+
+def get_clustering_algo():
+    clustering_type = st.session_state.get(KEY_CLUSTERING_TYPE, None)
+    if clustering_type == CLUSTERING_TRIVIAL:
+        return TrivialClustering()
+    if clustering_type == CLUSTERING_AGGLOMERATIVE:
+        n = st.session_state.get(KEY_CLUSTERING_AGGLOMERATIVE_N, 2)
+        return AgglomerativeClustering(n_clusters=n)
+
+
+def compute_mapper():
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    X = df_X.to_numpy()
+    lens_func = get_lens_func()
+    lens = lens_func(X)
+    st.session_state['X'] = X
+    st.session_state['lens'] = lens
+    mapper_algo = MapperAlgorithm(
+        cover=get_cover_algo(),
+        clustering=FailSafeClustering(
+            clustering=get_clustering_algo(),
+            verbose=False))
+    with st.spinner('Computing Mapper Graph'):
+        mapper_graph = mapper_algo.fit_transform(X, lens)
+    st.session_state['mapper_graph'] = mapper_graph
+    render_mapper()
+
+
+def render_mapper():
+    mapper_graph = st.session_state['mapper_graph']
+    nodes_num = mapper_graph.number_of_nodes()
+    edges_num = mapper_graph.number_of_edges()
+    if nodes_num > MAX_NODES:
+        st.warning(mapper_warning(nodes_num))
+        st.button(MAPPER_PROCEED,
+            on_click=render_mapper_proceed)
+    else:
+        render_mapper_proceed()
+
+
+def render_mapper_proceed():
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    X = st.session_state.get('X', None)
+    mapper_graph = st.session_state['mapper_graph']
+    lens = st.session_state['lens']
+    seed = st.session_state.get(KEY_SEED)
+    enable_3d = st.session_state.get(KEY_ENABLE_3D)
+    plot_color = st.session_state.get(KEY_PLOT_COLOR)
+    colors = lens
+    if plot_color in df_X.columns:
+        colors = df_X[plot_color].to_numpy()
+    if plot_color in df_y.columns:
+        colors = df_y[plot_color].to_numpy()
+    mapper_plot = MapperPlot(X, mapper_graph,
+        colors=colors,
+        dim=3 if enable_3d else 2,
+        seed=seed)
+    st.session_state['mapper_plot'] = mapper_plot
+    draw_mapper()
+
+
+def draw_mapper():
+    mapper_plot = st.session_state['mapper_plot']
+    with st.spinner('Drawing Mapper Graph'):
+        mapper_fig = mapper_plot.plot(
+            backend='plotly',
+            height=600,
+            width=800)
+    st.session_state['mapper_fig'] = mapper_fig
+
+
+def add_data_summary():
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    df_all = pd.concat([get_sample(df_X), get_sample(df_y)], axis=1)
+    st.caption(data_caption(df_X, df_y),
+        help=DATA_INFO)
+    df_summary = get_data_summary(df_all)
+    st.dataframe(df_summary,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "hist": st.column_config.BarChartColumn(),
+        })
+
+
+def add_plot_tools():
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    st.toggle('Enable 3d',
+        value=True,
+        on_change=render_mapper,
+        key=KEY_ENABLE_3D)
+    st.number_input('Seed',
+        value=42,
+        on_change=render_mapper,
+        key=KEY_SEED)
+    cols = ['lens'] + [x for x in df_X.columns] + [x for x in df_y.columns]
+    st.selectbox('Plot color',
+        options=cols,
+        on_change=render_mapper,
+        key=KEY_PLOT_COLOR)
+    if 'mapper_graph' in st.session_state:
+        mapper_graph = st.session_state['mapper_graph']
+        download_graph(mapper_graph)
+
+
+def add_graph_plot():
+    if 'mapper_fig' in st.session_state:
+        mapper_graph = st.session_state['mapper_graph']
+        nodes_num = mapper_graph.number_of_nodes()
+        edges_num = mapper_graph.number_of_edges()
+        mapper_fig = st.session_state['mapper_fig']
+        st.caption(f'{nodes_num} nodes, {edges_num} edges')
+        st.plotly_chart(mapper_fig,
+            use_container_width=True)
 
 
 def main():
@@ -354,62 +460,16 @@ def main():
             'About': ABOUT
         })
     st.title('tda-mapper-app')
-
-    with st.sidebar:
-        cont_data_source = st.container()
-        cont_mapper_settings = st.container()
-    col0, col1 = st.columns([1, 5])
-    with col0:
-        cont_data_summary = st.container()
-        cont_mapper_tools = st.container()
-    with col1:
-        cont_mapper_graph = st.container()
-
-    with cont_data_source:
-        get_data()
-    with cont_mapper_settings:
-        run_mapper()
-
-    with cont_data_summary:
-        if 'df_X' in st.session_state:
-            df_X = st.session_state['df_X']
-            df_y = st.session_state.get('df_y', pd.DataFrame())
-            display_data_source(df_X, df_y)
-        else:
-            st.write(DATA_HELP)
-
-    with cont_mapper_tools:
-        if 'df_X' in st.session_state:
-            df_X = st.session_state['df_X']
-            df_y = st.session_state.get('df_y', pd.DataFrame())
-            st.toggle('Enable 3d',
-                value=True,
-                key='enable_3d',
-                on_change=compute_mapper_plot)
-            st.number_input('Seed',
-                value=42,
-                key='seed',
-                on_change=compute_mapper_plot)
-            cols = ['lens'] + [x for x in df_X.columns] + [x for x in df_y.columns]
-            st.selectbox('Plot color',
-                options=cols,
-                key='plot_color',
-                on_change=compute_mapper_plot)
-        if 'mapper_graph' in st.session_state:
-            mapper_graph = st.session_state['mapper_graph']
-            download_graph(mapper_graph)
-
-    with cont_mapper_graph:
-        if 'mapper_fig' in st.session_state:
-            mapper_graph = st.session_state['mapper_graph']
-            nodes_num = mapper_graph.number_of_nodes()
-            edges_num = mapper_graph.number_of_edges()
-            mapper_fig = st.session_state['mapper_fig']
-            st.caption(f'{nodes_num} nodes, {edges_num} edges')
-            st.plotly_chart(mapper_fig,
-                use_container_width=True)
-        else:
-            st.write(MAPPER_HELP)
+    with st.sidebar.container(border=False):
+        add_data_source()
+    with st.sidebar.container(border=False):
+        add_mapper_settings()
+    col_tools, col_graph = st.columns([2, 5])
+    with col_tools:
+        add_data_summary()
+        add_plot_tools()
+    with col_graph:
+        add_graph_plot()
 
 
 main()
