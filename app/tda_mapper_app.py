@@ -321,6 +321,7 @@ def display_data_source(df_X, df_y):
     df_summary = data_summary(df_all)
     return st.dataframe(df_summary,
         hide_index=True,
+        use_container_width=True,
         column_config={
             "hist": st.column_config.BarChartColumn(),
         })
@@ -358,7 +359,7 @@ def main():
     with st.sidebar:
         cont_data_source = st.container()
         cont_mapper_settings = st.container()
-    col0, col1 = st.columns([1, 5])
+    col0, col1 = st.columns([2, 5])
     with col0:
         cont_data_summary = st.container()
         cont_mapper_tools = st.container()
