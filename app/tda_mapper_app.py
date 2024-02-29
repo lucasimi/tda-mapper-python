@@ -207,7 +207,7 @@ def download_graph(mapper_graph):
     mapper_json = json.dumps(mapper_adj)
     st.download_button('📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
-        use_container_width=True,
+        use_container_width=False,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
@@ -250,7 +250,7 @@ def add_data_source():
 
 
 def add_mapper_settings():
-    st.write('## 🔮 Mapper Settings')
+    st.write('## ⚙️ Mapper Settings')
     with st.expander('🔎 Lens'):
         add_lens_settings()
     with st.expander('🌐 Cover'):
@@ -260,7 +260,7 @@ def add_mapper_settings():
     st.button('✨ Run',
         use_container_width=True,
         disabled='df_X' not in st.session_state,
-        on_click=compute_mapper)
+        on_click=set_update_mapper_graph)
 
 
 def add_lens_settings():
@@ -347,6 +347,18 @@ def get_clustering_algo():
         return AgglomerativeClustering(n_clusters=n)
 
 
+def set_update_mapper_graph():
+    st.session_state['update_mapper_graph'] = True
+
+
+def set_update_mapper_plot():
+    st.session_state['update_mapper_plot'] = True
+
+
+def set_update_mapper_figure():
+    st.session_state['update_mapper_figure'] = True
+
+
 def compute_mapper():
     if 'df_X' not in st.session_state:
         return
@@ -361,8 +373,7 @@ def compute_mapper():
         clustering=FailSafeClustering(
             clustering=get_clustering_algo(),
             verbose=False))
-    with st.spinner('Computing Mapper Graph'):
-        mapper_graph = mapper_algo.fit_transform(X, lens)
+    mapper_graph = mapper_algo.fit_transform(X, lens)
     st.session_state['mapper_graph'] = mapper_graph
     render_mapper()
 
@@ -381,25 +392,13 @@ def render_mapper():
 
 
 def render_mapper_proceed():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
-    df_y = st.session_state.get('df_y', pd.DataFrame())
     X = st.session_state.get('X', None)
     mapper_graph = st.session_state['mapper_graph']
-    lens = st.session_state['lens']
     seed = st.session_state.get(KEY_SEED, DEFAULT_SEED)
     enable_3d = st.session_state.get(KEY_ENABLE_3D, DEFAULT_3D)
-    plot_color = st.session_state.get(KEY_PLOT_COLOR, PLOT_COLOR_LENS)
-    colors = lens
-    if plot_color == PLOT_COLOR_LENS:
-        colors = lens
-    if plot_color in df_X.columns:
-        colors = df_X[plot_color].to_numpy()
-    if plot_color in df_y.columns:
-        colors = df_y[plot_color].to_numpy()
     mapper_plot = MapperPlot(X, mapper_graph,
-        colors=colors,
-        dim=3 if enable_3d else 2,
-        seed=seed)
+                             dim=3 if enable_3d else 2,
+                             seed=seed)
     st.session_state['mapper_plot'] = mapper_plot
     draw_mapper()
 
@@ -408,8 +407,19 @@ def draw_mapper():
     if 'mapper_plot' not in st.session_state:
         return
     mapper_plot = st.session_state['mapper_plot']
-    with st.spinner('Drawing Mapper Graph'):
-        mapper_fig = mapper_plot.plot(
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    lens = st.session_state['lens']
+    plot_color = st.session_state.get(KEY_PLOT_COLOR, PLOT_COLOR_LENS)
+    colors = lens
+    if plot_color == PLOT_COLOR_LENS:
+        colors = lens
+    if plot_color in df_X.columns:
+        colors = df_X[plot_color].to_numpy()
+    if plot_color in df_y.columns:
+        colors = df_y[plot_color].to_numpy()
+    mapper_plot_color = mapper_plot.with_colors(colors=colors)
+    mapper_fig = mapper_plot_color.plot(
             backend='plotly',
             height=600,
             width=800)
@@ -434,28 +444,35 @@ def add_data_summary():
 
 
 def add_plot_tools():
-    if 'mapper_graph' not in st.session_state:
+    if 'df_X' not in st.session_state:
         return
     df_X = st.session_state['df_X']
     df_y = st.session_state.get('df_y', pd.DataFrame())
     st.toggle('Enable 3d',
         value=DEFAULT_3D,
-        on_change=render_mapper,
+        on_change=set_update_mapper_plot,
         key=KEY_ENABLE_3D)
     st.number_input('Seed',
         value=DEFAULT_SEED,
-        on_change=render_mapper,
+        on_change=set_update_mapper_plot,
         key=KEY_SEED)
     cols = [PLOT_COLOR_LENS] + [x for x in df_X.columns] + [x for x in df_y.columns]
     st.selectbox('Plot color',
         options=cols,
-        on_change=render_mapper,
+        on_change=set_update_mapper_figure,
         key=KEY_PLOT_COLOR)
-    mapper_graph = st.session_state['mapper_graph']
-    download_graph(mapper_graph)
 
 
 def add_graph_plot():
+    if 'update_mapper_graph' in st.session_state:
+        compute_mapper()
+        st.session_state.pop('update_mapper_graph', None)
+    if 'update_mapper_plot' in st.session_state:
+        render_mapper()
+        st.session_state.pop('update_mapper_plot', None)
+    if 'update_mapper_figure' in st.session_state:
+        draw_mapper()
+        st.session_state.pop('update_mapper_figure', None)
     if 'mapper_fig' not in st.session_state:
         return
     mapper_graph = st.session_state['mapper_graph']
@@ -465,18 +482,19 @@ def add_graph_plot():
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
     st.plotly_chart(mapper_fig,
         use_container_width=True)
+    download_graph(mapper_graph)
 
 
 def main():
     st.set_page_config(
         layout='wide',
-        page_icon='🔮',
-        page_title='tda-mapper-app',
+        page_icon='🍩',
+        page_title='tda-mapper app',
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT
         })
-    st.title('tda-mapper-app')
+    st.title('🍩 tda-mapper app')
     with st.sidebar.container(border=False):
         add_data_source()
     with st.sidebar.container(border=False):
