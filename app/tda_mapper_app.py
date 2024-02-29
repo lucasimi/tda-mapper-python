@@ -60,6 +60,8 @@ CLUSTERING_TRIVIAL = 'Trivial'
 
 CLUSTERING_AGGLOMERATIVE = 'Agglomerative'
 
+PLOT_COLOR_LENS = 'lens'
+
 KEY_LENS_TYPE = 'key_lens_type'
 
 KEY_LENS_PCA_N = 'key_lens_pca_n'
@@ -83,6 +85,10 @@ KEY_ENABLE_3D = 'key_enable_3d'
 KEY_SEED = 'key_seed'
 
 KEY_PLOT_COLOR = 'key_plot_color'
+
+DEFAULT_SEED = 42
+
+DEFAULT_3D = True
 
 
 def mapper_warning(nodes_num):
@@ -342,7 +348,9 @@ def get_clustering_algo():
 
 
 def compute_mapper():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
+    if 'df_X' not in st.session_state:
+        return
+    df_X = st.session_state['df_X']
     X = df_X.to_numpy()
     lens_func = get_lens_func()
     lens = lens_func(X)
@@ -360,9 +368,10 @@ def compute_mapper():
 
 
 def render_mapper():
+    if 'mapper_graph' not in st.session_state:
+        return
     mapper_graph = st.session_state['mapper_graph']
     nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
     if nodes_num > MAX_NODES:
         st.warning(mapper_warning(nodes_num))
         st.button(MAPPER_PROCEED,
@@ -377,10 +386,12 @@ def render_mapper_proceed():
     X = st.session_state.get('X', None)
     mapper_graph = st.session_state['mapper_graph']
     lens = st.session_state['lens']
-    seed = st.session_state.get(KEY_SEED)
-    enable_3d = st.session_state.get(KEY_ENABLE_3D)
-    plot_color = st.session_state.get(KEY_PLOT_COLOR)
+    seed = st.session_state.get(KEY_SEED, DEFAULT_SEED)
+    enable_3d = st.session_state.get(KEY_ENABLE_3D, DEFAULT_3D)
+    plot_color = st.session_state.get(KEY_PLOT_COLOR, PLOT_COLOR_LENS)
     colors = lens
+    if plot_color == PLOT_COLOR_LENS:
+        colors = lens
     if plot_color in df_X.columns:
         colors = df_X[plot_color].to_numpy()
     if plot_color in df_y.columns:
@@ -394,6 +405,8 @@ def render_mapper_proceed():
 
 
 def draw_mapper():
+    if 'mapper_plot' not in st.session_state:
+        return
     mapper_plot = st.session_state['mapper_plot']
     with st.spinner('Drawing Mapper Graph'):
         mapper_fig = mapper_plot.plot(
@@ -405,6 +418,8 @@ def draw_mapper():
 
 def add_data_summary():
     df_X = st.session_state.get('df_X', pd.DataFrame())
+    if df_X.empty:
+        return
     df_y = st.session_state.get('df_y', pd.DataFrame())
     df_all = pd.concat([get_sample(df_X), get_sample(df_y)], axis=1)
     st.caption(data_caption(df_X, df_y),
@@ -419,35 +434,37 @@ def add_data_summary():
 
 
 def add_plot_tools():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
+    if 'mapper_graph' not in st.session_state:
+        return
+    df_X = st.session_state['df_X']
     df_y = st.session_state.get('df_y', pd.DataFrame())
     st.toggle('Enable 3d',
-        value=True,
+        value=DEFAULT_3D,
         on_change=render_mapper,
         key=KEY_ENABLE_3D)
     st.number_input('Seed',
-        value=42,
+        value=DEFAULT_SEED,
         on_change=render_mapper,
         key=KEY_SEED)
-    cols = ['lens'] + [x for x in df_X.columns] + [x for x in df_y.columns]
+    cols = [PLOT_COLOR_LENS] + [x for x in df_X.columns] + [x for x in df_y.columns]
     st.selectbox('Plot color',
         options=cols,
         on_change=render_mapper,
         key=KEY_PLOT_COLOR)
-    if 'mapper_graph' in st.session_state:
-        mapper_graph = st.session_state['mapper_graph']
-        download_graph(mapper_graph)
+    mapper_graph = st.session_state['mapper_graph']
+    download_graph(mapper_graph)
 
 
 def add_graph_plot():
-    if 'mapper_fig' in st.session_state:
-        mapper_graph = st.session_state['mapper_graph']
-        nodes_num = mapper_graph.number_of_nodes()
-        edges_num = mapper_graph.number_of_edges()
-        mapper_fig = st.session_state['mapper_fig']
-        st.caption(f'{nodes_num} nodes, {edges_num} edges')
-        st.plotly_chart(mapper_fig,
-            use_container_width=True)
+    if 'mapper_fig' not in st.session_state:
+        return
+    mapper_graph = st.session_state['mapper_graph']
+    nodes_num = mapper_graph.number_of_nodes()
+    edges_num = mapper_graph.number_of_edges()
+    mapper_fig = st.session_state['mapper_fig']
+    st.caption(f'{nodes_num} nodes, {edges_num} edges')
+    st.plotly_chart(mapper_fig,
+        use_container_width=True)
 
 
 def main():
