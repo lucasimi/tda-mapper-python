@@ -138,7 +138,7 @@ def get_gzip_bytes(string, encoding='utf-8'):
 
 
 def get_data_summary(df_X, df_y):
-    df = pd.concat([df_X, df_y], axis=1)
+    df = pd.concat([df_y, df_X], axis=1)
     df_hist = pd.DataFrame({x: df[x].value_counts(bins=10, sort=False).values for x in df.columns}).T
     df_summary = pd.DataFrame({
         DATA_SUMMARY_COL_FEATURE: df.columns,
@@ -429,7 +429,6 @@ def draw_mapper():
     if 'mapper_plot' not in st.session_state:
         return
     mapper_plot = st.session_state['mapper_plot']
-    #colors = get_plot_colors()
     colors = get_colors_data_summary()
     mapper_plot_color = mapper_plot.with_colors(colors=colors)
     mapper_fig = mapper_plot_color.plot(
@@ -437,40 +436,6 @@ def draw_mapper():
             height=700,
             width=700)
     st.session_state['mapper_fig'] = mapper_fig
-
-
-def get_plot_colors():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
-    df_y = st.session_state.get('df_y', pd.DataFrame())
-    lens = st.session_state['lens']
-    plot_color = st.session_state.get(KEY_PLOT_COLOR, PLOT_COLOR_LENS)
-    colors = lens
-    if plot_color == PLOT_COLOR_LENS:
-        colors = lens
-    if plot_color in df_X.columns:
-        colors = df_X[plot_color].to_numpy()
-    if plot_color in df_y.columns:
-        colors = df_y[plot_color].to_numpy()
-    return colors
-
-
-def add_data_summary():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
-    if df_X.empty:
-        return
-    df_y = st.session_state.get('df_y', pd.DataFrame())
-    st.caption(data_caption(df_X, df_y),
-        help=DATA_INFO)
-    df_summary = st.session_state['df_summary']
-    st.data_editor(df_summary,
-        hide_index=True,
-        disabled=(c for c in df_summary.columns if c != DATA_SUMMARY_COL_COLOR),
-        use_container_width=True,
-        column_config={
-            "hist": st.column_config.BarChartColumn(),
-        },
-        key=KEY_DATA_SUMMARY,
-        on_change=set_update_mapper_figure)
 
 
 def get_colors_data_summary():
@@ -497,6 +462,20 @@ def get_colors_data_summary():
 def add_plot_tools():
     if 'df_X' not in st.session_state:
         return
+    df_X = st.session_state['df_X']
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    st.caption(data_caption(df_X, df_y),
+        help=DATA_INFO)
+    df_summary = st.session_state['df_summary']
+    st.data_editor(df_summary,
+        hide_index=True,
+        disabled=(c for c in df_summary.columns if c != DATA_SUMMARY_COL_COLOR),
+        use_container_width=True,
+        column_config={
+            "hist": st.column_config.BarChartColumn(),
+        },
+        key=KEY_DATA_SUMMARY,
+        on_change=set_update_mapper_figure)
     st.toggle('Enable 3d',
         value=DEFAULT_3D,
         on_change=set_update_mapper_plot,
@@ -544,7 +523,6 @@ def main():
         add_mapper_settings()
     col_tools, col_graph = st.columns([2, 5])
     with col_tools:
-        add_data_summary()
         add_plot_tools()
     with col_graph:
         add_graph_plot()
