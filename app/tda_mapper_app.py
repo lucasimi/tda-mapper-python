@@ -6,7 +6,8 @@ import gzip
 import streamlit as st
 import pandas as pd
 import numpy as np
-import networkx as nx
+
+from networkx.readwrite.json_graph import adjacency_data
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
@@ -86,9 +87,17 @@ KEY_SEED = 'key_seed'
 
 KEY_PLOT_COLOR = 'key_plot_color'
 
+KEY_DATA_SUMMARY = 'key_data_summary'
+
 DEFAULT_SEED = 42
 
 DEFAULT_3D = True
+
+DATA_SUMMARY_COL_FEATURE = 'feature'
+
+DATA_SUMMARY_COL_HIST = 'hist'
+
+DATA_SUMMARY_COL_COLOR = 'active color'
 
 
 def mapper_warning(nodes_num):
@@ -128,6 +137,17 @@ def get_gzip_bytes(string, encoding='utf-8'):
     return fileobj.getvalue()
 
 
+def get_data_summary(df_X, df_y):
+    df = pd.concat([df_X, df_y], axis=1)
+    df_hist = pd.DataFrame({x: df[x].value_counts(bins=10, sort=False).values for x in df.columns}).T
+    df_summary = pd.DataFrame({
+        DATA_SUMMARY_COL_FEATURE: df.columns,
+        DATA_SUMMARY_COL_HIST: df_hist.values.tolist()
+    })
+    df_summary[DATA_SUMMARY_COL_COLOR] = False
+    return df_summary
+
+
 @st.cache_data
 def get_sample(df, frac=0.1):
     return df.sample(frac=frac)
@@ -158,27 +178,34 @@ def get_data_csv(upload):
 def load_data_openml(source):
     clear_session_data()
     df_X, df_y = get_data_openml(source)
+    df_summary = get_data_summary(df_X, df_y)
     st.session_state['df_X'] = df_X
     st.session_state['df_y'] = df_y
+    st.session_state['df_summary'] = df_summary
 
 
 def load_data_csv(source):
     clear_session_data()
     df_X, df_y = get_data_csv(source)
+    df_summary = get_data_summary(df_X, df_y)
     st.session_state['df_X'] = df_X
     st.session_state['df_y'] = df_y
+    st.session_state['df_summary'] = df_summary
 
 
 def load_data_example(source):
     clear_session_data()
     df_X, df_y = get_data_example(source)
+    df_summary = get_data_summary(df_X, df_y)
     st.session_state['df_X'] = df_X
     st.session_state['df_y'] = df_y
+    st.session_state['df_summary'] = df_summary
 
 
 def clear_session_source():
     st.session_state.pop('df_X', None)
     st.session_state.pop('df_y', None)
+    st.session_state.pop('df_summary', None)
     st.session_state.pop('X', None)
     st.session_state.pop('lens', None)
 
@@ -193,20 +220,15 @@ def clear_session_data():
     clear_session_mapper()
 
 
-def get_data_summary(df):
-    df_hist = pd.DataFrame({x: df[x].value_counts(bins=10, sort=False).values for x in df.columns}).T
-    df_summary = pd.DataFrame({
-        'feature': df.columns,
-        'hist': df_hist.values.tolist()
-    })
-    return df_summary
-
-
-def download_graph(mapper_graph):
-    mapper_adj = nx.readwrite.json_graph.adjacency_data(mapper_graph)
+def add_download_graph():
+    if 'df_X' not in st.session_state:
+        return
+    mapper_graph = st.session_state.get('mapper_graph', None)
+    mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj)
     st.download_button('📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
+        disabled=mapper_graph is None,
         use_container_width=False,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
@@ -407,6 +429,17 @@ def draw_mapper():
     if 'mapper_plot' not in st.session_state:
         return
     mapper_plot = st.session_state['mapper_plot']
+    #colors = get_plot_colors()
+    colors = get_colors_data_summary()
+    mapper_plot_color = mapper_plot.with_colors(colors=colors)
+    mapper_fig = mapper_plot_color.plot(
+            backend='plotly',
+            height=700,
+            width=700)
+    st.session_state['mapper_fig'] = mapper_fig
+
+
+def get_plot_colors():
     df_X = st.session_state.get('df_X', pd.DataFrame())
     df_y = st.session_state.get('df_y', pd.DataFrame())
     lens = st.session_state['lens']
@@ -418,12 +451,7 @@ def draw_mapper():
         colors = df_X[plot_color].to_numpy()
     if plot_color in df_y.columns:
         colors = df_y[plot_color].to_numpy()
-    mapper_plot_color = mapper_plot.with_colors(colors=colors)
-    mapper_fig = mapper_plot_color.plot(
-            backend='plotly',
-            height=600,
-            width=800)
-    st.session_state['mapper_fig'] = mapper_fig
+    return colors
 
 
 def add_data_summary():
@@ -431,23 +459,44 @@ def add_data_summary():
     if df_X.empty:
         return
     df_y = st.session_state.get('df_y', pd.DataFrame())
-    df_all = pd.concat([get_sample(df_X), get_sample(df_y)], axis=1)
     st.caption(data_caption(df_X, df_y),
         help=DATA_INFO)
-    df_summary = get_data_summary(df_all)
-    st.dataframe(df_summary,
+    df_summary = st.session_state['df_summary']
+    st.data_editor(df_summary,
         hide_index=True,
+        disabled=(c for c in df_summary.columns if c != DATA_SUMMARY_COL_COLOR),
         use_container_width=True,
         column_config={
             "hist": st.column_config.BarChartColumn(),
-        })
+        },
+        key=KEY_DATA_SUMMARY,
+        on_change=set_update_mapper_figure)
+
+
+def get_colors_data_summary():
+    df_X = st.session_state.get('df_X', pd.DataFrame())
+    df_y = st.session_state.get('df_y', pd.DataFrame())
+    df_summary = st.session_state['df_summary']
+    summary = st.session_state[KEY_DATA_SUMMARY]
+    edited = summary['edited_rows'].items()
+    rows = [k for k, v in edited if v.get(DATA_SUMMARY_COL_COLOR, False)]
+    cols = df_summary[DATA_SUMMARY_COL_FEATURE].iloc[rows].values
+    df_cols = []
+    for c in cols:
+        if c in df_X:
+            df_cols.append(df_X[c])
+        elif c in df_y:
+            df_cols.append(df_y[c])
+    if not df_cols:
+        lens = st.session_state['lens']
+        return lens
+    colors = pd.concat(df_cols, axis=1).to_numpy()
+    return colors
 
 
 def add_plot_tools():
     if 'df_X' not in st.session_state:
         return
-    df_X = st.session_state['df_X']
-    df_y = st.session_state.get('df_y', pd.DataFrame())
     st.toggle('Enable 3d',
         value=DEFAULT_3D,
         on_change=set_update_mapper_plot,
@@ -456,11 +505,6 @@ def add_plot_tools():
         value=DEFAULT_SEED,
         on_change=set_update_mapper_plot,
         key=KEY_SEED)
-    cols = [PLOT_COLOR_LENS] + [x for x in df_X.columns] + [x for x in df_y.columns]
-    st.selectbox('Plot color',
-        options=cols,
-        on_change=set_update_mapper_figure,
-        key=KEY_PLOT_COLOR)
 
 
 def add_graph_plot():
@@ -481,8 +525,7 @@ def add_graph_plot():
     mapper_fig = st.session_state['mapper_fig']
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
     st.plotly_chart(mapper_fig,
-        use_container_width=True)
-    download_graph(mapper_graph)
+        use_container_width=False)
 
 
 def main():
@@ -505,6 +548,8 @@ def main():
         add_plot_tools()
     with col_graph:
         add_graph_plot()
+    with col_tools:
+        add_download_graph()
 
 
 main()
