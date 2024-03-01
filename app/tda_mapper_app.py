@@ -229,7 +229,7 @@ def add_download_graph():
     st.download_button('📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
-        use_container_width=False,
+        use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
@@ -448,9 +448,9 @@ def get_colors_data_summary():
     cols = df_summary[DATA_SUMMARY_COL_FEATURE].iloc[rows].values
     df_cols = []
     for c in cols:
-        if c in df_X:
+        if c in df_X.columns:
             df_cols.append(df_X[c])
-        elif c in df_y:
+        elif c in df_y.columns:
             df_cols.append(df_y[c])
     if not df_cols:
         lens = st.session_state['lens']
@@ -504,7 +504,7 @@ def add_graph_plot():
     mapper_fig = st.session_state['mapper_fig']
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
     st.plotly_chart(mapper_fig,
-        use_container_width=False)
+        use_container_width=True)
 
 
 def main():
