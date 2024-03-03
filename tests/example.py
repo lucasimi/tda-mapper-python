@@ -6,7 +6,7 @@ from sklearn.cluster import DBSCAN
 
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover
-from tdamapper.plot import MapperPlot
+from tdamapper.plot import MapperLayoutInteractive
 
 X, y = make_circles(                # load a labelled dataset
     n_samples=5000,
@@ -22,24 +22,25 @@ mapper_algo = MapperAlgorithm(
     clustering=DBSCAN())
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
-mapper_plot = MapperPlot(
-    X, mapper_graph,
+mapper_plot = MapperLayoutInteractive(
+    mapper_graph,
     colors=y,                       # color according to categorical values
     cmap='jet',                     # Jet colormap, for classes
     agg=np.nanmean,                 # aggregate on nodes according to mean
     dim=2,
     iterations=60,
-    seed=42)
-fig_mean = mapper_plot.plot(
+    seed=42,
     width=600,
     height=600)
+
+fig_mean = mapper_plot.plot()
 fig_mean.show(config={'scrollZoom': True})
 
-fig_std = mapper_plot.with_colors(  # reuse the plot with the same positions
+mapper_plot.update(                 # reuse the plot with the same positions
     colors=y,
     cmap='viridis',                 # viridis colormap, for ranges
     agg=np.nanstd,                  # aggregate on nodes according to std
-).plot(
-    width=600,
-    height=600)
+)
+
+fig_std = mapper_plot.plot()
 fig_std.show(config={'scrollZoom': True})
