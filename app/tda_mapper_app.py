@@ -13,7 +13,7 @@ from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
-from tdamapper.core import MapperAlgorithm, aggregate_graph
+from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
@@ -237,7 +237,8 @@ def add_download_graph():
     mapper_graph = st.session_state.get('mapper_graph', None)
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj)
-    st.download_button('📥 Download Mapper Graph',
+    st.download_button(
+        '📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
         use_container_width=True,
@@ -245,32 +246,38 @@ def add_download_graph():
 
 
 def add_data_source_csv():
-    st.file_uploader('Upload CSV',
+    st.file_uploader(
+        'Upload CSV',
         label_visibility='collapsed',
         on_change=load_data_csv)
 
 
 def add_data_source_example():
-    example = st.selectbox('Example',
+    example = st.selectbox(
+        'Example',
         options=['digits', 'iris'],
         label_visibility='collapsed')
-    st.button('Load Example',
+    st.button(
+        'Load Example',
         on_click=load_data_example,
         args=(example,))
 
 
 def add_data_source_openml():
-    name = st.text_input('Dataset Name',
+    name = st.text_input(
+        'Dataset Name',
         label_visibility='collapsed',
         placeholder='Dataset Name')
-    st.button('Fetch from OpenML',
+    st.button(
+        'Fetch from OpenML',
         on_click=load_data_openml,
         args=(name,))
 
 
 def add_data_source():
     st.write('## 📊 Data Source')
-    source = st.radio('Data Source',
+    source = st.radio(
+        'Data Source',
         options=['Example', 'OpenML', 'CSV'],
         horizontal=True,
         label_visibility='collapsed')
@@ -290,19 +297,22 @@ def add_mapper_settings():
         add_cover_settings()
     with st.expander('🧮 Clustering'):
         add_clustering_settings()
-    st.button('✨ Run',
+    st.button(
+        '✨ Run',
         use_container_width=True,
         disabled='df_X' not in st.session_state,
         on_click=set_update_mapper_graph)
 
 
 def add_lens_settings():
-    lens_type = st.selectbox('Lens',
+    lens_type = st.selectbox(
+        'Lens',
         options=[V_LENS_IDENTITY, V_LENS_PCA],
         label_visibility='collapsed',
         key=K_LENS_TYPE)
     if lens_type == V_LENS_PCA:
-        st.number_input('PCA components',
+        st.number_input(
+            'PCA components',
             value=1,
             min_value=1,
             key=K_LENS_PCA_N)
@@ -320,25 +330,30 @@ def get_lens_func():
 
 
 def add_cover_settings():
-    cover_type = st.selectbox('Cover',
+    cover_type = st.selectbox(
+        'Cover',
         options=[V_COVER_BALL, V_COVER_CUBICAL, V_COVER_TRIVIAL],
         label_visibility='collapsed',
         key=K_COVER_TYPE)
     if cover_type == V_COVER_BALL:
-        st.number_input('Ball radius',
+        st.number_input(
+            'Ball radius',
             value=100.0,
             min_value=0.0,
             key=K_COVER_BALL_RADIUS)
-        st.number_input('Lp metric',
+        st.number_input(
+            'Lp metric',
             value=2,
             min_value=1,
             key=K_COVER_BALL_METRIC_P)
     elif cover_type == V_COVER_CUBICAL:
-        st.number_input('intervals',
+        st.number_input(
+            'intervals',
             value=2,
             min_value=0,
             key=K_COVER_CUBICAL_N)
-        st.number_input('overlap',
+        st.number_input(
+            'overlap',
             value=0.10,
             min_value=0.0,
             max_value=1.0,
@@ -360,12 +375,14 @@ def get_cover_algo():
 
 
 def add_clustering_settings():
-    clustering_type = st.selectbox('Clustering',
+    clustering_type = st.selectbox(
+        'Clustering',
         options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
         label_visibility='collapsed',
         key=K_CLUSTERING_TYPE)
     if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        st.number_input('clusters',
+        st.number_input(
+            'clusters',
             value=2,
             min_value=1,
             key=K_CLUSTERING_AGGLOMERATIVE_N)
@@ -395,7 +412,6 @@ def set_update_mapper_figure():
 def compute_mapper():
     if 'df_X' not in st.session_state:
         return
-    df_X = st.session_state['df_X']
     X = st.session_state['X']
     lens_func = get_lens_func()
     lens = lens_func(X)
@@ -429,9 +445,10 @@ def render_mapper_proceed():
     mapper_graph = st.session_state['mapper_graph']
     seed = st.session_state.get(K_SEED, VD_SEED)
     enable_3d = st.session_state.get(K_ENABLE_3D, VD_3D)
-    mapper_plot = MapperLayoutInteractive(mapper_graph,
-                             dim=3 if enable_3d else 2,
-                             seed=seed)
+    mapper_plot = MapperLayoutInteractive(
+        mapper_graph,
+        dim=3 if enable_3d else 2,
+        seed=seed)
     st.session_state['mapper_plot'] = mapper_plot
     draw_mapper()
 
@@ -473,7 +490,8 @@ def add_plot_tools():
         return
     df_X = st.session_state['df_X']
     df_y = st.session_state.get('df_y', pd.DataFrame())
-    st.caption(data_caption(df_X, df_y),
+    st.caption(
+        data_caption(df_X, df_y),
         help=DATA_INFO)
     df_summary = st.session_state['df_summary']
     st.data_editor(df_summary,
