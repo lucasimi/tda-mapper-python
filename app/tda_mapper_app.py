@@ -7,6 +7,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+import plotly.graph_objects as go
+
 from networkx.readwrite.json_graph import adjacency_data
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
@@ -35,7 +37,7 @@ DATA_HELP = f'''
     * Or you can use a publicly available dataset from [OpenML]({OPENML_URL}).
 '''
 
-DATA_INFO = 'Non-numeric and NaN features are dropped. NaN rows are replaced by mean'
+DATA_INFO = 'Non-numeric and NaN features get dropped. NaN rows get replaced by mean'
 
 MAPPER_HELP = "Experiment with Mapper Settings and hit Run when you're ready!"
 
@@ -152,6 +154,54 @@ class Results:
         self.clear_mapper()
 
 
+def empty_fig():
+    scatter = go.Scatter3d(
+        x=[0.0],
+        y=[0.0],
+        z=[0.0],
+        mode='markers',
+        hoverinfo='text',
+        opacity=1.0,
+        marker=dict(
+            showscale=True,
+            reversescale=False,
+            opacity=0.0))
+    axis = dict(
+        showline=True,
+        linecolor='black',
+        linewidth=1,
+        mirror=True,
+        visible=True,
+        showticklabels=False,
+        title='')
+    scene_axis = dict(
+        showgrid=True,
+        visible=True,
+        backgroundcolor='rgba(0, 0, 0, 0)',
+        showaxeslabels=False,
+        showline=True,
+        linecolor='black',
+        gridcolor='rgba(230, 230, 230, 1.0)',
+        linewidth=1,
+        mirror=True,
+        showticklabels=False,
+        title='')
+    layout = go.Layout(
+        uirevision='constant',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        autosize=False,
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=10, l=10, r=10, t=10),
+        xaxis=axis,
+        yaxis=axis,
+        scene=dict(
+            xaxis=scene_axis,
+            yaxis=scene_axis,
+            zaxis=scene_axis))
+    return go.Figure(data=[scatter], layout=layout)
+
+
 def mapper_warning(nodes_num):
     return f'''
         ⚠️ This graph contains {nodes_num} nodes, 
@@ -166,6 +216,8 @@ def lp_metric(p):
 
 
 def data_caption(df_X, df_y):
+    if df_X.empty:
+        return 'No data source found'
     if df_y.empty:
         return f'{len(df_X)} instance, {len(df_X.columns)} features'
     return f'''
@@ -320,7 +372,7 @@ def add_mapper_settings():
         '✨ Run',
         use_container_width=True,
         disabled=df_X is None,
-        on_click=set_update_mapper_graph)
+        on_click=compute_mapper)
 
 
 def add_lens_settings():
@@ -416,18 +468,6 @@ def get_clustering_algo():
         return AgglomerativeClustering(n_clusters=n)
 
 
-def set_update_mapper_graph():
-    st.session_state['update_mapper_graph'] = True
-
-
-def set_update_mapper_plot():
-    st.session_state['update_mapper_plot'] = True
-
-
-def set_update_mapper_figure():
-    st.session_state['update_mapper_figure'] = True
-
-
 def compute_mapper():
     df_X = st.session_state[S_RESULTS].df_X
     if df_X is None:
@@ -510,7 +550,7 @@ def get_colors_data_summary():
     return colors
 
 
-def add_plot_tools():
+def add_data_tools():
     df_X = st.session_state[S_RESULTS].df_X
     if df_X is None:
         df_X = pd.DataFrame()
@@ -525,6 +565,7 @@ def add_plot_tools():
         df_summary = pd.DataFrame()
     st.data_editor(
         df_summary,
+        height=500,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
@@ -532,45 +573,48 @@ def add_plot_tools():
             V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(),
         },
         key=K_DATA_SUMMARY,
-        on_change=set_update_mapper_figure)
+        on_change=draw_mapper)
+
+
+def add_plot_setting():
+    st.write('## 🎨 Plot Settings')
     st.toggle(
-        'Enable 3d',
+        'Enable 3D',
         value=VD_3D,
-        on_change=set_update_mapper_plot,
         key=K_ENABLE_3D)
     st.number_input(
         'Seed',
         value=VD_SEED,
-        on_change=set_update_mapper_plot,
         key=K_SEED)
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    st.button(
+        '🖌️ Draw',
+        use_container_width=True,
+        disabled=mapper_graph is None,
+        on_click=render_mapper)
 
 
 def add_graph_plot():
-    if 'update_mapper_graph' in st.session_state:
-        st.session_state.pop('update_mapper_graph', None)
-        compute_mapper()
-    if 'update_mapper_plot' in st.session_state:
-        st.session_state.pop('update_mapper_plot', None)
-        render_mapper()
-    if 'update_mapper_figure' in st.session_state:
-        st.session_state.pop('update_mapper_figure', None)
-        draw_mapper()
     if 'mapper_fig' not in st.session_state:
-        st.write('Run when ready')
+        fig = empty_fig()
+        st.plotly_chart(
+            fig,
+            use_container_width=True)
         return
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    cont = st.empty()
     if mapper_graph is None:
-        st.write('Run when ready')
+        fig = empty_fig()
+        st.plotly_chart(
+            fig,
+            use_container_width=True)
         return
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
     mapper_fig = st.session_state['mapper_fig']
-    with cont:
-        st.caption(f'{nodes_num} nodes, {edges_num} edges')
-        st.plotly_chart(
-            mapper_fig,
-            use_container_width=True)
+    st.caption(f'{nodes_num} nodes, {edges_num} edges')
+    st.plotly_chart(
+        mapper_fig,
+        use_container_width=True)
 
 
 def main():
@@ -585,14 +629,13 @@ def main():
     st.title('🍩 tda-mapper app')
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
-    with st.sidebar.container(border=False):
+    with st.sidebar:
         add_data_source()
-    with st.sidebar.container(border=False):
         add_mapper_settings()
+        add_plot_setting()
     col_tools, col_graph = st.columns([2, 5])
     with col_tools:
-        add_plot_tools()
-        add_download_graph()
+        add_data_tools()
     with col_graph:
         add_graph_plot()
 
