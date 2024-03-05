@@ -2,12 +2,12 @@ import json
 import time
 import io
 import gzip
+import random
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 
-import plotly.graph_objects as go
 
 from networkx.readwrite.json_graph import adjacency_data
 
@@ -154,54 +154,6 @@ class Results:
         self.clear_mapper()
 
 
-def empty_fig():
-    scatter = go.Scatter3d(
-        x=[0.0],
-        y=[0.0],
-        z=[0.0],
-        mode='markers',
-        hoverinfo='text',
-        opacity=1.0,
-        marker=dict(
-            showscale=True,
-            reversescale=False,
-            opacity=0.0))
-    axis = dict(
-        showline=True,
-        linecolor='black',
-        linewidth=1,
-        mirror=True,
-        visible=True,
-        showticklabels=False,
-        title='')
-    scene_axis = dict(
-        showgrid=True,
-        visible=True,
-        backgroundcolor='rgba(0, 0, 0, 0)',
-        showaxeslabels=False,
-        showline=True,
-        linecolor='black',
-        gridcolor='rgba(230, 230, 230, 1.0)',
-        linewidth=1,
-        mirror=True,
-        showticklabels=False,
-        title='')
-    layout = go.Layout(
-        uirevision='constant',
-        plot_bgcolor='rgba(0, 0, 0, 0)',
-        autosize=False,
-        showlegend=False,
-        hovermode='closest',
-        margin=dict(b=10, l=10, r=10, t=10),
-        xaxis=axis,
-        yaxis=axis,
-        scene=dict(
-            xaxis=scene_axis,
-            yaxis=scene_axis,
-            zaxis=scene_axis))
-    return go.Figure(data=[scatter], layout=layout)
-
-
 def mapper_warning(nodes_num):
     return f'''
         ⚠️ This graph contains {nodes_num} nodes, 
@@ -308,7 +260,7 @@ def add_download_graph():
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj)
     st.download_button(
-        '📥 Download Mapper Graph',
+        '📥 Download',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
         use_container_width=True,
@@ -553,10 +505,8 @@ def get_colors_data_summary():
 def add_data_tools():
     df_X = st.session_state[S_RESULTS].df_X
     if df_X is None:
-        df_X = pd.DataFrame()
+        return
     df_y = st.session_state[S_RESULTS].df_y
-    if df_y is None:
-        df_y = pd.DataFrame()
     st.caption(
         data_caption(df_X, df_y),
         help=DATA_INFO)
@@ -577,36 +527,27 @@ def add_data_tools():
 
 
 def add_plot_setting():
-    st.write('## 🎨 Plot Settings')
     st.toggle(
         'Enable 3D',
         value=VD_3D,
-        key=K_ENABLE_3D)
-    st.number_input(
-        'Seed',
-        value=VD_SEED,
-        key=K_SEED)
+        key=K_ENABLE_3D,
+        on_change=render_mapper)
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    def _randomize():
+        st.session_state[K_SEED] = random.randint(1, 100)
+        render_mapper()
     st.button(
-        '🖌️ Draw',
+        '♻️ Randomize',
         use_container_width=True,
         disabled=mapper_graph is None,
-        on_click=render_mapper)
+        on_click=_randomize)
 
 
 def add_graph_plot():
     if 'mapper_fig' not in st.session_state:
-        fig = empty_fig()
-        st.plotly_chart(
-            fig,
-            use_container_width=True)
         return
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     if mapper_graph is None:
-        fig = empty_fig()
-        st.plotly_chart(
-            fig,
-            use_container_width=True)
         return
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
@@ -632,10 +573,11 @@ def main():
     with st.sidebar:
         add_data_source()
         add_mapper_settings()
-        add_plot_setting()
     col_tools, col_graph = st.columns([2, 5])
     with col_tools:
         add_data_tools()
+        add_plot_setting()
+        add_download_graph()
     with col_graph:
         add_graph_plot()
 
