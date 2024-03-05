@@ -105,6 +105,52 @@ K_SEED = 'key_seed'
 
 K_DATA_SUMMARY = 'key_data_summary'
 
+# S_ are reusable manually managed stored objects
+
+S_RESULTS = 'stored_results'
+
+
+class Results:
+
+    def __init__(self):
+        self.df_X = None
+        self.df_y = None
+        self.X = None
+        self.df_summary = None
+        self.lens = None
+        self.mapper_graph = None
+        self.mapper_plot = None
+
+    def set_df(self, X, y):
+        self.df_X = fix_data(X)
+        self.df_y = fix_data(y)
+        self.X = self.df_X.to_numpy()
+        self.df_summary = get_data_summary(self.df_X, self.df_y)
+
+    def set_lens(self, lens):
+        self.lens = lens
+
+    def set_mapper_graph(self, mapper_graph):
+        self.mapper_graph = mapper_graph
+
+    def set_mapper_plot(self, mapper_plot):
+        self.mapper_plot = mapper_plot
+
+    def clear_df(self):
+        self.df_X = None
+        self.df_y = None
+        self.X = None
+        self.df_summary = None
+        self.lens = None
+
+    def clear_mapper(self):
+        self.mapper_graph = None
+        self.mapper_plot = None
+
+    def clear(self):
+        self.clear_df()
+        self.clear_mapper()
+
 
 def mapper_warning(nodes_num):
     return f'''
@@ -184,57 +230,29 @@ def get_data_csv(upload):
 
 
 def load_data_openml(source):
-    clear_session_data()
-    df_X, df_y = get_data_openml(source)
-    df_summary = get_data_summary(df_X, df_y)
-    st.session_state['df_X'] = df_X
-    st.session_state['X'] = df_X.to_numpy()
-    st.session_state['df_y'] = df_y
-    st.session_state['df_summary'] = df_summary
+    st.session_state[S_RESULTS].clear()
+    X, y = get_data_openml(source)
+    st.session_state[S_RESULTS].set_df(X, y)
 
 
 def load_data_csv(source):
-    clear_session_data()
-    df_X, df_y = get_data_csv(source)
-    df_summary = get_data_summary(df_X, df_y)
-    st.session_state['df_X'] = df_X
-    st.session_state['X'] = df_X.to_numpy()
-    st.session_state['df_y'] = df_y
-    st.session_state['df_summary'] = df_summary
+    st.session_state[S_RESULTS].clear()
+    X, y = get_data_csv(source)
+    st.session_state[S_RESULTS].set_df(X, y)
 
 
 def load_data_example(source):
-    clear_session_data()
-    df_X, df_y = get_data_example(source)
-    df_summary = get_data_summary(df_X, df_y)
-    st.session_state['df_X'] = df_X
-    st.session_state['X'] = df_X.to_numpy()
-    st.session_state['df_y'] = df_y
-    st.session_state['df_summary'] = df_summary
-
-
-def clear_session_source():
-    st.session_state.pop('df_X', None)
-    st.session_state.pop('X', None)
-    st.session_state.pop('df_y', None)
-    st.session_state.pop('df_summary', None)
-    st.session_state.pop('lens', None)
-
-
-def clear_session_mapper():
-    st.session_state.pop('mapper_graph', None)
-    st.session_state.pop('mapper_fig', None)
-
-
-def clear_session_data():
-    clear_session_source()
-    clear_session_mapper()
+    st.session_state[S_RESULTS].clear()
+    X, y = get_data_example(source)
+    st.session_state[S_RESULTS].set_df(X, y)
 
 
 def add_download_graph():
-    if 'df_X' not in st.session_state:
+    df_X = st.session_state[S_RESULTS]
+    if df_X is None:
+        st.write('Run')
         return
-    mapper_graph = st.session_state.get('mapper_graph', None)
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj)
     st.download_button(
@@ -297,10 +315,11 @@ def add_mapper_settings():
         add_cover_settings()
     with st.expander('🧮 Clustering'):
         add_clustering_settings()
+    df_X = st.session_state[S_RESULTS].df_X
     st.button(
         '✨ Run',
         use_container_width=True,
-        disabled='df_X' not in st.session_state,
+        disabled=df_X is None,
         on_click=set_update_mapper_graph)
 
 
@@ -410,27 +429,28 @@ def set_update_mapper_figure():
 
 
 def compute_mapper():
-    if 'df_X' not in st.session_state:
+    df_X = st.session_state[S_RESULTS].df_X
+    if df_X is None:
         return
-    X = st.session_state['X']
+    X = st.session_state[S_RESULTS].X
     lens_func = get_lens_func()
     lens = lens_func(X)
-    st.session_state['lens'] = lens
+    st.session_state[S_RESULTS].set_lens(lens)
     mapper_algo = MapperAlgorithm(
         cover=get_cover_algo(),
         clustering=FailSafeClustering(
             clustering=get_clustering_algo(),
             verbose=False))
     mapper_graph = mapper_algo.fit_transform(X, lens)
-    clear_session_mapper()
-    st.session_state['mapper_graph'] = mapper_graph
+    st.session_state[S_RESULTS].clear_mapper()
+    st.session_state[S_RESULTS].set_mapper_graph(mapper_graph)
     render_mapper()
 
 
 def render_mapper():
-    if 'mapper_graph' not in st.session_state:
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    if mapper_graph is None:
         return
-    mapper_graph = st.session_state['mapper_graph']
     nodes_num = mapper_graph.number_of_nodes()
     if nodes_num > MAX_NODES:
         st.warning(mapper_warning(nodes_num))
@@ -441,22 +461,23 @@ def render_mapper():
 
 
 def render_mapper_proceed():
-    X = st.session_state.get('X', None)
-    mapper_graph = st.session_state['mapper_graph']
+    X = st.session_state[S_RESULTS].X
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
     seed = st.session_state.get(K_SEED, VD_SEED)
     enable_3d = st.session_state.get(K_ENABLE_3D, VD_3D)
     mapper_plot = MapperLayoutInteractive(
         mapper_graph,
         dim=3 if enable_3d else 2,
         seed=seed)
-    st.session_state['mapper_plot'] = mapper_plot
+    mapper_plot.update(colors=X)
+    st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
     draw_mapper()
 
 
 def draw_mapper():
-    if 'mapper_plot' not in st.session_state:
+    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    if mapper_plot is None:
         return
-    mapper_plot = st.session_state['mapper_plot']
     colors = get_colors_data_summary()
     mapper_plot.update(colors=colors)
     mapper_fig = mapper_plot.plot()
@@ -465,9 +486,13 @@ def draw_mapper():
 
 
 def get_colors_data_summary():
-    df_X = st.session_state.get('df_X', pd.DataFrame())
-    df_y = st.session_state.get('df_y', pd.DataFrame())
-    df_summary = st.session_state['df_summary']
+    df_X = st.session_state[S_RESULTS].df_X
+    if df_X is None:
+        df_X = pd.DataFrame()
+    df_y = st.session_state[S_RESULTS].df_y
+    if df_y is None:
+        df_y = pd.DataFrame()
+    df_summary = st.session_state[S_RESULTS].df_summary
     summary = st.session_state[K_DATA_SUMMARY]
     edited = summary['edited_rows'].items()
     rows = [k for k, v in edited if v.get(V_DATA_SUMMARY_COLOR, False)]
@@ -479,22 +504,27 @@ def get_colors_data_summary():
         elif c in df_y.columns:
             df_cols.append(df_y[c])
     if not df_cols:
-        lens = st.session_state['lens']
+        lens = st.session_state[S_RESULTS].lens
         return lens
     colors = pd.concat(df_cols, axis=1).to_numpy()
     return colors
 
 
 def add_plot_tools():
-    if 'df_X' not in st.session_state:
-        return
-    df_X = st.session_state['df_X']
-    df_y = st.session_state.get('df_y', pd.DataFrame())
+    df_X = st.session_state[S_RESULTS].df_X
+    if df_X is None:
+        df_X = pd.DataFrame()
+    df_y = st.session_state[S_RESULTS].df_y
+    if df_y is None:
+        df_y = pd.DataFrame()
     st.caption(
         data_caption(df_X, df_y),
         help=DATA_INFO)
-    df_summary = st.session_state['df_summary']
-    st.data_editor(df_summary,
+    df_summary = st.session_state[S_RESULTS].df_summary
+    if df_summary is None:
+        df_summary = pd.DataFrame()
+    st.data_editor(
+        df_summary,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
@@ -503,11 +533,13 @@ def add_plot_tools():
         },
         key=K_DATA_SUMMARY,
         on_change=set_update_mapper_figure)
-    st.toggle('Enable 3d',
+    st.toggle(
+        'Enable 3d',
         value=VD_3D,
         on_change=set_update_mapper_plot,
         key=K_ENABLE_3D)
-    st.number_input('Seed',
+    st.number_input(
+        'Seed',
         value=VD_SEED,
         on_change=set_update_mapper_plot,
         key=K_SEED)
@@ -515,23 +547,30 @@ def add_plot_tools():
 
 def add_graph_plot():
     if 'update_mapper_graph' in st.session_state:
-        compute_mapper()
         st.session_state.pop('update_mapper_graph', None)
+        compute_mapper()
     if 'update_mapper_plot' in st.session_state:
-        render_mapper()
         st.session_state.pop('update_mapper_plot', None)
+        render_mapper()
     if 'update_mapper_figure' in st.session_state:
-        draw_mapper()
         st.session_state.pop('update_mapper_figure', None)
+        draw_mapper()
     if 'mapper_fig' not in st.session_state:
+        st.write('Run when ready')
         return
-    mapper_graph = st.session_state['mapper_graph']
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    cont = st.empty()
+    if mapper_graph is None:
+        st.write('Run when ready')
+        return
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
     mapper_fig = st.session_state['mapper_fig']
-    st.caption(f'{nodes_num} nodes, {edges_num} edges')
-    st.plotly_chart(mapper_fig,
-        use_container_width=True)
+    with cont:
+        st.caption(f'{nodes_num} nodes, {edges_num} edges')
+        st.plotly_chart(
+            mapper_fig,
+            use_container_width=True)
 
 
 def main():
@@ -544,6 +583,8 @@ def main():
             'About': ABOUT
         })
     st.title('🍩 tda-mapper app')
+    if S_RESULTS not in st.session_state:
+        st.session_state[S_RESULTS] = Results()
     with st.sidebar.container(border=False):
         add_data_source()
     with st.sidebar.container(border=False):
@@ -551,10 +592,9 @@ def main():
     col_tools, col_graph = st.columns([2, 5])
     with col_tools:
         add_plot_tools()
+        add_download_graph()
     with col_graph:
         add_graph_plot()
-    with col_tools:
-        add_download_graph()
 
 
 main()
