@@ -18,10 +18,10 @@ The Mapper algorithm is a well-known technique in the field of topological data 
 Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
 For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
-| Step 1                                                                                   | Step 2                                                                                   | Step 3                                                                                   | Step 4                                                                                   |
-|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| Step 1 | Step 2 | Step 3 | Step 4 |
+|--------|--------|--------|--------|
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
-| Chose a lens                                                                             | Cover the image of the lens                                                              | Perform clustering on the pullback cover                                                 | Build the Mapper graph                                                                   |
+| Chose lens | Cover image | Run clustering | Build graph |
 
 ## Example
 
@@ -38,7 +38,7 @@ from sklearn.cluster import DBSCAN
 
 from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import CubicalCover
-from tdamapper.plot import MapperPlot
+from tdamapper.plot import MapperLayoutInteractive
 
 X, y = make_circles(                # load a labelled dataset
     n_samples=5000,
@@ -54,26 +54,27 @@ mapper_algo = MapperAlgorithm(
     clustering=DBSCAN())
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
-mapper_plot = MapperPlot(
-    X, mapper_graph,
+mapper_plot = MapperLayoutInteractive(
+    mapper_graph,
     colors=y,                       # color according to categorical values
     cmap='jet',                     # Jet colormap, for classes
     agg=np.nanmean,                 # aggregate on nodes according to mean
     dim=2,
     iterations=60,
-    seed=42)
-fig_mean = mapper_plot.plot(
+    seed=42,
     width=600,
     height=600)
+
+fig_mean = mapper_plot.plot()
 fig_mean.show(config={'scrollZoom': True})
 
-fig_std = mapper_plot.with_colors(  # reuse the plot with the same positions
+mapper_plot.update(                 # reuse the plot with the same positions
     colors=y,
     cmap='viridis',                 # viridis colormap, for ranges
     agg=np.nanstd,                  # aggregate on nodes according to std
-).plot(
-    width=600,
-    height=600)
+)
+
+fig_std = mapper_plot.plot()
 fig_std.show(config={'scrollZoom': True})
 ```
 
