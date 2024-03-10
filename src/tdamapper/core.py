@@ -1,22 +1,31 @@
 """
-Main tools for creating and analyzing Mapper graphs.
+Core tools for creating and analyzing Mapper graphs.
 
-The Mapper graph is a simplified representation of the shape and structure of
-the data, composed of nodes and edges. It consists of three main steps:
-*filtering*, *covering*, and *clustering*. First, the data points are mapped to
-a lower-dimensional space using a **lens function** (also called **filter**).
-Then, the lens space is covered by overlapping open sets, using a **cover
-algorithm**. Finally, the data points in each open set are clustered using a
-**clustering algorithm**, and the clusters are connected by edges if they share
-points in the overlap.
+The Mapper algorithm is a method for exploring the shape and structure of
+high-dimensional datasets, by constructing a graph representation called Mapper
+graph. The algorithm has three main steps:
 
-The module provides a class that encapsulates the algorithm and its parameters,
-and a :func:`fit_transform` method that takes a dataset and returns a NetworkX
-graph object. For more details on the Mapper algorithm and its applications, see
+1. **Filtering**: Apply a lens function (also called filter) to map the data points
+   to a lower-dimensional space, such as a scalar value or a 2D plane.
+
+2. **Covering**: Arrange the lens space into overlapping open sets, using a
+   cover algorithm such as uniform intervals or balls.
+
+3. **Clustering**: Group the data points in each open set into clusters, using a
+   clustering algorithm such as single-linkage or DBSCAN.
+
+The Mapper graph consists of nodes that represent clusters of data
+points, and edges that connect overlapping clusters (clusters obtained from
+different open sets can possibly overlap). For more details on the Mapper
+algorithm and its applications, see
 
     Gurjeet Singh, Facundo Mémoli and Gunnar Carlsson, "Topological Methods for
     the Analysis of High Dimensional Data Sets and 3D Object Recognition",
-    Eurographics Symposium on Point-Based Graphics, 2007
+    Eurographics Symposium on Point-Based Graphics, 2007.
+
+This module provides the class :class:`tdamapper.core.MapperAlgorithm`, which
+encapsulates the algorithm and its parameters. The Mapper graph produced by this
+module is a NetworkX graph object.
 """
 
 import networkx as nx
@@ -35,10 +44,10 @@ def mapper_labels(X, y, cover, clustering):
     The function first covers the lens space with overlapping sets, using the
     cover algorithm provided. Then, for each set, it clusters the points of the
     dataset that have lens values within that set, using the clustering
-    algorithm provided. The clusters are labeled with unique integers, starting
-    from zero for each set. The function then adds an offset to the cluster
-    labels, such that the labels are distinct across all sets. The offset is
-    equal to the maximum label of the previous set plus one.
+    algorithm provided. The clusters are then labeled with unique integers,
+    starting from zero for each set. The function then adds an offset to the
+    cluster labels, such that the labels are distinct across all sets. The
+    offset is equal to the maximum label of the previous set plus one.
 
     The function returns a list of node labels for each point in the dataset.
     The list at position i contains the labels of the nodes that the point at
@@ -47,11 +56,11 @@ def mapper_labels(X, y, cover, clustering):
     those at position j.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class from :mod:`tdamapper.cover`
+    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -77,23 +86,23 @@ def mapper_connected_components(X, y, cover, clustering):
     """
     Identify the connected components of the Mapper graph.
 
-    This function assigns a unique integer label to each point in the dataset,
-    based on the connected component of the Mapper graph that it belongs to. A
-    connected component is a maximal set of nodes that are reachable from each
-    other by following the edges.
+    A connected component is a maximal set of nodes that are reachable from each
+    other by following the edges. This function assigns a unique integer label
+    to each point in the dataset, based on the connected component of the Mapper
+    graph that it belongs to.
 
     This function uses a union-find data structure to efficiently keep track of
-    the connected components as it scans the nodes of the Mapper graph. This
+    the connected components as it scans the points of the dataset. This
     approach should be faster than computing the Mapper graph by first calling
     :func:`tdamapper.core.mapper_graph` and then calling
     :func:`networkx.connected_components` on it.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class from :mod:`tdamapper.cover`
+    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -123,24 +132,23 @@ def mapper_graph(X, y, cover, clustering):
     """
     Create the Mapper graph.
 
-    This function calls :func:`tdamapper.core.mapper_labels` to identify the
-    unique cluster labels that each point of the dataset belongs to. The nodes
-    of the Mapper graph are identified by the integers corresponding to cluster
-    labels. Then the edges of the Mapper graph are created by checking if any
-    two nodes share some points in their corresponding clusters.
+    This function first identifies the unique cluster labels that each point of
+    the dataset belongs to. These labels are used to identify the nodes of the
+    Mapper graph. Then the edges of the Mapper graph are created by checking if
+    any two nodes share some points in their corresponding clusters.
 
-    The function returns a networkx.Graph object that represents the Mapper
-    graph. Each node has an attribute 'size' that stores the number of
-    points contained in its corresponding cluster, and an attribute 'ids' that
-    stores the indices of the points in the dataset that are contained in the
-    cluster.
+    This function return the Mapper graph as an object of type
+    :class:`networkx.Graph`. Each node has an attribute 'size' that stores the
+    number of points contained in its corresponding cluster, and an attribute
+    'ids' that stores the indices of the points in the dataset that are
+    contained in the cluster.
 
     :param X: The dataset to be mapped.
-    :type X: array-like of shape (n, m) or list-like of size n
+    :type X: array-like of shape (n, m) or list-like of length n
     :param y: The lens values for each point in the dataset.
-    :type y: array-like of shape (n, k) or list-like of size n
+    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class from :mod:`tdamapper.cover`
+    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -168,7 +176,7 @@ def mapper_graph(X, y, cover, clustering):
     return graph
 
 
-def aggregate_graph(y, graph, agg):
+def aggregate_graph(X, graph, agg):
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -182,8 +190,8 @@ def aggregate_graph(y, graph, agg):
     aggregation value. The keys of the dictionary are the nodes of the graph,
     and the values are the aggregation values.
 
-    :param y: The dataset to be aggregated.
-    :type y: array-like of shape (n, d) or list-like
+    :param X: The dataset to be aggregated.
+    :type X: array-like of shape (n, m) or list-like
     :param graph: The graph to apply the aggregation function to.
     :type graph: :class:`networkx.Graph`.
     :param agg: The aggregation function to use.
@@ -194,7 +202,7 @@ def aggregate_graph(y, graph, agg):
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [y[i] for i in nodes[node_id][ATTR_IDS]]
+        node_values = [X[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
@@ -204,8 +212,19 @@ class MapperAlgorithm:
     """
     A class for creating and analyzing Mapper graphs.
 
+    This class provides two methods :func:`fit` and :func:`fit_transform`. Once
+    fitted, the Mapper graph is stored in the attribute `graph_` as a
+    :class:`networkx.Graph` object.
+
+    This class adopts the same interface as scikit-learn's estimators for ease
+    and consistency of use. However, it's important to note that this is not a
+    proper scikit-learn estimator as it does not validata the input in the same
+    way as a scikit-learn estimator is required to do. This class can work
+    with datasets whose elements are arbitrary objects when feasible for the
+    supplied parameters.
+
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class from :mod:`tdamapper.cover`
+    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -219,22 +238,16 @@ class MapperAlgorithm:
 
     def fit(self, X, y=None):
         """
-        Create the Mapper graph.
-
-        This method creates a Mapper graph, which is a simplified representation
-        of the shape and structure of the data, composed of nodes and edges.
-        Each node corresponds to a cluster of points having similar values in
-        the lens space. Each edge connects two nodes that share some points in
-        their corresponding clusters.
+        Create the Mapper graph and store it for later use.
 
         This method stores the result of :func:`tdamapper.core.mapper_graph` in
         the attribute `graph_` and returns a reference to the calling object.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :param y: The lens values for each point in the dataset.
-        :type y: array-like of shape (n, k) or list-like of size n
-        :return: `self`.
+        :type y: array-like of shape (n, k) or list-like of length n
+        :return: The object itself.
         """
         self.graph_ = self.fit_transform(X, y)
         return self
@@ -243,19 +256,13 @@ class MapperAlgorithm:
         """
         Create the Mapper graph.
 
-        This method creates a Mapper graph, which is a simplified representation
-        of the shape and structure of the data, composed of nodes and edges.
-        Each node corresponds to a cluster of points having similar values in
-        the lens space. Each edge connects two nodes that share some points in
-        their corresponding clusters.
-
         This method is equivalent to calling
         :func:`tdamapper.core.mapper_graph`.
 
         :param X: The dataset to be mapped.
-        :type X: array-like of shape (n, m) or list-like of size n
+        :type X: array-like of shape (n, m) or list-like of length n
         :param y: The lens values for each point in the dataset.
-        :type y: array-like of shape (n, k) or list-like of size n
+        :type y: array-like of shape (n, k) or list-like of length n
         :return: The Mapper graph.
         :rtype: :class:`networkx.Graph`
         """
