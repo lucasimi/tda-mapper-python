@@ -341,10 +341,6 @@ class MapperLayoutInteractive:
         calling this function, the figure will be updated according 
         to the supplied parameters.
 
-        :param graph: The precomputed Mapper graph to be embedded. This can be
-            obtained by calling :func:`tdamapper.core.mapper_graph` or
-            :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
-        :type graph: :class:`networkx.Graph`, required
         :param seed: The random seed used to construct the graph embedding.
         :type seed: int, optional
         :param iterations: The number of iterations used to construct the graph embedding.
