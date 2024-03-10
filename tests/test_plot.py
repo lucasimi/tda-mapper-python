@@ -25,6 +25,8 @@ class TestMapperPlot(unittest.TestCase):
         mp_plot1.plot()
         mp_plot2 = MapperLayoutInteractive(g, colors=data, dim=3)
         mp_plot2.plot()
+        mp_plot2.update(colors=data, seed=123)
+        mp_plot2.plot()
         mp_plot3 = MapperLayoutStatic(g, colors=data, dim=2)
         mp_plot3.plot()
 
