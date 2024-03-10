@@ -267,14 +267,14 @@ class MapperLayoutInteractive:
                 patch=dict(
                     x=node_arr[0],
                     y=node_arr[1],
-                    z=node_arr[3]),
+                    z=node_arr[2]),
                 selector=dict(
                     name='nodes_trace'))
             self.fig.update_traces(
                 patch=dict(
                     x=edge_arr[0],
                     y=edge_arr[1],
-                    z=edge_arr[3]),
+                    z=edge_arr[2]),
                 selector=dict(
                     name='edges_trace'))
         elif self.__dim == 2:
