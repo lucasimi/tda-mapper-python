@@ -197,34 +197,33 @@ def _plotly_mapper_fig(graph, dim, seed, iterations):
 class MapperLayoutInteractive:
     """
     Class for generating and visualizing the Mapper graph.
-    
-    This class creates a metric embedding of the Mapper graph, in 2d or 3d, and
-    converts it into a plotly figure, suitable for interactive display.
+
+    This class creates a metric embedding of the Mapper graph in 2D or 3D and
+    converts it into a Plotly figure suitable for interactive display.
 
     :param graph: The precomputed Mapper graph to be embedded. This can be
         obtained by calling :func:`tdamapper.core.mapper_graph` or
         :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
     :type graph: :class:`networkx.Graph`, required
-    :param dim: The dimension of the graph embedding.
-    :type dim: int, can be 2 or 3
+    :param dim: The dimension of the graph embedding (2 or 3).
+    :type dim: int
     :param seed: The random seed used to construct the graph embedding.
-    :type seed: int, optional. Defaults to 42
+    :type seed: int, optional (default: 42)
     :param iterations: The number of iterations used to construct the graph embedding.
-    :type iterations: int, optional. Defaults to 50
+    :type iterations: int, optional (default: 50)
     :param colors: An array of values that determine the color of each node in
-        the graph, which is useful for highlighting different features of the
-        data.
+        the graph, useful for highlighting different features of the data.
     :type colors: array-like of shape (n,) or list-like of size n
     :param agg: A function used to aggregate the `colors` data when multiple
         points are mapped to a single node. The final color of each node is
         obtained by mapping the aggregated value with the colormap `cmap`.
     :type agg: Callable, optional
-    :param title: The title to be displayed aside the figure.
+    :param title: The title to be displayed alongside the figure.
     :type title: str, optional
     :param width: The desired width of the figure in pixels.
-    :type width: int, optional. Defaults to 512
+    :type width: int, optional (default: 512)
     :param height: The desired height of the figure in pixels.
-    :type height: int, optional. Defaults to 512
+    :type height: int, optional (default: 512)
     :param cmap: The name of a colormap used to map `color` data values,
         aggregated by `agg`, to actual RGBA colors.
     :type cmap: str, optional
@@ -335,25 +334,24 @@ class MapperLayoutInteractive:
                height=None,
                cmap=None):
         """
-        Update the layout.
-        
-        This method modifies the figure returned by `plot`. After 
-        calling this function, the figure will be updated according 
-        to the supplied parameters.
+        Update the figure.
+
+        This method modifies the figure returned by the `plot` function. After
+        calling this method, the figure will be updated according to the supplied
+        parameters.
 
         :param seed: The random seed used to construct the graph embedding.
         :type seed: int, optional
         :param iterations: The number of iterations used to construct the graph embedding.
         :type iterations: int, optional
         :param colors: An array of values that determine the color of each node in
-            the graph, which is useful for highlighting different features of the
-            data.
+            the graph, useful for highlighting different features of the data.
         :type colors: array-like of shape (n,) or list-like of size n
         :param agg: A function used to aggregate the `colors` data when multiple
             points are mapped to a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
         :type agg: Callable, optional
-        :param title: The title to be displayed aside the figure.
+        :param title: The title to be displayed alongside the figure.
         :type title: str, optional
         :param width: The desired width of the figure in pixels.
         :type width: int, optional
@@ -411,9 +409,9 @@ class MapperLayoutInteractive:
         """
         Plot the Mapper graph.
         
-        :return: An interactive plotly figure that can be displayed on screen and notebooks.
-            In case of a 3d embedding, the figure needs a webgl context to be shown.
-        :rtype: `plotly.graph_objects.Figure`
+        :return: An interactive Plotly figure that can be displayed on screen and notebooks.
+            For 3D embeddings, the figure requires a WebGL context to be shown.
+        :rtype: :class:`plotly.graph_objects.Figure`
         """
         return self.fig
 
@@ -421,35 +419,33 @@ class MapperLayoutInteractive:
 class MapperLayoutStatic:
     """
     Class for generating and visualizing the Mapper graph.
-    
-    This class creates a metric embedding of the Mapper graph, in 2d, and
-    converts it into a matplotlib figure, suitable for static display.
+
+    This class creates a metric embedding of the Mapper graph in 2D and
+    converts it into a matplotlib figure suitable for static display.
 
     :param graph: The precomputed Mapper graph to be embedded. This can be
         obtained by calling :func:`tdamapper.core.mapper_graph` or
         :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
     :type graph: :class:`networkx.Graph`, required
-    :param dim: The dimension of the graph embedding. The only possible value is 2,
-        but the parameter is used for API compatibility.
-    :type dim: int, can be 2 only
+    :param dim: The dimension of the graph embedding (only 2 is supported, for compatibility).
+    :type dim: int
     :param seed: The random seed used to construct the graph embedding.
-    :type seed: int, optional. Defaults to 42
+    :type seed: int, optional (default: 42)
     :param iterations: The number of iterations used to construct the graph embedding.
-    :type iterations: int, optional. Defaults to 50
+    :type iterations: int, optional (default: 50)
     :param colors: An array of values that determine the color of each node in
-        the graph, which is useful for highlighting different features of the
-        data.
+        the graph, useful for highlighting different features of the data.
     :type colors: array-like of shape (n,) or list-like of size n
     :param agg: A function used to aggregate the `colors` data when multiple
         points are mapped to a single node. The final color of each node is
         obtained by mapping the aggregated value with the colormap `cmap`.
     :type agg: Callable, optional
-    :param title: The title to be displayed aside the figure.
+    :param title: The title to be displayed alongside the figure.
     :type title: str, optional
     :param width: The desired width of the figure in pixels.
-    :type width: int, optional. Defaults to 512
+    :type width: int, optional (default: 512)
     :param height: The desired height of the figure in pixels.
-    :type height: int, optional. Defaults to 512
+    :type height: int, optional (default: 512)
     :param cmap: The name of a colormap used to map `color` data values,
         aggregated by `agg`, to actual RGBA colors.
     :type cmap: str, optional
@@ -480,7 +476,7 @@ class MapperLayoutStatic:
         Plot the Mapper graph.
         
         :return: A static matplotlib figure that can be displayed on screen and notebooks.
-        :rtype: `matplotlib.figure.Figure`, `matplotlib.axes.Axes`
+        :rtype: :class:`matplotlib.figure.Figure`, :class:`matplotlib.axes.Axes`
         """
         px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
         fig, ax = plt.subplots(figsize=(self.width * px, self.height * px))
