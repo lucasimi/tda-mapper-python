@@ -240,37 +240,37 @@ class MapperLayoutInteractive:
                  cmap='jet'):
         self.__graph = graph
         self.__dim = dim
-        self.seed = seed
-        self.iterations = iterations
-        self.colors = colors
-        self.agg = agg
-        self.title = title
-        self.width = width
-        self.height = height
-        self.cmap = cmap
-        self.fig = _plotly_mapper_fig(
+        self.__seed = seed
+        self.__iterations = iterations
+        self.__colors = colors
+        self.__agg = agg
+        self.__title = title
+        self.__width = width
+        self.__height = height
+        self.__cmap = cmap
+        self.__fig = _plotly_mapper_fig(
             self.__graph,
             self.__dim,
-            self.seed,
-            self.iterations)
+            self.__seed,
+            self.__iterations)
         self._update_traces_col()
         self._update_layout()
         self._update_traces_cmap()
         self._update_traces_title()
 
     def _update_traces_pos(self):
-        pos = _nodes_pos(self.__graph, self.__dim, self.seed, self.iterations)
+        pos = _nodes_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
         node_arr = _nodes_array(self.__graph, self.__dim, pos)
         edge_arr = _edges_array(self.__graph, self.__dim, pos)
         if self.__dim == 3:
-            self.fig.update_traces(
+            self.__fig.update_traces(
                 patch=dict(
                     x=node_arr[0],
                     y=node_arr[1],
                     z=node_arr[2]),
                 selector=dict(
                     name='nodes_trace'))
-            self.fig.update_traces(
+            self.__fig.update_traces(
                 patch=dict(
                     x=edge_arr[0],
                     y=edge_arr[1],
@@ -278,13 +278,13 @@ class MapperLayoutInteractive:
                 selector=dict(
                     name='edges_trace'))
         elif self.__dim == 2:
-            self.fig.update_traces(
+            self.__fig.update_traces(
                 patch=dict(
                     x=node_arr[0],
                     y=node_arr[1]),
                 selector=dict(
                     name='nodes_trace'))
-            self.fig.update_traces(
+            self.__fig.update_traces(
                 patch=dict(
                     x=edge_arr[0],
                     y=edge_arr[1]),
@@ -292,10 +292,10 @@ class MapperLayoutInteractive:
                     name='edges_trace'))
 
     def _update_traces_col(self):
-        if (self.colors is not None) and (self.agg is not None):
-            colors_agg = aggregate_graph(self.colors, self.__graph, self.agg)
+        if (self.__colors is not None) and (self.__agg is not None):
+            colors_agg = aggregate_graph(self.__colors, self.__graph, self.__agg)
             colors_list = [colors_agg[n] for n in self.__graph.nodes()]
-            self.fig.update_traces(
+            self.__fig.update_traces(
                 patch=dict(
                     marker_color=colors_list,
                     marker_cmax=max(colors_list),
@@ -305,26 +305,28 @@ class MapperLayoutInteractive:
                     name='nodes_trace'))
 
     def _update_traces_cmap(self):
-        self.fig.update_traces(
+        self.__fig.update_traces(
             patch=dict(
-                marker_colorscale=self.cmap,
-                marker_line_colorscale=self.cmap),
+                marker_colorscale=self.__cmap,
+                marker_line_colorscale=self.__cmap),
             selector=dict(
                 name='nodes_trace'))
 
     def _update_traces_title(self):
-        self.fig.update_traces(
+        self.__fig.update_traces(
             patch=dict(
-                marker_colorbar=_plotly_colorbar(self.__dim, self.title)),
+                marker_colorbar=_plotly_colorbar(self.__dim, self.__title)),
             selector=dict(
                 name='nodes_trace'))
 
     def _update_layout(self):
-        self.fig.update_layout(
-            width=self.width,
-            height=self.height)
+        self.__fig.update_layout(
+            width=self.__width,
+            height=self.__height)
 
     def update(self,
+               graph=None,
+               dim=None,
                seed=None,
                iterations=None,
                colors=None,
@@ -340,6 +342,12 @@ class MapperLayoutInteractive:
         calling this method, the figure will be updated according to the supplied
         parameters.
 
+        :param graph: The precomputed Mapper graph to be embedded. This can be
+            obtained by calling :func:`tdamapper.core.mapper_graph` or
+            :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
+        :type graph: :class:`networkx.Graph`, optional
+        :param dim: The dimension of the graph embedding (2 or 3).
+        :type dim: int, optional
         :param seed: The random seed used to construct the graph embedding.
         :type seed: int, optional
         :param iterations: The number of iterations used to construct the graph embedding.
@@ -362,45 +370,54 @@ class MapperLayoutInteractive:
         :type cmap: str, optional
         """
         _update_pos = False
+        _update_col = False
+        _update_layout = False
+        if graph is not None:
+            self.__graph = graph
+            _update_pos = True
+            _update_col = True
+            _update_layout = True
+        if dim is not None:
+            self.__dim = dim
+            _update_pos = True
+            _update_layout = True
         if seed is not None:
-            self.seed = seed
+            self.__seed = seed
             _update_pos = True
         if iterations is not None:
-            self.iterations = iterations
+            self.__iterations = iterations
             _update_pos = True
         if _update_pos:
             self._update_traces_pos()
-        _update_col = False
         if agg is not None:
-            self.agg = agg
+            self.__agg = agg
         if (colors is not None) and (agg is not None):
-            self.colors = colors
-            self.agg = agg
+            self.__colors = colors
+            self.__agg = agg
             _update_col = True
-        if (colors is not None) and (self.agg is not None):
-            self.colors = colors
+        if (colors is not None) and (self.__agg is not None):
+            self.__colors = colors
             _update_col = True
-        if (self.colors is not None) and (agg is not None):
-            self.agg = agg
+        if (self.__colors is not None) and (agg is not None):
+            self.__agg = agg
             _update_col = True
         if _update_col:
             self._update_traces_col()
         if cmap is not None:
-            self.cmap = cmap
+            self.__cmap = cmap
             self._update_traces_cmap()
         if title is not None:
-            self.title = title
+            self.__title = title
             self._update_traces_title()
-        _update_layout = False
         if (width is not None) and (height is not None):
-            self.width = width
-            self.height = height
+            self.__width = width
+            self.__height = height
             _update_layout = True
-        if (width is not None) and (self.height is not None):
-            self.width = width
+        if (width is not None) and (self.__height is not None):
+            self.__width = width
             _update_layout = True
         if height is not None:
-            self.height = height
+            self.__height = height
             _update_layout = True
         if _update_layout:
             self._update_layout()
@@ -413,7 +430,7 @@ class MapperLayoutInteractive:
             For 3D embeddings, the figure requires a WebGL context to be shown.
         :rtype: :class:`plotly.graph_objects.Figure`
         """
-        return self.fig
+        return self.__fig
 
 
 class MapperLayoutStatic:
@@ -462,14 +479,14 @@ class MapperLayoutStatic:
                  cmap='jet'):
         self.__graph = graph
         self.__dim = dim
-        self.seed = seed
-        self.iterations = iterations
-        self.colors = colors
-        self.agg = agg
-        self.title = title
-        self.width = width
-        self.height = height
-        self.cmap = cmap
+        self.__seed = seed
+        self.__iterations = iterations
+        self.__colors = colors
+        self.__agg = agg
+        self.__title = title
+        self.__width = width
+        self.__height = height
+        self.__cmap = cmap
 
     def plot(self):
         """
@@ -479,10 +496,10 @@ class MapperLayoutStatic:
         :rtype: :class:`matplotlib.figure.Figure`, :class:`matplotlib.axes.Axes`
         """
         px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
-        fig, ax = plt.subplots(figsize=(self.width * px, self.height * px))
+        fig, ax = plt.subplots(figsize=(self.__width * px, self.__height * px))
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        pos = _nodes_pos(self.__graph, self.__dim, self.seed, self.iterations)
+        pos = _nodes_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
         self._plot_edges(ax, pos)
         self._plot_nodes(ax, pos)
         return fig, ax
@@ -491,7 +508,7 @@ class MapperLayoutStatic:
         nodes_arr = _nodes_array(self.__graph, self.__dim, nodes_pos)
         attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(attr_size.values()) if attr_size else 1.0
-        colors_agg = aggregate_graph(self.colors, self.__graph, self.agg)
+        colors_agg = aggregate_graph(self.__colors, self.__graph, self.__agg)
         marker_color = [colors_agg[n] for n in self.__graph.nodes()]
         marker_size = [200.0 * math.sqrt(attr_size[n] / max_size) for n in self.__graph.nodes()]
         verts = ax.scatter(
@@ -499,7 +516,7 @@ class MapperLayoutStatic:
             y=nodes_arr[1],
             c=marker_color,
             s=marker_size,
-            cmap=self.cmap,
+            cmap=self.__cmap,
             alpha=1.0,
             vmin=min(marker_color),
             vmax=max(marker_color),
@@ -514,7 +531,7 @@ class MapperLayoutStatic:
             ax=ax,
             format="%.2g")
         colorbar.set_label(
-            self.title,
+            self.__title,
             color=_NODE_OUTER_COLOR)
         colorbar.set_alpha(1.0)
         colorbar.outline.set_color(_NODE_OUTER_COLOR)
