@@ -325,6 +325,8 @@ class MapperLayoutInteractive:
             height=self.height)
 
     def update(self,
+               graph=None,
+               dim=None,
                seed=None,
                iterations=None,
                colors=None,
@@ -340,6 +342,12 @@ class MapperLayoutInteractive:
         calling this method, the figure will be updated according to the supplied
         parameters.
 
+        :param graph: The precomputed Mapper graph to be embedded. This can be
+            obtained by calling :func:`tdamapper.core.mapper_graph` or
+            :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
+        :type graph: :class:`networkx.Graph`, required
+        :param dim: The dimension of the graph embedding (2 or 3).
+        :type dim: int
         :param seed: The random seed used to construct the graph embedding.
         :type seed: int, optional
         :param iterations: The number of iterations used to construct the graph embedding.
@@ -362,6 +370,17 @@ class MapperLayoutInteractive:
         :type cmap: str, optional
         """
         _update_pos = False
+        _update_col = False
+        _update_layout = False
+        if graph is not None:
+            self.__graph = graph
+            _update_pos = True
+            _update_col = True
+            _update_layout = True
+        if dim is not None:
+            self.__dim = dim
+            _update_pos = True
+            _update_layout = True
         if seed is not None:
             self.seed = seed
             _update_pos = True
@@ -370,7 +389,6 @@ class MapperLayoutInteractive:
             _update_pos = True
         if _update_pos:
             self._update_traces_pos()
-        _update_col = False
         if agg is not None:
             self.agg = agg
         if (colors is not None) and (agg is not None):
@@ -391,7 +409,6 @@ class MapperLayoutInteractive:
         if title is not None:
             self.title = title
             self._update_traces_title()
-        _update_layout = False
         if (width is not None) and (height is not None):
             self.width = width
             self.height = height
