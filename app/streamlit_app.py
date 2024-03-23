@@ -79,7 +79,7 @@ V_DATA_SUMMARY_BINS = 5
 
 VD_SEED = 42
 
-VD_3D = True
+VD_3D = False
 
 # K_ are reusable keys for widgets
 
@@ -258,13 +258,17 @@ def add_download_graph():
         return
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
-    mapper_json = json.dumps(mapper_adj)
+    mapper_json = json.dumps(mapper_adj, default=int)
     st.download_button(
         '📥 Download',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
         use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+    if mapper_graph is not None:
+        nodes_num = mapper_graph.number_of_nodes()
+        edges_num = mapper_graph.number_of_edges()
+        st.caption(f'{nodes_num} nodes, {edges_num} edges')
 
 
 def add_data_source_csv():
@@ -297,7 +301,6 @@ def add_data_source_openml():
 
 
 def add_data_source():
-    st.write('## 📊 Data Source')
     source = st.radio(
         'Data Source',
         options=['Example', 'OpenML', 'CSV'],
@@ -311,14 +314,24 @@ def add_data_source():
         add_data_source_example()
 
 
+def add_data_display():
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    if df_X is None:
+        return
+    df_all = pd.concat([get_sample(df_y, frac=1.0), get_sample(df_X, frac=1.0)], axis=1)
+    st.dataframe(df_all, height=500)
+
+
 def add_mapper_settings():
-    st.write('## ⚙️ Mapper Settings')
-    with st.expander('🔎 Lens'):
-        add_lens_settings()
-    with st.expander('🌐 Cover'):
-        add_cover_settings()
-    with st.expander('🧮 Clustering'):
-        add_clustering_settings()
+    st.markdown('🔎 Lens')
+    add_lens_settings()
+    st.markdown('##')
+    st.markdown('🌐 Cover')
+    add_cover_settings()
+    st.markdown('##')
+    st.markdown('🧮 Clustering')
+    add_clustering_settings()
     df_X = st.session_state[S_RESULTS].df_X
     st.button(
         '✨ Run',
@@ -460,6 +473,8 @@ def render_mapper_proceed():
     mapper_plot = MapperLayoutInteractive(
         mapper_graph,
         dim=3 if enable_3d else 2,
+        height=800,
+        width=800,
         seed=seed)
     mapper_plot.update(colors=X)
     st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
@@ -549,37 +564,40 @@ def add_graph_plot():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     if mapper_graph is None:
         return
-    nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
     mapper_fig = st.session_state['mapper_fig']
-    st.caption(f'{nodes_num} nodes, {edges_num} edges')
     st.plotly_chart(
         mapper_fig,
-        use_container_width=True)
+        use_container_width=False,
+        config={'scrollZoom': True})
 
 
 def main():
     st.set_page_config(
-        layout='wide',
+        #layout='wide',
         page_icon='🍩',
         page_title='tda-mapper app',
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT
         })
-    st.title('🍩 tda-mapper app')
+    st.sidebar.title('🍩 tda-mapper app')
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
     with st.sidebar:
+        tab_data_source, tab_mapper_settings, tab_draw = st.tabs([
+            '## 📊 Data Source',
+            '## ⚙️ Mapper Settings',
+            '## 🎨 Draw'])
+    with tab_data_source:
         add_data_source()
+        add_data_display()
+    with tab_mapper_settings:
         add_mapper_settings()
-    col_tools, col_graph = st.columns([2, 5])
-    with col_tools:
+        add_download_graph()
+    with tab_draw:
         add_data_tools()
         add_plot_setting()
-        add_download_graph()
-    with col_graph:
-        add_graph_plot()
+    add_graph_plot()
 
 
 main()
