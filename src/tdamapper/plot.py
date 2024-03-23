@@ -147,13 +147,16 @@ def _plotly_edges_trace(edge_arr, dim):
 
 
 def _plotly_layout():
+    line_col = 'rgba(230, 230, 230, 1.0)'
     axis = dict(
         showline=True,
-        linecolor='black',
+        #linecolor='rgba(230, 230, 230, 1.0)',
         linewidth=1,
         mirror=True,
         visible=True,
         showticklabels=False,
+        showgrid=False,
+        zeroline=False,
         title='')
     scene_axis = dict(
         showgrid=True,
@@ -161,8 +164,9 @@ def _plotly_layout():
         backgroundcolor='rgba(0, 0, 0, 0)',
         showaxeslabels=False,
         showline=True,
-        linecolor='black',
-        gridcolor='rgba(230, 230, 230, 1.0)',
+        linecolor=line_col,
+        zerolinecolor=line_col,
+        gridcolor=line_col,
         linewidth=1,
         mirror=True,
         showticklabels=False,
@@ -295,14 +299,37 @@ class MapperLayoutInteractive:
         if (self.__colors is not None) and (self.__agg is not None):
             colors_agg = aggregate_graph(self.__colors, self.__graph, self.__agg)
             colors_list = [colors_agg[n] for n in self.__graph.nodes()]
+            self._update_node_trace_col(colors_agg, colors_list)
+            self._update_edge_trace_col(colors_agg, colors_list)
+
+    def _update_edge_trace_col(self, colors_agg, colors_list):
+        colors_avg = []
+        for edge in self.__graph.edges():
+            c0, c1 = colors_agg[edge[0]], colors_agg[edge[1]]
+            colors_avg.append(c0)
+            colors_avg.append(c1)
+            colors_avg.append(c1)
+        if not colors_avg:
+            return
+        if self.__dim == 3:
             self.__fig.update_traces(
                 patch=dict(
-                    marker_color=colors_list,
-                    marker_cmax=max(colors_list),
-                    marker_cmin=min(colors_list),
-                    text=_plotly_nodes_text(self.__graph, colors_agg)),
+                    line_color=colors_avg,
+                    line_colorscale=self.__cmap,
+                    line_cmax=max(colors_list),
+                    line_cmin=min(colors_list)),
                 selector=dict(
-                    name='nodes_trace'))
+                    name='edges_trace'))
+
+    def _update_node_trace_col(self, colors_agg, colors_list):
+        self.__fig.update_traces(
+            patch=dict(
+                marker_color=colors_list,
+                marker_cmax=max(colors_list),
+                marker_cmin=min(colors_list),
+                text=_plotly_nodes_text(self.__graph, colors_agg)),
+            selector=dict(
+                name='nodes_trace'))
 
     def _update_traces_cmap(self):
         self.__fig.update_traces(
@@ -311,6 +338,12 @@ class MapperLayoutInteractive:
                 marker_line_colorscale=self.__cmap),
             selector=dict(
                 name='nodes_trace'))
+        if self.__dim == 3:
+            self.__fig.update_traces(
+                patch=dict(
+                    line_colorscale=self.__cmap),
+                selector=dict(
+                    name='edges_trace'))
 
     def _update_traces_title(self):
         self.__fig.update_traces(
