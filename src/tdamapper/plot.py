@@ -34,7 +34,7 @@ _EDGE_COLOR = '#777'
 _TICKS_NUM = 10
 
 
-def _nodes_pos(graph, dim, seed, iterations):
+def _node_pos(graph, dim, seed, iterations):
     return nx.spring_layout(
         graph,
         dim=dim,
@@ -42,14 +42,14 @@ def _nodes_pos(graph, dim, seed, iterations):
         iterations=iterations)
 
 
-def _nodes_array(graph, dim, pos):
-    return tuple([pos[n][i] for n in graph.nodes()] for i in range(dim))
+def _node_pos_array(graph, dim, node_pos):
+    return tuple([node_pos[n][i] for n in graph.nodes()] for i in range(dim))
 
 
-def _edges_array(graph, dim, pos):
+def _edge_pos_array(graph, dim, node_pos):
     edges_arr = tuple([] for i in range(dim))
     for edge in graph.edges():
-        pos0, pos1 = pos[edge[0]], pos[edge[1]]
+        pos0, pos1 = node_pos[edge[0]], node_pos[edge[1]]
         for i in range(dim):
             edges_arr[i].append(pos0[i])
             edges_arr[i].append(pos1[i])
@@ -60,138 +60,6 @@ def _edges_array(graph, dim, pos):
 def _fmt(x, max_len=3):
     fmt = f'.{max_len}g'
     return f'{x:{fmt}}'
-
-
-def _plotly_colorbar(dim, title=None):
-    cbar = dict(
-        showticklabels=True,
-        outlinewidth=1,
-        borderwidth=0,
-        orientation='v',
-        thickness=0.025,
-        thicknessmode='fraction',
-        xanchor='left',
-        titleside='right',
-        ypad=0,
-        xpad=0,
-        tickwidth=1,
-        tickformat='.2g',
-        nticks=_TICKS_NUM,
-        tickmode='auto')
-    if title is not None:
-        cbar['title'] = title
-    if dim == 3:
-        return go.scatter3d.marker.ColorBar(cbar)
-    elif dim == 2:
-        return go.scatter.marker.ColorBar(cbar)
-
-
-def _plotly_nodes_text(graph, colors=None):
-    attr_size = nx.get_node_attributes(graph, ATTR_SIZE)
-    if colors is None:
-        def _lbl(n):
-            size = _fmt(attr_size[n], 5)
-            return f'node: {n}<br>size: {size}'
-    else:
-        def _lbl(n):
-            col = _fmt(colors[n], 3)
-            size = _fmt(attr_size[n], 5)
-            return f'color: {col}<br>node: {n}<br>size: {size}'
-    return [_lbl(n) for n in graph.nodes()]
-
-
-def _plotly_nodes_trace(graph, node_arr, dim):
-    attr_size = nx.get_node_attributes(graph, ATTR_SIZE)
-    max_size = max(attr_size.values()) if attr_size else 1.0
-    scatter_text = _plotly_nodes_text(graph)
-    marker_size = [25.0 * math.sqrt(attr_size[n] / max_size) for n in graph.nodes()]
-    scatter = dict(
-        name='nodes_trace',
-        x=node_arr[0],
-        y=node_arr[1],
-        mode='markers',
-        hoverinfo='text',
-        opacity=_NODE_OPACITY,
-        text=scatter_text,
-        marker=dict(
-            showscale=True,
-            reversescale=False,
-            size=marker_size,
-            opacity=_NODE_OPACITY,
-            line_width=_NODE_OUTER_WIDTH,
-            line_color=_NODE_OUTER_COLOR))
-    if dim == 3:
-        scatter.update(dict(
-            z=node_arr[2]))
-        return go.Scatter3d(scatter)
-    elif dim == 2:
-        return go.Scatter(scatter)
-
-
-def _plotly_edges_trace(edge_arr, dim):
-    scatter = dict(
-        name='edges_trace',
-        x=edge_arr[0],
-        y=edge_arr[1],
-        mode='lines',
-        opacity=_EDGE_OPACITY,
-        line_width=_EDGE_WIDTH,
-        line_color=_EDGE_COLOR,
-        hoverinfo='skip')
-    if dim == 3:
-        scatter.update(dict(
-            z=edge_arr[2]))
-        return go.Scatter3d(scatter)
-    elif dim == 2:
-        return go.Scatter(scatter)
-
-
-def _plotly_layout():
-    axis = dict(
-        showline=True,
-        linecolor='black',
-        linewidth=1,
-        mirror=True,
-        visible=True,
-        showticklabels=False,
-        title='')
-    scene_axis = dict(
-        showgrid=True,
-        visible=True,
-        backgroundcolor='rgba(0, 0, 0, 0)',
-        showaxeslabels=False,
-        showline=True,
-        linecolor='black',
-        gridcolor='rgba(230, 230, 230, 1.0)',
-        linewidth=1,
-        mirror=True,
-        showticklabels=False,
-        title='')
-    return go.Layout(
-        uirevision='constant',
-        plot_bgcolor='rgba(0, 0, 0, 0)',
-        autosize=False,
-        showlegend=False,
-        hovermode='closest',
-        margin=dict(b=10, l=10, r=10, t=10),
-        xaxis=axis,
-        yaxis=axis,
-        scene=dict(
-            xaxis=scene_axis,
-            yaxis=scene_axis,
-            zaxis=scene_axis))
-
-
-def _plotly_mapper_fig(graph, dim, seed, iterations):
-    pos = _nodes_pos(graph, dim, seed, iterations)
-    node_arr = _nodes_array(graph, dim, pos)
-    edge_arr = _edges_array(graph, dim, pos)
-    _edges_tr = _plotly_edges_trace(edge_arr, dim)
-    _nodes_tr = _plotly_nodes_trace(graph, node_arr, dim)
-    _layout = _plotly_layout()
-    return go.Figure(
-        data=[_edges_tr, _nodes_tr],
-        layout=_layout)
 
 
 class MapperLayoutInteractive:
@@ -248,20 +116,170 @@ class MapperLayoutInteractive:
         self.__width = width
         self.__height = height
         self.__cmap = cmap
-        self.__fig = _plotly_mapper_fig(
-            self.__graph,
-            self.__dim,
-            self.__seed,
-            self.__iterations)
-        self._update_traces_col()
-        self._update_layout()
-        self._update_traces_cmap()
-        self._update_traces_title()
+        node_col = aggregate_graph(self.__colors, self.__graph, self.__agg)
+        self.__fig = self._figure(node_col)
+        #self._update_traces_col()
+        #self._update_layout()
+        #self._update_traces_cmap()
+        #self._update_traces_title()
+
+    def _nodes_trace(self, node_pos_arr, node_col):
+        attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
+        max_size = max(attr_size.values()) if attr_size else 1.0
+        scatter_text = self._text(node_col)
+        marker_size = [25.0 * math.sqrt(attr_size[n] / max_size) for n in self.__graph.nodes()]
+        colors = list(node_col.values())
+        scatter = dict(
+            name='nodes_trace',
+            x=node_pos_arr[0],
+            y=node_pos_arr[1],
+            mode='markers',
+            hoverinfo='text',
+            opacity=_NODE_OPACITY,
+            text=scatter_text,
+            marker=dict(
+                showscale=True,
+                reversescale=False,
+                size=marker_size,
+                opacity=_NODE_OPACITY,
+                line_width=_NODE_OUTER_WIDTH,
+                line_color=_NODE_OUTER_COLOR,
+                line_colorscale=self.__cmap,
+                color=colors,
+                colorscale=self.__cmap,
+                cmin=min(colors),
+                cmax=max(colors),
+                colorbar=self._colorbar()))
+        if self.__dim == 3:
+            scatter.update(dict(
+                z=node_pos_arr[2]))
+            return go.Scatter3d(scatter)
+        elif self.__dim == 2:
+            return go.Scatter(scatter)
+
+    def _edges_trace(self, edge_pos_arr, node_col):
+        scatter = dict(
+            name='edges_trace',
+            x=edge_pos_arr[0],
+            y=edge_pos_arr[1],
+            mode='lines',
+            opacity=_EDGE_OPACITY,
+            line_width=_EDGE_WIDTH,
+            line_color=_EDGE_COLOR,
+            hoverinfo='skip')
+        if self.__dim == 3:
+            colors_avg = []
+            for e in self.__graph.edges():
+                c0, c1 = node_col[e[0]], node_col[e[1]]
+                colors_avg.append(c0)
+                colors_avg.append(c1)
+                colors_avg.append(c1)
+            colors = list(node_col.values())
+            scatter.update(dict(
+                z=edge_pos_arr[2],
+                line_color=colors_avg,
+                line_cmin=min(colors),
+                line_cmax=max(colors),
+                line_colorscale=self.__cmap))
+            return go.Scatter3d(scatter)
+        elif self.__dim == 2:
+            scatter.update(dict(
+                marker_colorscale=self.__cmap,
+                marker_line_colorscale=self.__cmap))
+            return go.Scatter(scatter)
+
+    def _layout(self):
+        line_col = 'rgba(230, 230, 230, 1.0)'
+        axis = dict(
+            showline=True,
+            #linecolor='rgba(230, 230, 230, 1.0)',
+            linewidth=1,
+            mirror=True,
+            visible=True,
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            title='')
+        scene_axis = dict(
+            showgrid=True,
+            visible=True,
+            backgroundcolor='rgba(0, 0, 0, 0)',
+            showaxeslabels=False,
+            showline=True,
+            linecolor=line_col,
+            zerolinecolor=line_col,
+            gridcolor=line_col,
+            linewidth=1,
+            mirror=True,
+            showticklabels=False,
+            title='')
+        return go.Layout(
+            uirevision='constant',
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            autosize=False,
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=10, l=10, r=10, t=10),
+            xaxis=axis,
+            yaxis=axis,
+            width=self.__width,
+            height=self.__height,
+            scene=dict(
+                xaxis=scene_axis,
+                yaxis=scene_axis,
+                zaxis=scene_axis))
+
+    def _figure(self, node_col):
+        node_pos = _node_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
+        node_pos_arr = _node_pos_array(self.__graph, self.__dim, node_pos)
+        edge_pos_arr = _edge_pos_array(self.__graph, self.__dim, node_pos)
+        _edges_tr = self._edges_trace(edge_pos_arr, node_col)
+        _nodes_tr = self._nodes_trace(node_pos_arr, node_col)
+        _layout = self._layout()
+        return go.Figure(
+            data=[_edges_tr, _nodes_tr],
+            layout=_layout)
+
+    def _colorbar(self):
+        cbar = dict(
+            showticklabels=True,
+            outlinewidth=1,
+            borderwidth=0,
+            orientation='v',
+            thickness=0.025,
+            thicknessmode='fraction',
+            xanchor='left',
+            titleside='right',
+            ypad=0,
+            xpad=0,
+            tickwidth=1,
+            tickformat='.2g',
+            nticks=_TICKS_NUM,
+            tickmode='auto')
+        if self.__title is not None:
+            cbar['title'] = self.__title
+        if self.__dim == 3:
+            return go.scatter3d.marker.ColorBar(cbar)
+        elif self.__dim == 2:
+            return go.scatter.marker.ColorBar(cbar)
+
+    def _text(self, colors=None):
+        attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
+        if colors is None:
+            def _lbl(n):
+                size = _fmt(attr_size[n], 5)
+                return f'node: {n}<br>size: {size}'
+        else:
+            def _lbl(n):
+                col = _fmt(colors[n], 3)
+                size = _fmt(attr_size[n], 5)
+                return f'color: {col}<br>node: {n}<br>size: {size}'
+        return [_lbl(n) for n in self.__graph.nodes()]
 
     def _update_traces_pos(self):
-        pos = _nodes_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
-        node_arr = _nodes_array(self.__graph, self.__dim, pos)
-        edge_arr = _edges_array(self.__graph, self.__dim, pos)
+        pos = _node_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
+        node_arr = _node_pos_array(self.__graph, self.__dim, pos)
+        edge_arr = _edge_pos_array(self.__graph, self.__dim, pos)
         if self.__dim == 3:
             self.__fig.update_traces(
                 patch=dict(
@@ -294,15 +312,38 @@ class MapperLayoutInteractive:
     def _update_traces_col(self):
         if (self.__colors is not None) and (self.__agg is not None):
             colors_agg = aggregate_graph(self.__colors, self.__graph, self.__agg)
-            colors_list = [colors_agg[n] for n in self.__graph.nodes()]
+            colors_list = list(colors_agg.values())
+            self._update_node_trace_col(colors_agg, colors_list)
+            self._update_edge_trace_col(colors_agg, colors_list)
+
+    def _update_edge_trace_col(self, colors_agg, colors_list):
+        colors_avg = []
+        for edge in self.__graph.edges():
+            c0, c1 = colors_agg[edge[0]], colors_agg[edge[1]]
+            colors_avg.append(c0)
+            colors_avg.append(c1)
+            colors_avg.append(c1)
+        if not colors_avg:
+            return
+        if self.__dim == 3:
             self.__fig.update_traces(
                 patch=dict(
-                    marker_color=colors_list,
-                    marker_cmax=max(colors_list),
-                    marker_cmin=min(colors_list),
-                    text=_plotly_nodes_text(self.__graph, colors_agg)),
+                    line_color=colors_avg,
+                    line_colorscale=self.__cmap,
+                    line_cmax=max(colors_list),
+                    line_cmin=min(colors_list)),
                 selector=dict(
-                    name='nodes_trace'))
+                    name='edges_trace'))
+
+    def _update_node_trace_col(self, colors_agg, colors_list):
+        self.__fig.update_traces(
+            patch=dict(
+                text=self._text(colors_agg),
+                marker_color=colors_list,
+                marker_cmax=max(colors_list),
+                marker_cmin=min(colors_list)),
+            selector=dict(
+                name='nodes_trace'))
 
     def _update_traces_cmap(self):
         self.__fig.update_traces(
@@ -311,11 +352,17 @@ class MapperLayoutInteractive:
                 marker_line_colorscale=self.__cmap),
             selector=dict(
                 name='nodes_trace'))
+        if self.__dim == 3:
+            self.__fig.update_traces(
+                patch=dict(
+                    line_colorscale=self.__cmap),
+                selector=dict(
+                    name='edges_trace'))
 
     def _update_traces_title(self):
         self.__fig.update_traces(
             patch=dict(
-                marker_colorbar=_plotly_colorbar(self.__dim, self.__title)),
+                marker_colorbar=self._colorbar()),
             selector=dict(
                 name='nodes_trace'))
 
@@ -325,8 +372,6 @@ class MapperLayoutInteractive:
             height=self.__height)
 
     def update(self,
-               graph=None,
-               dim=None,
                seed=None,
                iterations=None,
                colors=None,
@@ -342,12 +387,6 @@ class MapperLayoutInteractive:
         calling this method, the figure will be updated according to the supplied
         parameters.
 
-        :param graph: The precomputed Mapper graph to be embedded. This can be
-            obtained by calling :func:`tdamapper.core.mapper_graph` or
-            :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
-        :type graph: :class:`networkx.Graph`, optional
-        :param dim: The dimension of the graph embedding (2 or 3).
-        :type dim: int, optional
         :param seed: The random seed used to construct the graph embedding.
         :type seed: int, optional
         :param iterations: The number of iterations used to construct the graph embedding.
@@ -372,15 +411,6 @@ class MapperLayoutInteractive:
         _update_pos = False
         _update_col = False
         _update_layout = False
-        if graph is not None:
-            self.__graph = graph
-            _update_pos = True
-            _update_col = True
-            _update_layout = True
-        if dim is not None:
-            self.__dim = dim
-            _update_pos = True
-            _update_layout = True
         if seed is not None:
             self.__seed = seed
             _update_pos = True
@@ -499,13 +529,13 @@ class MapperLayoutStatic:
         fig, ax = plt.subplots(figsize=(self.__width * px, self.__height * px))
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        pos = _nodes_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
+        pos = _node_pos(self.__graph, self.__dim, self.__seed, self.__iterations)
         self._plot_edges(ax, pos)
         self._plot_nodes(ax, pos)
         return fig, ax
 
     def _plot_nodes(self, ax, nodes_pos):
-        nodes_arr = _nodes_array(self.__graph, self.__dim, nodes_pos)
+        nodes_arr = _node_pos_array(self.__graph, self.__dim, nodes_pos)
         attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
         max_size = max(attr_size.values()) if attr_size else 1.0
         colors_agg = aggregate_graph(self.__colors, self.__graph, self.__agg)
