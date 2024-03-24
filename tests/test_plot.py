@@ -26,8 +26,6 @@ class TestMapperPlot(unittest.TestCase):
         mp_plot2 = MapperLayoutInteractive(g, colors=data, dim=3)
         mp_plot2.plot()
         mp_plot2.update(
-            graph=g,
-            dim=2,
             colors=data,
             seed=123,
             iterations=10,
