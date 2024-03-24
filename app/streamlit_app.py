@@ -475,8 +475,8 @@ def render_mapper_proceed():
         dim=3 if enable_3d else 2,
         height=800,
         width=800,
+        colors=X,
         seed=seed)
-    mapper_plot.update(colors=X)
     st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
     draw_mapper()
 
