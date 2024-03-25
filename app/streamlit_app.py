@@ -49,7 +49,7 @@ GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
 
 REPORT_BUG = f'{GIT_REPO_URL}/issues'
 
-ABOUT = f'{GIT_REPO_URL}/README.md'
+ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
 
 # V_* are reusable values for widgets
 
@@ -110,6 +110,31 @@ K_DATA_SUMMARY = 'key_data_summary'
 # S_ are reusable manually managed stored objects
 
 S_RESULTS = 'stored_results'
+
+APP_DESC = f"""
+    ### Welcome to **tda-mapper app**
+
+    This app is a powerful tool for data exploration, leveraging the *Mapper algorithm* from Topological Data Analysis (TDA). 
+    Whether you’re a seasoned data scientist or just curious about exploring your data, this app provides an efficient and intuitive way to gain insights.
+    
+    ### Core Functionalities:
+
+    * 🔎 Use the Mapper algorithm to analyze your dataset and uncover hidden patterns.
+    * ⚡ Our Python package offers a simple and efficient implementation of the Mapper algorithm.
+    * 🌐 Represent your data as a network, allowing you to visualize relationships and structures.
+
+    ### Getting Started:
+
+    1. 📊 Begin by choosing the dataset you want to explore.
+    2. ⚙️ Fiddle with the settings to customize your analysis.
+    3. 🚀 Execute the Mapper algorithm and observe the results.
+    4. 🎨 Explore hidden patterns by changing the colors of the Mapper graph.
+
+    Explore, discover, and enjoy the fascinating world of topological data analysis with this app!
+    For more details and more advanced use cases, check out the project: 
+    
+    **{GIT_REPO_URL}**.
+    """
 
 
 class Results:
@@ -265,10 +290,6 @@ def add_download_graph():
         disabled=mapper_graph is None,
         use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
-    if mapper_graph is not None:
-        nodes_num = mapper_graph.number_of_nodes()
-        edges_num = mapper_graph.number_of_edges()
-        st.caption(f'{nodes_num} nodes, {edges_num} edges')
 
 
 def add_data_source_csv():
@@ -334,7 +355,7 @@ def add_mapper_settings():
     add_clustering_settings()
     df_X = st.session_state[S_RESULTS].df_X
     st.button(
-        '✨ Run',
+        '🚀 Run',
         use_container_width=True,
         disabled=df_X is None,
         on_click=compute_mapper)
@@ -564,11 +585,15 @@ def add_graph_plot():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     if mapper_graph is None:
         return
+    nodes_num = mapper_graph.number_of_nodes()
+    edges_num = mapper_graph.number_of_edges()
+    st.caption(f'{nodes_num} nodes, {edges_num} edges')
     mapper_fig = st.session_state['mapper_fig']
     st.plotly_chart(
         mapper_fig,
         use_container_width=False,
         config={'scrollZoom': True})
+    add_download_graph()
 
 
 def main():
@@ -580,20 +605,22 @@ def main():
             'Report a bug': REPORT_BUG,
             'About': ABOUT
         })
-    st.sidebar.title('🍩 tda-mapper app')
+    st.sidebar.markdown('# 🍩 tda-mapper app')
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
     with st.sidebar:
-        tab_data_source, tab_mapper_settings, tab_draw = st.tabs([
-            '## 📊 Data Source',
-            '## ⚙️ Mapper Settings',
+        tab_about, tab_data_source, tab_mapper_settings, tab_draw = st.tabs([
+            '## ℹ️ About',
+            '## 📊 Data',
+            '## ⚙️ Settings',
             '## 🎨 Draw'])
+    with tab_about:
+        st.markdown(APP_DESC)
     with tab_data_source:
         add_data_source()
         add_data_display()
     with tab_mapper_settings:
         add_mapper_settings()
-        add_download_graph()
     with tab_draw:
         add_data_tools()
         add_plot_setting()
