@@ -125,10 +125,6 @@ class MapperLayoutInteractive:
         self.__cmap = cmap
         node_col = _node_col(self.__graph, self.__colors, self.__agg)
         self.__fig = self._figure(node_col)
-        #self._update_traces_col()
-        #self._update_layout()
-        #self._update_traces_cmap()
-        #self._update_traces_title()
 
     def _nodes_trace(self, node_pos_arr, node_col):
         attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
@@ -199,7 +195,6 @@ class MapperLayoutInteractive:
         line_col = 'rgba(230, 230, 230, 1.0)'
         axis = dict(
             showline=True,
-            #linecolor='rgba(230, 230, 230, 1.0)',
             linewidth=1,
             mirror=True,
             visible=True,
@@ -270,17 +265,13 @@ class MapperLayoutInteractive:
         elif self.__dim == 2:
             return go.scatter.marker.ColorBar(cbar)
 
-    def _text(self, colors=None):
+    def _text(self, colors):
         attr_size = nx.get_node_attributes(self.__graph, ATTR_SIZE)
-        if colors is None:
-            def _lbl(n):
-                size = _fmt(attr_size[n], 5)
-                return f'node: {n}<br>size: {size}'
-        else:
-            def _lbl(n):
-                col = _fmt(colors[n], 3)
-                size = _fmt(attr_size[n], 5)
-                return f'color: {col}<br>node: {n}<br>size: {size}'
+
+        def _lbl(n):
+            col = _fmt(colors[n], 3)
+            size = _fmt(attr_size[n], 5)
+            return f'color: {col}<br>node: {n}<br>size: {size}'
         return [_lbl(n) for n in self.__graph.nodes()]
 
     def _update_traces_pos(self):
