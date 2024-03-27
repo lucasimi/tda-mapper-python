@@ -11,6 +11,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rand = "0.8.4"
+fastrand = "1.9.0"
+quickcheck = "1.0.3"
 
 [dependencies.pyo3]
 version = "0.20.0"
