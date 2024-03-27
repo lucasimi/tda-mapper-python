@@ -6,6 +6,9 @@
 **/*.log
 **/docs/build
 **/*.ipynb
+debug/
+target/
+Cargo.lock
 
 .coverage
 .vscode

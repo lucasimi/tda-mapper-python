@@ -1,6 +1,8 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+#requires = ["setuptools>=42", "wheel"]
+#build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "tda-mapper"
@@ -28,3 +30,7 @@ dev = ["coverage", "pandas", "scikit-learn"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
+
+[tool.maturin]
+# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
+features = ["pyo3/extension-module"]
