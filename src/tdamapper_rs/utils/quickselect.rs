@@ -35,9 +35,6 @@ pub fn quick_select<T: PartialOrd>(vec: &mut [T], k: usize) -> () {
 }
 
 #[cfg(test)]
-extern crate quickcheck;
-
-#[cfg(test)]
 mod tests {
 
     use super::quick_select;
