@@ -1,9 +1,17 @@
 use crate::utils::quickselect;
 use fastrand;
 
-type Scalar = f32;
+pub type Scalar = f32;
 
-type Metric<T> = fn(&T, &T) -> Scalar;
+pub trait Metric<T> {
+    fn apply(&self, x:&T, y:&T) -> Scalar;
+}
+
+impl<T, F> Metric<T> for F where F:Fn(&T, &T) -> Scalar {
+    fn apply(&self, x:&T, y:&T) -> Scalar {
+        (self)(x, y)
+    }
+}
 
 #[derive(Debug)]
 struct VP {
@@ -39,95 +47,99 @@ fn get_mid<T>(arr: &[T]) -> usize {
     arr.len() / 2
 }
 
-pub struct VPTree<T> {
+pub struct VPTree<T, M> {
     items: Vec<T>,
     vps: Vec<VP>,
-    metric: Metric<T>
+    metric: M
 }
 
-fn process_slice<T>(items: &[T], vec: &mut [VP], metric: Metric<T>) -> () {
-    let pivot: usize = fastrand::usize(0..vec.len());
-    vec.swap(pivot, 0);
-    let vp = &items[vec[0].center];
-    for i in 0..vec.len() {
-        let p = &items[vec[i].center];
-        vec[i].radius = metric(vp, p);
-    }
-    let tail = &mut vec[1..];
-    if !tail.is_empty() {
-        let tail_mid: usize = get_mid(tail);
-        quickselect::quick_select(tail, tail_mid);
-        vec[0].radius = tail[tail_mid].radius;
-    }
-}
+impl<T, M: Metric<T>> VPTree<T, M> {
 
-pub fn build<T>(items: Vec<T>, metric: Metric<T>) -> VPTree<T> {
-    let mut vps: Vec<VP> = items.iter().enumerate()
-        .map(|(x, _)| VP::new(x))
-        .collect();
-    build_iter(&items, &mut vps, metric);
-    VPTree { 
-        items: items,
-        vps: vps,
-        metric: metric
-    }
-}
-
-fn build_iter<T>(items: &[T], vps: &mut [VP], metric: Metric<T>) -> () {
-    let mut stack: Vec<&mut [VP]> = Vec::with_capacity(vps.len());
-    if !vps.is_empty() {
-        stack.push(vps);
-    }
-    while let Some(vec) = stack.pop() {
-        process_slice(items, vec, metric);
-        let tail = &mut vec[1..];
-        let mid_tail = get_mid(tail);
-        let (left, right) = tail.split_at_mut(mid_tail);
-        if !left.is_empty() {
-            stack.push(left);
-        }
-        if !right.is_empty() {
-            stack.push(right);
+    pub fn build(items: Vec<T>, metric: M) -> VPTree<T, M> {
+        let mut vps: Vec<VP> = items.iter().enumerate()
+            .map(|(x, _)| VP::new(x))
+            .collect();
+        Self::build_iter(&items, &mut vps, &metric);
+        VPTree { 
+            items: items,
+            vps: vps,
+            metric: metric
         }
     }
-}
 
-pub fn search<T>(vpt: &VPTree<T>, target: &T, eps: Scalar) -> Vec<usize> {
-    let mut results: Vec<usize> = vec![];
-    let mut stack: Vec<&[VP]> = Vec::with_capacity(vpt.items.len());
-    if !vpt.items.is_empty() {
-        stack.push(&vpt.vps);
-    }
-    while let Some(vec) = stack.pop() {
-        let center = &vec[0];
-        let vp = &vpt.items[center.center];
-        let dist = (vpt.metric)(vp, target);
-        let tail = &vec[1..];
-        let tail_mid = get_mid(tail);
-        if dist <= eps {
-            results.push(center.center);
+    fn build_iter(items: &[T], vps: &mut [VP], metric: &M) -> () {
+        let mut stack: Vec<&mut [VP]> = Vec::with_capacity(vps.len());
+        if !vps.is_empty() {
+            stack.push(vps);
         }
-        if dist < center.radius + eps {
-            let left = &tail[..tail_mid];
+        while let Some(vec) = stack.pop() {
+            Self::process_slice(items, vec, metric);
+            let tail = &mut vec[1..];
+            let mid_tail = get_mid(tail);
+            let (left, right) = tail.split_at_mut(mid_tail);
             if !left.is_empty() {
                 stack.push(left);
             }
-        } 
-        if dist >= center.radius - eps {
-            let right = &tail[tail_mid..];
             if !right.is_empty() {
                 stack.push(right);
             }
         }
     }
-    results
+
+    fn process_slice(items: &[T], vec: &mut [VP], metric: &M) -> () {
+        let pivot: usize = fastrand::usize(0..vec.len());
+        vec.swap(pivot, 0);
+        let vp = &items[vec[0].center];
+        for i in 0..vec.len() {
+            let p = &items[vec[i].center];
+            vec[i].radius = metric.apply(vp, p);
+        }
+        let tail = &mut vec[1..];
+        if !tail.is_empty() {
+            let tail_mid: usize = get_mid(tail);
+            quickselect::quick_select(tail, tail_mid);
+            vec[0].radius = tail[tail_mid].radius;
+        }
+    }
+
+    pub fn ball_search(&self, target: &T, eps: Scalar) -> Vec<usize> {
+        let mut results: Vec<usize> = vec![];
+        let mut stack: Vec<&[VP]> = Vec::with_capacity(self.items.len());
+        if !self.items.is_empty() {
+            stack.push(&self.vps);
+        }
+        while let Some(vec) = stack.pop() {
+            let center = &vec[0];
+            let vp = &self.items[center.center];
+            let dist = self.metric.apply(vp, target);
+            let tail = &vec[1..];
+            let tail_mid = get_mid(tail);
+            if dist <= eps {
+                results.push(center.center);
+            }
+            if dist < center.radius + eps {
+                let left = &tail[..tail_mid];
+                if !left.is_empty() {
+                    stack.push(left);
+                }
+            } 
+            if dist >= center.radius - eps {
+                let right = &tail[tail_mid..];
+                if !right.is_empty() {
+                    stack.push(right);
+                }
+            }
+        }
+        results
+    }
+
 }
+
+
 
 #[cfg(test)]
 mod tests {
 
-    use crate::utils::vptree::build;
-    use crate::utils::vptree::search;
     use crate::utils::vptree::Scalar;
     use crate::utils::vptree::Metric;
     use crate::utils::vptree::VP;
@@ -140,14 +152,14 @@ mod tests {
         (*n).saturating_sub(*m).saturating_abs() as f32
     }
 
-    fn search_naive<T>(vec: &[T], dist: Metric<T>, target: &T, eps: Scalar) -> Vec<usize> {
+    fn search_naive<T>(vec: &[T], dist: &dyn Metric<T>, target: &T, eps: Scalar) -> Vec<usize> {
         return vec.iter().enumerate()
-            .filter(|(_, x)| dist(target, x) <= eps)
+            .filter(|(_, x)| dist.apply(target, x) <= eps)
             .map(|(i, _)| i)
             .collect();
     }
 
-    fn check_vptree<T>(vpt: &VPTree<T>) -> bool {
+    fn check_vptree<T, M: Metric<T>>(vpt: &VPTree<T, M>) -> bool {
         let mut stack: Vec<&[VP]> = Vec::with_capacity(vpt.items.len());
         if !vpt.items.is_empty() {
             stack.push(&vpt.vps);
@@ -158,13 +170,13 @@ mod tests {
                 let vp = &vpt.items[v[0].center];
                 for i in 1..mid {
                     let p = &vpt.items[v[i].center];
-                    if (vpt.metric)(vp, p) > v[0].radius {
+                    if vpt.metric.apply(vp, p) > v[0].radius {
                         return false;
                     }
                 }
                 for i in mid..v.len() {
                     let p = &vpt.items[v[i].center];
-                    if (vpt.metric)(vp, p) < v[0].radius {
+                    if vpt.metric.apply(vp, p) < v[0].radius {
                         return false;
                     }
                 }
@@ -183,37 +195,37 @@ mod tests {
 
     #[test]
     fn test_build_empty() {
-        let mut vec = vec![];
-        let vpt = build(vec, absdist);
+        let vec = vec![];
+        let vpt = VPTree::build(vec, absdist);
         assert!(vpt.items.is_empty());
         assert!(check_vptree(&vpt));
-        assert!(search(&vpt, &0, 1.0).is_empty());
+        assert!(vpt.ball_search(&0, 1.0).is_empty());
     }
 
     #[test]
     fn test_build_sample() {
-        let mut vec = vec![-1, 4, -4, 1, 2, -3];
-        let vpt = build(vec, absdist);
+        let vec = vec![-1, 4, -4, 1, 2, -3];
+        let vpt = VPTree::build(vec, absdist);
         assert!(check_vptree(&vpt));
-        assert_eq!(search(&vpt, &-1, 1.0).len(), 1);
-        assert_eq!(search(&vpt, &4, 1.0).len(), 1);
-        assert_eq!(search(&vpt, &-4, 1.0).len(), 2);
-        assert_eq!(search(&vpt, &1, 1.0).len(), 2);
-        assert_eq!(search(&vpt, &2, 1.0).len(), 2);
-        assert_eq!(search(&vpt, &-3, 1.0).len(), 2);
-        assert_eq!(search(&vpt, &0, 1.0).len(), 2);
+        assert_eq!(vpt.ball_search(&-1, 1.0).len(), 1);
+        assert_eq!(vpt.ball_search(&4, 1.0).len(), 1);
+        assert_eq!(vpt.ball_search(&-4, 1.0).len(), 2);
+        assert_eq!(vpt.ball_search(&1, 1.0).len(), 2);
+        assert_eq!(vpt.ball_search(&2, 1.0).len(), 2);
+        assert_eq!(vpt.ball_search(&-3, 1.0).len(), 2);
+        assert_eq!(vpt.ball_search(&0, 1.0).len(), 2);
     }
 
     quickcheck::quickcheck! {
         fn prop_build(vec: Vec<i32>) -> bool {
-            let vpt = build(vec, absdist);
+            let vpt = VPTree::build(vec, absdist);
             check_vptree(&vpt)
         }
 
         fn prop_search(vec: Vec<i32>, target: i32, eps: Scalar) -> bool {
-            let vpt = build(vec.clone(), absdist);
-            let v1 = search_naive(&vec, absdist, &target, eps);
-            let v2 = search(&vpt, &target, eps);
+            let vpt = VPTree::build(vec.clone(), absdist);
+            let v1 = search_naive(&vec, &absdist, &target, eps);
+            let v2 = vpt.ball_search(&target, eps);
             let h1: HashSet<usize> = HashSet::from_iter(v1);
             let h2: HashSet<usize> = HashSet::from_iter(v2);
             return h1 == h2;

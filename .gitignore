@@ -6,6 +6,7 @@
 **/*.log
 **/docs/build
 **/*.ipynb
+**/*.so
 debug/
 target/
 Cargo.lock

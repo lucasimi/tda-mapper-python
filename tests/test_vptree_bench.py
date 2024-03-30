@@ -7,6 +7,7 @@ from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
 from tdamapper.utils.vptree import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper_rs import VPTree as VPTRS
 
 
 def dist(x, y):
@@ -47,10 +48,18 @@ class TestBenchmark(unittest.TestCase):
         self.logger.info('[build]')
         vpt = self._testBuild(data, ' * VPT  ', VPT)
         fvpt = self._testBuild(data, ' * FVPT ', FVPT)
+
+        data_np = np.array(data)
+        t0 = time()
+        vpt_rs = VPTRS(data_np, metric='euclidean')
+        t1 = time()
+        self.logger.info(f' * VPTRS: {t1 - t0}')
+
         self.logger.info('[ball search]')
         self._testBallSearchNaive(data, ' * Naive ')
         self._testBallSearch(data, ' * VPT  ', vpt)
         self._testBallSearch(data, ' * FVPT ', fvpt)
+        self._testBallSearch(data, ' * VPTRS', vpt_rs)
         self.logger.info('[knn search]')
         self._testKNNSearchNaive(data, ' * Naive ')
         self._testKNNSearch(data, ' * VPT  ', vpt)
