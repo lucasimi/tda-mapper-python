@@ -83,6 +83,8 @@ VD_3D = False
 
 # K_ are reusable keys for widgets
 
+K_UPLOADER = 'key_uploader'
+
 K_LENS_TYPE = 'key_lens_type'
 
 K_LENS_PCA_N = 'key_lens_pca_n'
@@ -112,27 +114,9 @@ K_DATA_SUMMARY = 'key_data_summary'
 S_RESULTS = 'stored_results'
 
 APP_DESC = f"""
-    ### Welcome to **tda-mapper app**
+    This app leverages the *Mapper Algorithm* from Topological Data Analysis (TDA) to provide an efficient and intuitive way to gain insights from your datasets.
 
-    This app is a powerful tool for data exploration, leveraging the *Mapper algorithm* from Topological Data Analysis (TDA). 
-    Whether you’re a seasoned data scientist or just curious about exploring your data, this app provides an efficient and intuitive way to gain insights.
-    
-    ### Core Functionalities:
-
-    * 🔎 Use the Mapper algorithm to analyze your dataset and uncover hidden patterns.
-    * ⚡ Our Python package offers a simple and efficient implementation of the Mapper algorithm.
-    * 🌐 Represent your data as a network, allowing you to visualize relationships and structures.
-
-    ### Getting Started:
-
-    1. 📊 Begin by choosing the dataset you want to explore.
-    2. ⚙️ Fiddle with the settings to customize your analysis.
-    3. 🚀 Execute the Mapper algorithm and observe the results.
-    4. 🎨 Explore hidden patterns by changing the colors of the Mapper graph.
-
-    Explore, discover, and enjoy the fascinating world of topological data analysis with this app!
-    For more details and more advanced use cases, check out the project: 
-    
+    For more details: 
     **{GIT_REPO_URL}**.
     """
 
@@ -196,10 +180,8 @@ def data_caption(df_X, df_y):
     if df_X.empty:
         return 'No data source found'
     if df_y.empty:
-        return f'{len(df_X)} instance, {len(df_X.columns)} features'
-    return f'''
-        {len(df_X)} instances, {len(df_X.columns)} + {len(df_y.columns)} features
-    '''
+        return f'{len(df_X)} instances, {len(df_X.columns)} features'
+    return f'{len(df_X)} instances, {len(df_X.columns)} + {len(df_y.columns)} features'
 
 
 def fix_data(data):
@@ -255,7 +237,7 @@ def get_data_openml(source):
 @st.cache_data
 def get_data_csv(upload):
     df = pd.read_csv(upload)
-    return fix_data(df)
+    return fix_data(df), pd.DataFrame()
 
 
 def load_data_openml(source):
@@ -264,7 +246,8 @@ def load_data_openml(source):
     st.session_state[S_RESULTS].set_df(X, y)
 
 
-def load_data_csv(source):
+def load_data_csv():
+    source = st.session_state[K_UPLOADER]
     st.session_state[S_RESULTS].clear()
     X, y = get_data_csv(source)
     st.session_state[S_RESULTS].set_df(X, y)
@@ -279,54 +262,52 @@ def load_data_example(source):
 def add_download_graph():
     df_X = st.session_state[S_RESULTS]
     if df_X is None:
-        st.write('Run')
         return
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj, default=int)
     st.download_button(
-        '📥 Download',
+        f'📥 Download Graph',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
-        use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+    if mapper_graph is None:
+        return
+    nodes_num = mapper_graph.number_of_nodes()
+    edges_num = mapper_graph.number_of_edges()
+    st.caption(f'{nodes_num} nodes, {edges_num} edges')
 
 
 def add_data_source_csv():
-    st.file_uploader(
+    uploader = st.file_uploader(
         'Upload CSV',
         label_visibility='collapsed',
-        on_change=load_data_csv)
+        on_change=load_data_csv,
+        key=K_UPLOADER)
 
 
 def add_data_source_example():
     example = st.selectbox(
-        'Example',
-        options=['digits', 'iris'],
-        label_visibility='collapsed')
-    st.button(
-        'Load Example',
-        on_click=load_data_example,
-        args=(example,))
+        'Dataset Name',
+        options=['digits', 'iris'])
+    load = st.button('Load Example')
+    if load:
+        load_data_example(example)
 
 
 def add_data_source_openml():
     name = st.text_input(
         'Dataset Name',
-        label_visibility='collapsed',
         placeholder='Dataset Name')
-    st.button(
-        'Fetch from OpenML',
-        on_click=load_data_openml,
-        args=(name,))
+    load = st.button('Fetch from OpenML')
+    if load:
+        load_data_openml(name)
 
 
 def add_data_source():
-    source = st.radio(
-        'Data Source',
-        options=['Example', 'OpenML', 'CSV'],
-        horizontal=True,
-        label_visibility='collapsed')
+    source = st.selectbox(
+        'Source',
+        options=['Example', 'OpenML', 'CSV'])
     if source == 'OpenML':
         add_data_source_openml()
     elif source == 'CSV':
@@ -335,44 +316,79 @@ def add_data_source():
         add_data_source_example()
 
 
-def add_data_display():
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
-    if df_X is None:
-        return
-    df_all = pd.concat([get_sample(df_y, frac=1.0), get_sample(df_X, frac=1.0)], axis=1)
-    st.dataframe(df_all, height=500)
+def add_lens_settings():
+    lens_type = st.selectbox(
+        'Type',
+        options=[V_LENS_IDENTITY, V_LENS_PCA],
+        key=K_LENS_TYPE)
+    if lens_type == V_LENS_PCA:
+            st.number_input(
+                'Components',
+                value=1,
+                min_value=1,
+                key=K_LENS_PCA_N)
+
+
+def add_cover_settings():
+    cover_type = st.selectbox(
+        'Type',
+        options=[V_COVER_BALL, V_COVER_CUBICAL, V_COVER_TRIVIAL],
+        key=K_COVER_TYPE)
+    if cover_type == V_COVER_BALL:
+        st.number_input(
+            'Radius',
+            value=100.0,
+            min_value=0.0,
+            key=K_COVER_BALL_RADIUS)
+        st.number_input(
+            'Lp Metric',
+            value=2,
+            min_value=1,
+            key=K_COVER_BALL_METRIC_P)
+    elif cover_type == V_COVER_CUBICAL:
+        st.number_input(
+            'Intervals',
+            value=2,
+            min_value=0,
+            key=K_COVER_CUBICAL_N)
+        st.number_input(
+            'Overlap Fraction',
+            value=0.10,
+            min_value=0.0,
+            max_value=1.0,
+            key=K_COVER_CUBICAL_OVERLAP)
+
+
+def add_clustering_settings():
+    clustering_type = st.selectbox(
+        'Type',
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        key=K_CLUSTERING_TYPE)
+    if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+        st.number_input(
+            'Clusters',
+            value=2,
+            min_value=1,
+            key=K_CLUSTERING_AGGLOMERATIVE_N)
 
 
 def add_mapper_settings():
-    st.markdown('🔎 Lens')
-    add_lens_settings()
-    st.markdown('##')
-    st.markdown('🌐 Cover')
-    add_cover_settings()
-    st.markdown('##')
-    st.markdown('🧮 Clustering')
-    add_clustering_settings()
     df_X = st.session_state[S_RESULTS].df_X
-    st.button(
-        '🚀 Run',
-        use_container_width=True,
-        disabled=df_X is None,
-        on_click=compute_mapper)
-
-
-def add_lens_settings():
-    lens_type = st.selectbox(
-        'Lens',
-        options=[V_LENS_IDENTITY, V_LENS_PCA],
-        label_visibility='collapsed',
-        key=K_LENS_TYPE)
-    if lens_type == V_LENS_PCA:
-        st.number_input(
-            'PCA components',
-            value=1,
-            min_value=1,
-            key=K_LENS_PCA_N)
+    st.markdown('### ⚙️ Settings')
+    with st.expander('Lens'):
+        add_lens_settings()
+    with st.expander('🌐 Cover'):
+        add_cover_settings()
+    with st.expander('🧮 Clustering'):
+        add_clustering_settings()
+    run = st.button(
+        '🚀 Run Mapper',
+        type='primary',
+        disabled=df_X is None)
+    if run:
+        with st.spinner('⏳ Computing Mapper...'):
+            compute_mapper()
+    add_download_graph()
 
 
 def get_lens_func():
@@ -384,37 +400,6 @@ def get_lens_func():
         return lambda x: PCA(n).fit_transform(x)
     else:
         return lambda x: x
-
-
-def add_cover_settings():
-    cover_type = st.selectbox(
-        'Cover',
-        options=[V_COVER_BALL, V_COVER_CUBICAL, V_COVER_TRIVIAL],
-        label_visibility='collapsed',
-        key=K_COVER_TYPE)
-    if cover_type == V_COVER_BALL:
-        st.number_input(
-            'Ball radius',
-            value=100.0,
-            min_value=0.0,
-            key=K_COVER_BALL_RADIUS)
-        st.number_input(
-            'Lp metric',
-            value=2,
-            min_value=1,
-            key=K_COVER_BALL_METRIC_P)
-    elif cover_type == V_COVER_CUBICAL:
-        st.number_input(
-            'intervals',
-            value=2,
-            min_value=0,
-            key=K_COVER_CUBICAL_N)
-        st.number_input(
-            'overlap',
-            value=0.10,
-            min_value=0.0,
-            max_value=1.0,
-            key=K_COVER_CUBICAL_OVERLAP)
 
 
 def get_cover_algo():
@@ -429,20 +414,6 @@ def get_cover_algo():
         n = st.session_state.get(K_COVER_CUBICAL_N, 10)
         p = st.session_state.get(K_COVER_CUBICAL_OVERLAP, 0.5)
         return CubicalCover(n_intervals=n, overlap_frac=p)
-
-
-def add_clustering_settings():
-    clustering_type = st.selectbox(
-        'Clustering',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
-        label_visibility='collapsed',
-        key=K_CLUSTERING_TYPE)
-    if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        st.number_input(
-            'clusters',
-            value=2,
-            min_value=1,
-            key=K_CLUSTERING_AGGLOMERATIVE_N)
 
 
 def get_clustering_algo():
@@ -480,8 +451,9 @@ def render_mapper():
     nodes_num = mapper_graph.number_of_nodes()
     if nodes_num > MAX_NODES:
         st.warning(mapper_warning(nodes_num))
-        st.button(MAPPER_PROCEED,
-            on_click=render_mapper_proceed)
+        render = st.button(MAPPER_PROCEED)
+        if render:
+            render_mapper_proceed()
     else:
         render_mapper_proceed()
 
@@ -494,8 +466,8 @@ def render_mapper_proceed():
     mapper_plot = MapperLayoutInteractive(
         mapper_graph,
         dim=3 if enable_3d else 2,
-        height=800,
-        width=800,
+        height=450,
+        width=450,
         colors=X,
         seed=seed)
     st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
@@ -543,40 +515,36 @@ def add_data_tools():
     if df_X is None:
         return
     df_y = st.session_state[S_RESULTS].df_y
-    st.caption(
-        data_caption(df_X, df_y),
-        help=DATA_INFO)
     df_summary = st.session_state[S_RESULTS].df_summary
     if df_summary is None:
         df_summary = pd.DataFrame()
     st.data_editor(
         df_summary,
-        height=500,
+        height=250,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
         column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(),
+            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
+                width='small'),
         },
         key=K_DATA_SUMMARY,
-        on_change=draw_mapper)
+        on_change=render_mapper)
 
 
 def add_plot_setting():
+    seed = st.number_input('Seed', value=VD_SEED, key=K_SEED)
     st.toggle(
         'Enable 3D',
         value=VD_3D,
         key=K_ENABLE_3D,
         on_change=render_mapper)
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    def _randomize():
-        st.session_state[K_SEED] = random.randint(1, 100)
+    update = st.button(
+        '🔃 Update Plot',
+        disabled=mapper_graph is None)
+    if update:
         render_mapper()
-    st.button(
-        '♻️ Randomize',
-        use_container_width=True,
-        disabled=mapper_graph is None,
-        on_click=_randomize)
 
 
 def add_graph_plot():
@@ -585,46 +553,64 @@ def add_graph_plot():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     if mapper_graph is None:
         return
-    nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
-    st.caption(f'{nodes_num} nodes, {edges_num} edges')
     mapper_fig = st.session_state['mapper_fig']
     st.plotly_chart(
         mapper_fig,
-        use_container_width=False,
+        use_container_width=True,
         config={'scrollZoom': True})
-    add_download_graph()
 
+
+def add_data():
+    st.markdown('### 📊 Data')
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    add_data_source()
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    if df_X is None:
+        return
+    cap = data_caption(df_X, df_y)
+    with st.expander(cap):
+        df_all = pd.concat([get_sample(df_y, frac=1.0), get_sample(df_X, frac=1.0)], axis=1)
+        st.dataframe(df_all, height=300)
+
+
+def add_rendering():
+    st.markdown('### 🎨 Rendering')
+    pl_col_0, pl_col_1 = st.columns([2, 4])
+    with pl_col_0:
+        add_data_tools()
+        add_plot_setting()
+    with pl_col_1:
+        add_graph_plot()
+    
 
 def main():
     st.set_page_config(
-        #layout='wide',
-        page_icon='🍩',
-        page_title='tda-mapper app',
+        page_icon='app/logo_icon.png',
+        page_title='tda-mapper',
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT
         })
-    st.sidebar.markdown('# 🍩 tda-mapper app')
+    with st.sidebar:
+        st.image('app/logo_hori.png', use_column_width=True)
+        st.markdown('###')
+        st.markdown(APP_DESC)
+    st.image('app/logo_hori.png', use_column_width=True)
+    st.markdown('#')
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
-    with st.sidebar:
-        tab_about, tab_data_source, tab_mapper_settings, tab_draw = st.tabs([
-            '## ℹ️ About',
-            '## 📊 Data',
-            '## ⚙️ Settings',
-            '## 🎨 Draw'])
-    with tab_about:
-        st.markdown(APP_DESC)
-    with tab_data_source:
-        add_data_source()
-        add_data_display()
-    with tab_mapper_settings:
-        add_mapper_settings()
-    with tab_draw:
-        add_data_tools()
-        add_plot_setting()
-    add_graph_plot()
+    st.markdown('#')
+    add_data()
+    st.markdown('#')
+    add_mapper_settings()
+    st.markdown('#')
+    add_rendering()
+    st.markdown(f'''
+        ---
+        If you found this app useful please consider putting a :star: on {GIT_REPO_URL}
+    ''')
 
 
 main()
