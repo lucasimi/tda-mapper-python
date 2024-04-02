@@ -51,6 +51,13 @@ REPORT_BUG = f'{GIT_REPO_URL}/issues'
 
 ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
 
+APP_DESC = f"""
+    This app leverages the *Mapper Algorithm* from Topological Data Analysis (TDA) to provide an efficient and intuitive way to gain insights from your datasets.
+
+    For more details: 
+    **{GIT_REPO_URL}**.
+    """
+
 # V_* are reusable values for widgets
 
 V_LENS_IDENTITY = 'Identity'
@@ -113,12 +120,11 @@ K_DATA_SUMMARY = 'key_data_summary'
 
 S_RESULTS = 'stored_results'
 
-APP_DESC = f"""
-    This app leverages the *Mapper Algorithm* from Topological Data Analysis (TDA) to provide an efficient and intuitive way to gain insights from your datasets.
+# T_ are for call triggers
 
-    For more details: 
-    **{GIT_REPO_URL}**.
-    """
+T_RENDER_MAPPER = True
+
+T_DRAW_MAPPER = True
 
 
 class Results:
@@ -471,6 +477,7 @@ def render_mapper_proceed():
         colors=X,
         seed=seed)
     st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
+    st.session_state[T_RENDER_MAPPER] = False
     draw_mapper()
 
 
@@ -479,10 +486,12 @@ def draw_mapper():
     if mapper_plot is None:
         return
     colors = get_colors_data_summary()
-    mapper_plot.update(colors=colors)
+    seed = st.session_state[K_SEED]
+    mapper_plot.update(colors=colors, seed=seed)
     mapper_fig = mapper_plot.plot()
     mapper_fig.update_layout(uirevision='constant')
     st.session_state['mapper_fig'] = mapper_fig
+    st.session_state[T_DRAW_MAPPER] = False
 
 
 def get_colors_data_summary():
@@ -518,6 +527,9 @@ def add_data_tools():
     df_summary = st.session_state[S_RESULTS].df_summary
     if df_summary is None:
         df_summary = pd.DataFrame()
+    
+    def _trigger_draw_mapper():
+        st.session_state[T_DRAW_MAPPER] = True
     st.data_editor(
         df_summary,
         height=250,
@@ -529,22 +541,25 @@ def add_data_tools():
                 width='small'),
         },
         key=K_DATA_SUMMARY,
-        on_change=render_mapper)
+        on_change=_trigger_draw_mapper)
 
 
 def add_plot_setting():
-    seed = st.number_input('Seed', value=VD_SEED, key=K_SEED)
+    def _trigger_draw_mapper():
+        st.session_state[T_DRAW_MAPPER] = True
+    def _trigger_render_mapper():
+        st.session_state[T_RENDER_MAPPER] = True
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED,
+        key=K_SEED,
+        on_change=_trigger_draw_mapper)
     st.toggle(
         'Enable 3D',
         value=VD_3D,
         key=K_ENABLE_3D,
-        on_change=render_mapper)
+        on_change=_trigger_render_mapper)
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    update = st.button(
-        '🔃 Update Plot',
-        disabled=mapper_graph is None)
-    if update:
-        render_mapper()
 
 
 def add_graph_plot():
@@ -582,6 +597,10 @@ def add_rendering():
         add_data_tools()
         add_plot_setting()
     with pl_col_1:
+        if st.session_state.get(T_RENDER_MAPPER, True):
+            render_mapper()
+        if st.session_state.get(T_DRAW_MAPPER, True):
+            draw_mapper()
         add_graph_plot()
     
 
@@ -593,12 +612,25 @@ def main():
             'Report a bug': REPORT_BUG,
             'About': ABOUT
         })
+    try:
+        logo_hori = open('app/logo_hori.png')
+        with st.sidebar:
+            st.image(logo_hori, use_column_width=True)
+            st.markdown('###')
+        st.image(logo_hori, use_column_width=True)
+        logo_hori.close()
+    except Exception:
+        title = '🔮 TDA Mapper App'
+        with st.sidebar:
+            st.markdown(f'# {title}')
+        st.markdown(f'# {title}')
+    finally:
+        with st.sidebar:
+            st.markdown('#')
+        st.markdown('#')
+
     with st.sidebar:
-        st.image('app/logo_hori.png', use_column_width=True)
-        st.markdown('###')
         st.markdown(APP_DESC)
-    st.image('app/logo_hori.png', use_column_width=True)
-    st.markdown('#')
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
     st.markdown('#')
@@ -609,7 +641,7 @@ def main():
     add_rendering()
     st.markdown(f'''
         ---
-        If you found this app useful please consider putting a :star: on {GIT_REPO_URL}
+        If you found this app useful please consider leaving a :star: on {GIT_REPO_URL}
     ''')
 
 
