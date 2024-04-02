@@ -7,7 +7,7 @@ import random
 import streamlit as st
 import pandas as pd
 import numpy as np
-
+import plotly.express as px
 
 from networkx.readwrite.json_graph import adjacency_data
 
@@ -15,7 +15,7 @@ from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
-from tdamapper.core import MapperAlgorithm
+from tdamapper.core import MapperAlgorithm, ATTR_SIZE
 from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
@@ -276,12 +276,37 @@ def add_download_graph():
         f'📥 Download Graph',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
+        use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+
+
+def add_graph_caption():
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
     if mapper_graph is None:
         return
+    import networkx as nx 
+    ccs = nx.connected_components(mapper_graph)
+    size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
+    ff = {}
+    for cc in ccs:
+        len_cc = len(cc)
+        for u in cc:
+            ff[u] = 1.0 / len_cc
+    df_ccs = pd.DataFrame({
+        'kpi': list(ff.values())
+    })
+    fig = px.histogram(df_ccs, x='kpi', height=250, nbins=10)
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0, pad=5),
+        xaxis_visible=True,
+        xaxis_title_standoff=0,
+        xaxis_title='kpi = 1 / connected component size',
+        yaxis_title_standoff=10,
+        yaxis_visible=True)
     nodes_num = mapper_graph.number_of_nodes()
     edges_num = mapper_graph.number_of_edges()
     st.caption(f'{nodes_num} nodes, {edges_num} edges')
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def add_data_source_csv():
@@ -323,11 +348,13 @@ def add_data_source():
 
 
 def add_lens_settings():
-    lens_type = st.selectbox(
-        'Type',
-        options=[V_LENS_IDENTITY, V_LENS_PCA],
-        key=K_LENS_TYPE)
-    if lens_type == V_LENS_PCA:
+    opts = st.container(height=200, border=False)
+    with opts:
+        lens_type = st.selectbox(
+            'Type',
+            options=[V_LENS_IDENTITY, V_LENS_PCA],
+            key=K_LENS_TYPE)
+        if lens_type == V_LENS_PCA:
             st.number_input(
                 'Components',
                 value=1,
@@ -336,65 +363,81 @@ def add_lens_settings():
 
 
 def add_cover_settings():
-    cover_type = st.selectbox(
-        'Type',
-        options=[V_COVER_BALL, V_COVER_CUBICAL, V_COVER_TRIVIAL],
-        key=K_COVER_TYPE)
-    if cover_type == V_COVER_BALL:
-        st.number_input(
-            'Radius',
-            value=100.0,
-            min_value=0.0,
-            key=K_COVER_BALL_RADIUS)
-        st.number_input(
-            'Lp Metric',
-            value=2,
-            min_value=1,
-            key=K_COVER_BALL_METRIC_P)
-    elif cover_type == V_COVER_CUBICAL:
-        st.number_input(
-            'Intervals',
-            value=2,
-            min_value=0,
-            key=K_COVER_CUBICAL_N)
-        st.number_input(
-            'Overlap Fraction',
-            value=0.10,
-            min_value=0.0,
-            max_value=1.0,
-            key=K_COVER_CUBICAL_OVERLAP)
+    opts = st.container(height=200, border=False)
+    with opts:
+        cover_type = st.selectbox(
+            'Type',
+            options=[V_COVER_BALL, V_COVER_CUBICAL, V_COVER_TRIVIAL],
+            key=K_COVER_TYPE)
+        if cover_type == V_COVER_BALL:
+            st.number_input(
+                'Radius',
+                value=100.0,
+                min_value=0.0,
+                key=K_COVER_BALL_RADIUS)
+            st.number_input(
+                'Lp Metric',
+                value=2,
+                min_value=1,
+                key=K_COVER_BALL_METRIC_P)
+        elif cover_type == V_COVER_CUBICAL:
+            st.number_input(
+                'Intervals',
+                value=2,
+                min_value=0,
+                key=K_COVER_CUBICAL_N)
+            st.number_input(
+                'Overlap Fraction',
+                value=0.10,
+                min_value=0.0,
+                max_value=1.0,
+                key=K_COVER_CUBICAL_OVERLAP)
 
 
 def add_clustering_settings():
-    clustering_type = st.selectbox(
-        'Type',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
-        key=K_CLUSTERING_TYPE)
-    if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        st.number_input(
-            'Clusters',
-            value=2,
-            min_value=1,
-            key=K_CLUSTERING_AGGLOMERATIVE_N)
+    opts = st.container(height=200, border=False)
+    with opts:
+        clustering_type = st.selectbox(
+            'Type',
+            options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+            key=K_CLUSTERING_TYPE)
+        if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+            st.number_input(
+                'Clusters',
+                value=2,
+                min_value=1,
+                key=K_CLUSTERING_AGGLOMERATIVE_N)
 
 
 def add_mapper_settings():
     df_X = st.session_state[S_RESULTS].df_X
     st.markdown('### ⚙️ Settings')
-    with st.expander('Lens'):
+    col_0, col_1 = st.columns([2, 4])
+    with col_0:
+        tab_0, tab_1, tab_2 = st.tabs([
+            '🔎 Lens',
+            '🌐 Cover',
+            '🧮 Clustering'])
+    with tab_0:
         add_lens_settings()
-    with st.expander('🌐 Cover'):
+    with tab_1:
         add_cover_settings()
-    with st.expander('🧮 Clustering'):
+    with tab_2:
         add_clustering_settings()
-    run = st.button(
-        '🚀 Run Mapper',
-        type='primary',
-        disabled=df_X is None)
+    col1_0, col1_1, _ = st.columns([2, 2, 2])
+    with col1_0:
+        run = st.button(
+            '🚀 Run Mapper',
+            type='primary',
+            use_container_width=True,
+            disabled=df_X is None)
     if run:
         with st.spinner('⏳ Computing Mapper...'):
             compute_mapper()
-    add_download_graph()
+    with col_1:
+        add_graph_caption()
+    with col1_1:
+        add_download_graph()
 
 
 def get_lens_func():
@@ -577,17 +620,20 @@ def add_graph_plot():
 
 def add_data():
     st.markdown('### 📊 Data')
+    col_0, col_1 = st.columns([2, 4])
+    with col_0:
+        add_data_source()
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
-    add_data_source()
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
-    if df_X is None:
-        return
-    cap = data_caption(df_X, df_y)
-    with st.expander(cap):
+    df_all = pd.DataFrame()
+    cap = 'empty dataset'
+    if df_X is not None:
         df_all = pd.concat([get_sample(df_y, frac=1.0), get_sample(df_X, frac=1.0)], axis=1)
-        st.dataframe(df_all, height=300)
+        cap = data_caption(df_X, df_y)
+    with col_1:
+        st.markdown('####')
+        st.dataframe(df_all, height=250, use_container_width=True)
+        st.caption(cap)
 
 
 def add_rendering():
@@ -633,7 +679,6 @@ def main():
         st.markdown(APP_DESC)
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
-    st.markdown('#')
     add_data()
     st.markdown('#')
     add_mapper_settings()
