@@ -8,7 +8,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
+import networkx as nx 
 from networkx.readwrite.json_graph import adjacency_data
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
@@ -29,14 +31,6 @@ SAMPLE_FRAC = 0.1
 
 OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
 
-DATA_HELP = f'''
-    To begin select you data source: 
-    
-    * Select an example to see how this works 
-    * You can submit a csv to try on you data
-    * Or you can use a publicly available dataset from [OpenML]({OPENML_URL}).
-'''
-
 DATA_INFO = 'Non-numeric and NaN features get dropped. NaN rows get replaced by mean'
 
 MAPPER_HELP = "Experiment with Mapper Settings and hit Run when you're ready!"
@@ -51,12 +45,13 @@ REPORT_BUG = f'{GIT_REPO_URL}/issues'
 
 ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
 
-APP_DESC = f"""
-    This app leverages the *Mapper Algorithm* from Topological Data Analysis (TDA) to provide an efficient and intuitive way to gain insights from your datasets.
+APP_DESC = f'''
+    This app leverages the *Mapper Algorithm* from Topological Data Analysis 
+    (TDA) to provide an efficient and intuitive way to gain insights from your
+    datasets.
 
-    For more details: 
-    **{GIT_REPO_URL}**.
-    """
+    More details on **[GitHub]({GIT_REPO_URL})**.
+    '''
 
 # V_* are reusable values for widgets
 
@@ -82,13 +77,13 @@ V_DATA_SUMMARY_COLOR = 'color'
 
 V_DATA_SUMMARY_BINS = 5
 
-# VD_ are reusable default values for widgets
+# VD_* are reusable default values for widgets
 
 VD_SEED = 42
 
 VD_3D = False
 
-# K_ are reusable keys for widgets
+# K_* are reusable keys for widgets
 
 K_UPLOADER = 'key_uploader'
 
@@ -116,15 +111,9 @@ K_SEED = 'key_seed'
 
 K_DATA_SUMMARY = 'key_data_summary'
 
-# S_ are reusable manually managed stored objects
+# S_* are reusable manually managed stored objects
 
 S_RESULTS = 'stored_results'
-
-# T_ are for call triggers
-
-T_RENDER_MAPPER = True
-
-T_DRAW_MAPPER = True
 
 
 class Results:
@@ -173,8 +162,8 @@ def mapper_warning(nodes_num):
     return f'''
         ⚠️ This graph contains {nodes_num} nodes, 
         which is more than the maximum allowed of {MAX_NODES}. 
-        This may take time to display, make your browser run slow or either crash.
-        Are you sure you want to proceed?
+        This may take time to display, make your browser run slow or either 
+        crash. Are you sure you want to proceed?
     '''
 
 
@@ -187,7 +176,8 @@ def data_caption(df_X, df_y):
         return 'No data source found'
     if df_y.empty:
         return f'{len(df_X)} instances, {len(df_X.columns)} features'
-    return f'{len(df_X)} instances, {len(df_X.columns)} + {len(df_y.columns)} features'
+    return f'''{len(df_X)} instances, 
+        {len(df_X.columns)} + {len(df_y.columns)} features'''
 
 
 def fix_data(data):
@@ -282,31 +272,42 @@ def add_download_graph():
 
 def add_graph_caption():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    if mapper_graph is None:
-        return
-    import networkx as nx 
-    ccs = nx.connected_components(mapper_graph)
-    size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
-    ff = {}
-    for cc in ccs:
-        len_cc = len(cc)
-        for u in cc:
-            ff[u] = 1.0 / len_cc
-    df_ccs = pd.DataFrame({
-        'kpi': list(ff.values())
+    nodes_num = 0
+    edges_num = 0
+    if mapper_graph is not None:
+        nodes_num = mapper_graph.number_of_nodes()
+        edges_num = mapper_graph.number_of_edges()
+    st.caption(f'{nodes_num} nodes, {edges_num} edges')
+
+
+def add_graph_hist():
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    df_kpi = pd.DataFrame({
+        'kpi': []
     })
-    fig = px.histogram(df_ccs, x='kpi', height=250, nbins=10)
+    if mapper_graph is not None:
+        ccs = nx.connected_components(mapper_graph)
+        size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
+        ff = {}
+        for cc in ccs:
+            len_cc = len(cc)
+            for u in cc:
+                ff[u] = 1.0 / len_cc
+        df_kpi = pd.DataFrame({
+            'kpi': list(ff.values())
+        })
+    fig = px.histogram(df_kpi, x='kpi', height=250, nbins=10)
     fig.update_layout(
-        margin=dict(l=0, r=0, t=0, b=0, pad=5),
+        margin=dict(l=0, r=0, t=0, b=0, pad=0),
         xaxis_visible=True,
         xaxis_title_standoff=0,
-        xaxis_title='kpi = 1 / connected component size',
-        yaxis_title_standoff=10,
-        yaxis_visible=True)
-    nodes_num = mapper_graph.number_of_nodes()
-    edges_num = mapper_graph.number_of_edges()
-    st.caption(f'{nodes_num} nodes, {edges_num} edges')
+        xaxis_title=None,
+        yaxis_title_standoff=0,
+        yaxis_visible=True,
+        yaxis_title=None)
     st.plotly_chart(fig, use_container_width=True)
+    _help = 'The plot shows the histogram of $kpi(u) = 1 / |cc(u)|$ where $u$ is a node of the Mapper graph and $cc(u)$ is the connected component of $u$.'
+    st.caption('kpi = 1 / connected component size', help=_help)
 
 
 def add_data_source_csv():
@@ -434,8 +435,10 @@ def add_mapper_settings():
     if run:
         with st.spinner('⏳ Computing Mapper...'):
             compute_mapper()
-    with col_1:
+    with col_0:
         add_graph_caption()
+    with col_1:
+        add_graph_hist()
     with col1_1:
         add_download_graph()
 
@@ -520,7 +523,6 @@ def render_mapper_proceed():
         colors=X,
         seed=seed)
     st.session_state[S_RESULTS].set_mapper_plot(mapper_plot)
-    st.session_state[T_RENDER_MAPPER] = False
     draw_mapper()
 
 
@@ -534,7 +536,6 @@ def draw_mapper():
     mapper_fig = mapper_plot.plot()
     mapper_fig.update_layout(uirevision='constant')
     st.session_state['mapper_fig'] = mapper_fig
-    st.session_state[T_DRAW_MAPPER] = False
 
 
 def get_colors_data_summary():
@@ -562,17 +563,22 @@ def get_colors_data_summary():
     return colors
 
 
-def add_data_tools():
+def add_plot_setting():
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED,
+        key=K_SEED)
+    st.toggle(
+        'Enable 3D',
+        value=VD_3D,
+        key=K_ENABLE_3D)
     df_X = st.session_state[S_RESULTS].df_X
-    if df_X is None:
-        return
-    df_y = st.session_state[S_RESULTS].df_y
-    df_summary = st.session_state[S_RESULTS].df_summary
-    if df_summary is None:
-        df_summary = pd.DataFrame()
-    
-    def _trigger_draw_mapper():
-        st.session_state[T_DRAW_MAPPER] = True
+    df_summary = pd.DataFrame()
+    if df_X is not None:
+        df_y = st.session_state[S_RESULTS].df_y
+        df_summary = st.session_state[S_RESULTS].df_summary
+        if df_summary is None:
+            df_summary = pd.DataFrame()
     st.data_editor(
         df_summary,
         height=250,
@@ -582,36 +588,28 @@ def add_data_tools():
         column_config={
             V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
                 width='small'),
+            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
+                width='small',
+                disabled=True),
+            V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
+                width='small',
+                disabled=False)
         },
-        key=K_DATA_SUMMARY,
-        on_change=_trigger_draw_mapper)
+        key=K_DATA_SUMMARY)
+    update = st.button(
+        '🌊 Update Rendering',
+        use_container_width=True)
+    if update:
+        render_mapper()
 
 
-def add_plot_setting():
-    def _trigger_draw_mapper():
-        st.session_state[T_DRAW_MAPPER] = True
-    def _trigger_render_mapper():
-        st.session_state[T_RENDER_MAPPER] = True
-    seed = st.number_input(
-        'Seed',
-        value=VD_SEED,
-        key=K_SEED,
-        on_change=_trigger_draw_mapper)
-    st.toggle(
-        'Enable 3D',
-        value=VD_3D,
-        key=K_ENABLE_3D,
-        on_change=_trigger_render_mapper)
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
 
 
 def add_graph_plot():
-    if 'mapper_fig' not in st.session_state:
-        return
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    if mapper_graph is None:
-        return
-    mapper_fig = st.session_state['mapper_fig']
+    mapper_fig = go.Figure()
+    if 'mapper_fig' in st.session_state:
+        mapper_fig = st.session_state['mapper_fig']
     st.plotly_chart(
         mapper_fig,
         use_container_width=True,
@@ -633,20 +631,15 @@ def add_data():
     with col_1:
         st.markdown('####')
         st.dataframe(df_all, height=250, use_container_width=True)
-        st.caption(cap)
+        st.caption(cap, help=DATA_INFO)
 
 
 def add_rendering():
     st.markdown('### 🎨 Rendering')
     pl_col_0, pl_col_1 = st.columns([2, 4])
     with pl_col_0:
-        add_data_tools()
         add_plot_setting()
     with pl_col_1:
-        if st.session_state.get(T_RENDER_MAPPER, True):
-            render_mapper()
-        if st.session_state.get(T_DRAW_MAPPER, True):
-            draw_mapper()
         add_graph_plot()
     
 
@@ -686,7 +679,7 @@ def main():
     add_rendering()
     st.markdown(f'''
         ---
-        If you found this app useful please consider leaving a :star: on {GIT_REPO_URL}
+        If you find this app useful, please consider leaving a :star: on **[GitHub]({GIT_REPO_URL})**.
     ''')
 
 
