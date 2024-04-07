@@ -2,7 +2,6 @@ import json
 import time
 import io
 import gzip
-import random
 
 import streamlit as st
 import pandas as pd
@@ -82,6 +81,45 @@ VD_DIM = 3
 S_RESULTS = 'stored_results'
 
 
+def spinner_button_trigger(
+        trigger_key,
+        running_text,
+        *args,
+        **kwargs):
+    if trigger_key not in st.session_state:
+        st.session_state[trigger_key] = dict(
+            trigger=False,
+            args=None,
+            kwargs=None)
+    def _trigger(*args, **kwargs):
+        st.session_state[trigger_key].update(dict(
+            trigger=True,
+            args=args,
+            kwargs=kwargs))
+    cont = st.empty()
+    cb = kwargs.get('on_click', None)
+    cb_args = kwargs.get('args', None)
+    cb_kwargs = kwargs.get('kwargs', None)
+    kw = {}
+    kw.update(kwargs)
+    kw['on_click'] = _trigger
+    kw['args'] = cb_args
+    kw['kwargs'] = cb_kwargs
+    if st.session_state[trigger_key]['trigger']:
+        with cont:
+            with st.spinner(running_text):
+                cb(*st.session_state[trigger_key]['args'], **st.session_state[trigger_key]['kwargs'])
+        st.session_state[trigger_key] = dict(
+            trigger=False,
+            args=None,
+            kwargs=None)
+    with cont:
+        butt = st.button(
+            *args,
+            **kw)
+    return butt
+
+
 class Results:
 
     def __init__(self):
@@ -91,8 +129,8 @@ class Results:
         self.df_summary = pd.DataFrame()
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
-        self.fig = go.Figure()
-        self.update_fig = False
+        self.mapper_fig = go.Figure()
+        self.auto_rendering = None
 
     def set_df(self, X, y):
         self.df_X = fix_data(X)
@@ -101,8 +139,8 @@ class Results:
         self.df_summary = get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
-        self.fig = go.Figure()
-        self.update_fig = False
+        self.mapper_fig = go.Figure()
+        self.auto_rendering = None
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
@@ -113,16 +151,16 @@ class Results:
             width=450,
             colors=self.X,
             seed=VD_SEED)
-        self.fig = go.Figure()
+        self.mapper_fig = go.Figure()
         nodes_num = mapper_graph.number_of_nodes()
         if nodes_num <= MAX_NODES:
-            self.update_fig = True
+            self.auto_rendering = True
         else:
-            self.update_fig = False
+            self.auto_rendering = False
 
-    def set_fig(self, fig):
-        self.fig = fig
-        self.update_fig = False
+    def set_mapper_fig(self, mapper_fig):
+        self.mapper_fig = mapper_fig
+        self.auto_rendering = None
 
 
 def lp_metric(p):
@@ -317,6 +355,7 @@ def _load_data(data_source):
             st.toast(err, icon='🚨')
     df_X, df_y = fix_data(X), fix_data(y)
     st.session_state[S_RESULTS].set_df(df_X, df_y)
+    st.toast('Successfully Loaded Data', icon='✅')
 
 
 def data_section():
@@ -333,18 +372,15 @@ def data_section():
             data_source = st.text_input('Name', placeholder='Name', help=f'Search on [OpenML]({OPENML_URL})')
         elif data_source_type == 'CSV':
             data_source = st.file_uploader('Upload')
-    with col_2:
-        load_cont = st.empty()
     with col_1:
         st.markdown('####')
-    with load_cont:
-        st.button(
+    with col_2:
+        spinner_button_trigger(
+            'load_trigger',
+            '⏳ Loading Data...',
             '📦 Load',
             use_container_width=True,
-            on_click=wrap_callback(
-                load_cont,
-                '⏳ Loading Data...',
-                _load_data),
+            on_click=_load_data,
             args=(data_source,))
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
@@ -353,20 +389,6 @@ def data_section():
         st.dataframe(df_all, use_container_width=True, height=300)
     with col_3:
         st.caption(get_data_caption(df_X, df_y))
-
-
-def _run(X, lens, cover, clustering):
-    mapper_algo = MapperAlgorithm(
-        cover=cover,
-        clustering=FailSafeClustering(
-            clustering=clustering,
-            verbose=False))
-    mapper_graph = mapper_algo.fit_transform(X, lens)
-    st.session_state[S_RESULTS].set_mapper(mapper_graph)
-    st.toast('Succesfully computed!', icon='✅')
-    nodes_num = mapper_graph.number_of_nodes()
-    if nodes_num > MAX_NODES:
-        st.toast('Skipping rendering (graph too large)', icon='⚠️')
 
 
 def settings_tab(X):
@@ -427,6 +449,20 @@ def settings_tab(X):
     return lens, cover, clustering
 
 
+def _update_mapper(X, lens, cover, clustering):
+    mapper_algo = MapperAlgorithm(
+        cover=cover,
+        clustering=FailSafeClustering(
+            clustering=clustering,
+            verbose=False))
+    mapper_graph = mapper_algo.fit_transform(X, lens)
+    st.session_state[S_RESULTS].set_mapper(mapper_graph)
+    st.toast('Successfully Computed Mapper', icon='✅')
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    if auto_rendering is False:
+        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
+
+
 def settings_section():
     st.subheader('⚙️ Mapper Settings')
     X = st.session_state[S_RESULTS].X
@@ -435,19 +471,17 @@ def settings_section():
     with col_0:
         lens, cover, clustering = settings_tab(X)
     with col_2:
-        run_cont = st.empty()
-
-    with run_cont:
-        st.button(
+        spinner_button_trigger(
+            'run_trigger',
+            '⏳ Computing...',
             '🚀 Run Mapper',
             use_container_width=True,
             disabled=X.size == 0,
-            on_click=wrap_callback(
-                run_cont,
-                '⏳ Computing...',
-                _run),
+            on_click=_update_mapper,
             args=(X, lens, cover, clustering,))
+
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
+
     with col_1:
         with st.container(border=True):
             fig_hist = graph_histogram(mapper_graph)
@@ -460,12 +494,17 @@ def settings_section():
         graph_download_button(mapper_graph)
 
 
-def _update(mapper_plot, seed, colors):
-    mapper_plot.update(colors=colors, seed=seed)
+def _update_fig(seed, colors):
+    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    if mapper_plot is None:
+        return
+    mapper_plot.update(
+        colors=colors,
+        seed=seed)
     mapper_fig = mapper_plot.plot()
     mapper_fig.update_layout(uirevision='constant')
-    st.session_state[S_RESULTS].set_fig(mapper_fig)
-    st.toast('Succesfully rendered!', icon='✅')
+    st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
+    st.toast('Successfully Rendered Graph', icon='✅')
 
 
 def rendering_section():
@@ -475,9 +514,13 @@ def rendering_section():
     df_y = st.session_state[S_RESULTS].df_y
     X = st.session_state[S_RESULTS].X
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    col_4, _ = st.columns([2, 4])
-    with col_4:
-        popover = st.popover('🎨 Options', use_container_width=True)
+    col_0, col_1 = st.columns([2, 4])
+    with col_1:
+        popover = st.popover(
+            '🎨 Options',
+            use_container_width=True,
+            disabled=mapper_plot is None)
+
     with popover:
         seed = st.number_input('Seed', value=VD_SEED)
         data_edit = st.data_editor(
@@ -504,29 +547,31 @@ def rendering_section():
                 selected = pd.concat([df_Xy[c] for c in color_features], axis=1)
                 if not selected.empty:
                     colors = selected.to_numpy()
-        update_cont = st.empty()
-    with update_cont:
-        st.button(
+
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    if auto_rendering:
+        _update_fig(seed, colors)
+        
+    with col_0:
+        spinner_button_trigger(
+            'update_trigger',
+            '⏳ Rendering...',
             '🌊 Update',
             use_container_width=True,
             disabled=mapper_plot is None,
-            on_click=wrap_callback(
-                update_cont,
-                '⏳ Rendering...',
-                _update),
-            args=(mapper_plot, seed, colors))
-    if st.session_state[S_RESULTS].update_fig:
-        wrap_callback(
-            update_cont,
-            '⏳ Rendering...',
-            _update)(mapper_plot, seed, colors)
-        st.session_state[S_RESULTS].update_fig = False
-    mapper_fig = st.session_state[S_RESULTS].fig
+            on_click=_update_fig,
+            args=(seed, colors))
+
+    mapper_fig = st.session_state[S_RESULTS].mapper_fig
     with st.container(border=True):
         st.plotly_chart(
             mapper_fig,
             height=450,
             use_container_width=True)
+
+
+
+
 
 
 def main():
