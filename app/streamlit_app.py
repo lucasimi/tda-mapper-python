@@ -331,7 +331,7 @@ def set_sidebar_headings():
 def set_main_headings():
     st.subheader('')
     if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=400)
+        st.image(LOGO_PATH, width=300)
     else:
         st.header(f'🔮 {APP_TITLE}')
     st.markdown('#')
