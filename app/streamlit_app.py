@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import io
@@ -45,6 +46,16 @@ DESCRIPTION = f'''
 
     More details on **[GitHub]({GIT_REPO_URL})**.
     '''
+
+FOOTER = f'''
+    If you find this app useful, please consider leaving a :star: on **[GitHub]({GIT_REPO_URL})**.
+    '''
+
+ICON_PATH = 'app/logo_icon.png'
+
+LOGO_PATH = 'app/logo_hori.png'
+
+APP_TITLE = 'TDA Mapper App'
 
 # V_* are reusable values for widgets
 
@@ -224,51 +235,16 @@ def get_data_summary(df_X, df_y):
     return df_summary
 
 
-def graph_download_button(mapper_graph):
-    mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
-    mapper_json = json.dumps(mapper_adj, default=int)
-    st.download_button(
-        '📥 Download Mapper Graph',
-        data=get_gzip_bytes(mapper_json),
-        disabled=nx.is_empty(mapper_graph),
-        use_container_width=True,
-        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
+def get_graph_caption(mapper_graph):
+    nodes_num = 0
+    edges_num = 0
+    if mapper_graph is not None:
+        nodes_num = mapper_graph.number_of_nodes()
+        edges_num = mapper_graph.number_of_edges()
+    return f'{nodes_num} nodes, {edges_num} edges'
 
 
-def set_headings():
-    page_title = 'TDA Mapper App'
-    default_page_icon = '🔮'
-    default_heading = '🔮 TDA Mapper App'
-    logo_icon_path = 'app/logo_icon.png'
-    logo_hori_path = 'app/logo_hori.png'
-    try:
-        with open(logo_icon_path, 'r', encoding='utf-8') as _:
-            page_icon = logo_icon_path
-    except FileNotFoundError as _:
-        page_icon = default_page_icon
-    st.set_page_config(
-        page_icon=page_icon,
-        page_title=page_title,
-        menu_items={
-            'Report a bug': REPORT_BUG,
-            'About': ABOUT})
-    try:
-        with open(logo_hori_path, 'r', encoding='utf-8') as _:
-            with st.sidebar:
-                st.image(logo_hori_path, use_column_width=True)
-            st.image(logo_hori_path, use_column_width=True)
-    except FileNotFoundError as err:
-        print(err)
-        st.sidebar.header(default_heading)
-        st.header(default_heading)
-    finally:
-        st.sidebar.markdown('#')
-        st.sidebar.markdown(DESCRIPTION)
-        st.sidebar.markdown('#')
-        st.markdown('#')
-
-
-def graph_histogram(mapper_graph):
+def get_graph_histogram(mapper_graph):
     ccs = nx.connected_components(mapper_graph)
     size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
     node_cc, node_size = {}, {}
@@ -283,10 +259,8 @@ def graph_histogram(mapper_graph):
                 node_size_max = u_size
         if cc_len > node_cc_max:
             node_cc_max = cc_len
-
     arr_size = np.array([node_size[u]/node_size_max for u in mapper_graph.nodes()])
     arr_cc = np.array([node_cc[u]/node_cc_max for u in mapper_graph.nodes()])
-
     df = pd.DataFrame(dict(
         series=np.concatenate((
             ['node size (rel.)'] * len(arr_size),
@@ -294,7 +268,6 @@ def graph_histogram(mapper_graph):
         data=np.concatenate((
             arr_size,
             arr_cc))))
-
     fig = px.histogram(
         df,
         nbins=20,
@@ -323,24 +296,48 @@ def graph_histogram(mapper_graph):
     return fig
 
 
-def get_graph_caption(mapper_graph):
-    nodes_num = 0
-    edges_num = 0
-    if mapper_graph is not None:
-        nodes_num = mapper_graph.number_of_nodes()
-        edges_num = mapper_graph.number_of_edges()
-    return f'{nodes_num} nodes, {edges_num} edges'
+def graph_download_button(mapper_graph):
+    mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
+    mapper_json = json.dumps(mapper_adj, default=int)
+    return st.download_button(
+        '📥 Download Mapper Graph',
+        data=get_gzip_bytes(mapper_json),
+        disabled=nx.is_empty(mapper_graph),
+        use_container_width=True,
+        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
-def wrap_callback(cont, msg, func):
-    def _func(*args, **kwargs):
-        with cont:
-            with st.spinner(msg):
-                func(*args, **kwargs)
-    return _func
+def set_page_config():
+    icon = ICON_PATH if os.path.exists(ICON_PATH) else '🔮'
+    st.set_page_config(
+        page_icon=icon,
+        page_title=APP_TITLE,
+        menu_items={
+            'Report a bug': REPORT_BUG,
+            'About': ABOUT})
 
 
-def _load_data(data_source):
+def set_sidebar_headings():
+    with st.sidebar:
+        if os.path.exists(LOGO_PATH):
+            st.image(LOGO_PATH, width=200)
+        else:
+            st.header(f'🔮 {APP_TITLE}')
+        st.markdown('#')
+        st.markdown(DESCRIPTION)
+        st.markdown('#')
+
+
+def set_main_headings():
+    st.subheader('')
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=400)
+    else:
+        st.header(f'🔮 {APP_TITLE}')
+    st.markdown('#')
+
+
+def _update_data(data_source):
     X, y = pd.DataFrame(), pd.DataFrame()
     if isinstance(data_source, io.BytesIO):
         X, y = pd.read_csv(data_source), pd.DataFrame()
@@ -359,7 +356,7 @@ def _load_data(data_source):
 
 
 def data_section():
-    st.subheader('📊 Data')
+    st.subheader('📊 Data', anchor=False)
     col_0, col_1 = st.columns([2, 4])
     col_2, col_3 = st.columns([2, 4])
     with col_0:
@@ -380,7 +377,7 @@ def data_section():
             '⏳ Loading Data...',
             '📦 Load',
             use_container_width=True,
-            on_click=_load_data,
+            on_click=_update_data,
             args=(data_source,))
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
@@ -391,8 +388,25 @@ def data_section():
         st.caption(get_data_caption(df_X, df_y))
 
 
+def _update_mapper(X, lens, cover, clustering):
+    mapper_algo = MapperAlgorithm(
+        cover=cover,
+        clustering=FailSafeClustering(
+            clustering=clustering,
+            verbose=False))
+    mapper_graph = mapper_algo.fit_transform(X, lens)
+    st.session_state[S_RESULTS].set_mapper(mapper_graph)
+    st.toast('Successfully Computed Mapper', icon='✅')
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    if auto_rendering is False:
+        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
+
+
 def settings_tab(X):
-    tab_0, tab_1, tab_2 = st.tabs(['🔎 Lens', '🌐 Cover', '🧮 Clustering'])
+    tab_0, tab_1, tab_2 = st.tabs([
+        '🔎 Lens',
+        '🌐 Cover',
+        '🧮 Clustering'])
     h = 300
     b = False
     with tab_0:
@@ -449,22 +463,8 @@ def settings_tab(X):
     return lens, cover, clustering
 
 
-def _update_mapper(X, lens, cover, clustering):
-    mapper_algo = MapperAlgorithm(
-        cover=cover,
-        clustering=FailSafeClustering(
-            clustering=clustering,
-            verbose=False))
-    mapper_graph = mapper_algo.fit_transform(X, lens)
-    st.session_state[S_RESULTS].set_mapper(mapper_graph)
-    st.toast('Successfully Computed Mapper', icon='✅')
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if auto_rendering is False:
-        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
-
-
 def settings_section():
-    st.subheader('⚙️ Mapper Settings')
+    st.subheader('⚙️ Mapper Settings', anchor=False)
     X = st.session_state[S_RESULTS].X
     col_0, col_1 = st.columns([2, 4])
     col_2, col_3 = st.columns([2, 4])
@@ -484,7 +484,7 @@ def settings_section():
 
     with col_1:
         with st.container(border=True):
-            fig_hist = graph_histogram(mapper_graph)
+            fig_hist = get_graph_histogram(mapper_graph)
             st.plotly_chart(
                 fig_hist,
                 use_container_width=True,
@@ -508,7 +508,7 @@ def _update_fig(seed, colors):
 
 
 def rendering_section():
-    st.subheader('🔮 Mapper Graph')
+    st.subheader('🔮 Mapper Graph', anchor=False)
     df_summary = st.session_state[S_RESULTS].df_summary
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
@@ -570,12 +570,10 @@ def rendering_section():
             use_container_width=True)
 
 
-
-
-
-
 def main():
-    set_headings()
+    set_page_config()
+    set_main_headings()
+    set_sidebar_headings()
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
     data_section()
@@ -583,10 +581,8 @@ def main():
     settings_section()
     st.markdown('#')
     rendering_section()
-    st.markdown(f'''
-        ---
-        If you find this app useful, please consider leaving a :star: on **[GitHub]({GIT_REPO_URL})**.
-    ''')
+    st.divider()
+    st.markdown(FOOTER)
 
 
 main()
