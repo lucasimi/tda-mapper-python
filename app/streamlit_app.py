@@ -520,6 +520,8 @@ def rendering_section():
             '🎨 Options',
             use_container_width=True,
             disabled=mapper_plot is None)
+    with col_0:
+        rendering_cont = st.empty()
 
     with popover:
         seed = st.number_input('Seed', value=VD_SEED)
@@ -550,9 +552,11 @@ def rendering_section():
 
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     if auto_rendering:
-        _update_fig(seed, colors)
+        with rendering_cont:
+            with st.spinner('⏳ Rendering...'):
+                _update_fig(seed, colors)
         
-    with col_0:
+    with rendering_cont:
         spinner_button_trigger(
             'update_trigger',
             '⏳ Rendering...',
