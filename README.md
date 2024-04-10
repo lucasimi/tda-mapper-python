@@ -7,6 +7,8 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tda-mapper-app.streamlit.app/)
 
+![Logo](https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png)
+
 **tda-mapper** is a simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis
 
 * **Installation**: `pip install tda-mapper`
