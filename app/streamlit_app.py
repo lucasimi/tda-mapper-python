@@ -51,9 +51,9 @@ FOOTER = f'''
     If you find this app useful, please consider leaving a :star: on **[GitHub]({GIT_REPO_URL})**.
     '''
 
-ICON_PATH = 'app/logo_icon.png'
+ICON_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png'
 
-LOGO_PATH = 'app/logo_hori.png'
+LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png'
 
 APP_TITLE = 'TDA Mapper App'
 
@@ -308,9 +308,8 @@ def graph_download_button(mapper_graph):
 
 
 def set_page_config():
-    icon = ICON_PATH if os.path.exists(ICON_PATH) else '🔮'
     st.set_page_config(
-        page_icon=icon,
+        page_icon=ICON_URL,
         page_title=APP_TITLE,
         menu_items={
             'Report a bug': REPORT_BUG,
@@ -319,10 +318,7 @@ def set_page_config():
 
 def set_sidebar_headings():
     with st.sidebar:
-        if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, width=200)
-        else:
-            st.header(f'🔮 {APP_TITLE}')
+        st.image(LOGO_URL)
         st.markdown('#')
         st.markdown(DESCRIPTION)
         st.markdown('#')
@@ -330,10 +326,7 @@ def set_sidebar_headings():
 
 def set_main_headings():
     st.subheader('')
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=300)
-    else:
-        st.header(f'🔮 {APP_TITLE}')
+    st.image(LOGO_URL)
     st.markdown('#')
 
 
