@@ -5,10 +5,11 @@
 
 |PyPI version| |downloads| |test| |deploy| |docs| |codecov| |DOI|
 
-tda-mapper
-==========
+.. image:: logos/tda-mapper-logo-horizontal.png
 
-A simple and efficient implementation of Mapper algorithm for
+===============================================
+
+**tda-mapper** is simple and efficient implementation of Mapper algorithm for
 Topological Data Analysis.
 
 -  **Installation**: ``pip install tda-mapper``
