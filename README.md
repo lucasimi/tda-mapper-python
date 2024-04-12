@@ -1,3 +1,5 @@
+![Logo](https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png)
+
 [![PyPI version](https://badge.fury.io/py/tda-mapper.svg)](https://badge.fury.io/py/tda-mapper)
 [![downloads](https://img.shields.io/pypi/dm/tda-mapper)](https://pypi.python.org/pypi/tda-mapper/)
 [![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
@@ -5,6 +7,7 @@
 [![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=main)](https://tda-mapper.readthedocs.io/en/main/?badge=main)
 [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tda-mapper-app.streamlit.app/)
 
 # tda-mapper
 
@@ -14,12 +17,14 @@ A simple and efficient Python implementation of Mapper algorithm for Topological
 
 * **Documentation**: https://tda-mapper.readthedocs.io/en/main/
 
+* **Demo App**: https://tda-mapper-app.streamlit.app/
+
 The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
 Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
 For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
 | Step 1 | Step 2 | Step 3 | Step 4 |
-|--------|--------|--------|--------|
+| ------ | ------ | ------ | ------ |
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Chose lens | Cover image | Run clustering | Build graph |
 
@@ -78,8 +83,8 @@ fig_std = mapper_plot.plot()
 fig_std.show(config={'scrollZoom': True})
 ```
 
-| Dataset                                                                                          | Mapper graph (average)                                                                                       | Mapper graph (deviation)                                                                                               |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Dataset | Mapper graph (average) | Mapper graph (deviation) |
+| ------- | ---------------------- | ------------------------ |
 | ![Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper graph (average)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph (standard deviation)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
 
 More examples can be found in the documentation https://tda-mapper.readthedocs.io/en/main/.

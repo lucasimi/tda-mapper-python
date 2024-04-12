@@ -21,17 +21,34 @@ class TestMapperPlot(unittest.TestCase):
         mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist),
             clustering=TrivialClustering())
         g = mp.fit_transform(data, data)
-        mp_plot1 = MapperLayoutInteractive(g, colors=data, dim=2)
-        mp_plot1.plot()
-        mp_plot2 = MapperLayoutInteractive(g, colors=data, dim=3)
-        mp_plot2.plot()
-        mp_plot2.update(
+        mp_plot1 = MapperLayoutInteractive(g, dim=2,
             colors=data,
             seed=123,
             iterations=10,
             agg=np.nanmax,
             width=200,
             height=200,
+            title='example',
+            cmap='jet')
+        mp_plot1.plot()
+        mp_plot2 = MapperLayoutInteractive(g, dim=3,
+            colors=data,
+            seed=123,
+            iterations=10,
+            agg=np.nanmax,
+            width=200,
+            height=200,
+            title='example',
+            cmap='jet')
+        mp_plot2.plot()
+        mp_plot2.update(
+            colors=data,
+            seed=124,
+            iterations=15,
+            agg=np.nanmin,
+            width=300,
+            height=300,
+            title='example-updated',
             cmap='viridis')
         mp_plot2.plot()
         mp_plot3 = MapperLayoutStatic(g, colors=data, dim=2)
