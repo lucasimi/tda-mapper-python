@@ -556,23 +556,29 @@ def main():
     set_sidebar_headings()
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
+    col_0, col_1 = st.columns(2)
+    col_2, col_3 = st.columns(2)
+
     with st.sidebar:
         data_section()
         st.markdown('#')
-        settings_section()
-        st.markdown('#')
-        rendering_section()
-    col_0, col_1 = st.columns(2)
-    col_2, col_3 = st.columns(2)
     with col_0:
         data_output()
     with col_2:
         data_download_button()
+
+    with st.sidebar:
+        settings_section()
+        st.markdown('#')
     with col_1:
         settings_output()
     with col_3:
         graph_download_button()
+
+    with st.sidebar:
+        rendering_section()
     rendering_output()
+
     st.divider()
     st.markdown(FOOTER)
 
