@@ -1,4 +1,3 @@
-import os
 import json
 import time
 import io
@@ -136,6 +135,9 @@ class Results:
     def __init__(self):
         self.df_X = pd.DataFrame()
         self.df_y = pd.DataFrame()
+        self.df_X_sample = pd.DataFrame()
+        self.df_y_sample = pd.DataFrame()
+        self.df_all = pd.DataFrame()
         self.X = self.df_X.to_numpy()
         self.df_summary = pd.DataFrame()
         self.mapper_graph = nx.Graph()
@@ -146,6 +148,9 @@ class Results:
     def set_df(self, X, y):
         self.df_X = fix_data(X)
         self.df_y = fix_data(y)
+        self.df_X_sample = get_sample(self.df_X)
+        self.df_y_sample = get_sample(self.df_y)
+        self.df_all = pd.concat([self.df_y, self.df_X], axis=1)
         self.X = self.df_X.to_numpy()
         self.df_summary = get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = nx.Graph()
@@ -276,7 +281,7 @@ def get_graph_histogram(mapper_graph):
         opacity=0.75,
         barmode='overlay')
     fig.update_layout(
-        height=300,
+        height=200,
         margin=dict(l=0, r=0, t=0, b=0, pad=0),
         xaxis_visible=True,
         xaxis_title_standoff=10,
@@ -296,7 +301,8 @@ def get_graph_histogram(mapper_graph):
     return fig
 
 
-def graph_download_button(mapper_graph):
+def graph_download_button():
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj, default=int)
     return st.download_button(
@@ -309,6 +315,7 @@ def graph_download_button(mapper_graph):
 
 def set_page_config():
     st.set_page_config(
+        layout='wide',
         page_icon=ICON_URL,
         page_title=APP_TITLE,
         menu_items={
@@ -342,7 +349,7 @@ def _update_data(data_source):
         try:
             X, y = fetch_openml(data_source, return_X_y=True, as_frame=True)
         except ValueError as err:
-            st.toast(err, icon='🚨')
+            st.toast(f'# {err}', icon='🚨')
     df_X, df_y = fix_data(X), fix_data(y)
     st.session_state[S_RESULTS].set_df(df_X, df_y)
     st.toast('Successfully Loaded Data', icon='✅')
@@ -350,38 +357,46 @@ def _update_data(data_source):
 
 def data_section():
     st.subheader('📊 Data', anchor=False)
-    col_0, col_1 = st.columns([2, 4])
-    col_2, col_3 = st.columns([2, 4])
-    with col_0:
-        data_source_type = st.selectbox(
-            'Source',
-            options=['Example', 'OpenML', 'CSV'])
-        if data_source_type == 'Example':
-            data_source = st.selectbox('Name', options=['Digits', 'Iris'])
-        elif data_source_type == 'OpenML':
-            data_source = st.text_input('Name', placeholder='Name', help=f'Search on [OpenML]({OPENML_URL})')
-        elif data_source_type == 'CSV':
-            data_source = st.file_uploader('Upload')
-    with col_1:
-        st.markdown('####')
-    with col_2:
-        spinner_button_trigger(
-            'load_trigger',
-            '⏳ Loading Data...',
-            '📦 Load',
-            use_container_width=True,
-            on_click=_update_data,
-            args=(data_source,))
+    data_source_type = st.selectbox(
+        'Source',
+        options=['Example', 'OpenML', 'CSV'])
+    if data_source_type == 'Example':
+        data_source = st.selectbox('Name', options=['Digits', 'Iris'])
+    elif data_source_type == 'OpenML':
+        data_source = st.text_input('Name', placeholder='Name', help=f'Search on [OpenML]({OPENML_URL})')
+    elif data_source_type == 'CSV':
+        data_source = st.file_uploader('Upload')
+    load_button = st.button(
+        '📦 Load',
+        use_container_width=True)
+    if load_button:
+        _update_data(data_source)
+
+
+def data_output():
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
-    df_all = pd.concat([get_sample(df_y), get_sample(df_X)], axis=1)
-    with col_1:
-        st.dataframe(df_all, use_container_width=True, height=300)
-    with col_3:
-        st.caption(get_data_caption(df_X, df_y))
+    df_all = st.session_state[S_RESULTS].df_all
+    st.caption(get_data_caption(df_X, df_y))
+    st.dataframe(
+        df_all.head(50),
+        use_container_width=True,
+        height=250)
+
+
+def data_download_button():
+    df_all = st.session_state[S_RESULTS].df_all
+    df_all_data = df_all.to_json()
+    st.download_button(
+        '📥 Download Cleaned Data',
+        disabled=df_all.empty,
+        use_container_width=True,
+        data=df_all_data)
 
 
 def _update_mapper(X, lens, cover, clustering):
+    if (X is None) or (lens is None) or (cover is None) or (clustering is None):
+        st.warning('Make sure you selected the right options')
     mapper_algo = MapperAlgorithm(
         cover=cover,
         clustering=FailSafeClustering(
@@ -395,96 +410,77 @@ def _update_mapper(X, lens, cover, clustering):
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
-def settings_tab(X):
-    tab_0, tab_1, tab_2 = st.tabs([
-        '🔎 Lens',
-        '🌐 Cover',
-        '🧮 Clustering'])
-    h = 300
-    b = False
-    with tab_0:
-        with st.container(border=b, height=h):
-            lens = X
-            lens_type = st.selectbox(
-                'Type',
-                options=[V_LENS_IDENTITY, V_LENS_PCA])
-            if lens_type == V_LENS_PCA:
-                pca_n = st.number_input(
-                    'PCA Components',
-                    value=1,
-                    min_value=1)
-                lens = PCA(n_components=pca_n).fit_transform(X)
-    with tab_1:
-        with st.container(border=b, height=h):
-            cover = TrivialCover()
-            cover_type = st.selectbox(
-                'Type',
-                options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL])
-            if cover_type == V_COVER_BALL:
-                ball_r = st.number_input(
-                    'Radius',
-                    value=100.0,
-                    min_value=0.0)
-                ball_metric_p = st.number_input(
-                    'Lp Metric',
-                    value=2,
-                    min_value=1)
-                cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
-            elif cover_type == V_COVER_CUBICAL:
-                cubical_n = st.number_input(
-                    'Intervals',
-                    value=2,
-                    min_value=0)
-                cubical_p = st.number_input(
-                    'Overlap Fraction',
-                    value=0.10,
-                    min_value=0.0,
-                    max_value=1.0)
-                cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
-    with tab_2:
-        with st.container(border=b, height=h):
-            clustering = TrivialClustering()
-            clustering_type = st.selectbox(
-                'Type',
-                options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE])
-            if clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-                clust_n = st.number_input(
-                    'Clusters',
-                    value=2,
-                    min_value=1)
-                clustering = AgglomerativeClustering(n_clusters=clust_n)
-    return lens, cover, clustering
-
-
 def settings_section():
     st.subheader('⚙️ Mapper Settings', anchor=False)
     X = st.session_state[S_RESULTS].X
-    col_0, col_1 = st.columns([2, 4])
-    col_2, col_3 = st.columns([2, 4])
-    with col_0:
-        lens, cover, clustering = settings_tab(X)
-    with col_2:
-        spinner_button_trigger(
-            'run_trigger',
-            '⏳ Computing...',
-            '🚀 Run Mapper',
-            use_container_width=True,
-            disabled=X.size == 0,
-            on_click=_update_mapper,
-            args=(X, lens, cover, clustering,))
+    lens = None
+    cover = None
+    clustering = None
+    lens_type = st.selectbox(
+        '🔎 Lens',
+        options=[V_LENS_IDENTITY, V_LENS_PCA])
+    if lens_type == V_LENS_IDENTITY:
+        lens = X
+    elif lens_type == V_LENS_PCA:
+        pca_n = st.number_input(
+            'PCA Components',
+            value=1,
+            min_value=1)
+        lens = PCA(n_components=pca_n).fit_transform(X)
+    cover_type = st.selectbox(
+        '🌐 Cover',
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL])
+    if cover_type == V_COVER_TRIVIAL:
+        cover = TrivialCover()
+    elif cover_type == V_COVER_BALL:
+        ball_r = st.number_input(
+            'Radius',
+            value=100.0,
+            min_value=0.0)
+        ball_metric_p = st.number_input(
+            'Lp Metric',
+            value=2,
+            min_value=1)
+        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
+    elif cover_type == V_COVER_CUBICAL:
+        cubical_n = st.number_input(
+            'Intervals',
+            value=2,
+            min_value=0)
+        cubical_p = st.number_input(
+            'Overlap Fraction',
+            value=0.10,
+            min_value=0.0,
+            max_value=1.0)
+        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    clustering_type = st.selectbox(
+        '🧮 Clustering',
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE])
+    if clustering_type == V_CLUSTERING_TRIVIAL:
+        clustering = TrivialClustering()
+    elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+        clust_n = st.number_input(
+            'Clusters',
+            value=2,
+            min_value=1)
+        clustering = AgglomerativeClustering(n_clusters=clust_n)
+    run_button = st.button(
+        '🚀 Run Mapper',
+        use_container_width=True,
+        disabled=X.size == 0)
+    if run_button:
+        _update_mapper(X, lens, cover, clustering)
 
+
+def settings_output():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-
-    with col_1:
-        with st.container(border=True):
-            fig_hist = get_graph_histogram(mapper_graph)
-            st.plotly_chart(
-                fig_hist,
-                use_container_width=True,
-                config = {'displayModeBar': False})
-        st.caption(get_graph_caption(mapper_graph))
-    with col_3:
-        graph_download_button(mapper_graph)
+    st.caption(get_graph_caption(mapper_graph))
+    with st.container(border=True, height=250):
+        fig_hist = get_graph_histogram(mapper_graph)
+        st.plotly_chart(
+            fig_hist,
+            use_container_width=True,
+            config = {'displayModeBar': False})
 
 
 def _update_fig(seed, colors):
@@ -507,77 +503,76 @@ def rendering_section():
     df_y = st.session_state[S_RESULTS].df_y
     X = st.session_state[S_RESULTS].X
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    col_0, col_1 = st.columns([2, 4])
-    with col_1:
-        popover = st.popover(
-            '🎨 Options',
-            use_container_width=True,
-            disabled=mapper_plot is None)
-    with col_0:
-        rendering_cont = st.empty()
-
-    with popover:
-        seed = st.number_input('Seed', value=VD_SEED)
-        data_edit = st.data_editor(
-            df_summary,
-            height=250,
-            hide_index=True,
-            disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
-            use_container_width=True,
-            column_config={
-                V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
-                    width='small'),
-                V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
-                    width='small',
-                    disabled=True),
-                V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
-                    width='small',
-                    disabled=False)
-            })
-        colors = X
-        if not data_edit.empty:
-            color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
-            if not color_features.empty:
-                df_Xy = pd.concat([df_y, df_X], axis=1)
-                selected = pd.concat([df_Xy[c] for c in color_features], axis=1)
-                if not selected.empty:
-                    colors = selected.to_numpy()
-
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED, 
+        help='Changing this value alters the shape')
+    data_edit = st.data_editor(
+        df_summary,
+        height=300,
+        hide_index=True,
+        disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
+        use_container_width=True,
+        column_config={
+            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
+                width='small'),
+            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
+                width='small',
+                disabled=True),
+            V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
+                width='small',
+                disabled=False)
+        })
+    colors = X
+    if not data_edit.empty:
+        color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
+        if not color_features.empty:
+            df_Xy = pd.concat([df_y, df_X], axis=1)
+            selected = pd.concat([df_Xy[c] for c in color_features], axis=1)
+            if not selected.empty:
+                colors = selected.to_numpy()
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     if auto_rendering:
-        with rendering_cont:
-            with st.spinner('⏳ Rendering...'):
-                _update_fig(seed, colors)
-        
-    with rendering_cont:
-        spinner_button_trigger(
-            'update_trigger',
-            '⏳ Rendering...',
-            '🌊 Update',
-            use_container_width=True,
-            disabled=mapper_plot is None,
-            on_click=_update_fig,
-            args=(seed, colors))
+        _update_fig(seed, colors)
+    update_button = st.button(
+        '🌊 Update',
+        use_container_width=True,
+        disabled=mapper_plot is None)
+    if update_button:
+        _update_fig(seed, colors)
 
+
+def rendering_output():
     mapper_fig = st.session_state[S_RESULTS].mapper_fig
     with st.container(border=True):
         st.plotly_chart(
             mapper_fig,
-            height=450,
+            height=300,
             use_container_width=True)
 
 
 def main():
     set_page_config()
-    set_main_headings()
     set_sidebar_headings()
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
-    data_section()
-    st.markdown('#')
-    settings_section()
-    st.markdown('#')
-    rendering_section()
+    with st.sidebar:
+        data_section()
+        st.markdown('#')
+        settings_section()
+        st.markdown('#')
+        rendering_section()
+    col_0, col_1 = st.columns(2)
+    col_2, col_3 = st.columns(2)
+    with col_0:
+        data_output()
+    with col_2:
+        data_download_button()
+    with col_1:
+        settings_output()
+    with col_3:
+        graph_download_button()
+    rendering_output()
     st.divider()
     st.markdown(FOOTER)
 
