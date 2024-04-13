@@ -91,45 +91,6 @@ VD_DIM = 3
 S_RESULTS = 'stored_results'
 
 
-def spinner_button_trigger(
-        trigger_key,
-        running_text,
-        *args,
-        **kwargs):
-    if trigger_key not in st.session_state:
-        st.session_state[trigger_key] = dict(
-            trigger=False,
-            args=None,
-            kwargs=None)
-    def _trigger(*args, **kwargs):
-        st.session_state[trigger_key].update(dict(
-            trigger=True,
-            args=args,
-            kwargs=kwargs))
-    cont = st.empty()
-    cb = kwargs.get('on_click', None)
-    cb_args = kwargs.get('args', None)
-    cb_kwargs = kwargs.get('kwargs', None)
-    kw = {}
-    kw.update(kwargs)
-    kw['on_click'] = _trigger
-    kw['args'] = cb_args
-    kw['kwargs'] = cb_kwargs
-    if st.session_state[trigger_key]['trigger']:
-        with cont:
-            with st.spinner(running_text):
-                cb(*st.session_state[trigger_key]['args'], **st.session_state[trigger_key]['kwargs'])
-        st.session_state[trigger_key] = dict(
-            trigger=False,
-            args=None,
-            kwargs=None)
-    with cont:
-        butt = st.button(
-            *args,
-            **kw)
-    return butt
-
-
 class Results:
 
     def __init__(self):
@@ -347,7 +308,7 @@ def _update_data(data_source):
         X, y = cached_load_iris()
     elif isinstance(data_source, str):
         try:
-            X, y = fetch_openml(data_source, return_X_y=True, as_frame=True)
+            X, y = cached_fetch_openml(data_source)
         except ValueError as err:
             st.toast(f'# {err}', icon='🚨')
     df_X, df_y = fix_data(X), fix_data(y)
