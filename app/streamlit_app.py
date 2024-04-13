@@ -292,12 +292,6 @@ def set_sidebar_headings():
         st.markdown('#')
 
 
-def set_main_headings():
-    st.subheader('')
-    st.image(LOGO_URL)
-    st.markdown('#')
-
-
 def _update_data(data_source):
     X, y = pd.DataFrame(), pd.DataFrame()
     if isinstance(data_source, io.BytesIO):
