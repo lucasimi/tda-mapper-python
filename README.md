@@ -6,6 +6,7 @@
 [![deploy](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/deploy.yml)
 [![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=main)](https://tda-mapper.readthedocs.io/en/main/?badge=main)
 [![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10659652.svg)](https://doi.org/10.5281/zenodo.10659652)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tda-mapper-app.streamlit.app/)
 
@@ -89,25 +90,39 @@ fig_std.show(config={'scrollZoom': True})
 
 More examples can be found in the documentation https://tda-mapper.readthedocs.io/en/main/.
 
+### Demo App
+
+You can also run a demo app locally by running
+
+```
+pip install -r app/requirements.txt
+streamlit run app/streamlit_app.py
+```
+
 ## Citations
 
-To cite **tda-mapper** in your work you can use the Zenodo archive https://doi.org/10.5281/zenodo.10642381.
+If you want to use **tda-mapper** in your research please use one of the following citation.
+For the methodology you can use:
 
-In the archive you can find a permanent reference to the exact version you used in your work.
-
-For example, to cite version `v0.4.0` you can use:
-
-    Simi, L. (2024). tda-mapper (v0.4.0). Zenodo. https://doi.org/10.5281/zenodo.10655755
+```
+Simi, L. (2024). A Scalable Implementation of Mapper for Topological Data Analysis via Vantage Point Trees. Zenodo. https://doi.org/10.5281/zenodo.10659652
+```
 
 BibTeX entry:
 
-    @software{tda-mapper_v0.4.0,
-      author       = {Simi, Luca},
-      title        = {tda-mapper},
-      month        = feb,
-      year         = 2024,
-      publisher    = {Zenodo},
-      version      = {v0.4.0},
-      doi          = {10.5281/zenodo.10655755},
-      url          = {https://doi.org/10.5281/zenodo.10655755}
-    }
+
+```
+@misc{simi_2024_10659652,
+    author       = {Simi, Luca},
+    title        = {A Scalable Implementation of Mapper for Topological Data Analysis via Vantage Point Trees},
+    month        = feb,
+    year         = 2024,
+    publisher    = {Zenodo},
+    doi          = {10.5281/zenodo.10659652},
+    url          = {https://doi.org/10.5281/zenodo.10659652}
+}
+```
+
+If you want to refer to the actual library instead, you can reference the Zenodo 
+archive [https://doi.org/10.5281/zenodo.10642381](https://doi.org/10.5281/zenodo.10642381>).
+In the archive you can find a permanent reference to the exact version used in your work. 
