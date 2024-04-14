@@ -8,6 +8,7 @@ version = "0.5.2"
 description = "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
+maintainers = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 license = { file = "LICENSE" } 
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -28,3 +29,5 @@ dev = ["coverage", "pandas", "scikit-learn"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
+Documentation = "https://tda-mapper.readthedocs.io"
+Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
