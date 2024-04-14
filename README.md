@@ -11,7 +11,8 @@
 
 # tda-mapper
 
-A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis
+A simple and efficient Python implementation of Mapper algorithm for
+Topological Data Analysis
 
 * **Installation**: `pip install tda-mapper`
 
@@ -19,9 +20,19 @@ A simple and efficient Python implementation of Mapper algorithm for Topological
 
 * **Demo App**: https://tda-mapper-app.streamlit.app/
 
-The Mapper algorithm is a well-known technique in the field of topological data analysis that allows data to be represented as a graph.
-Mapper is used in various fields such as machine learning, data mining, and social sciences, due to its ability to preserve topological features of the underlying space, providing a visual representation that facilitates exploration and interpretation.
-For an in-depth coverage of Mapper you can read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+The Mapper algorithm is a well-known technique in the field of topological
+data analysis that allows data to be represented as a graph.
+Mapper is used in various fields such as machine learning, data mining, and
+social sciences, due to its ability to preserve topological features of the
+underlying space, providing a visual representation that facilitates
+exploration and interpretation. For an in-depth coverage of Mapper you can
+read
+[the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+
+This library contains an implementation of Mapper, where the construction 
+of open covers is based on *vp-trees* for improved performance and scalability.
+The details about this methodology are contained in
+[our preprint](https://doi.org/10.5281/zenodo.10659652).
 
 | Step 1 | Step 2 | Step 3 | Step 4 |
 | ------ | ------ | ------ | ------ |
@@ -30,9 +41,10 @@ For an in-depth coverage of Mapper you can read [the original paper](https://res
 
 ## Example
 
-[Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py) you can find an example to use to kickstart your analysis.
-In this toy-example we use a two-dimensional dataset of two concentric circles.
-The Mapper graph is a topological summary of the whole point cloud.
+[Here](https://github.com/lucasimi/tda-mapper-python/raw/main/tests/example.py)
+you can find an example to use to kickstart your analysis. In this toy-example
+we use a two-dimensional dataset of two concentric circles. The Mapper graph
+is a topological summary of the whole point cloud.
 
 ```python
 import numpy as np
@@ -87,27 +99,25 @@ fig_std.show(config={'scrollZoom': True})
 | ------- | ---------------------- | ------------------------ |
 | ![Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper graph (average)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) | ![Mapper graph (standard deviation)](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_std.png) |
 
-More examples can be found in the documentation https://tda-mapper.readthedocs.io/en/main/.
+More examples can be found in the
+[documentation](https://tda-mapper.readthedocs.io/en/main/).
+
+### Demo App
+
+You can also run a demo app locally by running
+
+```
+pip install -r app/requirements.txt
+streamlit run app/streamlit_app.py
+```
 
 ## Citations
 
-To cite **tda-mapper** in your work you can use the Zenodo archive https://doi.org/10.5281/zenodo.10642381.
+If you want to use **tda-mapper** in your work or research, you can cite the
+[archive uploaded on Zenodo](https://doi.org/10.5281/zenodo.10642381),
+pointing to the specific version of the software used in your work.
 
-In the archive you can find a permanent reference to the exact version you used in your work.
-
-For example, to cite version `v0.4.0` you can use:
-
-    Simi, L. (2024). tda-mapper (v0.4.0). Zenodo. https://doi.org/10.5281/zenodo.10655755
-
-BibTeX entry:
-
-    @software{tda-mapper_v0.4.0,
-      author       = {Simi, Luca},
-      title        = {tda-mapper},
-      month        = feb,
-      year         = 2024,
-      publisher    = {Zenodo},
-      version      = {v0.4.0},
-      doi          = {10.5281/zenodo.10655755},
-      url          = {https://doi.org/10.5281/zenodo.10655755}
-    }
+If you want to cite the methodology on which **tda-mapper** is based, you can
+use the
+[preprint](https://doi.org/10.5281/zenodo.10659651).
+``
