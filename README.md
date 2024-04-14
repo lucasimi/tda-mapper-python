@@ -120,4 +120,3 @@ pointing to the specific version of the software used in your work.
 If you want to cite the methodology on which **tda-mapper** is based, you can
 use the
 [preprint](https://doi.org/10.5281/zenodo.10659651).
-``
