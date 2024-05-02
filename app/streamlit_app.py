@@ -373,18 +373,24 @@ def settings_section():
     clustering = None
     lens_type = st.selectbox(
         '🔎 Lens',
-        options=[V_LENS_IDENTITY, V_LENS_PCA])
+        options=[V_LENS_IDENTITY, V_LENS_PCA],
+        index=1)
     if lens_type == V_LENS_IDENTITY:
         lens = X
     elif lens_type == V_LENS_PCA:
         pca_n = st.number_input(
             'PCA Components',
-            value=1,
+            value=2,
             min_value=1)
-        lens = PCA(n_components=pca_n).fit_transform(X)
+        _, n_feats = X.shape
+        if pca_n > n_feats:
+            lens = X
+        else:
+            lens = PCA(n_components=pca_n).fit_transform(X)
     cover_type = st.selectbox(
         '🌐 Cover',
-        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL])
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        index=2)
     if cover_type == V_COVER_TRIVIAL:
         cover = TrivialCover()
     elif cover_type == V_COVER_BALL:
@@ -400,17 +406,18 @@ def settings_section():
     elif cover_type == V_COVER_CUBICAL:
         cubical_n = st.number_input(
             'Intervals',
-            value=2,
+            value=10,
             min_value=0)
         cubical_p = st.number_input(
             'Overlap Fraction',
-            value=0.10,
+            value=0.25,
             min_value=0.0,
             max_value=1.0)
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
     clustering_type = st.selectbox(
         '🧮 Clustering',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE])
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        index=1)
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
