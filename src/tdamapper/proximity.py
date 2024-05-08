@@ -21,20 +21,15 @@ def proximity_net(X, proximity):
     """
     Compute proximity-net for a given proximity function.
 
-    This function uses an iterative algorithm to construct the proximity-net. It
-    starts with an arbitrary point and builds an open cover around it based on
-    the proximity function. Then it discards the covered points and repeats the
-    process on the remaining points until all points are covered.
-
-    This function applies an iterative algorithm to create the proximity-net. It
-    picks an arbitrary point and forms an open cover calling the proximity
-    function on the chosen point. The points contained in the open cover are
-    then marked as covered, and discarded in the following steps. The procedure
-    is repeated on the leftover points until every point is eventually covered.
+    This function employs an iterative algorithm to construct a proximity 
+    network. It starts with an arbitrary point and selects a set of landmarks
+    based on proximity. For each landmark, it forms an open cover by invoking
+    the proximity function. The process continues iteratively until no new 
+    landmark is added, ultimately covering all points.
 
     This function returns a generator that yields each element of the
-    proximity-net as a list of ids. The ids are the indices of the points in the
-    original dataset.
+    proximity-net as a list of ids. The ids are the indices of the points in
+    the original dataset.
 
     :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
@@ -44,41 +39,25 @@ def proximity_net(X, proximity):
     :rtype: generator of lists of ints
     """
     covered_ids = set()
+    visited_lbls = set()
     proximity.fit(X)
     for i, xi in enumerate(X):
         if i not in covered_ids:
-            neigh_ids = proximity.search(xi)
-            covered_ids.update(neigh_ids)
-            if neigh_ids:
-                yield neigh_ids
-
-
-def proximity_net_landmarks(X, proximity):
-    covered_ids = set()
-    landmark_lbls = set()
-    proximity.fit(X)
-    for i, p in enumerate(X):
-        if i not in covered_ids:
-            b0_ids = proximity.search(p)
-            b0 = [X[j] for j in b0_ids]
-            l1 = proximity.landmarks(b0)
-            lp = proximity.landmarks([p])
-            stack = [(b0_ids, l1, lp)]
+            stack = [xi]
             while stack:
-                b0_ids, l1, lp = stack.pop()
-                covered_ids.update(b0_ids)
-                for lp_label, _ in lp:
-                    landmark_lbls.add(lp_label)
-                for l_label, l in l1:
-                    if l_label not in landmark_lbls:
-                        landmark_lbls.add(l_label)
-                        b1_ids = proximity.search(l)
-                        b1 = [X[j] for j in b1_ids]
-                        l2 = proximity.landmarks(b1)
-                        ll = proximity.landmarks([l])
-                        stack.append((b1_ids, l2, ll))
-                if b0_ids:
-                    yield b0_ids
+                p = stack.pop()
+                neigh_ids = proximity.search(p)
+                covered_ids.update(neigh_ids)
+                inner = proximity.landmarks([p])
+                for lbl, _ in inner:
+                    visited_lbls.add(lbl)
+                outer = proximity.landmarks([X[j] for j in neigh_ids])
+                for lbl, l in outer:
+                    if lbl not in visited_lbls:
+                        visited_lbls.add(lbl)
+                        stack.append(l)
+                if neigh_ids:
+                    yield neigh_ids
 
 
 def _pullback(fun, dist):

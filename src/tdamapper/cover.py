@@ -7,7 +7,7 @@ Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
 from tdamapper.proximity import (
-    proximity_net_landmarks,
+    proximity_net,
     BallProximity,
     KNNProximity,
     CubicalProximity,
@@ -67,7 +67,7 @@ class ProximityCover(Cover):
             indices of the data points.
         :rtype: generator of lists of ints
         """
-        return proximity_net_landmarks(X, self.__proximity)
+        return proximity_net(X, self.__proximity)
 
 
 class BallCover(ProximityCover):
