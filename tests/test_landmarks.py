@@ -14,8 +14,16 @@ class TestLandmarks(unittest.TestCase):
         pn = list(proximity_net(X, prox))
         self.assertEqual(2, len(pn))
     
+    def testExpandSimple(self):
+        X = [0.0, 2.0, 1.45, 1.55]
+        prox = CubicalProximity(
+            n_intervals=2,
+            overlap_frac=0.5)
+        pn = list(proximity_net_landmarks(X, prox))
+        self.assertEqual(3, len(pn))
+
     def testExpand(self):
-        X = np.array([0.0, 2.0, 1.45, 1.55])
+        X = np.array([[0.0], [2.0], [1.45], [1.55]])
         prox = CubicalProximity(
             n_intervals=2,
             overlap_frac=0.5)

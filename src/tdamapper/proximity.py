@@ -55,22 +55,30 @@ def proximity_net(X, proximity):
 
 def proximity_net_landmarks(X, proximity):
     covered_ids = set()
-    landmark_ids = set()
+    landmark_lbls = set()
     proximity.fit(X)
-    for i in range(len(X)):
+    for i, p in enumerate(X):
         if i not in covered_ids:
-            i_landmarks = {i}
-            while i_landmarks:
-                l = i_landmarks.pop()
-                xl = X[l]
-                neigh_ids = proximity.search(xl)
-                covered_ids.update(neigh_ids)
-                landmark_ids.add(l)
-                t = proximity.landmarks(neigh_ids)
-                i_landmarks.update(t)
-                i_landmarks.difference_update(landmark_ids)
-                if neigh_ids:
-                    yield neigh_ids
+            b0_ids = proximity.search(p)
+            b0 = [X[j] for j in b0_ids]
+            l1 = proximity.landmarks(b0)
+            lp = proximity.landmarks([p])
+            stack = [(b0_ids, l1, lp)]
+            while stack:
+                b0_ids, l1, lp = stack.pop()
+                covered_ids.update(b0_ids)
+                for lp_label, _ in lp:
+                    landmark_lbls.add(lp_label)
+                for l_label, l in l1:
+                    if l_label not in landmark_lbls:
+                        landmark_lbls.add(l_label)
+                        b1_ids = proximity.search(l)
+                        b1 = [X[j] for j in b1_ids]
+                        l2 = proximity.landmarks(b1)
+                        ll = proximity.landmarks([l])
+                        stack.append((b1_ids, l2, ll))
+                if b0_ids:
+                    yield b0_ids
 
 
 def _pullback(fun, dist):
@@ -125,7 +133,7 @@ class Proximity:
         """
         return list(range(0, len(self.__X)))
 
-    def landmarks(self, ids):
+    def landmarks(self, X):
         return []
 
 
@@ -332,7 +340,6 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        self.__X = X
         self._set_bounds(X)
         self.__ball_proximity.fit(X)
         return self
@@ -351,16 +358,17 @@ class CubicalProximity(Proximity):
         """
         return self.__ball_proximity.search(self._phi(x))
 
-    def landmarks(self, ids):
-        l_rho = set()
-        l_ids = []
-        for i in ids:
-            xi = self.__X[i]
-            rho_i = tuple((_rho(self._gamma_n(xi)), ))
-            if rho_i not in l_rho:
-                l_rho.add(rho_i)
-                l_ids.append(i)
-        return l_ids
+    def landmarks(self, X):
+        l = set()
+        res = []
+        for x in X:
+            r = _rho(self._gamma_n(np.array(x)))
+            if r.shape:
+                r = tuple(r)
+            if r not in l:
+                l.add(r)
+                res.append((r, x))
+        return res
 
 
 class TrivialProximity(Proximity):
