@@ -18,46 +18,37 @@ from tdamapper.utils.vptree import VPTree as VPT
 
 
 def proximity_net(X, proximity):
-    """
-    Compute proximity-net for a given proximity function.
-
-    This function employs an iterative algorithm to construct a proximity 
-    network. It starts with an arbitrary point and selects a set of landmarks
-    based on proximity. For each landmark, it forms an open cover by invoking
-    the proximity function. The process continues iteratively until no new 
-    landmark is added, ultimately covering all points.
-
+    """ Compute proximity-net for a given proximity function.
+    
+    This function starts by visiting landmarks, building an open cover by
+    calling the proximity function on each of them. The same process then
+    continues on the points of the dataset that haven't been covered yet,
+    until full coverage is obtained.
+    
     This function returns a generator that yields each element of the
     proximity-net as a list of ids. The ids are the indices of the points in
-    the original dataset.
-
+    the original dataset. 
+    
     :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
     :param proximity: A proximity function
     :type proximity: :class:`tdamapper.cover.Proximity`
     :return: A generator of lists of ids.
-    :rtype: generator of lists of ints
-    """
-    covered_ids = set()
-    visited_lbls = set()
+    :rtype: generator of lists of ints """
     proximity.fit(X)
-    for i, xi in enumerate(X):
-        if i not in covered_ids:
-            stack = [xi]
-            while stack:
-                p = stack.pop()
-                neigh_ids = proximity.search(p)
-                covered_ids.update(neigh_ids)
-                inner = proximity.landmarks([p])
-                for lbl, _ in inner:
-                    visited_lbls.add(lbl)
-                outer = proximity.landmarks([X[j] for j in neigh_ids])
-                for lbl, l in outer:
-                    if lbl not in visited_lbls:
-                        visited_lbls.add(lbl)
-                        stack.append(l)
-                if neigh_ids:
-                    yield neigh_ids
+    uncovered_ids = set(range(len(X)))
+    for l in proximity.landmarks(X):
+        neigh_ids = proximity.search(l)
+        uncovered_ids.difference_update(neigh_ids)
+        if neigh_ids:
+            yield neigh_ids
+    while uncovered_ids:
+        i = uncovered_ids.pop()
+        xi = X[i]
+        neigh_ids = proximity.search(xi)
+        uncovered_ids.difference_update(neigh_ids)
+        if neigh_ids:
+            yield neigh_ids
 
 
 def _pullback(fun, dist):
@@ -113,6 +104,14 @@ class Proximity:
         return list(range(0, len(self.__X)))
 
     def landmarks(self, X):
+        """
+        Return a list of landmarks for the given collection.
+
+        :param X: A dataset of n points from which landmarks are extracted.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A list containing elements from X.
+        :rtype: list
+        """
         return []
 
 
@@ -346,7 +345,7 @@ class CubicalProximity(Proximity):
                 r = tuple(r)
             if r not in l:
                 l.add(r)
-                res.append((r, x))
+                res.append(x)
         return res
 
 
