@@ -7,6 +7,7 @@ from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
 from tdamapper.utils.vptree import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree_numba import VPTree as NVPT
 
 
 def dist(x, y):
@@ -45,18 +46,21 @@ class TestBenchmark(unittest.TestCase):
     
     def _testCompare(self, data):
         self.logger.info('[build]')
-        vpt = self._testBuild(data, ' * VPT  ', VPT)
-        fvpt = self._testBuild(data, ' * FVPT ', FVPT)
+        vpt = self._testBuild(data, dist, ' * VPT  ', VPT)
+        fvpt = self._testBuild(data, dist, ' * FVPT ', FVPT)
+        nvpt = self._testBuild(data, dist, ' * NVPT ', NVPT)
         self.logger.info('[ball search]')
         self._testBallSearchNaive(data, ' * Naive ')
         self._testBallSearch(data, ' * VPT  ', vpt)
         self._testBallSearch(data, ' * FVPT ', fvpt)
+        self._testBallSearch(data, ' * NVPT ', nvpt)
         self.logger.info('[knn search]')
         self._testKNNSearchNaive(data, ' * Naive ')
         self._testKNNSearch(data, ' * VPT  ', vpt)
         self._testKNNSearch(data, ' * FVPT ', fvpt)
+        self._testKNNSearch(data, ' * NVPT ', nvpt)
 
-    def _testBuild(self, data, name, builder):
+    def _testBuild(self, data, dist, name, builder):
         t0 = time()
         vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.k, pivoting='furthest')
         t1 = time()
