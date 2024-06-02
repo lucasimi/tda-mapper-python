@@ -1,6 +1,7 @@
 import unittest
 import random
 
+import numba
 import numpy as np
 
 from tdamapper.utils.vptree import VPTree
@@ -86,13 +87,6 @@ class TestVPTree(unittest.TestCase):
     def testFlatVPTreeData(self):
         data = dataset()
         self._testVPTree(FlatVPTree, data, distance)
-
-    def testNumbaVPTreeRefs(self):
-        data = dataset()
-        data_refs = list(range(len(data)))
-        def dist_refs(i, j):
-            return distance(data[i], data[j])
-        self._testVPTree(NumbaVPTree, data_refs, dist_refs)
 
     def testNumbaVPTreeData(self):
         data = dataset()

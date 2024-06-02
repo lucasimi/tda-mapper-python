@@ -1,98 +1,110 @@
 """A class for fast knn and range searches, depending only on a given metric"""
 from random import randrange
 
+import numpy as np
+
 from tdamapper.utils.heap import MaxHeap
 
 
-def partition_tuple(data, start, end, p_ord):
+#@numba.njit
+def partition_tuple(dord, data, start, end, p_ord):
     higher = start
     for j in range(start, end):
-        j_ord, _ = data[j]
+        j_ord = dord[j]
         if j_ord < p_ord:
             data[higher], data[j] = data[j], data[higher]
+            dord[higher], dord[j] = dord[j], dord[higher]
             higher += 1
     return higher
 
 
-def quickselect_tuple(data, start, end, k):
+#@numba.njit
+def quickselect_tuple(dord, data, start, end, k):
     start_, end_, higher = start, end, None
     while higher != k + 1:
-        p_ord, _ = data[k]
+        p_ord = dord[k]
         data[start_], data[k] = data[k], data[start_]
-        higher = partition_tuple(data, start_ + 1, end_, p_ord)
+        dord[start_], dord[k] = dord[k], dord[start_]
+        higher = partition_tuple(dord, data, start_ + 1, end_, p_ord)
         data[start_], data[higher - 1] = data[higher - 1], data[start_]
+        dord[start_], dord[higher - 1] = dord[higher - 1], dord[start_]
         if k <= higher - 1:
             end_ = higher
         else:
             start_ = higher
 
 
+#@numba.njit
+def _build_iter(dord, data, dist, leaf_capacity, leaf_radius):
+    stack = [(0, len(data))]
+    while stack:
+        start, end = stack.pop()
+        if end - start <= leaf_capacity:
+            continue
+        mid = (end + start) // 2
+        _update(dord, data, dist, start, end)
+        v_point = data[start]
+        quickselect_tuple(dord, data, start + 1, end, mid)
+        v_radius = dord[mid]
+        dord[start] = v_radius
+        data[start] = v_point
+        if end - mid > leaf_capacity:
+            stack.append((mid, end))
+        if (mid - start - 1 > leaf_capacity) and (v_radius > leaf_radius):
+            stack.append((start + 1, mid))
+
+#@numba.njit
+def _update(dord, data, dist, start, end):
+    #self.__pivoting(dord, data, start, end)
+    v_point = data[start]
+    for i in range(start, end):
+        point = data[i]
+        dord[i] = dist(v_point, point)
+
+def _pivoting_disabled(dord, data, dist, start, end):
+    pass
+
+def _pivoting_random(dord, data, dist, start, end):
+    pivot = randrange(start, end)
+    if pivot > start:
+        data[start], data[pivot] = data[pivot], data[start]
+        dord[start], dord[pivot] = dord[pivot], dord[start]
+
+def _furthest(dord, data, dist, start, end, i):
+    furthest_dist = 0.0
+    furthest = start
+    i_point = data[i]
+    for j in range(start, end):
+        j_point = data[j]
+        j_dist = dist(i_point, j_point)
+        if j_dist > furthest_dist:
+            furthest = j
+            furthest_dist = j_dist
+    return furthest
+
+def _pivoting_furthest(dord, data, dist, start, end):
+    rnd = randrange(start, end)
+    furthest_rnd = _furthest(dord, data, dist, start, end, rnd)
+    furthest = _furthest(dord, data, dist, start, end, furthest_rnd)
+    if furthest > start:
+        data[start], data[furthest] = data[furthest], data[start]
+        dord[start], dord[furthest] = dord[furthest], dord[start]
+
+
 class VPTree:
 
     def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
+        #self.__distance = numba.njit(distance)
         self.__distance = distance
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
-        self.__pivoting = self._pivoting_disabled
-        if pivoting == 'random':
-            self.__pivoting = self._pivoting_random
-        elif pivoting == 'furthest':
-            self.__pivoting = self._pivoting_furthest
-        self.__dataset = [(0.0, x) for x in dataset]
-        self._build_iter()
-        self.__data = [x for _, x in self.__dataset]
-        self.__dord = [x for x, _ in self.__dataset]
-
-    def _pivoting_disabled(self, start, end):
-        pass
-
-    def _pivoting_random(self, start, end):
-        pivot = randrange(start, end)
-        if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
-
-    def _furthest(self, start, end, i):
-        furthest_dist = 0.0
-        furthest = start
-        _, i_point = self.__dataset[i]
-        for j in range(start, end):
-            _, j_point = self.__dataset[j]
-            j_dist = self.__distance(i_point, j_point)
-            if j_dist > furthest_dist:
-                furthest = j
-                furthest_dist = j_dist
-        return furthest
-
-    def _pivoting_furthest(self, start, end):
-        rnd = randrange(start, end)
-        furthest_rnd = self._furthest(start, end, rnd)
-        furthest = self._furthest(start, end, furthest_rnd)
-        if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
-
-    def _update(self, start, end):
-        self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
-        for i in range(start, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
-
-    def _build_iter(self):
-        stack = [(0, len(self.__dataset))]
-        while stack:
-            start, end = stack.pop()
-            if end - start <= self.__leaf_capacity:
-                continue
-            mid = (end + start) // 2
-            self._update(start, end)
-            _, v_point = self.__dataset[start]
-            quickselect_tuple(self.__dataset, start + 1, end, mid)
-            v_radius, _ = self.__dataset[mid]
-            self.__dataset[start] = (v_radius, v_point)
-            if end - mid > self.__leaf_capacity:
-                stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
-                stack.append((start + 1, mid))
+        #data = np.array([x for x in dataset])
+        data = [x for x in dataset]
+        #dord = np.zeros(len(dataset))
+        dord = [0.0 for _ in dataset]
+        _build_iter(dord, data, self.__distance, leaf_capacity, leaf_radius)
+        self.__dord = np.array(dord)
+        self.__data = np.array(data)
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
