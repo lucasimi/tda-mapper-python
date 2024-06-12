@@ -3,21 +3,31 @@ from random import randrange
 
 from tdamapper.utils.quickselect import quickselect_tuple
 from tdamapper.utils.heap import MaxHeap
+from tdamapper.utils.metrics import get_metric
+
 
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
-        self.__distance = distance
-        self.__dataset = [(0.0, x) for x in dataset]
-        self.__leaf_capacity = leaf_capacity
-        self.__leaf_radius = leaf_radius
-        self.__pivoting = self._pivoting_disabled
-        if pivoting == 'random':
-            self.__pivoting = self._pivoting_random
-        elif pivoting == 'furthest':
-            self.__pivoting = self._pivoting_furthest
+    def __init__(self, X, metric='euclidean', leaf_capacity=1, leaf_radius=0.0, pivoting=None):
+        self.metric = metric
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
+
+    def fit(self, X):
+        self.__distance = get_metric(self.metric)
+        self.__dataset = [(0.0, x) for x in X]
+        self.__leaf_capacity = self.leaf_capacity
+        self.__leaf_radius = self.leaf_radius
+        self.__pivoting = self._pivoting()
         self.__tree = self._build_rec(0, len(self.__dataset), True)
+
+    def _pivoting(self):
+        if self.pivoting == 'random':
+            return self._pivoting_random
+        elif self.pivoting == 'furthest':
+            return self._pivoting_furthest
 
     def _pivoting_disabled(self, start, end):
         pass

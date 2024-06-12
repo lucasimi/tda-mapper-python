@@ -14,7 +14,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 import numpy as np
 
 from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree import VPTree as VPT
+from tdamapper.utils.vptree_hierarchical import VPTree as HVPT
 
 
 def proximity_net(X, proximity):
@@ -138,7 +138,7 @@ class BallProximity(Proximity):
         return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
+        return HVPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def fit(self, X):
         """
@@ -207,7 +207,7 @@ class KNNProximity(Proximity):
         return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+        return HVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         """
