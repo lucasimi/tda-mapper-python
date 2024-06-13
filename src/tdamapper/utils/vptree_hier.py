@@ -6,88 +6,93 @@ from tdamapper.utils.heap import MaxHeap
 from tdamapper.utils.metrics import get_metric
 
 
-
 class VPTree:
 
-    def __init__(self, X, metric='euclidean', leaf_capacity=1, leaf_radius=0.0, pivoting=None):
+    def __init__(self, 
+            metric='euclidean',
+            leaf_capacity=1,
+            leaf_radius=0.0,
+            strategy='random'):
         self.metric = metric
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
-        self.pivoting = pivoting
+        self.strategy = strategy
 
     def fit(self, X):
-        self.__distance = get_metric(self.metric)
-        self.__dataset = [(0.0, x) for x in X]
-        self.__leaf_capacity = self.leaf_capacity
-        self.__leaf_radius = self.leaf_radius
-        self.__pivoting = self._pivoting()
-        self.__tree = self._build_rec(0, len(self.__dataset), True)
+        self.__metric = get_metric(self.metric)
+        self.__arr = [(0.0, x) for x in X]
+        self.__capacity = self.leaf_capacity
+        self.__radius = self.leaf_radius
+        self.__strategy = self._strategy()
+        self.__tree = self._build_rec(0, len(self.__arr), True)
 
-    def _pivoting(self):
-        if self.pivoting == 'random':
-            return self._pivoting_random
-        elif self.pivoting == 'furthest':
-            return self._pivoting_furthest
+    def ball_search(self, point, eps=0.5, inclusive=True):
+        search = _BallSearch(self.__metric, point, eps, inclusive)
+        self._search_rec(self.__tree, search)
+        return search.get_items()
 
-    def _pivoting_disabled(self, start, end):
+    def knn_search(self, point, k=1):
+        search = _KNNSearch(self.__metric, point, k)
+        self._search_rec(self.__tree, search)
+        return search.get_items()
+
+    def _strategy(self):
+        if self.strategy == 'random':
+            return self._strategy_random
+        elif self.strategy == 'furthest':
+            return self._strategy_furthest
+        elif self.strategy == 'fixed':
+            return self._strategy_fixed
+
+    def _strategy_fixed(self, start, end):
         pass
 
-    def _pivoting_random(self, start, end):
+    def _strategy_random(self, start, end):
         pivot = randrange(start, end)
         if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+            self.__arr[start], self.__arr[pivot] = self.__arr[pivot], self.__arr[start]
+
+    def _strategy_furthest(self, start, end):
+        rnd = randrange(start, end)
+        furthest_rnd = self._furthest(start, end, rnd)
+        furthest = self._furthest(start, end, furthest_rnd)
+        if furthest > start:
+            self.__arr[start], self.__arr[furthest] = self.__arr[furthest], self.__arr[start]
 
     def _furthest(self, start, end, i):
         furthest_dist = 0.0
         furthest = start
-        _, i_point = self.__dataset[i]
+        _, i_point = self.__arr[i]
         for j in range(start, end):
-            _, j_point = self.__dataset[j]
-            j_dist = self.__distance(i_point, j_point)
+            _, j_point = self.__arr[j]
+            j_dist = self.__metric(i_point, j_point)
             if j_dist > furthest_dist:
                 furthest = j
                 furthest_dist = j_dist
         return furthest
 
-    def _pivoting_furthest(self, start, end):
-        rnd = randrange(start, end)
-        furthest_rnd = self._furthest(start, end, rnd)
-        furthest = self._furthest(start, end, furthest_rnd)
-        if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
-
-    def _update(self, start, end):
-        self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
+    def _update_arr(self, start, end):
+        self.__strategy(start, end)
+        _, v_point = self.__arr[start]
         for i in range(start + 1, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
+            _, point = self.__arr[i]
+            self.__arr[i] = self.__metric(v_point, point), point
 
     def _build_rec(self, start, end, update):
-        if end - start <= self.__leaf_capacity:
-            return _Tree([x for _, x in self.__dataset[start:end]])
+        if end - start <= self.__capacity:
+            return _Tree([x for _, x in self.__arr[start:end]])
         mid = (end + start) // 2
         if update:
-            self._update(start, end)
-        _, v_point = self.__dataset[start]
-        quickselect_tuple(self.__dataset, start + 1, end, mid)
-        v_radius, _ = self.__dataset[mid]
-        if v_radius <= self.__leaf_radius:
-            left = _Tree([x for _, x in self.__dataset[start:mid]])
+            self._update_arr(start, end)
+        _, v_point = self.__arr[start]
+        quickselect_tuple(self.__arr, start + 1, end, mid)
+        v_radius, _ = self.__arr[mid]
+        if v_radius <= self.__radius:
+            left = _Tree([x for _, x in self.__arr[start:mid]])
         else:
             left = self._build_rec(start, mid, False)
         right = self._build_rec(mid, end, True)
         return _Tree(_Ball(v_point, v_radius), left, right)
-
-    def ball_search(self, point, eps, inclusive=True):
-        search = _BallSearch(self.__distance, point, eps, inclusive)
-        self._search_rec(self.__tree, search)
-        return search.get_items()
-
-    def knn_search(self, point, k):
-        search = _KNNSearch(self.__distance, point, k)
-        self._search_rec(self.__tree, search)
-        return search.get_items()
 
     def _search_rec(self, tree, search):
         if tree.is_terminal():
@@ -96,7 +101,7 @@ class VPTree:
             v_ball = tree.get_data()
             v_radius, v_point = v_ball.get_radius(), v_ball.get_center()
             point = search.get_center()
-            dist = self.__distance(v_point, point)
+            dist = self.__metric(v_point, point)
             if dist <= v_radius:
                 fst, snd = tree.get_left(), tree.get_right()
             else:

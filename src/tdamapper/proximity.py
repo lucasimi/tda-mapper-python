@@ -13,8 +13,8 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree_hierarchical import VPTree as HVPT
+from tdamapper.utils.vptree import VPTree
+from tdamapper.utils.metrics import get_metric
 
 
 def proximity_net(X, proximity):
@@ -127,18 +127,10 @@ class BallProximity(Proximity):
     :type flat: bool, optional
     """
 
-    def __init__(self, radius, metric, flat=True):
-        self.__metric = lambda x, y: metric(x[1], y[1])
-        self.__radius = radius
-        self.__data = None
-        self.__vptree = None
-        self.__flat = flat
-
-    def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
-
-    def __vpt(self):
-        return HVPT(self.__metric, self.__data, leaf_radius=self.__radius)
+    def __init__(self, radius, metric='euclidean', **kwargs):
+        self.radius = radius
+        self.metric = metric
+        self.kwargs = kwargs
 
     def fit(self, X):
         """
@@ -154,8 +146,15 @@ class BallProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__radius = self.radius
+        self.__metric = get_metric(self.metric)
+        kw = {}.update(**self.kwargs)
+        kw.update(dict(
+            metric=lambda x, y: self.__metric(x[1], y[1]),
+            leaf_radius=self.__radius))
+        self.__vptree = VPTree(**kw)
+        XX = list(enumerate(X))
+        self.__vptree.fit(XX)
         return self
 
     def search(self, x):
@@ -196,18 +195,10 @@ class KNNProximity(Proximity):
     :type flat: bool, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True):
-        self.__neighbors = neighbors
-        self.__metric = _pullback(lambda x: x[1], metric)
-        self.__data = None
-        self.__vptree = None
-        self.__flat = flat
-
-    def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
-
-    def __vpt(self):
-        return HVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+    def __init__(self, neighbors, metric='euclidean', **kwargs):
+        self.neighbors = neighbors
+        self.metric = metric
+        self.kwargs = kwargs
 
     def fit(self, X):
         """
@@ -223,8 +214,16 @@ class KNNProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__neighbors = self.neighbors
+        self.__metric = get_metric(self.metric)
+        kw = {}
+        kw.update(**self.kwargs)
+        kw.update(dict(
+            metric=lambda x, y: self.__metric(x[1], y[1]),
+            leaf_capacity=self.__neighbors))
+        self.__vptree = VPTree(**kw)
+        XX = list(enumerate(X))
+        self.__vptree.fit(XX)
         return self
 
     def search(self, x):

@@ -3,91 +3,105 @@ from random import randrange
 
 from tdamapper.utils.quickselect import quickselect_tuple
 from tdamapper.utils.heap import MaxHeap
+from tdamapper.utils.metrics import get_metric
 
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
-        self.__distance = distance
-        self.__dataset = [(0.0, x) for x in dataset]
-        self.__leaf_capacity = leaf_capacity
-        self.__leaf_radius = leaf_radius
-        self.__pivoting = self._pivoting_disabled
-        if pivoting == 'random':
-            self.__pivoting = self._pivoting_random
-        elif pivoting == 'furthest':
-            self.__pivoting = self._pivoting_furthest
-        self._build_iter()
+    def __init__(self, 
+            metric='euclidean',
+            leaf_capacity=1,
+            leaf_radius=0.0,
+            strategy='random'):
+        self.metric = metric
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.strategy = strategy
 
-    def _pivoting_disabled(self, start, end):
+    def fit(self, X):
+        self.__metric = get_metric(self.metric)
+        self.__arr = [(0.0, x) for x in X]
+        self.__capacity = leaf_capacity
+        self.__radius = leaf_radius
+        self.__strategy = self._strategy()
+
+    def ball_search(self, point, eps=0.5, inclusive=True):
+        search = _BallSearch(self.__metric, point, eps, inclusive)
+        stack = [_BallSearchVisit(0, len(self.__arr), float('inf'))]
+        return self._search_iter(search, stack)
+
+    def knn_search(self, point, k=1):
+        search = _KNNSearch(self.__metric, point, k)
+        stack = [_KNNSearchVisitPre(0, len(self.__arr), float('inf'))]
+        return self._search_iter(search, stack)
+
+    def _strategy(self):
+        if self.strategy == 'random':
+            return self._strategy_random
+        elif self.strategy == 'furthest':
+            return self._strategy_furthest
+        elif self.strategy == 'fixed':
+            return self._strategy_fixed
+
+    def _strategy_fixed(self, start, end):
         pass
 
-    def _pivoting_random(self, start, end):
+    def _strategy_random(self, start, end):
         pivot = randrange(start, end)
         if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+            self.__arr[start], self.__arr[pivot] = self.__arr[pivot], self.__arr[start]
+
+    def _strategy_furthest(self, start, end):
+        rnd = randrange(start, end)
+        furthest_rnd = self._furthest(start, end, rnd)
+        furthest = self._furthest(start, end, furthest_rnd)
+        if furthest > start:
+            self.__arr[start], self.__arr[furthest] = self.__arr[furthest], self.__arr[start]
 
     def _furthest(self, start, end, i):
         furthest_dist = 0.0
         furthest = start
-        _, i_point = self.__dataset[i]
+        _, i_point = self.__arr[i]
         for j in range(start, end):
-            _, j_point = self.__dataset[j]
-            j_dist = self.__distance(i_point, j_point)
+            _, j_point = self.__arr[j]
+            j_dist = self.__metric(i_point, j_point)
             if j_dist > furthest_dist:
                 furthest = j
                 furthest_dist = j_dist
         return furthest
 
-    def _pivoting_furthest(self, start, end):
-        rnd = randrange(start, end)
-        furthest_rnd = self._furthest(start, end, rnd)
-        furthest = self._furthest(start, end, furthest_rnd)
-        if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
-
-    def _update(self, start, end):
-        self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
+    def _update_arr(self, start, end):
+        self.__strategy(start, end)
+        _, v_point = self.__arr[start]
         for i in range(start, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
+            _, point = self.__arr[i]
+            self.__arr[i] = self.__metric(v_point, point), point
 
     def _build_iter(self):
-        stack = [(0, len(self.__dataset))]
+        stack = [(0, len(self.__arr))]
         while stack:
             start, end = stack.pop()
-            if end - start <= self.__leaf_capacity:
+            if end - start <= self.__capacity:
                 continue
             mid = (end + start) // 2
-            self._update(start, end)
-            _, v_point = self.__dataset[start]
-            quickselect_tuple(self.__dataset, start + 1, end, mid)
-            v_radius, _ = self.__dataset[mid]
-            self.__dataset[start] = (v_radius, v_point)
-            if end - mid > self.__leaf_capacity:
+            self._update_arr(start, end)
+            _, v_point = self.__arr[start]
+            quickselect_tuple(self.__arr, start + 1, end, mid)
+            v_radius, _ = self.__arr[mid]
+            self.__arr[start] = (v_radius, v_point)
+            if end - mid > self.__capacity:
                 stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
+            if (mid - start - 1 > self.__capacity) and (v_radius > self.__radius):
                 stack.append((start + 1, mid))
-
-    def ball_search(self, point, eps, inclusive=True):
-        search = _BallSearch(self.__distance, point, eps, inclusive)
-        stack = [_BallSearchVisit(0, len(self.__dataset), float('inf'))]
-        return self._search_iter(search, stack)
-
-    def knn_search(self, point, neighbors):
-        search = _KNNSearch(self.__distance, point, neighbors)
-        stack = [_KNNSearchVisitPre(0, len(self.__dataset), float('inf'))]
-        return self._search_iter(search, stack)
 
     def _search_iter(self, search, stack):
         while stack:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
-            if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
-                search.process_all([x for _, x in self.__dataset[start:end]])
+            if (end - start <= self.__capacity) or (m_radius <= self.__radius):
+                search.process_all([x for _, x in self.__arr[start:end]])
             else:
-                visit.after(self.__dataset, stack, search)
+                visit.after(self.__arr, stack, search)
         return search.get_items()
 
 
