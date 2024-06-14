@@ -83,9 +83,8 @@ class BallCover(ProximityCover):
         :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
         in the dataset.
     :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.proximity.BallProximity`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, radius, metric, **kwargs):
@@ -110,9 +109,8 @@ class KNNCover(ProximityCover):
         :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
         in the dataset.
     :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.proximity.KNNProximity`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, neighbors, metric, **kwargs):
@@ -134,9 +132,8 @@ class CubicalCover(ProximityCover):
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 1.0).
     :type overlap_frac: float
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.proximity.CubicalProximity`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, n_intervals, overlap_frac, **kwargs):

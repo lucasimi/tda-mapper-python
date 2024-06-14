@@ -122,9 +122,8 @@ class BallProximity(Proximity):
         :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
         in the dataset.
     :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.utils.vptree.VPTree`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, radius=1.0, metric='euclidean', **kwargs):
@@ -191,9 +190,8 @@ class KNNProximity(Proximity):
         :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
         in the dataset.
     :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.utils.vptree.VPTree`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, neighbors=1, metric='euclidean', **kwargs):
@@ -260,9 +258,8 @@ class CubicalProximity(Proximity):
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 1.0).
     :type overlap_frac: float
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param kwargs: Additional arguments for `tdamapper.utils.vptree.VPTree`.
+    :type kwargs: dict, optional
     """
 
     def __init__(self, n_intervals=10, overlap_frac=0.25, **kwargs):
