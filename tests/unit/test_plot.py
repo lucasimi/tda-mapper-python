@@ -14,7 +14,7 @@ def dist(x, y):
 
 class TestMapperPlot(unittest.TestCase):
 
-    def testTwoConnectedClusters(self):
+    def test_two_connected_clusters(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]

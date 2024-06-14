@@ -13,18 +13,18 @@ def maxheap(data):
 
 class TestMaxHeap(unittest.TestCase):
 
-    def testEmpty(self):
+    def test_empty(self):
         m = MaxHeap()
         self.assertEqual(0, len(m))
 
-    def testMax(self):
+    def test_max(self):
         data = list(range(10))
         random.shuffle(data)
         m = maxheap(data)
         self.assertEqual((9, 9), m.top())
         self.assertEqual(10, len(m))
 
-    def testMaxRandom(self):
+    def test_max_random(self):
         data = random.sample(list(range(1000)), 100)
         m = maxheap(data)
         self.assertEqual(100, len(m))

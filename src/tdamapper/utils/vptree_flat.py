@@ -21,9 +21,10 @@ class VPTree:
     def fit(self, X):
         self.__metric = get_metric(self.metric)
         self.__arr = [(0.0, x) for x in X]
-        self.__capacity = leaf_capacity
-        self.__radius = leaf_radius
+        self.__capacity = self.leaf_capacity
+        self.__radius = self.leaf_radius
         self.__strategy = self._strategy()
+        self._build_iter()
 
     def ball_search(self, point, eps=0.5, inclusive=True):
         search = _BallSearch(self.__metric, point, eps, inclusive)

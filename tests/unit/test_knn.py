@@ -98,7 +98,7 @@ def euclidean(x, y):
 
 class TestKNN(unittest.TestCase):
 
-    def testKNNSearch(self):
+    def test_knn_search(self):
         knn_prox = KNNProximity(neighbors=5, metric=euclidean)
         knn_prox.fit(X)
         neigh_ids = knn_prox.search(x)
@@ -106,17 +106,19 @@ class TestKNN(unittest.TestCase):
         x_dist = euclidean(x, X[5])
         self.assertTrue(x_dist in dists)
 
-    def testVPTree(self):
-        vptree = VPTree(euclidean, X[:80], leaf_capacity=5)
+    def test_vptree(self):
+        vptree = VPTree(metric=euclidean, leaf_capacity=5)
+        vptree.fit(X[:80])
         neigh = vptree.knn_search(x, 5)
         dists = [euclidean(x, y) for y in neigh]
         x_dist = euclidean(x, X[5])
         self.check_vptree(vptree)
         self.assertTrue(x_dist in dists)
 
-    def testVPTreeSimple(self):
+    def test_vptree_simple(self):
         XX = np.array([np.array([x, x/2]) for x in range(30)])
-        vptree = VPTree(euclidean, XX, leaf_capacity=5, leaf_radius=0.0)
+        vptree = VPTree(metric=euclidean, leaf_capacity=5, leaf_radius=0.0)
+        vptree.fit(XX)
         xx = np.array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
         dists = [euclidean(xx, y) for y in neigh]
@@ -124,10 +126,10 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(0.0 in dists)
 
     def check_vptree(self, vpt):
-        data = vpt._VPTree__dataset
-        dist = vpt._VPTree__distance
-        leaf_capacity = vpt._VPTree__leaf_capacity
-        leaf_radius = vpt._VPTree__leaf_radius
+        data = vpt._VPTree__arr
+        dist = vpt._VPTree__metric
+        leaf_capacity = vpt._VPTree__capacity
+        leaf_radius = vpt._VPTree__radius
         def check_sub(start, end):
             v_radius, v_point = data[start]
             mid = (start + end) // 2

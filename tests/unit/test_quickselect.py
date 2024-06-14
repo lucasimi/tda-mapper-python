@@ -6,7 +6,7 @@ from tdamapper.utils.quickselect import partition, quickselect
 
 class TestQuickSelect(unittest.TestCase):
 
-    def testPartition(self):
+    def test_partition(self):
         n = 1000
         arr = [random.randint(0, n - 1) for _ in range(n)]
         for choice in range(n):
@@ -16,7 +16,7 @@ class TestQuickSelect(unittest.TestCase):
             for i in range(h, n):
                 self.assertTrue(arr[i] >= choice)
 
-    def testQuickSelect(self):
+    def test_quickselect(self):
         n = 1000
         arr = [random.randint(0, n - 1) for _ in range(n)]
         for choice in range(n):

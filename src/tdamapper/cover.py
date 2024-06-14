@@ -88,8 +88,11 @@ class BallCover(ProximityCover):
     :type flat: bool, optional
     """
 
-    def __init__(self, radius, metric, flat=True):
-        prox = BallProximity(radius=radius, metric=metric, flat=flat)
+    def __init__(self, radius, metric, **kwargs):
+        prox = BallProximity(
+            radius=radius,
+            metric=metric,
+            **kwargs)
         super().__init__(proximity=prox)
 
 
@@ -112,8 +115,11 @@ class KNNCover(ProximityCover):
     :type flat: bool, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True):
-        prox = KNNProximity(neighbors=neighbors, metric=metric, flat=flat)
+    def __init__(self, neighbors, metric, **kwargs):
+        prox = KNNProximity(
+            neighbors=neighbors,
+            metric=metric,
+            **kwargs)
         super().__init__(proximity=prox)
 
 
@@ -133,11 +139,11 @@ class CubicalCover(ProximityCover):
     :type flat: bool, optional
     """
 
-    def __init__(self, n_intervals, overlap_frac, flat=True):
+    def __init__(self, n_intervals, overlap_frac, **kwargs):
         prox = CubicalProximity(
-            n_intervals=n_intervals, 
+            n_intervals=n_intervals,
             overlap_frac=overlap_frac,
-            flat=flat)
+            **kwargs)
         super().__init__(proximity=prox)
 
 

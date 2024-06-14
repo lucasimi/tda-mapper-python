@@ -127,7 +127,7 @@ class BallProximity(Proximity):
     :type flat: bool, optional
     """
 
-    def __init__(self, radius, metric='euclidean', **kwargs):
+    def __init__(self, radius=1.0, metric='euclidean', **kwargs):
         self.radius = radius
         self.metric = metric
         self.kwargs = kwargs
@@ -147,10 +147,11 @@ class BallProximity(Proximity):
         :rtype: self
         """
         self.__radius = self.radius
-        self.__metric = get_metric(self.metric)
-        kw = {}.update(**self.kwargs)
+        kw = {}
+        kw.update(**self.kwargs)
+        _metric = get_metric(self.metric)
         kw.update(dict(
-            metric=lambda x, y: self.__metric(x[1], y[1]),
+            metric=lambda x, y: _metric(x[1], y[1]),
             leaf_radius=self.__radius))
         self.__vptree = VPTree(**kw)
         XX = list(enumerate(X))
@@ -195,7 +196,7 @@ class KNNProximity(Proximity):
     :type flat: bool, optional
     """
 
-    def __init__(self, neighbors, metric='euclidean', **kwargs):
+    def __init__(self, neighbors=1, metric='euclidean', **kwargs):
         self.neighbors = neighbors
         self.metric = metric
         self.kwargs = kwargs
@@ -215,11 +216,11 @@ class KNNProximity(Proximity):
         :rtype: self
         """
         self.__neighbors = self.neighbors
-        self.__metric = get_metric(self.metric)
         kw = {}
         kw.update(**self.kwargs)
+        _metric = get_metric(self.metric)
         kw.update(dict(
-            metric=lambda x, y: self.__metric(x[1], y[1]),
+            metric=lambda x, y: _metric(x[1], y[1]),
             leaf_capacity=self.__neighbors))
         self.__vptree = VPTree(**kw)
         XX = list(enumerate(X))
@@ -264,14 +265,14 @@ class CubicalProximity(Proximity):
     :type flat: bool, optional
     """
 
-    def __init__(self, n_intervals, overlap_frac, flat=True):
+    def __init__(self, n_intervals=10, overlap_frac=0.25, **kwargs):
         self.__n_intervals = n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
         metric = _pullback(self._gamma_n, _l_infty)
-        self.__ball_proximity = BallProximity(self.__radius, metric, flat=flat)
+        self.__ball_proximity = BallProximity(self.__radius, metric, **kwargs)
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__minimum) / self.__delta

@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+
 from sklearn.utils import check_X_y
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.cluster import KMeans
@@ -17,10 +18,8 @@ from tdamapper.cover import (
     CubicalCover
 )
 
-
 def euclidean(x, y):
     return np.linalg.norm(x - y)
-
 
 class Estimator:
 
@@ -97,17 +96,17 @@ class TrivialClusteringEstimator(Estimator):
 
 class TestSklearn(unittest.TestCase):
 
-    def testClustering(self):
+    def test_clustering(self):
         check_estimator(TrivialClusteringEstimator())
 
-    def testBall(self):
+    def test_ball(self):
         check_estimator(MapperClusteringEstimator(cover='ball'))
 
-    def testKNN(self):
+    def test_knn(self):
         check_estimator(MapperClusteringEstimator(cover='knn'))
 
-    def testCubical(self):
+    def test_cubical(self):
         check_estimator(MapperClusteringEstimator())
 
-    def testPermissive(self):
+    def test_permissive(self):
         check_estimator(PermissiveKMeans())

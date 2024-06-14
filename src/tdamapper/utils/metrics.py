@@ -28,6 +28,8 @@ def get_metric(metric, **kwargs):
                 return minkowski()
         elif metric == 'chebyshev':
             return chebyshev()
+        else:
+            raise ValueError('metric must be known-string')
     elif callable(metric):
         return metric
     else:
