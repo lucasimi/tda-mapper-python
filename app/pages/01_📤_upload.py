@@ -6,7 +6,9 @@ import numpy as np
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 
-from common import S_RESULTS, fix_data, V_DATA_SUMMARY_FEAT, V_DATA_SUMMARY_HIST, V_DATA_SUMMARY_COLOR
+from common import S_RESULTS, fix_data, V_DATA_SUMMARY_FEAT, V_DATA_SUMMARY_HIST, V_DATA_SUMMARY_COLOR, initialize
+from common import set_page_config, set_sidebar_headings
+
 
 def lp_metric(p):
     return lambda x, y: np.linalg.norm(x - y, ord=p)
@@ -56,7 +58,6 @@ def _update_data(data_source):
 
 
 def data_section():
-    st.subheader('📊 Data', anchor=False)
     data_source_type = st.selectbox(
         'Source',
         options=['Example', 'OpenML', 'CSV'])
@@ -74,18 +75,21 @@ def data_section():
 
 
 def summary_output():
-    df_summary = st.session_state[S_RESULTS].df_summary[[
-        V_DATA_SUMMARY_FEAT,
-        V_DATA_SUMMARY_HIST
-    ]]
+    
+    df_summary = st.session_state[S_RESULTS].df_summary
+    if not df_summary.empty:
+        df_summary = df_summary[[
+            V_DATA_SUMMARY_FEAT,
+            V_DATA_SUMMARY_HIST
+        ]]
     st.data_editor(
         df_summary,
         height=400,
         hide_index=True,
         use_container_width=True,
         column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
-                width='small'),
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
+                width='large'),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
                 width='small',
                 disabled=True),
@@ -118,6 +122,7 @@ def data_download_button():
 
 
 def main():
+    initialize()
     with st.sidebar:
         data_section()
     data_caption()

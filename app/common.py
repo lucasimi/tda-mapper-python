@@ -161,8 +161,15 @@ def set_page_config():
 
 
 def set_sidebar_headings():
-    with st.sidebar:
-        st.image(LOGO_URL)
-        st.markdown('#')
-        st.markdown(DESCRIPTION)
-        st.markdown('#')
+    #with st.sidebar:
+    st.image(LOGO_URL)
+    st.markdown('#')
+    #st.markdown(DESCRIPTION)
+    #st.markdown('#')
+
+
+def initialize():
+    set_page_config()
+    set_sidebar_headings()
+    if S_RESULTS not in st.session_state:
+        st.session_state[S_RESULTS] = Results()

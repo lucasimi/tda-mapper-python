@@ -21,6 +21,8 @@ from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
 
+from common import initialize, set_page_config, set_sidebar_headings
+
 
 MAX_NODES = 1000
 
@@ -303,7 +305,6 @@ def _update_fig(seed, colors):
 
 
 def rendering_section():
-    st.subheader('🔮 Mapper Graph', anchor=False)
     df_summary = st.session_state[S_RESULTS].df_summary
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
@@ -315,7 +316,7 @@ def rendering_section():
         help='Changing this value alters the shape')
     data_edit = st.data_editor(
         df_summary,
-        height=300,
+        height=600,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
@@ -353,17 +354,20 @@ def rendering_output():
     with st.container(border=False):
         st.plotly_chart(
             mapper_fig,
-            height=800,
+            height=600,
             use_container_width=True)
 
 
 def main():
+    initialize()
     with st.sidebar:
         settings_section()
         st.markdown('#')
-    with st.popover('Draw'):
+    col_0, col_1 = st.columns([1, 4])
+    with col_0:
         rendering_section()
-    rendering_output()
+    with col_1:
+        rendering_output()
 
 
 main()
