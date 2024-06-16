@@ -84,12 +84,12 @@ def summary_output():
         ]]
     st.data_editor(
         df_summary,
-        height=400,
+        height=350,
         hide_index=True,
         use_container_width=True,
         column_config={
             V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='large'),
+                width='small'),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
                 width='small',
                 disabled=True),
@@ -107,7 +107,7 @@ def data_output():
     st.dataframe(
         df_all.head(50),
         use_container_width=True,
-        height=400)
+        height=350)
 
 
 def data_download_button():

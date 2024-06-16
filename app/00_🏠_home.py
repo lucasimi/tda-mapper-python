@@ -6,6 +6,7 @@ from common import set_page_config, set_sidebar_headings, S_RESULTS, Results, in
 
 def main():
     initialize()
+    set_sidebar_headings()
 
 
 main()

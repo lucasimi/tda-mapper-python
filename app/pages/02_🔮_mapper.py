@@ -214,13 +214,26 @@ def _update_mapper(X, lens, cover, clustering):
 
 def settings_section():
     X = st.session_state[S_RESULTS].X
-    lens = None
-    cover = None
-    clustering = None
     lens_type = st.selectbox(
         '🔎 Lens',
         options=[V_LENS_IDENTITY, V_LENS_PCA],
         index=1)
+    cover_type = st.selectbox(
+        '🌐 Cover',
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        index=2)
+    clustering_type = st.selectbox(
+        '🧮 Clustering',
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        index=1)
+    return lens_type, cover_type, clustering_type
+
+
+def tuning_section(lens_type, cover_type, clustering_type):
+    X = st.session_state[S_RESULTS].X
+    lens = None
+    cover = None
+    clustering = None
     if lens_type == V_LENS_IDENTITY:
         lens = X
     elif lens_type == V_LENS_PCA:
@@ -233,10 +246,6 @@ def settings_section():
             lens = X
         else:
             lens = PCA(n_components=pca_n).fit_transform(X)
-    cover_type = st.selectbox(
-        '🌐 Cover',
-        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
-        index=2)
     if cover_type == V_COVER_TRIVIAL:
         cover = TrivialCover()
     elif cover_type == V_COVER_BALL:
@@ -260,10 +269,6 @@ def settings_section():
             min_value=0.0,
             max_value=1.0)
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
-    clustering_type = st.selectbox(
-        '🧮 Clustering',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
-        index=1)
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
@@ -278,6 +283,7 @@ def settings_section():
         disabled=X.size == 0)
     if run_button:
         _update_mapper(X, lens, cover, clustering)
+
 
 
 def settings_output():
@@ -316,7 +322,7 @@ def rendering_section():
         help='Changing this value alters the shape')
     data_edit = st.data_editor(
         df_summary,
-        height=600,
+        height=350,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
@@ -354,18 +360,19 @@ def rendering_output():
     with st.container(border=False):
         st.plotly_chart(
             mapper_fig,
-            height=600,
+            height=450,
             use_container_width=True)
 
 
 def main():
     initialize()
     with st.sidebar:
-        settings_section()
-        st.markdown('#')
+        lens, cover, clust = settings_section()
     col_0, col_1 = st.columns([1, 4])
     with col_0:
-        rendering_section()
+        tuning_section(lens, cover, clust)
+        with st.popover('🎨 Settings', use_container_width=True):
+            rendering_section()
     with col_1:
         rendering_output()
 
