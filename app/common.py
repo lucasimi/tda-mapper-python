@@ -102,7 +102,41 @@ class Results:
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
         self.mapper_fig = go.Figure()
+        self._init_fig()
         self.auto_rendering = None
+
+    def _init_fig(self):
+        fig = go.Figure(
+            data=[go.Scatter3d(
+                x=[],
+                y=[],
+                z=[],
+                mode='markers'
+            )])
+        fig.update_layout(
+        scene=dict(
+            xaxis=dict(
+                showgrid=True,
+                zeroline=True,
+                showline=True,
+                ticks='outside'
+            ),
+            yaxis=dict(
+                showgrid=True,
+                zeroline=True,
+                showline=True,
+                ticks='outside'
+            ),
+            zaxis=dict(
+                showgrid=True,
+                zeroline=True,
+                showline=True,
+                ticks='outside'
+            )),
+        )
+
+        self.mapper_fig = fig
+
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
@@ -158,6 +192,15 @@ def set_page_config():
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT})
+
+
+def get_data_caption(df_X, df_y):
+    if df_X.empty:
+        return 'No data source found'
+    if df_y.empty:
+        return f'{len(df_X)} instances, {len(df_X.columns)} features'
+    return f'''{len(df_X)} instances,
+        {len(df_X.columns)} + {len(df_y.columns)} features'''
 
 
 def set_sidebar_headings():

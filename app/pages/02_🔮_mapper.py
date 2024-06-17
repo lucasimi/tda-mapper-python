@@ -21,7 +21,7 @@ from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
 
-from common import initialize, set_page_config, set_sidebar_headings
+from common import initialize, set_page_config, set_sidebar_headings, get_data_caption
 
 
 MAX_NODES = 1000
@@ -212,6 +212,77 @@ def _update_mapper(X, lens, cover, clustering):
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
+def lens_section():
+    lens = None
+    X = st.session_state[S_RESULTS].X
+    lens_type = st.selectbox(
+        '🔎 Lens',
+        options=[V_LENS_IDENTITY, V_LENS_PCA],
+        index=1)
+    if lens_type == V_LENS_IDENTITY:
+        lens = X
+    elif lens_type == V_LENS_PCA:
+        pca_n = st.number_input(
+            '🔎 PCA Components',
+            value=2,
+            min_value=1)
+        _, n_feats = X.shape
+        if pca_n > n_feats:
+            lens = X
+        else:
+            lens = PCA(n_components=pca_n).fit_transform(X)
+    return lens
+
+
+def cover_section():
+    cover = None
+    cover_type = st.selectbox(
+        '🌐 Cover',
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        index=2)
+    if cover_type == V_COVER_TRIVIAL:
+        cover = TrivialCover()
+    elif cover_type == V_COVER_BALL:
+        ball_r = st.number_input(
+            '🌐 Radius',
+            value=100.0,
+            min_value=0.0)
+        ball_metric_p = st.number_input(
+            '🌐 Lp Metric',
+            value=2,
+            min_value=1)
+        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
+    elif cover_type == V_COVER_CUBICAL:
+        cubical_n = st.number_input(
+            '🌐 Intervals',
+            value=10,
+            min_value=0)
+        cubical_p = st.number_input(
+            '🌐 Overlap Fraction',
+            value=0.25,
+            min_value=0.0,
+            max_value=1.0)
+        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    return cover
+
+
+def clustering_section():
+    clustering = None
+    clustering_type = st.selectbox(
+        '🧮 Clustering',
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        index=1)
+    if clustering_type == V_CLUSTERING_TRIVIAL:
+        clustering = TrivialClustering()
+    elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+        clust_n = st.number_input(
+            '🧮 Clusters',
+            value=2,
+            min_value=1)
+        clustering = AgglomerativeClustering(n_clusters=clust_n)
+    return clustering
+
+
 def settings_section():
     X = st.session_state[S_RESULTS].X
     lens_type = st.selectbox(
@@ -229,6 +300,16 @@ def settings_section():
     return lens_type, cover_type, clustering_type
 
 
+def run_mapper_section(lens, cover, clustering):
+    X = st.session_state[S_RESULTS].X
+    run_button = st.button(
+        '🚀 Run Mapper',
+        use_container_width=True,
+        disabled=X.size == 0)
+    if run_button:
+        _update_mapper(X, lens, cover, clustering)
+
+
 def tuning_section(lens_type, cover_type, clustering_type):
     X = st.session_state[S_RESULTS].X
     lens = None
@@ -238,7 +319,7 @@ def tuning_section(lens_type, cover_type, clustering_type):
         lens = X
     elif lens_type == V_LENS_PCA:
         pca_n = st.number_input(
-            'PCA Components',
+            '🔎 PCA Components',
             value=2,
             min_value=1)
         _, n_feats = X.shape
@@ -250,21 +331,21 @@ def tuning_section(lens_type, cover_type, clustering_type):
         cover = TrivialCover()
     elif cover_type == V_COVER_BALL:
         ball_r = st.number_input(
-            'Radius',
+            '🌐 Radius',
             value=100.0,
             min_value=0.0)
         ball_metric_p = st.number_input(
-            'Lp Metric',
+            '🌐 Lp Metric',
             value=2,
             min_value=1)
         cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
     elif cover_type == V_COVER_CUBICAL:
         cubical_n = st.number_input(
-            'Intervals',
+            '🌐 Intervals',
             value=10,
             min_value=0)
         cubical_p = st.number_input(
-            'Overlap Fraction',
+            '🌐 Overlap Fraction',
             value=0.25,
             min_value=0.0,
             max_value=1.0)
@@ -273,7 +354,7 @@ def tuning_section(lens_type, cover_type, clustering_type):
         clustering = TrivialClustering()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
         clust_n = st.number_input(
-            'Clusters',
+            '🧮 Clusters',
             value=2,
             min_value=1)
         clustering = AgglomerativeClustering(n_clusters=clust_n)
@@ -297,13 +378,14 @@ def settings_output():
             config = {'displayModeBar': False})
 
 
-def _update_fig(seed, colors):
+def _update_fig(seed, colors, agg):
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
     if mapper_plot is None:
         return
     mapper_plot.update(
         colors=colors,
-        seed=seed)
+        seed=seed,
+        agg=agg)
     mapper_fig = mapper_plot.plot()
     mapper_fig.update_layout(uirevision='constant')
     st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
@@ -316,18 +398,14 @@ def rendering_section():
     df_y = st.session_state[S_RESULTS].df_y
     X = st.session_state[S_RESULTS].X
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    seed = st.number_input(
-        'Seed',
-        value=VD_SEED, 
-        help='Changing this value alters the shape')
     data_edit = st.data_editor(
         df_summary,
-        height=350,
+        height=250,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
         column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
                 width='small'),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
                 width='small',
@@ -336,6 +414,18 @@ def rendering_section():
                 width='small',
                 disabled=False)
         })
+    agg_sel = st.selectbox('Aggregation', options=[
+        'Mean',
+        'Std'
+    ])
+    if agg_sel == 'Mean':
+        agg = np.mean
+    elif agg_sel == 'Std':
+        agg = np.std
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED, 
+        help='Changing this value alters the shape')
     colors = X
     if not data_edit.empty:
         color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
@@ -346,13 +436,13 @@ def rendering_section():
                 colors = selected.to_numpy()
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     if auto_rendering:
-        _update_fig(seed, colors)
+        _update_fig(seed, colors, agg)
     update_button = st.button(
         '🌊 Update',
         use_container_width=True,
         disabled=mapper_plot is None)
     if update_button:
-        _update_fig(seed, colors)
+        _update_fig(seed, colors, agg)
 
 
 def rendering_output():
@@ -364,15 +454,30 @@ def rendering_output():
             use_container_width=True)
 
 
+def data_caption():
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    st.caption(get_data_caption(df_X, df_y))
+
+
 def main():
     initialize()
     with st.sidebar:
-        lens, cover, clust = settings_section()
-    col_0, col_1 = st.columns([1, 4])
+        tab_0, tab_1, tab_2 = st.tabs(['Lens', 'Cover', 'Clustering'])
+    with tab_0:
+        lens = lens_section()
+    with tab_1:
+        cover = cover_section()
+    with tab_2:
+        clust = clustering_section()
+        #lens, cover, clust = settings_section()
+    with st.sidebar:
+        run_mapper_section(lens, cover, clust)
+    data_caption()
+    col_0, col_1 = st.columns([1, 3])
     with col_0:
-        tuning_section(lens, cover, clust)
-        with st.popover('🎨 Settings', use_container_width=True):
-            rendering_section()
+        #tuning_section(lens, cover, clust)
+        rendering_section()
     with col_1:
         rendering_output()
 

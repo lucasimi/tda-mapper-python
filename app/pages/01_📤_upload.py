@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 
 from common import S_RESULTS, fix_data, V_DATA_SUMMARY_FEAT, V_DATA_SUMMARY_HIST, V_DATA_SUMMARY_COLOR, initialize
-from common import set_page_config, set_sidebar_headings
+from common import set_page_config, set_sidebar_headings, get_data_caption
 
 
 def lp_metric(p):
@@ -27,16 +27,6 @@ def cached_load_iris():
 @st.cache_data
 def cached_fetch_openml(source):
     return fetch_openml(source, return_X_y=True, as_frame=True)
-
-
-def get_data_caption(df_X, df_y):
-    if df_X.empty:
-        return 'No data source found'
-    if df_y.empty:
-        return f'{len(df_X)} instances, {len(df_X.columns)} features'
-    return f'''{len(df_X)} instances,
-        {len(df_X.columns)} + {len(df_y.columns)} features'''
-
 
 
 def _update_data(data_source):
