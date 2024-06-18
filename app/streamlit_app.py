@@ -22,7 +22,7 @@ from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
 
 
-MAX_NODES = 1000
+MAX_NODES = 500
 
 MAX_SAMPLES = 1000
 
@@ -137,7 +137,7 @@ class Results:
 
     def set_mapper_fig(self, mapper_fig):
         self.mapper_fig = mapper_fig
-        self.auto_rendering = None
+        #self.auto_rendering = None
 
 
 def lp_metric(p):
@@ -311,9 +311,8 @@ def _update_data(data_source):
 
 
 def data_section():
-    st.subheader('📊 Data', anchor=False)
     data_source_type = st.selectbox(
-        'Source',
+        '📊 Source',
         options=['Example', 'OpenML', 'CSV'])
     if data_source_type == 'Example':
         data_source = st.selectbox('Name', options=['Digits', 'Iris'])
@@ -328,11 +327,14 @@ def data_section():
         _update_data(data_source)
 
 
-def data_output():
+def data_caption():
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
-    df_all = st.session_state[S_RESULTS].df_all
     st.caption(get_data_caption(df_X, df_y))
+
+
+def data_output():
+    df_all = st.session_state[S_RESULTS].df_all
     st.dataframe(
         df_all.head(50),
         use_container_width=True,
@@ -365,12 +367,82 @@ def _update_mapper(X, lens, cover, clustering):
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
-def settings_section():
-    st.subheader('⚙️ Mapper Settings', anchor=False)
+def settings_type_section():
+    lens_type = st.selectbox(
+        '🔎 Lens',
+        options=[V_LENS_IDENTITY, V_LENS_PCA],
+        index=1)
+    cover_type = st.selectbox(
+        '🌐 Cover',
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        index=2)
+    clustering_type = st.selectbox(
+        '🧮 Clustering',
+        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        index=1)
+    return lens_type, cover_type, clustering_type
+
+
+def settings_tuning_section(lens_type, cover_type, clustering_type):
     X = st.session_state[S_RESULTS].X
     lens = None
     cover = None
     clustering = None
+    if lens_type == V_LENS_IDENTITY:
+        lens = X
+    elif lens_type == V_LENS_PCA:
+        pca_n = st.number_input(
+            '🔎 PCA Components',
+            value=2,
+            min_value=1)
+        _, n_feats = X.shape
+        if pca_n > n_feats:
+            lens = X
+        else:
+            lens = PCA(n_components=pca_n).fit_transform(X)
+    if cover_type == V_COVER_TRIVIAL:
+        cover = TrivialCover()
+    elif cover_type == V_COVER_BALL:
+        ball_r = st.number_input(
+            '🌐 Radius',
+            value=100.0,
+            min_value=0.0)
+        ball_metric_p = st.number_input(
+            '🌐 Lp Metric',
+            value=2,
+            min_value=1)
+        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
+    elif cover_type == V_COVER_CUBICAL:
+        cubical_n = st.number_input(
+            '🌐 Intervals',
+            value=10,
+            min_value=0)
+        cubical_p = st.number_input(
+            '🌐 Overlap Fraction',
+            value=0.25,
+            min_value=0.0,
+            max_value=1.0)
+        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    if clustering_type == V_CLUSTERING_TRIVIAL:
+        clustering = TrivialClustering()
+    elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+        clust_n = st.number_input(
+            '🧮 Clusters',
+            value=2,
+            min_value=1)
+        clustering = AgglomerativeClustering(n_clusters=clust_n)
+    #return lens, cover, clustering
+    run_button = st.button(
+        '🚀 Run Mapper',
+        use_container_width=True,
+        disabled=X.size == 0)
+    if run_button:
+        _update_mapper(X, lens, cover, clustering)
+
+
+def lens_section():
+    X = st.session_state[S_RESULTS].X
+    lens = None
     lens_type = st.selectbox(
         '🔎 Lens',
         options=[V_LENS_IDENTITY, V_LENS_PCA],
@@ -379,7 +451,7 @@ def settings_section():
         lens = X
     elif lens_type == V_LENS_PCA:
         pca_n = st.number_input(
-            'PCA Components',
+            '🔎 PCA Components',
             value=2,
             min_value=1)
         _, n_feats = X.shape
@@ -387,6 +459,12 @@ def settings_section():
             lens = X
         else:
             lens = PCA(n_components=pca_n).fit_transform(X)
+    return lens
+
+
+def cover_section():
+    X = st.session_state[S_RESULTS].X
+    cover = None
     cover_type = st.selectbox(
         '🌐 Cover',
         options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
@@ -395,25 +473,31 @@ def settings_section():
         cover = TrivialCover()
     elif cover_type == V_COVER_BALL:
         ball_r = st.number_input(
-            'Radius',
+            '🌐 Radius',
             value=100.0,
             min_value=0.0)
         ball_metric_p = st.number_input(
-            'Lp Metric',
+            '🌐 Lp Metric',
             value=2,
             min_value=1)
         cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
     elif cover_type == V_COVER_CUBICAL:
         cubical_n = st.number_input(
-            'Intervals',
+            '🌐 Intervals',
             value=10,
             min_value=0)
         cubical_p = st.number_input(
-            'Overlap Fraction',
+            '🌐 Overlap Fraction',
             value=0.25,
             min_value=0.0,
             max_value=1.0)
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    return cover
+
+
+def clustering_section():
+    X = st.session_state[S_RESULTS].X
+    clustering = None
     clustering_type = st.selectbox(
         '🧮 Clustering',
         options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
@@ -422,10 +506,18 @@ def settings_section():
         clustering = TrivialClustering()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
         clust_n = st.number_input(
-            'Clusters',
+            '🧮 Clusters',
             value=2,
             min_value=1)
         clustering = AgglomerativeClustering(n_clusters=clust_n)
+    return clustering
+
+
+def settings_section():
+    X = st.session_state[S_RESULTS].X
+    lens = lens_section()
+    cover = cover_section()
+    clustering = clustering_section()
     run_button = st.button(
         '🚀 Run Mapper',
         use_container_width=True,
@@ -445,38 +537,36 @@ def settings_output():
             config = {'displayModeBar': False})
 
 
-def _update_fig(seed, colors):
+def _update_fig(seed, colors, agg):
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
     if mapper_plot is None:
         return
     mapper_plot.update(
         colors=colors,
-        seed=seed)
+        seed=seed,
+        agg=agg)
     mapper_fig = mapper_plot.plot()
-    mapper_fig.update_layout(uirevision='constant')
+    mapper_fig.update_layout(
+        uirevision='constant',
+        margin=dict(b=0, l=0, r=0, t=0))
     st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
     st.toast('Successfully Rendered Graph', icon='✅')
 
 
 def rendering_section():
-    st.subheader('🔮 Mapper Graph', anchor=False)
     df_summary = st.session_state[S_RESULTS].df_summary
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
     X = st.session_state[S_RESULTS].X
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    seed = st.number_input(
-        'Seed',
-        value=VD_SEED, 
-        help='Changing this value alters the shape')
     data_edit = st.data_editor(
         df_summary,
-        height=300,
+        height=250,
         hide_index=True,
         disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
         use_container_width=True,
         column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.BarChartColumn(
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
                 width='small'),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
                 width='small',
@@ -485,6 +575,16 @@ def rendering_section():
                 width='small',
                 disabled=False)
         })
+
+    agg_sel = st.selectbox('Aggregation', options=['Mean', 'Std'])
+    if agg_sel == 'Mean':
+        agg = np.mean
+    elif agg_sel == 'Std':
+        agg = np.std
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED,
+        help='Changing this value alters the shape')
     colors = X
     if not data_edit.empty:
         color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
@@ -495,13 +595,14 @@ def rendering_section():
                 colors = selected.to_numpy()
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     if auto_rendering:
-        _update_fig(seed, colors)
-    update_button = st.button(
-        '🌊 Update',
-        use_container_width=True,
-        disabled=mapper_plot is None)
-    if update_button:
-        _update_fig(seed, colors)
+        _update_fig(seed, colors, agg)
+    else:
+        update_button = st.button(
+            '🌊 Update',
+            use_container_width=True,
+            disabled=mapper_plot is None)
+        if update_button:
+            _update_fig(seed, colors, agg)
 
 
 def rendering_output():
@@ -509,7 +610,7 @@ def rendering_output():
     with st.container(border=True):
         st.plotly_chart(
             mapper_fig,
-            height=300,
+            height=350,
             use_container_width=True)
 
 
@@ -518,28 +619,25 @@ def main():
     set_sidebar_headings()
     if S_RESULTS not in st.session_state:
         st.session_state[S_RESULTS] = Results()
-    col_0, col_1 = st.columns(2)
-    col_2, col_3 = st.columns(2)
+
+    col_0, col_1 = st.columns([1, 3])
 
     with st.sidebar:
         data_section()
-        st.markdown('#')
+    
     with col_0:
-        data_output()
-    with col_2:
-        data_download_button()
-
-    with st.sidebar:
-        settings_section()
-        st.markdown('#')
+        data_caption()
+        with st.popover('📊 Data', use_container_width=True):
+            data_output()
+        lens_type, cover_type, clustering_type = settings_type_section()
+        with st.popover('🚀 Run Mapper', use_container_width=True):
+            settings_tuning_section(lens_type, cover_type, clustering_type)
+        with st.popover('🎨 Draw', use_container_width=True):
+            rendering_section()
     with col_1:
-        settings_output()
-    with col_3:
-        graph_download_button()
-
-    with st.sidebar:
-        rendering_section()
-    rendering_output()
+        mapper_graph = st.session_state[S_RESULTS].mapper_graph
+        st.caption(get_graph_caption(mapper_graph))
+        rendering_output()
 
     st.divider()
     st.markdown(FOOTER)
