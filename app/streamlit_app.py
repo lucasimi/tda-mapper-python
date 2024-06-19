@@ -40,10 +40,7 @@ ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
 
 DESCRIPTION = f'''
     This app leverages the *Mapper Algorithm* from Topological Data Analysis 
-    (TDA) to provide an efficient and intuitive way to gain insights from your
-    datasets.
-
-    More details on **[GitHub]({GIT_REPO_URL})**.
+    (TDA) to gain insights from your datasets.
     '''
 
 FOOTER = f'''
@@ -103,8 +100,34 @@ class Results:
         self.df_summary = pd.DataFrame()
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
-        self.mapper_fig = go.Figure()
+        self.mapper_fig = self._init_fig()
         self.auto_rendering = None
+
+    def _init_fig(self):
+        fig = go.Figure(
+            data=[go.Scatter3d(
+                x=[],
+                y=[],
+                z=[],
+                mode='markers')])
+        fig.update_layout(
+            scene=dict(
+                xaxis=dict(
+                    showgrid=True,
+                    zeroline=True,
+                    showline=True,
+                    ticks='outside'),
+                yaxis=dict(
+                    showgrid=True,
+                    zeroline=True,
+                    showline=True,
+                    ticks='outside'),
+                zaxis=dict(
+                    showgrid=True,
+                    zeroline=True,
+                    showline=True,
+                    ticks='outside')))
+        return fig
 
     def set_df(self, X, y):
         self.df_X = fix_data(X)
@@ -116,7 +139,7 @@ class Results:
         self.df_summary = get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
-        self.mapper_fig = go.Figure()
+        self.mapper_fig = self._init_fig()
         self.auto_rendering = None
 
     def set_mapper(self, mapper_graph):
@@ -137,7 +160,7 @@ class Results:
 
     def set_mapper_fig(self, mapper_fig):
         self.mapper_fig = mapper_fig
-        #self.auto_rendering = None
+        self.auto_rendering = None
 
 
 def lp_metric(p):
@@ -184,11 +207,10 @@ def cached_fetch_openml(source):
 
 def get_data_caption(df_X, df_y):
     if df_X.empty:
-        return 'No data source found'
-    if df_y.empty:
-        return f'{len(df_X)} instances, {len(df_X.columns)} features'
-    return f'''{len(df_X)} instances,
-        {len(df_X.columns)} + {len(df_y.columns)} features'''
+        return 'Empty dataset'
+    inst = len(df_X)
+    feats = len(df_X.columns) + len(df_y.columns)
+    return f'{inst} instances, {feats} features'
 
 
 def get_data_summary(df_X, df_y):
@@ -266,15 +288,18 @@ def graph_download_button():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj, default=int)
+    nodes_num = mapper_graph.number_of_nodes()
     return st.download_button(
-        '📥 Download Mapper Graph',
+        '📥 Download Mapper',
         data=get_gzip_bytes(mapper_json),
-        disabled=nx.is_empty(mapper_graph),
+        disabled=nodes_num < 1,
         use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
-def set_page_config():
+def initialize():
+    if S_RESULTS not in st.session_state:
+        st.session_state[S_RESULTS] = Results()
     st.set_page_config(
         layout='wide',
         page_icon=ICON_URL,
@@ -282,14 +307,14 @@ def set_page_config():
         menu_items={
             'Report a bug': REPORT_BUG,
             'About': ABOUT})
-
-
-def set_sidebar_headings():
     with st.sidebar:
         st.image(LOGO_URL)
-        st.markdown('#')
         st.markdown(DESCRIPTION)
-        st.markdown('#')
+        st.link_button(
+            'More details on **GitHub**',
+            url=GIT_REPO_URL,
+            use_container_width=True,
+            type='primary')
 
 
 def _update_data(data_source):
@@ -310,6 +335,36 @@ def _update_data(data_source):
     st.toast('Successfully Loaded Data', icon='✅')
 
 
+@st.cache_data
+def df_to_csv(df):
+   return df.to_csv(index=False).encode('utf-8')
+
+
+def data_section_more():
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    df_all = st.session_state[S_RESULTS].df_all
+    if df_X.empty:
+        cap = 'Empty dataset'
+    else:
+        inst = len(df_X)
+        feats = len(df_X.columns) + len(df_y.columns)
+        cap = f'{inst} instances, {feats} features'
+    st.caption(cap)
+    st.dataframe(
+        df_all.head(50),
+        use_container_width=True,
+        height=250)
+    df_all_data = df_to_csv(df_all)
+    st.download_button(
+        '📥 Download Data',
+        disabled=df_all.empty,
+        use_container_width=True,
+        data=df_all_data,
+        file_name='dataset.csv',
+        mime='text/csv')
+
+
 def data_section():
     data_source_type = st.selectbox(
         '📊 Source',
@@ -325,30 +380,6 @@ def data_section():
         use_container_width=True)
     if load_button:
         _update_data(data_source)
-
-
-def data_caption():
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
-    st.caption(get_data_caption(df_X, df_y))
-
-
-def data_output():
-    df_all = st.session_state[S_RESULTS].df_all
-    st.dataframe(
-        df_all.head(50),
-        use_container_width=True,
-        height=250)
-
-
-def data_download_button():
-    df_all = st.session_state[S_RESULTS].df_all
-    df_all_data = df_all.to_json()
-    st.download_button(
-        '📥 Download Cleaned Data',
-        disabled=df_all.empty,
-        use_container_width=True,
-        data=df_all_data)
 
 
 def _update_mapper(X, lens, cover, clustering):
@@ -433,7 +464,7 @@ def settings_tuning_section(lens_type, cover_type, clustering_type):
         clustering = AgglomerativeClustering(n_clusters=clust_n)
     #return lens, cover, clustering
     run_button = st.button(
-        '🚀 Run Mapper',
+        '🚀 Run',
         use_container_width=True,
         disabled=X.size == 0)
     if run_button:
@@ -519,7 +550,7 @@ def settings_section():
     cover = cover_section()
     clustering = clustering_section()
     run_button = st.button(
-        '🚀 Run Mapper',
+        '🚀 Run',
         use_container_width=True,
         disabled=X.size == 0)
     if run_button:
@@ -529,12 +560,13 @@ def settings_section():
 def settings_output():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     st.caption(get_graph_caption(mapper_graph))
-    with st.container(border=True, height=250):
+    with st.container(border=False):
         fig_hist = get_graph_histogram(mapper_graph)
         st.plotly_chart(
             fig_hist,
             use_container_width=True,
             config = {'displayModeBar': False})
+    graph_download_button()
 
 
 def _update_fig(seed, colors, agg):
@@ -554,6 +586,12 @@ def _update_fig(seed, colors, agg):
 
 
 def rendering_section():
+    def _set_auto_rendering():
+        mapper_graph = st.session_state[S_RESULTS].mapper_graph
+        nodes_num = mapper_graph.number_of_nodes() if mapper_graph else 0
+        if nodes_num <= MAX_NODES:
+            st.session_state[S_RESULTS].auto_rendering = True
+
     df_summary = st.session_state[S_RESULTS].df_summary
     df_X = st.session_state[S_RESULTS].df_X
     df_y = st.session_state[S_RESULTS].df_y
@@ -574,9 +612,9 @@ def rendering_section():
             V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
                 width='small',
                 disabled=False)
-        })
+        }, on_change=_set_auto_rendering)
 
-    agg_sel = st.selectbox('Aggregation', options=['Mean', 'Std'])
+    agg_sel = st.selectbox('Aggregation', options=['Mean', 'Std'], on_change=_set_auto_rendering)
     if agg_sel == 'Mean':
         agg = np.mean
     elif agg_sel == 'Std':
@@ -584,7 +622,8 @@ def rendering_section():
     seed = st.number_input(
         'Seed',
         value=VD_SEED,
-        help='Changing this value alters the shape')
+        help='Changing this value alters the shape',
+        on_change=_set_auto_rendering)
     colors = X
     if not data_edit.empty:
         color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
@@ -607,7 +646,7 @@ def rendering_section():
 
 def rendering_output():
     mapper_fig = st.session_state[S_RESULTS].mapper_fig
-    with st.container(border=True):
+    with st.container(border=False):
         st.plotly_chart(
             mapper_fig,
             height=350,
@@ -615,28 +654,21 @@ def rendering_output():
 
 
 def main():
-    set_page_config()
-    set_sidebar_headings()
-    if S_RESULTS not in st.session_state:
-        st.session_state[S_RESULTS] = Results()
-
-    col_0, col_1 = st.columns([1, 3])
-
+    initialize()
     with st.sidebar:
         data_section()
-    
+        with st.popover('More', use_container_width=True):
+            data_section_more()
+    col_0, col_1 = st.columns([1, 3])
     with col_0:
-        data_caption()
-        with st.popover('📊 Data', use_container_width=True):
-            data_output()
         lens_type, cover_type, clustering_type = settings_type_section()
-        with st.popover('🚀 Run Mapper', use_container_width=True):
+        with st.popover('🚀 Run', use_container_width=True):
             settings_tuning_section(lens_type, cover_type, clustering_type)
         with st.popover('🎨 Draw', use_container_width=True):
             rendering_section()
+        with st.popover('More', use_container_width=True):
+            settings_output()
     with col_1:
-        mapper_graph = st.session_state[S_RESULTS].mapper_graph
-        st.caption(get_graph_caption(mapper_graph))
         rendering_output()
 
     st.divider()
