@@ -150,7 +150,7 @@ class Results:
             width=450,
             colors=self.X,
             seed=VD_SEED)
-        self.mapper_fig = go.Figure()
+        self.mapper_fig = self._init_fig()
         nodes_num = mapper_graph.number_of_nodes()
         if nodes_num <= MAX_NODES:
             self.auto_rendering = True
@@ -602,7 +602,7 @@ def mapper_draw_section():
     else:
         mapper_plot = st.session_state[S_RESULTS].mapper_plot
         update_button = st.button(
-            '🌊 Update',
+            '🎨 Draw',
             use_container_width=True,
             disabled=mapper_plot is None)
         if update_button:
