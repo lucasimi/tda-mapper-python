@@ -110,6 +110,7 @@ class Results:
                 z=[],
                 mode='markers')])
         fig.update_layout(
+            uirevision='constant',
             scene=dict(
                 xaxis=dict(
                     showgrid=True,
@@ -368,7 +369,7 @@ def _data_summary():
     st.dataframe(
         df_all.head(50),
         use_container_width=True,
-        height=250)
+        height=200)
 
 
 def _data_download():
@@ -541,8 +542,6 @@ def _update_auto_rendering():
 
 def _mapper_colors():
     X = st.session_state[S_RESULTS].X
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
     df_all = st.session_state[S_RESULTS].df_all
     df_summary = st.session_state[S_RESULTS].df_summary
     colors = X
@@ -622,17 +621,19 @@ def main():
     initialize()
     with st.sidebar:
         data_input_section()
-        with st.popover('More', use_container_width=True):
-            data_output_section()
-    col_0, col_1 = st.columns([1, 3])
+    col_0, col_1 = st.columns([1, 4])
     with col_0:
         lens_type, cover_type, clustering_type = mapper_settings_section()
         with st.popover('🚀 Run', use_container_width=True):
             mapper_run_section(lens_type, cover_type, clustering_type)
         with st.popover('🎨 Draw', use_container_width=True):
             mapper_draw_section()
-        with st.popover('More', use_container_width=True):
-            mapper_output_section()
+        with st.popover('ℹ️ More', use_container_width=True):
+            tab_0, tab_1 = st.tabs(['🗒️ Data', '📊 Mapper'])
+            with tab_0:
+                data_output_section()
+            with tab_1:
+                mapper_output_section()
     with col_1:
         mapper_rendering_section()
     st.divider()
