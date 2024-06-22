@@ -206,7 +206,7 @@ def cached_fetch_openml(source):
 
 @st.cache_data
 def df_to_csv(df):
-   return df.to_csv(index=False).encode('utf-8')
+    return df.to_csv(index=False).encode('utf-8')
 
 
 def _get_data_summary(df_X, df_y):
@@ -390,6 +390,7 @@ def data_output_section():
 
 
 def data_input_section():
+    data_source = None
     data_source_type = st.selectbox(
         'Source',
         options=['Example', 'OpenML', 'CSV'])
@@ -541,8 +542,6 @@ def _update_auto_rendering():
 
 def _mapper_colors():
     X = st.session_state[S_RESULTS].X
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
     df_all = st.session_state[S_RESULTS].df_all
     df_summary = st.session_state[S_RESULTS].df_summary
     colors = X
@@ -571,16 +570,34 @@ def _mapper_colors():
     return colors
 
 
-def _mapper_agg():
+def _agg(name, axis):
+    agg = None
     agg_sel = st.selectbox(
-        'Aggregation',
-        options=['Mean', 'Std'],
+        name,
+        options=['Mean', 'Std', 'Quantile'],
         on_change=_update_auto_rendering)
     if agg_sel == 'Mean':
-        agg = np.mean
+        agg = lambda x: np.nanmean(x, axis=axis)
     elif agg_sel == 'Std':
-        agg = np.std
+        agg = lambda x: np.nanstd(x, axis=axis)
+    elif agg_sel == 'Quantile':
+        r = st.slider('Rank', min_value=0.0, value=0.5, max_value=1.0)
+        agg = lambda x: np.quantile(x, q=r, axis=axis)
     return agg
+
+
+def _mapper_feature_agg():
+    return _agg('Feature Aggregation', axis=1)
+
+
+def _mapper_node_agg():
+    return _agg('Node Aggregation', axis=0)
+
+
+def _mapper_agg():
+    feat_agg = _mapper_feature_agg()
+    node_agg = _mapper_node_agg()
+    return lambda x: node_agg(feat_agg(x))
 
 
 def _mapper_seed():
