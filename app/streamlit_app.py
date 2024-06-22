@@ -22,7 +22,7 @@ from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
 
 
-MAX_NODES = 500
+MAX_NODES = 1000
 
 MAX_SAMPLES = 1000
 
@@ -74,7 +74,7 @@ V_DATA_SUMMARY_HIST = 'histogram'
 
 V_DATA_SUMMARY_COLOR = 'color'
 
-V_DATA_SUMMARY_BINS = 5
+V_DATA_SUMMARY_BINS = 15
 
 # VD_* are reusable default values for widgets
 
@@ -95,12 +95,13 @@ class Results:
         self.df_X_sample = pd.DataFrame()
         self.df_y_sample = pd.DataFrame()
         self.df_all = pd.DataFrame()
+        self.df_all_sample = pd.DataFrame()
         self.X = self.df_X.to_numpy()
         self.df_summary = pd.DataFrame()
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
-        self.auto_rendering = None
+        self.mapper_fig_outdated = True
 
     def _init_fig(self):
         fig = go.Figure(
@@ -135,32 +136,29 @@ class Results:
         self.df_X_sample = get_sample(self.df_X)
         self.df_y_sample = get_sample(self.df_y)
         self.df_all = pd.concat([self.df_y, self.df_X], axis=1)
+        self.df_all_sample = pd.concat([self.df_y_sample, self.df_X_sample], axis=1)
         self.X = self.df_X.to_numpy()
         self.df_summary = _get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
-        self.auto_rendering = None
+        self.mapper_fig_outdated = True
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
         self.mapper_plot = MapperLayoutInteractive(
             self.mapper_graph,
             dim=VD_DIM,
-            height=450,
-            width=450,
+            height=500,
+            width=500,
             colors=self.X,
             seed=VD_SEED)
         self.mapper_fig = self._init_fig()
-        nodes_num = mapper_graph.number_of_nodes()
-        if nodes_num <= MAX_NODES:
-            self.auto_rendering = True
-        else:
-            self.auto_rendering = False
+        self.mapper_fig_outdated = True
 
     def set_mapper_fig(self, mapper_fig):
         self.mapper_fig = mapper_fig
-        self.auto_rendering = None
+        self.mapper_fig_outdated = False
 
 
 def lp_metric(p):
@@ -216,8 +214,13 @@ def _get_data_summary(df_X, df_y):
     df_summary = pd.DataFrame({
         V_DATA_SUMMARY_FEAT: df.columns,
         V_DATA_SUMMARY_HIST: df_hist.values.tolist()})
-    df_summary[V_DATA_SUMMARY_COLOR] = False
     return df_summary
+
+
+def auto_rendering():
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+    nodes_num = mapper_graph.number_of_nodes()
+    return nodes_num <= MAX_NODES
 
 
 def _mapper_caption():
@@ -364,10 +367,10 @@ def _data_caption():
     st.caption(cap)
 
 
-def _data_summary():
-    df_all = st.session_state[S_RESULTS].df_all
+def _data_preview():
+    df_all_sample = st.session_state[S_RESULTS].df_all_sample
     st.dataframe(
-        df_all.head(50),
+        df_all_sample.head(50),
         use_container_width=True,
         height=200)
 
@@ -386,8 +389,29 @@ def _data_download():
 
 def data_output_section():
     _data_caption()
-    _data_summary()
+    _data_preview()
     _data_download()
+
+
+def _data_summary():
+    df_summary = st.session_state[S_RESULTS].df_summary
+    st.dataframe(df_summary,
+        hide_index=True,
+        height=250,
+        column_config={
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
+                width='large'),
+            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
+                width='small',
+                disabled=True)
+        },
+        use_container_width=True)
+
+
+def data_summary_section():
+    _data_caption()
+    _data_summary()
+    #_data_download()
 
 
 def data_input_section():
@@ -419,8 +443,7 @@ def _update_mapper(X, lens, cover, clustering):
     mapper_graph = mapper_algo.fit_transform(X, lens)
     st.session_state[S_RESULTS].set_mapper(mapper_graph)
     st.toast('Successfully Computed Mapper', icon='✅')
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if auto_rendering is False:
+    if not auto_rendering():
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
@@ -534,71 +557,43 @@ def _update_fig(seed, colors, agg):
     st.toast('Successfully Rendered Graph', icon='✅')
 
 
-def _update_auto_rendering():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    nodes_num = mapper_graph.number_of_nodes() if mapper_graph else 0
-    if nodes_num <= MAX_NODES:
-        st.session_state[S_RESULTS].auto_rendering = True
+def _update_mapper_fig_outdated():
+    st.session_state[S_RESULTS].mapper_fig_outdated = True
 
 
 def _mapper_colors():
     X = st.session_state[S_RESULTS].X
     df_all = st.session_state[S_RESULTS].df_all
-    df_summary = st.session_state[S_RESULTS].df_summary
     colors = X
-    data_edit = st.data_editor(
-        df_summary,
-        height=250,
-        hide_index=True,
-        disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
-        use_container_width=True,
-        column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='small'),
-            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
-                width='small',
-                disabled=True),
-            V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
-                width='small',
-                disabled=False)
-        }, on_change=_update_auto_rendering)
-    if not data_edit.empty:
-        color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
-        if not color_features.empty:
-            selected = pd.concat([df_all[c] for c in color_features], axis=1)
-            if not selected.empty:
-                colors = selected.to_numpy()
+    col_feat = st.selectbox(
+        'Color',
+        options=list(df_all.columns),
+        on_change=_update_mapper_fig_outdated)
+    if col_feat in df_all.columns:
+        df_col = df_all[col_feat]
+        colors = df_col.to_numpy()
     return colors
 
 
-def _agg(name, axis):
+def _mapper_aggregation():
     agg = None
-    agg_sel = st.selectbox(
-        name,
+    agg_type = st.selectbox(
+        'Aggregation',
         options=['Mean', 'Std', 'Quantile'],
-        on_change=_update_auto_rendering)
-    if agg_sel == 'Mean':
-        agg = lambda x: np.nanmean(x, axis=axis)
-    elif agg_sel == 'Std':
-        agg = lambda x: np.nanstd(x, axis=axis)
-    elif agg_sel == 'Quantile':
-        r = st.slider('Rank', min_value=0.0, value=0.5, max_value=1.0)
-        agg = lambda x: np.quantile(x, q=r, axis=axis)
+        on_change=_update_mapper_fig_outdated)
+    if agg_type == 'Mean':
+        agg = np.nanmean
+    elif agg_type == 'Std':
+        agg = np.nanstd
+    elif agg_type == 'Quantile':
+        q = st.slider(
+            'Rank',
+            value=0.5,
+            min_value=0.0,
+            max_value=1.0,
+            on_change=_update_mapper_fig_outdated)
+        agg = lambda x: np.nanquantile(x, q=q)
     return agg
-
-
-def _mapper_feature_agg():
-    return _agg('Feature Aggregation', axis=1)
-
-
-def _mapper_node_agg():
-    return _agg('Node Aggregation', axis=0)
-
-
-def _mapper_agg():
-    feat_agg = _mapper_feature_agg()
-    node_agg = _mapper_node_agg()
-    return lambda x: node_agg(feat_agg(x))
 
 
 def _mapper_seed():
@@ -606,25 +601,23 @@ def _mapper_seed():
         'Seed',
         value=VD_SEED,
         help='Changing this value alters the shape',
-        on_change=_update_auto_rendering)
+        on_change=_update_mapper_fig_outdated)
     return seed
 
 
-def mapper_draw_section():
-    colors = _mapper_colors()
-    agg = _mapper_agg()
+def mapper_draw_section(colors):
     seed = _mapper_seed()
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if auto_rendering:
+    agg = _mapper_aggregation()
+    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    update_button = st.button(
+        '🎨 Draw',
+        use_container_width=True,
+        disabled=mapper_plot is None)
+    mapper_fig_outdated = st.session_state[S_RESULTS].mapper_fig_outdated
+    if auto_rendering() and mapper_fig_outdated:
         _update_fig(seed, colors, agg)
-    else:
-        mapper_plot = st.session_state[S_RESULTS].mapper_plot
-        update_button = st.button(
-            '🎨 Draw',
-            use_container_width=True,
-            disabled=mapper_plot is None)
-        if update_button:
-            _update_fig(seed, colors, agg)
+    elif update_button:
+        _update_fig(seed, colors, agg)
 
 
 def mapper_rendering_section():
@@ -645,13 +638,16 @@ def main():
         lens_type, cover_type, clustering_type = mapper_settings_section()
         with st.popover('🚀 Run', use_container_width=True):
             mapper_run_section(lens_type, cover_type, clustering_type)
+        colors = _mapper_colors()
         with st.popover('🎨 Draw', use_container_width=True):
-            mapper_draw_section()
+            mapper_draw_section(colors)
         with st.popover('ℹ️ More', use_container_width=True):
-            tab_0, tab_1 = st.tabs(['🗒️ Data', '📊 Mapper'])
+            tab_0, tab_1, tab_2 = st.tabs(['📈 Features', '🗒️ Data', '📊 Mapper'])
             with tab_0:
-                data_output_section()
+                data_summary_section()
             with tab_1:
+                data_output_section()
+            with tab_2:
                 mapper_output_section()
     with col_1:
         mapper_rendering_section()
