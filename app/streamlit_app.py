@@ -22,15 +22,13 @@ from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
 
 
-MAX_NODES = 500
+MAX_NODES = 1000
 
 MAX_SAMPLES = 1000
 
 SAMPLE_FRAC = 0.1
 
 OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
-
-DATA_INFO = 'Non-numeric and NaN features get dropped. NaN rows get replaced by mean'
 
 GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
 
@@ -52,7 +50,7 @@ LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizonta
 
 APP_TITLE = 'TDA Mapper App'
 
-# V_* are reusable values for widgets
+# V_* are reusable constant values
 
 V_LENS_IDENTITY = 'Identity'
 
@@ -72,17 +70,29 @@ V_DATA_SUMMARY_FEAT = 'feature'
 
 V_DATA_SUMMARY_HIST = 'histogram'
 
-V_DATA_SUMMARY_COLOR = 'color'
+V_DATA_SUMMARY_BINS = 15
 
-V_DATA_SUMMARY_BINS = 5
+V_AGGREGATION_MEAN = 'Mean'
 
-# VD_* are reusable default values for widgets
+V_AGGREGATION_STD = 'Std'
+
+V_AGGREGATION_QUANTILE = 'Quantile'
+
+V_CMAP_CONTINUOUS_JET = 'Continuous (Jet)'
+
+V_CMAP_CONTINUOUS_VIRIDIS = 'Continuous (Viridis)'
+
+V_CMAP_CYCLIC_HSV = 'Cyclic (HSV)'
+
+V_CMAP_CYCLIC_TWILIGHT = 'Cyclic (Twilight)'
+
+# VD_* are reusable default values
 
 VD_SEED = 42
 
 VD_DIM = 3
 
-# S_* are reusable manually managed stored objects
+# S_* are reusable session stored objects
 
 S_RESULTS = 'stored_results'
 
@@ -95,12 +105,14 @@ class Results:
         self.df_X_sample = pd.DataFrame()
         self.df_y_sample = pd.DataFrame()
         self.df_all = pd.DataFrame()
+        self.df_all_sample = pd.DataFrame()
         self.X = self.df_X.to_numpy()
         self.df_summary = pd.DataFrame()
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
-        self.auto_rendering = None
+        self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def _init_fig(self):
         fig = go.Figure(
@@ -128,6 +140,10 @@ class Results:
                     showline=True,
                     ticks='outside')))
         return fig
+    
+    def _auto_rendering(self):
+        nodes_num = self.mapper_graph.number_of_nodes()
+        return nodes_num <= MAX_NODES
 
     def set_df(self, X, y):
         self.df_X = fix_data(X)
@@ -135,32 +151,31 @@ class Results:
         self.df_X_sample = get_sample(self.df_X)
         self.df_y_sample = get_sample(self.df_y)
         self.df_all = pd.concat([self.df_y, self.df_X], axis=1)
+        self.df_all_sample = pd.concat([self.df_y_sample, self.df_X_sample], axis=1)
         self.X = self.df_X.to_numpy()
         self.df_summary = _get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = nx.Graph()
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
-        self.auto_rendering = None
+        self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
         self.mapper_plot = MapperLayoutInteractive(
             self.mapper_graph,
             dim=VD_DIM,
-            height=450,
-            width=450,
+            height=500,
+            width=500,
             colors=self.X,
             seed=VD_SEED)
         self.mapper_fig = self._init_fig()
-        nodes_num = mapper_graph.number_of_nodes()
-        if nodes_num <= MAX_NODES:
-            self.auto_rendering = True
-        else:
-            self.auto_rendering = False
+        self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def set_mapper_fig(self, mapper_fig):
         self.mapper_fig = mapper_fig
-        self.auto_rendering = None
+        self.mapper_fig_outdated = False
 
 
 def lp_metric(p):
@@ -207,7 +222,7 @@ def cached_fetch_openml(source):
 
 @st.cache_data
 def df_to_csv(df):
-   return df.to_csv(index=False).encode('utf-8')
+    return df.to_csv(index=False).encode('utf-8')
 
 
 def _get_data_summary(df_X, df_y):
@@ -216,8 +231,260 @@ def _get_data_summary(df_X, df_y):
     df_summary = pd.DataFrame({
         V_DATA_SUMMARY_FEAT: df.columns,
         V_DATA_SUMMARY_HIST: df_hist.values.tolist()})
-    df_summary[V_DATA_SUMMARY_COLOR] = False
     return df_summary
+
+
+def _initialize_state():
+    if S_RESULTS not in st.session_state:
+        st.session_state[S_RESULTS] = Results()
+
+
+def _initialize_page():
+    st.set_page_config(
+        layout='wide',
+        page_icon=ICON_URL,
+        page_title=APP_TITLE,
+        menu_items={
+            'Report a bug': REPORT_BUG,
+            'About': ABOUT})
+
+
+def _initialize_sidebar():
+    with st.sidebar:
+        st.image(LOGO_URL)
+        st.markdown(DESCRIPTION)
+        st.link_button(
+            'More on **GitHub**',
+            url=GIT_REPO_URL,
+            use_container_width=True,
+            type='primary')
+        st.subheader('#')
+
+
+def _update_data(data_source):
+    X, y = pd.DataFrame(), pd.DataFrame()
+    if isinstance(data_source, io.BytesIO):
+        X, y = pd.read_csv(data_source), pd.DataFrame()
+    elif data_source == 'Digits':
+        X, y = cached_load_digits()
+    elif data_source == 'Iris':
+        X, y = cached_load_iris()
+    elif isinstance(data_source, str):
+        try:
+            X, y = cached_fetch_openml(data_source)
+        except ValueError as err:
+            st.toast(f'# {err}', icon='🚨')
+    df_X, df_y = fix_data(X), fix_data(y)
+    st.session_state[S_RESULTS].set_df(df_X, df_y)
+    st.toast('Successfully Loaded Data', icon='📦')
+
+
+def _update_mapper(X, lens, cover, clustering):
+    if (X is None) or (lens is None) or (cover is None) or (clustering is None):
+        st.warning('Make sure you selected the right options')
+    mapper_algo = MapperAlgorithm(
+        cover=cover,
+        clustering=FailSafeClustering(
+            clustering=clustering,
+            verbose=False))
+    mapper_graph = mapper_algo.fit_transform(X, lens)
+    st.session_state[S_RESULTS].set_mapper(mapper_graph)
+    st.toast('Successfully Computed Mapper', icon='🚀')
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    if not auto_rendering:
+        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
+
+
+def _update_fig(seed, color_feat, agg, cmap, title):
+    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    if mapper_plot is None:
+        return
+    X = st.session_state[S_RESULTS].X
+    colors = X
+    df_all = st.session_state[S_RESULTS].df_all
+    if color_feat in df_all.columns:
+        df_col = df_all[color_feat]
+        colors = df_col.to_numpy()
+    mapper_plot.update(
+        colors=colors,
+        seed=seed,
+        agg=agg,
+        title=title,
+        cmap=cmap)
+    mapper_fig = mapper_plot.plot()
+    mapper_fig.update_layout(
+        uirevision='constant',
+        margin=dict(b=0, l=0, r=0, t=0))
+    st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
+    st.toast('Successfully Rendered Graph', icon='🖌️')
+
+
+def _update_mapper_fig_outdated():
+    st.session_state[S_RESULTS].mapper_fig_outdated = True
+
+
+def _lens_tuning(lens_type):
+    X = st.session_state[S_RESULTS].X
+    lens = None
+    if lens_type == V_LENS_IDENTITY:
+        lens = X
+    elif lens_type == V_LENS_PCA:
+        pca_n = st.number_input(
+            '🔎 PCA Components',
+            value=2,
+            min_value=1)
+        _, n_feats = X.shape
+        if pca_n > n_feats:
+            lens = X
+        else:
+            lens = PCA(n_components=pca_n).fit_transform(X)
+    return lens
+
+
+def _cover_tuning(cover_type):
+    cover = None
+    if cover_type == V_COVER_TRIVIAL:
+        cover = TrivialCover()
+    elif cover_type == V_COVER_BALL:
+        ball_r = st.number_input(
+            '🌐 Radius',
+            value=100.0,
+            min_value=0.0)
+        ball_metric_p = st.number_input(
+            '🌐 Lp Metric',
+            value=2,
+            min_value=1)
+        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
+    elif cover_type == V_COVER_CUBICAL:
+        cubical_n = st.number_input(
+            '🌐 Intervals',
+            value=10,
+            min_value=0)
+        cubical_p = st.number_input(
+            '🌐 Overlap Fraction',
+            value=0.25,
+            min_value=0.0,
+            max_value=1.0)
+        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    return cover
+
+
+def _clustering_tuning(clustering_type):
+    clustering = None
+    if clustering_type == V_CLUSTERING_TRIVIAL:
+        clustering = TrivialClustering()
+    elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
+        clust_n = st.number_input(
+            '🧮 Clusters',
+            value=2,
+            min_value=1)
+        clustering = AgglomerativeClustering(n_clusters=clust_n)
+    return clustering
+
+
+def _data_caption():
+    df_X = st.session_state[S_RESULTS].df_X
+    df_y = st.session_state[S_RESULTS].df_y
+    if df_X.empty:
+        cap = 'Empty dataset'
+    else:
+        inst = len(df_X)
+        feats = len(df_X.columns) + len(df_y.columns)
+        cap = f'{inst} instances, {feats} features'
+    st.caption(cap)
+
+
+def _data_preview():
+    df_all_sample = st.session_state[S_RESULTS].df_all_sample
+    st.dataframe(
+        df_all_sample.head(50),
+        use_container_width=True,
+        height=200)
+
+
+def _data_download():
+    df_all = st.session_state[S_RESULTS].df_all
+    df_all_data = df_to_csv(df_all)
+    st.download_button(
+        '📥 Download Data',
+        disabled=df_all.empty,
+        use_container_width=True,
+        data=df_all_data,
+        file_name='dataset.csv',
+        mime='text/csv')
+
+
+def _data_summary():
+    df_summary = st.session_state[S_RESULTS].df_summary
+    st.dataframe(df_summary,
+        hide_index=True,
+        height=250,
+        column_config={
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
+                width='large'),
+            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
+                width='small',
+                disabled=True)
+        },
+        use_container_width=True)
+
+
+def _mapper_aggregation():
+    agg_type = st.selectbox(
+        '🍲 Aggregation',
+        options=[
+            V_AGGREGATION_MEAN,
+            V_AGGREGATION_STD,
+            V_AGGREGATION_QUANTILE],
+        on_change=_update_mapper_fig_outdated)
+    agg = None
+    agg_name = None
+    if agg_type == V_AGGREGATION_MEAN:
+        agg = np.nanmean
+        agg_name = 'Mean'
+    elif agg_type == V_AGGREGATION_STD:
+        agg = np.nanstd
+        agg_name = 'Std'
+    elif agg_type == V_AGGREGATION_QUANTILE:
+        q = st.slider(
+            'Rank',
+            value=0.5,
+            min_value=0.0,
+            max_value=1.0,
+            on_change=_update_mapper_fig_outdated)
+        agg = lambda x: np.nanquantile(x, q=q)
+        agg_name = f'Quantile {round(q, 2)}'
+    return agg, agg_name
+
+
+def _mapper_seed():
+    seed = st.number_input(
+        '🎲 Seed',
+        value=VD_SEED,
+        help='Changing this value alters the shape',
+        on_change=_update_mapper_fig_outdated)
+    return seed
+
+
+def _mapper_cmap():
+    cmap_type = st.selectbox(
+        '🌈 Colormap',
+        options=[
+            V_CMAP_CONTINUOUS_JET,
+            V_CMAP_CONTINUOUS_VIRIDIS,
+            V_CMAP_CYCLIC_HSV,
+            V_CMAP_CYCLIC_TWILIGHT],
+        on_change=_update_mapper_fig_outdated)
+    cmap = None
+    if cmap_type == V_CMAP_CONTINUOUS_JET:
+        cmap = 'Jet'
+    if cmap_type == V_CMAP_CONTINUOUS_VIRIDIS:
+        cmap = 'Viridis'
+    elif cmap_type == V_CMAP_CYCLIC_HSV:
+        cmap = 'HSV'
+    elif cmap_type == V_CMAP_CYCLIC_TWILIGHT:
+        cmap = 'Twilight'
+    return cmap
 
 
 def _mapper_caption():
@@ -301,96 +568,14 @@ def _mapper_download():
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
 
-def _initialize_state():
-    if S_RESULTS not in st.session_state:
-        st.session_state[S_RESULTS] = Results()
-
-
-def _initialize_page():
-    st.set_page_config(
-        layout='wide',
-        page_icon=ICON_URL,
-        page_title=APP_TITLE,
-        menu_items={
-            'Report a bug': REPORT_BUG,
-            'About': ABOUT})
-
-
-def _initialize_sidebar():
-    with st.sidebar:
-        st.image(LOGO_URL)
-        st.markdown(DESCRIPTION)
-        st.link_button(
-            'More on **GitHub**',
-            url=GIT_REPO_URL,
-            use_container_width=True,
-            type='primary')
-        st.subheader('#')
-
-
 def initialize():
     _initialize_state()
     _initialize_page()
     _initialize_sidebar()
 
 
-def _update_data(data_source):
-    X, y = pd.DataFrame(), pd.DataFrame()
-    if isinstance(data_source, io.BytesIO):
-        X, y = pd.read_csv(data_source), pd.DataFrame()
-    elif data_source == 'Digits':
-        X, y = cached_load_digits()
-    elif data_source == 'Iris':
-        X, y = cached_load_iris()
-    elif isinstance(data_source, str):
-        try:
-            X, y = cached_fetch_openml(data_source)
-        except ValueError as err:
-            st.toast(f'# {err}', icon='🚨')
-    df_X, df_y = fix_data(X), fix_data(y)
-    st.session_state[S_RESULTS].set_df(df_X, df_y)
-    st.toast('Successfully Loaded Data', icon='✅')
-
-
-def _data_caption():
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
-    if df_X.empty:
-        cap = 'Empty dataset'
-    else:
-        inst = len(df_X)
-        feats = len(df_X.columns) + len(df_y.columns)
-        cap = f'{inst} instances, {feats} features'
-    st.caption(cap)
-
-
-def _data_summary():
-    df_all = st.session_state[S_RESULTS].df_all
-    st.dataframe(
-        df_all.head(50),
-        use_container_width=True,
-        height=200)
-
-
-def _data_download():
-    df_all = st.session_state[S_RESULTS].df_all
-    df_all_data = df_to_csv(df_all)
-    st.download_button(
-        '📥 Download Data',
-        disabled=df_all.empty,
-        use_container_width=True,
-        data=df_all_data,
-        file_name='dataset.csv',
-        mime='text/csv')
-
-
-def data_output_section():
-    _data_caption()
-    _data_summary()
-    _data_download()
-
-
 def data_input_section():
+    data_source = None
     data_source_type = st.selectbox(
         'Source',
         options=['Example', 'OpenML', 'CSV'])
@@ -405,22 +590,6 @@ def data_input_section():
         use_container_width=True)
     if load_button:
         _update_data(data_source)
-
-
-def _update_mapper(X, lens, cover, clustering):
-    if (X is None) or (lens is None) or (cover is None) or (clustering is None):
-        st.warning('Make sure you selected the right options')
-    mapper_algo = MapperAlgorithm(
-        cover=cover,
-        clustering=FailSafeClustering(
-            clustering=clustering,
-            verbose=False))
-    mapper_graph = mapper_algo.fit_transform(X, lens)
-    st.session_state[S_RESULTS].set_mapper(mapper_graph)
-    st.toast('Successfully Computed Mapper', icon='✅')
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if auto_rendering is False:
-        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
 def mapper_settings_section():
@@ -439,65 +608,6 @@ def mapper_settings_section():
     return lens_type, cover_type, clustering_type
 
 
-def _lens_tuning(lens_type):
-    X = st.session_state[S_RESULTS].X
-    lens = None
-    if lens_type == V_LENS_IDENTITY:
-        lens = X
-    elif lens_type == V_LENS_PCA:
-        pca_n = st.number_input(
-            '🔎 PCA Components',
-            value=2,
-            min_value=1)
-        _, n_feats = X.shape
-        if pca_n > n_feats:
-            lens = X
-        else:
-            lens = PCA(n_components=pca_n).fit_transform(X)
-    return lens
-
-
-def _cover_tuning(cover_type):
-    cover = None
-    if cover_type == V_COVER_TRIVIAL:
-        cover = TrivialCover()
-    elif cover_type == V_COVER_BALL:
-        ball_r = st.number_input(
-            '🌐 Radius',
-            value=100.0,
-            min_value=0.0)
-        ball_metric_p = st.number_input(
-            '🌐 Lp Metric',
-            value=2,
-            min_value=1)
-        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
-    elif cover_type == V_COVER_CUBICAL:
-        cubical_n = st.number_input(
-            '🌐 Intervals',
-            value=10,
-            min_value=0)
-        cubical_p = st.number_input(
-            '🌐 Overlap Fraction',
-            value=0.25,
-            min_value=0.0,
-            max_value=1.0)
-        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
-    return cover
-
-
-def _clustering_tuning(clustering_type):
-    clustering = None
-    if clustering_type == V_CLUSTERING_TRIVIAL:
-        clustering = TrivialClustering()
-    elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        clust_n = st.number_input(
-            '🧮 Clusters',
-            value=2,
-            min_value=1)
-        clustering = AgglomerativeClustering(n_clusters=clust_n)
-    return clustering
-
-
 def mapper_run_section(lens_type, cover_type, clustering_type):
     X = st.session_state[S_RESULTS].X
     lens = _lens_tuning(lens_type)
@@ -511,101 +621,50 @@ def mapper_run_section(lens_type, cover_type, clustering_type):
         _update_mapper(X, lens, cover, clustering)
 
 
+def mapper_color_section():
+    X = st.session_state[S_RESULTS].X
+    df_all = st.session_state[S_RESULTS].df_all
+    col_feat = st.selectbox(
+        '🎨 Color',
+        options=list(df_all.columns),
+        on_change=_update_mapper_fig_outdated)
+    return col_feat
+
+
+def mapper_draw_section(color_feat):
+    seed = _mapper_seed()
+    cmap = _mapper_cmap()
+    agg, agg_name = _mapper_aggregation()
+    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    update_button = st.button(
+        '🖌️ Draw',
+        use_container_width=True,
+        disabled=mapper_plot is None)
+    mapper_fig_outdated = st.session_state[S_RESULTS].mapper_fig_outdated
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    title = f'{agg_name} of {color_feat}'
+    if auto_rendering and mapper_fig_outdated:
+        _update_fig(seed, color_feat, agg, cmap, title)
+    elif update_button:
+        _update_fig(seed, color_feat, agg, cmap, title)
+
+
+def data_summary_section():
+    _data_caption()
+    _data_summary()
+    #_data_download()
+
+
+def data_output_section():
+    _data_caption()
+    _data_preview()
+    _data_download()
+
+
 def mapper_output_section():
     _mapper_caption()
     _mapper_histogram()
     _mapper_download()
-
-
-def _update_fig(seed, colors, agg):
-    mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    if mapper_plot is None:
-        return
-    mapper_plot.update(
-        colors=colors,
-        seed=seed,
-        agg=agg)
-    mapper_fig = mapper_plot.plot()
-    mapper_fig.update_layout(
-        uirevision='constant',
-        margin=dict(b=0, l=0, r=0, t=0))
-    st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
-    st.toast('Successfully Rendered Graph', icon='✅')
-
-
-def _update_auto_rendering():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    nodes_num = mapper_graph.number_of_nodes() if mapper_graph else 0
-    if nodes_num <= MAX_NODES:
-        st.session_state[S_RESULTS].auto_rendering = True
-
-
-def _mapper_colors():
-    X = st.session_state[S_RESULTS].X
-    df_all = st.session_state[S_RESULTS].df_all
-    df_summary = st.session_state[S_RESULTS].df_summary
-    colors = X
-    data_edit = st.data_editor(
-        df_summary,
-        height=250,
-        hide_index=True,
-        disabled=(c for c in df_summary.columns if c != V_DATA_SUMMARY_COLOR),
-        use_container_width=True,
-        column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='small'),
-            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
-                width='small',
-                disabled=True),
-            V_DATA_SUMMARY_COLOR: st.column_config.CheckboxColumn(
-                width='small',
-                disabled=False)
-        }, on_change=_update_auto_rendering)
-    if not data_edit.empty:
-        color_features = data_edit[data_edit[V_DATA_SUMMARY_COLOR]][V_DATA_SUMMARY_FEAT]
-        if not color_features.empty:
-            selected = pd.concat([df_all[c] for c in color_features], axis=1)
-            if not selected.empty:
-                colors = selected.to_numpy()
-    return colors
-
-
-def _mapper_agg():
-    agg_sel = st.selectbox(
-        'Aggregation',
-        options=['Mean', 'Std'],
-        on_change=_update_auto_rendering)
-    if agg_sel == 'Mean':
-        agg = np.mean
-    elif agg_sel == 'Std':
-        agg = np.std
-    return agg
-
-
-def _mapper_seed():
-    seed = st.number_input(
-        'Seed',
-        value=VD_SEED,
-        help='Changing this value alters the shape',
-        on_change=_update_auto_rendering)
-    return seed
-
-
-def mapper_draw_section():
-    colors = _mapper_colors()
-    agg = _mapper_agg()
-    seed = _mapper_seed()
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if auto_rendering:
-        _update_fig(seed, colors, agg)
-    else:
-        mapper_plot = st.session_state[S_RESULTS].mapper_plot
-        update_button = st.button(
-            '🎨 Draw',
-            use_container_width=True,
-            disabled=mapper_plot is None)
-        if update_button:
-            _update_fig(seed, colors, agg)
 
 
 def mapper_rendering_section():
@@ -626,13 +685,16 @@ def main():
         lens_type, cover_type, clustering_type = mapper_settings_section()
         with st.popover('🚀 Run', use_container_width=True):
             mapper_run_section(lens_type, cover_type, clustering_type)
-        with st.popover('🎨 Draw', use_container_width=True):
-            mapper_draw_section()
+        color_feat = mapper_color_section()
+        with st.popover('🖌️ Draw', use_container_width=True):
+            mapper_draw_section(color_feat)
         with st.popover('ℹ️ More', use_container_width=True):
-            tab_0, tab_1 = st.tabs(['🗒️ Data', '📊 Mapper'])
+            tab_0, tab_1, tab_2 = st.tabs(['📈 Features', '🗒️ Data', '📊 Mapper'])
             with tab_0:
-                data_output_section()
+                data_summary_section()
             with tab_1:
+                data_output_section()
+            with tab_2:
                 mapper_output_section()
     with col_1:
         mapper_rendering_section()
