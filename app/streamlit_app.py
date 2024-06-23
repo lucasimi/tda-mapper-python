@@ -30,8 +30,6 @@ SAMPLE_FRAC = 0.1
 
 OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
 
-DATA_INFO = 'Non-numeric and NaN features get dropped. NaN rows get replaced by mean'
-
 GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
 
 REPORT_BUG = f'{GIT_REPO_URL}/issues'
@@ -52,7 +50,7 @@ LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizonta
 
 APP_TITLE = 'TDA Mapper App'
 
-# V_* are reusable values for widgets
+# V_* are reusable constant values
 
 V_LENS_IDENTITY = 'Identity'
 
@@ -72,17 +70,21 @@ V_DATA_SUMMARY_FEAT = 'feature'
 
 V_DATA_SUMMARY_HIST = 'histogram'
 
-V_DATA_SUMMARY_COLOR = 'color'
-
 V_DATA_SUMMARY_BINS = 15
 
-# VD_* are reusable default values for widgets
+V_AGGREGATION_MEAN = 'Mean'
+
+V_AGGREGATION_STD = 'Std'
+
+V_AGGREGATION_QUANTILE = 'Quantile'
+
+# VD_* are reusable default values
 
 VD_SEED = 42
 
 VD_DIM = 3
 
-# S_* are reusable manually managed stored objects
+# S_* are reusable session stored objects
 
 S_RESULTS = 'stored_results'
 
@@ -102,6 +104,7 @@ class Results:
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
         self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def _init_fig(self):
         fig = go.Figure(
@@ -129,6 +132,10 @@ class Results:
                     showline=True,
                     ticks='outside')))
         return fig
+    
+    def _auto_rendering(self):
+        nodes_num = self.mapper_graph.number_of_nodes()
+        return nodes_num <= MAX_NODES
 
     def set_df(self, X, y):
         self.df_X = fix_data(X)
@@ -143,6 +150,7 @@ class Results:
         self.mapper_plot = None
         self.mapper_fig = self._init_fig()
         self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
@@ -155,6 +163,7 @@ class Results:
             seed=VD_SEED)
         self.mapper_fig = self._init_fig()
         self.mapper_fig_outdated = True
+        self.auto_rendering = self._auto_rendering()
 
     def set_mapper_fig(self, mapper_fig):
         self.mapper_fig = mapper_fig
@@ -215,12 +224,6 @@ def _get_data_summary(df_X, df_y):
         V_DATA_SUMMARY_FEAT: df.columns,
         V_DATA_SUMMARY_HIST: df_hist.values.tolist()})
     return df_summary
-
-
-def auto_rendering():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    nodes_num = mapper_graph.number_of_nodes()
-    return nodes_num <= MAX_NODES
 
 
 def _mapper_caption():
@@ -352,7 +355,7 @@ def _update_data(data_source):
             st.toast(f'# {err}', icon='🚨')
     df_X, df_y = fix_data(X), fix_data(y)
     st.session_state[S_RESULTS].set_df(df_X, df_y)
-    st.toast('Successfully Loaded Data', icon='✅')
+    st.toast('Successfully Loaded Data', icon='📦')
 
 
 def _data_caption():
@@ -442,8 +445,9 @@ def _update_mapper(X, lens, cover, clustering):
             verbose=False))
     mapper_graph = mapper_algo.fit_transform(X, lens)
     st.session_state[S_RESULTS].set_mapper(mapper_graph)
-    st.toast('Successfully Computed Mapper', icon='✅')
-    if not auto_rendering():
+    st.toast('Successfully Computed Mapper', icon='🚀')
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    if not auto_rendering:
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
@@ -541,51 +545,56 @@ def mapper_output_section():
     _mapper_download()
 
 
-def _update_fig(seed, colors, agg):
+def _update_fig(seed, colors, agg, cmap, title):
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
     if mapper_plot is None:
         return
     mapper_plot.update(
         colors=colors,
         seed=seed,
-        agg=agg)
+        agg=agg,
+        title=title,
+        cmap=cmap)
     mapper_fig = mapper_plot.plot()
     mapper_fig.update_layout(
         uirevision='constant',
         margin=dict(b=0, l=0, r=0, t=0))
     st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
-    st.toast('Successfully Rendered Graph', icon='✅')
+    st.toast('Successfully Rendered Graph', icon='🖌️')
 
 
 def _update_mapper_fig_outdated():
     st.session_state[S_RESULTS].mapper_fig_outdated = True
 
 
-def _mapper_colors():
+def _mapper_color_feature():
     X = st.session_state[S_RESULTS].X
     df_all = st.session_state[S_RESULTS].df_all
-    colors = X
     col_feat = st.selectbox(
-        'Color',
+        '🎨 Color',
         options=list(df_all.columns),
         on_change=_update_mapper_fig_outdated)
-    if col_feat in df_all.columns:
-        df_col = df_all[col_feat]
-        colors = df_col.to_numpy()
-    return colors
+    return col_feat
 
 
-def _mapper_aggregation():
-    agg = None
+def _mapper_aggregation_type():
     agg_type = st.selectbox(
-        'Aggregation',
-        options=['Mean', 'Std', 'Quantile'],
+        '🍲 Aggregation',
+        options=[
+            V_AGGREGATION_MEAN,
+            V_AGGREGATION_STD,
+            V_AGGREGATION_QUANTILE],
         on_change=_update_mapper_fig_outdated)
-    if agg_type == 'Mean':
+    return agg_type
+
+
+def _mapper_aggregation(agg_type):
+    agg = None
+    if agg_type == V_AGGREGATION_MEAN:
         agg = np.nanmean
-    elif agg_type == 'Std':
+    elif agg_type == V_AGGREGATION_STD:
         agg = np.nanstd
-    elif agg_type == 'Quantile':
+    elif agg_type == V_AGGREGATION_QUANTILE:
         q = st.slider(
             'Rank',
             value=0.5,
@@ -598,26 +607,40 @@ def _mapper_aggregation():
 
 def _mapper_seed():
     seed = st.number_input(
-        'Seed',
+        '🎲 Seed',
         value=VD_SEED,
         help='Changing this value alters the shape',
         on_change=_update_mapper_fig_outdated)
     return seed
 
 
-def mapper_draw_section(colors):
+def mapper_draw_section(color_feat):
+    df_all = st.session_state[S_RESULTS].df_all
+    if color_feat in df_all.columns:
+        df_col = df_all[color_feat]
+        colors = df_col.to_numpy()
     seed = _mapper_seed()
-    agg = _mapper_aggregation()
+    cmap = st.selectbox(
+        '🌈 Colormap',
+        options=[
+            'Jet',
+            'Viridis',
+            'HSV'],
+        on_change=_update_mapper_fig_outdated)
+    agg_type = _mapper_aggregation_type()
+    agg = _mapper_aggregation(agg_type)
     mapper_plot = st.session_state[S_RESULTS].mapper_plot
     update_button = st.button(
-        '🎨 Draw',
+        '🖌️ Draw',
         use_container_width=True,
         disabled=mapper_plot is None)
     mapper_fig_outdated = st.session_state[S_RESULTS].mapper_fig_outdated
-    if auto_rendering() and mapper_fig_outdated:
-        _update_fig(seed, colors, agg)
+    auto_rendering = st.session_state[S_RESULTS].auto_rendering
+    title = f'{agg_type} of {color_feat}'
+    if auto_rendering and mapper_fig_outdated:
+        _update_fig(seed, colors, agg, cmap, title)
     elif update_button:
-        _update_fig(seed, colors, agg)
+        _update_fig(seed, colors, agg, cmap, title)
 
 
 def mapper_rendering_section():
@@ -638,9 +661,9 @@ def main():
         lens_type, cover_type, clustering_type = mapper_settings_section()
         with st.popover('🚀 Run', use_container_width=True):
             mapper_run_section(lens_type, cover_type, clustering_type)
-        colors = _mapper_colors()
-        with st.popover('🎨 Draw', use_container_width=True):
-            mapper_draw_section(colors)
+        color_feat = _mapper_color_feature()
+        with st.popover('🖌️ Draw', use_container_width=True):
+            mapper_draw_section(color_feat)
         with st.popover('ℹ️ More', use_container_width=True):
             tab_0, tab_1, tab_2 = st.tabs(['📈 Features', '🗒️ Data', '📊 Mapper'])
             with tab_0:
