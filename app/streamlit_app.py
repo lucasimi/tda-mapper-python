@@ -616,6 +616,8 @@ def _mapper_seed():
 
 def mapper_draw_section(color_feat):
     df_all = st.session_state[S_RESULTS].df_all
+    X = st.session_state[S_RESULTS].X
+    colors = X
     if color_feat in df_all.columns:
         df_col = df_all[color_feat]
         colors = df_col.to_numpy()
