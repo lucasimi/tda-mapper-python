@@ -108,9 +108,9 @@ class Results:
         self.df_all_sample = pd.DataFrame()
         self.X = self.df_X.to_numpy()
         self.df_summary = pd.DataFrame()
-        self.mapper_graph = nx.Graph()
+        self.mapper_graph = None
         self.mapper_plot = None
-        self.mapper_fig = self._init_fig()
+        self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
@@ -142,6 +142,8 @@ class Results:
         return fig
     
     def _auto_rendering(self):
+        if self.mapper_graph is None:
+            return False
         nodes_num = self.mapper_graph.number_of_nodes()
         return nodes_num <= MAX_NODES
 
@@ -154,9 +156,9 @@ class Results:
         self.df_all_sample = pd.concat([self.df_y_sample, self.df_X_sample], axis=1)
         self.X = self.df_X.to_numpy()
         self.df_summary = _get_data_summary(self.df_X, self.df_y)
-        self.mapper_graph = nx.Graph()
+        self.mapper_graph = None
         self.mapper_plot = None
-        self.mapper_fig = self._init_fig()
+        self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
@@ -169,7 +171,7 @@ class Results:
             width=500,
             colors=self.X,
             seed=VD_SEED)
-        self.mapper_fig = self._init_fig()
+        self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
@@ -374,11 +376,12 @@ def _clustering_tuning(clustering_type):
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        clust_n = st.number_input(
+        clust_num = st.number_input(
             '🧮 Clusters',
             value=2,
             min_value=1)
-        clustering = AgglomerativeClustering(n_clusters=clust_n)
+        n_clusters = int(clust_num)
+        clustering = AgglomerativeClustering(n_clusters=n_clusters)
     return clustering
 
 
@@ -500,29 +503,35 @@ def _mapper_caption():
 
 def _mapper_histogram():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    ccs = nx.connected_components(mapper_graph)
-    size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
-    node_cc, node_size = {}, {}
-    node_cc_max, node_size_max = 1, 1
-    for cc in ccs:
-        cc_len = len(cc)
-        for u in cc:
-            u_size = size[u]
-            node_cc[u] = cc_len
-            node_size[u] = u_size
-            if u_size > node_size_max:
-                node_size_max = u_size
-        if cc_len > node_cc_max:
-            node_cc_max = cc_len
-    arr_size = np.array([node_size[u]/node_size_max for u in mapper_graph.nodes()])
-    arr_cc = np.array([node_cc[u]/node_cc_max for u in mapper_graph.nodes()])
+    node_size_feat = 'node size (rel.)'
+    cc_size_feat = 'conn. comp. size (rel.)'
     df = pd.DataFrame(dict(
-        series=np.concatenate((
-            ['node size (rel.)'] * len(arr_size),
-            ['conn. comp. size (rel.)'] * len(arr_cc))),
-        data=np.concatenate((
-            arr_size,
-            arr_cc))))
+        series=[node_size_feat, cc_size_feat],
+        data=[0.0, 0.0]))
+    if mapper_graph:
+        ccs = nx.connected_components(mapper_graph)
+        size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
+        node_cc, node_size = {}, {}
+        node_cc_max, node_size_max = 1, 1
+        for cc in ccs:
+            cc_len = len(cc)
+            for u in cc:
+                u_size = size[u]
+                node_cc[u] = cc_len
+                node_size[u] = u_size
+                if u_size > node_size_max:
+                    node_size_max = u_size
+            if cc_len > node_cc_max:
+                node_cc_max = cc_len
+        arr_size = np.array([node_size[u]/node_size_max for u in mapper_graph.nodes()])
+        arr_cc = np.array([node_cc[u]/node_cc_max for u in mapper_graph.nodes()])
+        df = pd.DataFrame(dict(
+            series=np.concatenate((
+                [node_size_feat] * len(arr_size),
+                [cc_size_feat] * len(arr_cc))),
+            data=np.concatenate((
+                arr_size,
+                arr_cc))))
     fig = px.histogram(
         df,
         nbins=20,
@@ -559,11 +568,10 @@ def _mapper_download():
     mapper_graph = st.session_state[S_RESULTS].mapper_graph
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     mapper_json = json.dumps(mapper_adj, default=int)
-    nodes_num = mapper_graph.number_of_nodes()
     return st.download_button(
         '📥 Download Mapper',
         data=get_gzip_bytes(mapper_json),
-        disabled=nodes_num < 1,
+        disabled=mapper_graph is None,
         use_container_width=True,
         file_name=f'mapper_graph_{int(time.time())}.json.gzip')
 
@@ -622,7 +630,6 @@ def mapper_run_section(lens_type, cover_type, clustering_type):
 
 
 def mapper_color_section():
-    X = st.session_state[S_RESULTS].X
     df_all = st.session_state[S_RESULTS].df_all
     col_feat = st.selectbox(
         '🎨 Color',
@@ -669,11 +676,12 @@ def mapper_output_section():
 
 def mapper_rendering_section():
     mapper_fig = st.session_state[S_RESULTS].mapper_fig
-    with st.container(border=False):
-        st.plotly_chart(
-            mapper_fig,
-            height=350,
-            use_container_width=True)
+    if mapper_fig is not None:
+        with st.container(border=False):
+            st.plotly_chart(
+                mapper_fig,
+                height=350,
+                use_container_width=True)
 
 
 def main():
