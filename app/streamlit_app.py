@@ -7,7 +7,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
 import networkx as nx 
 from networkx.readwrite.json_graph import adjacency_data
@@ -114,33 +113,6 @@ class Results:
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
-    def _init_fig(self):
-        fig = go.Figure(
-            data=[go.Scatter3d(
-                x=[],
-                y=[],
-                z=[],
-                mode='markers')])
-        fig.update_layout(
-            uirevision='constant',
-            scene=dict(
-                xaxis=dict(
-                    showgrid=True,
-                    zeroline=True,
-                    showline=True,
-                    ticks='outside'),
-                yaxis=dict(
-                    showgrid=True,
-                    zeroline=True,
-                    showline=True,
-                    ticks='outside'),
-                zaxis=dict(
-                    showgrid=True,
-                    zeroline=True,
-                    showline=True,
-                    ticks='outside')))
-        return fig
-    
     def _auto_rendering(self):
         if self.mapper_graph is None:
             return False
@@ -164,19 +136,39 @@ class Results:
 
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
-        self.mapper_plot = MapperLayoutInteractive(
-            self.mapper_graph,
-            dim=VD_DIM,
-            height=500,
-            width=500,
-            colors=self.X,
-            seed=VD_SEED)
+        self.mapper_plot = None
         self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
-    def set_mapper_fig(self, mapper_fig):
-        self.mapper_fig = mapper_fig
+    def set_mapper_fig(self, seed, color_feat, agg, cmap, title):
+        colors = self.X
+        df_all = st.session_state[S_RESULTS].df_all
+        if color_feat in df_all.columns:
+            df_col = df_all[color_feat]
+            colors = df_col.to_numpy()
+        if self.mapper_plot is None:
+            self.mapper_plot = MapperLayoutInteractive(
+                self.mapper_graph,
+                dim=VD_DIM,
+                seed=seed,
+                colors=colors,
+                agg=agg,
+                cmap=cmap,
+                title=title,
+                height=500,
+                width=500)
+        else:
+            self.mapper_plot.update(
+                seed=seed,
+                colors=colors,
+                agg=agg,
+                cmap=cmap,
+                title=title)
+        self.mapper_fig = self.mapper_plot.plot()
+        self.mapper_fig.update_layout(
+            uirevision='constant',
+            margin=dict(b=0, l=0, r=0, t=0))
         self.mapper_fig_outdated = False
 
 
@@ -298,26 +290,7 @@ def _update_mapper(X, lens, cover, clustering):
 
 
 def _update_fig(seed, color_feat, agg, cmap, title):
-    mapper_plot = st.session_state[S_RESULTS].mapper_plot
-    if mapper_plot is None:
-        return
-    X = st.session_state[S_RESULTS].X
-    colors = X
-    df_all = st.session_state[S_RESULTS].df_all
-    if color_feat in df_all.columns:
-        df_col = df_all[color_feat]
-        colors = df_col.to_numpy()
-    mapper_plot.update(
-        colors=colors,
-        seed=seed,
-        agg=agg,
-        title=title,
-        cmap=cmap)
-    mapper_fig = mapper_plot.plot()
-    mapper_fig.update_layout(
-        uirevision='constant',
-        margin=dict(b=0, l=0, r=0, t=0))
-    st.session_state[S_RESULTS].set_mapper_fig(mapper_fig)
+    st.session_state[S_RESULTS].set_mapper_fig(seed, color_feat, agg, cmap, title)
     st.toast('Successfully Rendered Graph', icon='🖌️')
 
 
