@@ -89,8 +89,6 @@ V_CMAP_CYCLIC_TWILIGHT = 'Cyclic (Twilight)'
 
 VD_SEED = 42
 
-VD_DIM = 3
-
 # S_* are reusable session stored objects
 
 S_RESULTS = 'stored_results'
@@ -109,6 +107,7 @@ class Results:
         self.df_summary = pd.DataFrame()
         self.mapper_graph = None
         self.mapper_plot = None
+        self.mapper_dim = None
         self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
@@ -130,6 +129,7 @@ class Results:
         self.df_summary = _get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = None
         self.mapper_plot = None
+        self.mapper_dim = None
         self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
@@ -137,20 +137,21 @@ class Results:
     def set_mapper(self, mapper_graph):
         self.mapper_graph = mapper_graph
         self.mapper_plot = None
+        self.mapper_dim = None
         self.mapper_fig = None
         self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
-    def set_mapper_fig(self, seed, color_feat, agg, cmap, title):
+    def set_mapper_fig(self, dim, seed, color_feat, agg, cmap, title):
         colors = self.X
         df_all = st.session_state[S_RESULTS].df_all
         if color_feat in df_all.columns:
             df_col = df_all[color_feat]
             colors = df_col.to_numpy()
-        if self.mapper_plot is None:
+        if (self.mapper_plot is None) or (dim != self.mapper_dim):
             self.mapper_plot = MapperLayoutInteractive(
                 self.mapper_graph,
-                dim=VD_DIM,
+                dim=dim,
                 seed=seed,
                 colors=colors,
                 agg=agg,
@@ -158,6 +159,7 @@ class Results:
                 title=title,
                 height=500,
                 width=500)
+            self.mapper_dim = dim
         else:
             self.mapper_plot.update(
                 seed=seed,
@@ -169,6 +171,13 @@ class Results:
         self.mapper_fig.update_layout(
             uirevision='constant',
             margin=dict(b=0, l=0, r=0, t=0))
+        self.mapper_fig.update_xaxes(
+            #constrain='domain',
+            showline=False)
+        self.mapper_fig.update_yaxes(
+            showline=False,
+            scaleanchor='x',
+            scaleratio = 1)
         self.mapper_fig_outdated = False
 
 
@@ -289,8 +298,8 @@ def _update_mapper(X, lens, cover, clustering):
         st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
 
 
-def _update_fig(seed, color_feat, agg, cmap, title):
-    st.session_state[S_RESULTS].set_mapper_fig(seed, color_feat, agg, cmap, title)
+def _update_fig(dim, seed, color_feat, agg, cmap, title):
+    st.session_state[S_RESULTS].set_mapper_fig(dim, seed, color_feat, agg, cmap, title)
     st.toast('Successfully Rendered Graph', icon='🖌️')
 
 
@@ -431,6 +440,15 @@ def _mapper_aggregation():
         agg = lambda x: np.nanquantile(x, q=q)
         agg_name = f'Quantile {round(q, 2)}'
     return agg, agg_name
+
+
+def _mapper_dim():
+    toggle_3d = st.toggle(
+        '3D Rendering',
+        value=True,
+        on_change=_update_mapper_fig_outdated)
+    dim = 3 if toggle_3d else 2
+    return dim
 
 
 def _mapper_seed():
@@ -612,6 +630,7 @@ def mapper_color_section():
 
 
 def mapper_draw_section(color_feat):
+    dim = _mapper_dim()
     seed = _mapper_seed()
     cmap = _mapper_cmap()
     agg, agg_name = _mapper_aggregation()
@@ -624,9 +643,9 @@ def mapper_draw_section(color_feat):
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     title = f'{agg_name} of {color_feat}'
     if auto_rendering and mapper_fig_outdated:
-        _update_fig(seed, color_feat, agg, cmap, title)
+        _update_fig(dim, seed, color_feat, agg, cmap, title)
     elif update_button:
-        _update_fig(seed, color_feat, agg, cmap, title)
+        _update_fig(dim, seed, color_feat, agg, cmap, title)
 
 
 def data_summary_section():
