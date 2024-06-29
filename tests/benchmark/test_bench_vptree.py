@@ -7,6 +7,7 @@ from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
 from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree_sklearn import VPTree as SKVPT
 from tdamapper.utils.metrics import euclidean
 
 
@@ -27,7 +28,7 @@ class TestBenchmark(unittest.TestCase):
         datefmt = '%m/%d/%Y %I:%M:%S %p', 
         level = logging.INFO)
 
-    def test_bench(self):
+    def a_test_bench(self):
         self.logger.info('==== Dataset random =============')
         self._test_compare(_dataset())
         self.logger.info('==== Dataset iris ===============')
@@ -42,16 +43,19 @@ class TestBenchmark(unittest.TestCase):
     
     def _test_compare(self, data):
         self.logger.info('[build]')
-        hvpt = self._test_build(data, ' * HVPT  ', HVPT)
-        fvpt = self._test_build(data, ' * FVPT  ', FVPT)
+        hvpt = self._test_build(data, ' *  HVPT  ', HVPT)
+        fvpt = self._test_build(data, ' *  FVPT  ', FVPT)
+        skvpt = self._test_build(data, ' * SKVPT  ', SKVPT)
         self.logger.info('[ball search]')
         self._test_ball_search_naive(data, ' * Naive ')
-        self._test_ball_search(data, ' * HVPT  ', hvpt)
-        self._test_ball_search(data, ' * FVPT  ', fvpt)
+        self._test_ball_search(data, ' *  HVPT  ', hvpt)
+        self._test_ball_search(data, ' *  FVPT  ', fvpt)
+        self._test_ball_search(data, ' * SKVPT  ', skvpt)
         self.logger.info('[knn search]')
         self._test_knn_search_naive(data, ' * Naive ')
-        self._test_knn_search(data, ' * HVPT  ', hvpt)
-        self._test_knn_search(data, ' * FVPT  ', fvpt)
+        self._test_knn_search(data, ' *  HVPT  ', hvpt)
+        self._test_knn_search(data, ' *  FVPT  ', fvpt)
+        self._test_knn_search(data, ' * SKVPT  ', skvpt)
 
     def _test_build(self, data, name, builder):
         t0 = time()

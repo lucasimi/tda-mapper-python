@@ -1,5 +1,6 @@
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_sklearn import VPTree as SKVPT
 
 class VPTree:
 
@@ -28,6 +29,10 @@ class VPTree:
                 leaf_capacity=self.leaf_capacity, 
                 leaf_radius=self.leaf_radius,
                 strategy=self.strategy)
+        elif self.kind == 'sklearn':
+            self.__vpt = SKVPT(
+                metric=self.metric,
+                leaf_capacity=self.leaf_capacity)
         self.__vpt.fit(X)
         return self
 

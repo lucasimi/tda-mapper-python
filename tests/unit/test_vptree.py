@@ -5,6 +5,7 @@ import numpy as np
 
 from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree_sklearn import VPTree as SKVPT
 from tdamapper.utils.metrics import euclidean
 
 
@@ -99,3 +100,15 @@ class TestVPTree(unittest.TestCase):
     def test_flat_vptree_data(self):
         data = dataset()
         self._test_vptree(FVPT, data, euclidean())
+
+    def test_sklearn_vptree_refs(self):
+        data = dataset()
+        data_refs = list(range(len(data)))
+        dist = euclidean()
+        def dist_refs(i, j):
+            return dist(data[i], data[j])
+        self._test_vptree(SKVPT, data_refs, dist_refs)
+
+    def test_sklearn_vptree_data(self):
+        data = dataset()
+        self._test_vptree(SKVPT, data, euclidean())
