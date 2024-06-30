@@ -44,7 +44,7 @@ class TestProximity(unittest.TestCase):
         p = 0.1
         w = (M - m) / (n * (1.0 - p))
         delta = p * w
-        data = list(range(m, M + 1))
+        data = np.array([[x] for x in range(m, M + 1)])
         prox = CubicalProximity(n_intervals=n, overlap_frac=p)
         prox.fit(data)
         for x in data:
@@ -53,4 +53,8 @@ class TestProximity(unittest.TestCase):
             a_i = m + i * (w - delta) - delta / 2.0
             b_i = m + (i + 1) * (w - delta) + delta / 2.0
             expected = [y for y in data if y > a_i and y < b_i]
-            self.assertEqual(set(expected), set(result))
+            for c in result:
+                self.assertTrue(c in expected)
+            for c in expected:
+                self.assertTrue(c in result)
+            #self.assertEqual(set(expected), set(result))

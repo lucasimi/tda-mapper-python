@@ -13,6 +13,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
+from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tdamapper.utils.vptree import VPTree as VPT
 
@@ -59,11 +60,6 @@ def _pullback(fun, dist):
 
 def _rho(x):
     return np.floor(x) + 0.5
-
-
-def _l_infty(x, y):
-    # in alternative: np.linalg.norm(x - y, ord=np.inf)
-    return np.max(np.abs(x - y))
 
 
 class Proximity:
@@ -128,7 +124,8 @@ class BallProximity(Proximity):
     """
 
     def __init__(self, radius, metric, flat=True):
-        self.__metric = lambda x, y: metric(x[1], y[1])
+        _metric = get_metric(metric)
+        self.__metric = lambda x, y: _metric(x[1], y[1])
         self.__radius = radius
         self.__data = None
         self.__vptree = None
@@ -198,7 +195,8 @@ class KNNProximity(Proximity):
 
     def __init__(self, neighbors, metric, flat=True):
         self.__neighbors = neighbors
-        self.__metric = _pullback(lambda x: x[1], metric)
+        _metric = get_metric(metric)
+        self.__metric = _pullback(lambda x: x[1], _metric)
         self.__data = None
         self.__vptree = None
         self.__flat = flat
@@ -271,8 +269,10 @@ class CubicalProximity(Proximity):
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
-        metric = _pullback(self._gamma_n, _l_infty)
-        self.__ball_proximity = BallProximity(self.__radius, metric, flat=flat)
+        _l_infty = get_metric('chebyshev')
+        #_l_infty = lambda x, y: np.max(np.abs(x - y))
+        _metric = _pullback(self._gamma_n, _l_infty)
+        self.__ball_proximity = BallProximity(self.__radius, _metric, flat=flat)
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__minimum) / self.__delta
@@ -309,6 +309,9 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
+        #X = np.asarray(X)
+        X = np.array(X).reshape(len(X), -1)
+        print(X.shape)
         self._set_bounds(X)
         self.__ball_proximity.fit(X)
         return self
