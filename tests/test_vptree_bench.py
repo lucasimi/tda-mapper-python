@@ -5,12 +5,14 @@ from time import time
 import numpy as np
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
-from tdamapper.utils.vptree import VPTree as VPT
+import tdamapper.utils.cython.metrics as metrics
+
+from tdamapper.utils.vptree import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.cython.vptree_flat import VPTree as CVPT
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
+dist = 'euclidean'
 
 
 def dataset(dim=10, num=1000):
@@ -45,16 +47,19 @@ class TestBenchmark(unittest.TestCase):
     
     def _testCompare(self, data):
         self.logger.info('[build]')
-        vpt = self._testBuild(data, ' * VPT  ', VPT)
+        vpt = self._testBuild(data, ' * HVPT ', HVPT)
         fvpt = self._testBuild(data, ' * FVPT ', FVPT)
+        cvpt = self._testBuild(data, ' * CVPT ', CVPT)
         self.logger.info('[ball search]')
         self._testBallSearchNaive(data, ' * Naive ')
-        self._testBallSearch(data, ' * VPT  ', vpt)
+        self._testBallSearch(data, ' * HVPT ', vpt)
         self._testBallSearch(data, ' * FVPT ', fvpt)
+        self._testBallSearch(data, ' * CVPT ', cvpt)
         self.logger.info('[knn search]')
         self._testKNNSearchNaive(data, ' * Naive ')
-        self._testKNNSearch(data, ' * VPT  ', vpt)
+        self._testKNNSearch(data, ' * HVPT ', vpt)
         self._testKNNSearch(data, ' * FVPT ', fvpt)
+        self._testKNNSearch(data, ' * CVPT ', cvpt)
 
     def _testBuild(self, data, name, builder):
         t0 = time()
@@ -65,8 +70,9 @@ class TestBenchmark(unittest.TestCase):
 
     def _testBallSearchNaive(self, data, name):
         t0 = time()
+        m = metrics.get_metric(dist)
         for val in data:
-            neigh = [x for x in data if dist(val, x) <= self.eps]
+            neigh = [x for x in data if m(val, x) <= self.eps]
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')
 
@@ -79,8 +85,9 @@ class TestBenchmark(unittest.TestCase):
 
     def _testKNNSearchNaive(self, data, name):
         t0 = time()
+        m = metrics.get_metric(dist)
         for val in data:
-            data.sort(key=lambda x: dist(x, val))
+            data.sort(key=lambda x: m(x, val))
             neigh = [x for x in data[:self.k]]
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')

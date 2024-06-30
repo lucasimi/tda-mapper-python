@@ -3,8 +3,11 @@ import random
 
 import numpy as np
 
-from tdamapper.utils.vptree import VPTree
-from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
+import tdamapper.utils.cython.metrics as metrics
+
+from tdamapper.utils.vptree import VPTree as HVPT
+from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.cython.vptree_flat import VPTree as CVPT
 
 
 def distance(x, y):
@@ -22,6 +25,7 @@ class TestVPTree(unittest.TestCase):
     neighbors = 5
 
     def _testBallSearch(self, data, dist, vpt):
+        dist = metrics.get_metric(dist)
         for _ in range(len(data) // 10):
             point = random.choice(data)
             ball = vpt.ball_search(point, self.eps)
@@ -32,6 +36,7 @@ class TestVPTree(unittest.TestCase):
                 self.assertTrue(any(dist(x, y) == 0.0 for y in ball))
 
     def _testKNNSearch(self, data, dist, vpt):
+        dist = metrics.get_metric(dist)
         for _ in range(len(data) // 10):
             point = random.choice(data)
             neigh = vpt.knn_search(point, self.neighbors)
@@ -46,6 +51,7 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(set(dist_neigh), set(dist_data[:self.neighbors]))
 
     def _testNNSearch(self, data, dist, vpt):
+        dist = metrics.get_metric(dist)
         for val in data:
             neigh = vpt.knn_search(val, 1)
             self.assertEqual(0.0, dist(val, neigh[0]))
@@ -69,19 +75,23 @@ class TestVPTree(unittest.TestCase):
         data_refs = list(range(len(data)))
         def dist_refs(i, j):
             return distance(data[i], data[j])
-        self._testVPTree(VPTree, data_refs, dist_refs)
+        self._testVPTree(HVPT, data_refs, dist_refs)
 
     def testVPTreeData(self):
         data = dataset()
-        self._testVPTree(VPTree, data, distance)
+        self._testVPTree(HVPT, data, distance)
 
     def testFlatVPTreeRefs(self):
         data = dataset()
         data_refs = list(range(len(data)))
         def dist_refs(i, j):
             return distance(data[i], data[j])
-        self._testVPTree(FlatVPTree, data_refs, dist_refs)
+        self._testVPTree(FVPT, data_refs, dist_refs)
 
     def testFlatVPTreeData(self):
         data = dataset()
-        self._testVPTree(FlatVPTree, data, distance)
+        self._testVPTree(FVPT, data, distance)
+
+    def test_data_CVPT(self):
+        data = dataset()
+        self._testVPTree(CVPT, data, 'euclidean')

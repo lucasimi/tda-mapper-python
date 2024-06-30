@@ -1,6 +1,8 @@
 """A class for fast knn and range searches, depending only on a given metric"""
 from random import randrange
 
+import tdamapper.utils.cython.metrics as metrics
+
 from tdamapper.utils.quickselect import quickselect_tuple
 from tdamapper.utils.heap import MaxHeap
 
@@ -8,7 +10,7 @@ from tdamapper.utils.heap import MaxHeap
 class VPTree:
 
     def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
-        self.__distance = distance
+        self.__distance = metrics.get_metric(distance)
         self.__dataset = [(0.0, x) for x in dataset]
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius

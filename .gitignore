@@ -1,11 +1,19 @@
 **/__pycache__
 **/*.pyc
+**/*.pyo
 **/*.csv
 **/*.egg-info
 **/.ipynb_checkpoints
 **/*.log
 **/docs/build
 **/*.ipynb
+
+**/*.c
+**/*.cpp
+**/*.so
+**/*.pyd
+**/*.dll
+**/*.dylib
 
 .coverage
 .vscode
