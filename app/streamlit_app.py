@@ -634,11 +634,11 @@ def mapper_draw_section(color_feat):
     seed = _mapper_seed()
     cmap = _mapper_cmap()
     agg, agg_name = _mapper_aggregation()
-    mapper_plot = st.session_state[S_RESULTS].mapper_plot
+    mapper_graph = st.session_state[S_RESULTS].mapper_graph
     update_button = st.button(
         '🖌️ Draw',
         use_container_width=True,
-        disabled=mapper_plot is None)
+        disabled=mapper_graph is None)
     mapper_fig_outdated = st.session_state[S_RESULTS].mapper_fig_outdated
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     title = f'{agg_name} of {color_feat}'
