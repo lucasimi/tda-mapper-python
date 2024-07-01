@@ -18,5 +18,5 @@
 .coverage
 .vscode
 .idea
-dist
-build
+dist/
+build/
