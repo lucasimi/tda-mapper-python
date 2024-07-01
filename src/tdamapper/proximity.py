@@ -309,11 +309,9 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        #X = np.asarray(X)
-        X = np.array(X).reshape(len(X), -1)
-        print(X.shape)
-        self._set_bounds(X)
-        self.__ball_proximity.fit(X)
+        XX = np.asarray(X).reshape(len(X), -1).astype(float)
+        self._set_bounds(XX)
+        self.__ball_proximity.fit(XX)
         return self
 
     def search(self, x):

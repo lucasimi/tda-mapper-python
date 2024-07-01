@@ -44,7 +44,7 @@ class TestProximity(unittest.TestCase):
         p = 0.1
         w = (M - m) / (n * (1.0 - p))
         delta = p * w
-        data = np.array([[x] for x in range(m, M + 1)])
+        data = list(range(m, M + 1))
         prox = CubicalProximity(n_intervals=n, overlap_frac=p)
         prox.fit(data)
         for x in data:

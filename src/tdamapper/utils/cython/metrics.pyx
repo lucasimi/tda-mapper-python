@@ -7,7 +7,7 @@ _MINKOWSKI_P = 'p'
 _CHEBYSHEV = 'chebyshev'
 
 
-cpdef double chebyshev(const double[:] x, const double[:] y) nogil:
+cpdef double chebyshev(double[:] x, double[:] y) nogil:
     cdef double max_diff = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
     for i in range(n):
