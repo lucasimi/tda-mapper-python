@@ -13,7 +13,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
-from tdamapper.utils.metrics import get_metric
+from tdamapper.utils.cython.metrics import get_metric, chebyshev
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tdamapper.utils.vptree import VPTree as VPT
 
@@ -269,9 +269,7 @@ class CubicalProximity(Proximity):
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
-        _l_infty = get_metric('chebyshev')
-        #_l_infty = lambda x, y: np.max(np.abs(x - y))
-        _metric = _pullback(self._gamma_n, _l_infty)
+        _metric = _pullback(self._gamma_n, chebyshev)
         self.__ball_proximity = BallProximity(self.__radius, _metric, flat=flat)
 
     def _gamma_n(self, x):
@@ -296,6 +294,9 @@ class CubicalProximity(Proximity):
         delta = self.__maximum - self.__minimum
         self.__delta = np.maximum(eps, delta)
 
+    def _convert(self, X):
+        return np.asarray(X).reshape(len(X), -1).astype(float)
+
     def fit(self, X):
         """
         Train internal parameters.
@@ -309,7 +310,7 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        XX = np.asarray(X).reshape(len(X), -1).astype(float)
+        XX = self._convert(X)
         self._set_bounds(XX)
         self.__ball_proximity.fit(XX)
         return self

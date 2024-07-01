@@ -2,7 +2,7 @@
 from random import randrange
 
 from tdamapper.utils.cython.metrics import get_metric
-from tdamapper.utils.quickselect import quickselect_tuple
+from tdamapper.utils.quickselect import quickselect
 from tdamapper.utils.heap import MaxHeap
 
 
@@ -61,7 +61,7 @@ class VPTree:
         if update:
             self._update(start, end)
         _, v_point = self.__dataset[start]
-        quickselect_tuple(self.__dataset, start + 1, end, mid)
+        quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
         if v_radius <= self.__leaf_radius:
             left = _Tree([x for _, x in self.__dataset[start:mid]])
