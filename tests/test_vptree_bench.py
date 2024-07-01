@@ -5,12 +5,12 @@ from time import time
 import numpy as np
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
+from tdamapper.utils.cython.metrics import get_metric
 from tdamapper.utils.vptree import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
+dist = 'euclidean'
 
 
 def dataset(dim=10, num=1000):
@@ -64,9 +64,10 @@ class TestBenchmark(unittest.TestCase):
         return vpt
 
     def _testBallSearchNaive(self, data, name):
+        d = get_metric(dist)
         t0 = time()
         for val in data:
-            neigh = [x for x in data if dist(val, x) <= self.eps]
+            neigh = [x for x in data if d(val, x) <= self.eps]
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')
 
@@ -78,9 +79,10 @@ class TestBenchmark(unittest.TestCase):
         self.logger.info(f'{name}: {t1 - t0}')
 
     def _testKNNSearchNaive(self, data, name):
+        d = get_metric(dist)
         t0 = time()
         for val in data:
-            data.sort(key=lambda x: dist(x, val))
+            data.sort(key=lambda x: d(x, val))
             neigh = [x for x in data[:self.k]]
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')

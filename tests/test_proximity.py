@@ -53,4 +53,8 @@ class TestProximity(unittest.TestCase):
             a_i = m + i * (w - delta) - delta / 2.0
             b_i = m + (i + 1) * (w - delta) + delta / 2.0
             expected = [y for y in data if y > a_i and y < b_i]
-            self.assertEqual(set(expected), set(result))
+            for c in result:
+                self.assertTrue(c in expected)
+            for c in expected:
+                self.assertTrue(c in result)
+            #self.assertEqual(set(expected), set(result))

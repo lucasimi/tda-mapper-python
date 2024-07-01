@@ -4,13 +4,13 @@ import numpy as np
 import networkx as nx
 from sklearn.cluster import DBSCAN
 
+from tdamapper.utils.cython.metrics import get_metric
 from tdamapper.core import MapperAlgorithm, mapper_connected_components, mapper_labels
 from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
+dist = 'euclidean'
 
 
 def dataset(dim=10, num=1000):

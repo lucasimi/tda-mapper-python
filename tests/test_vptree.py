@@ -3,12 +3,12 @@ import random
 
 import numpy as np
 
+from tdamapper.utils.cython.metrics import get_metric
 from tdamapper.utils.vptree import VPTree
 from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
 
 
-def distance(x, y):
-    return np.linalg.norm(x - y)
+distance = 'euclidean'
 
 
 def dataset(dim=10, num=1000):
@@ -25,19 +25,21 @@ class TestVPTree(unittest.TestCase):
         for _ in range(len(data) // 10):
             point = random.choice(data)
             ball = vpt.ball_search(point, self.eps)
-            near = [y for y in data if dist(point, y) < self.eps]
+            d = get_metric(dist)
+            near = [y for y in data if d(point, y) < self.eps]
             for x in ball:
-                self.assertTrue(any(dist(x, y) == 0.0 for y in near))
+                self.assertTrue(any(d(x, y) == 0.0 for y in near))
             for x in near:
-                self.assertTrue(any(dist(x, y) == 0.0 for y in ball))
+                self.assertTrue(any(d(x, y) == 0.0 for y in ball))
 
     def _testKNNSearch(self, data, dist, vpt):
         for _ in range(len(data) // 10):
             point = random.choice(data)
             neigh = vpt.knn_search(point, self.neighbors)
             self.assertEqual(self.neighbors, len(neigh))
-            dist_neigh = [dist(point, y) for y in neigh]
-            dist_data = [dist(point, y) for y in data]
+            d = get_metric(dist)
+            dist_neigh = [d(point, y) for y in neigh]
+            dist_data = [d(point, y) for y in data]
             dist_data.sort()
             dist_neigh.sort()
             self.assertEqual(0.0, dist_data[0])
@@ -46,9 +48,10 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(set(dist_neigh), set(dist_data[:self.neighbors]))
 
     def _testNNSearch(self, data, dist, vpt):
+        d = get_metric(dist)
         for val in data:
             neigh = vpt.knn_search(val, 1)
-            self.assertEqual(0.0, dist(val, neigh[0]))
+            self.assertEqual(0.0, d(val, neigh[0]))
 
     def _testVPTree(self, builder, data, dist):
         vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors)
@@ -67,8 +70,9 @@ class TestVPTree(unittest.TestCase):
     def testVPTreeRefs(self):
         data = dataset()
         data_refs = list(range(len(data)))
+        d = get_metric(distance)
         def dist_refs(i, j):
-            return distance(data[i], data[j])
+            return d(data[i], data[j])
         self._testVPTree(VPTree, data_refs, dist_refs)
 
     def testVPTreeData(self):
@@ -78,8 +82,9 @@ class TestVPTree(unittest.TestCase):
     def testFlatVPTreeRefs(self):
         data = dataset()
         data_refs = list(range(len(data)))
+        d = get_metric(distance)
         def dist_refs(i, j):
-            return distance(data[i], data[j])
+            return d(data[i], data[j])
         self._testVPTree(FlatVPTree, data_refs, dist_refs)
 
     def testFlatVPTreeData(self):
