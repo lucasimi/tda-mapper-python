@@ -34,18 +34,13 @@ def get_supported_metrics():
 
 def euclidean():
     """
-    Compute the Euclidean distance between two vectors.
+    Return the Euclidean distance for vectors.
 
     The Euclidean distance is defined as the square root of the sum of
     the squared differences between the components of the vectors.
 
-    :param x: The first vector.
-    :type x: array-like
-    :param y: The second vector.
-    :type y: array-like
-
-    :return: The Euclidean distance between x and y.
-    :rtype: double
+    :return: The Euclidean distance.
+    :rtype: callable
     """
 
     return _metrics.euclidean
@@ -53,18 +48,13 @@ def euclidean():
 
 def chebyshev():
     """
-    Compute the Chebyshev distance between two vectors.
+    Return the Chebyshev distance for vectors.
 
     The Chebyshev distance is defined as the maximum absolute difference
     between the components of the vectors.
 
-    :param x: The first vector.
-    :type x: array-like
-    :param y: The second vector.
-    :type y: array-like
-
-    :return: The Chebyshev distance between x and y.
-    :rtype: double
+    :return: The Chebyshev distance.
+    :rtype: callable
     """
 
     return _metrics.chebyshev
@@ -72,16 +62,13 @@ def chebyshev():
 
 def minkowski(p):
     """
-    Return a function that computes the Minkowski distance for a given order p.
+    Return the Minkowski distance for order p on vectors.
 
     The Minkowski distance is a generalization of the Euclidean and
     Chebyshev distances. When p = 1, it is equivalent to the Manhattan
     distance, and when p = 2, it is equivalent to the Euclidean distance.
 
-    :param p: The order of the Minkowski distance.
-    :type p: int
-
-    :return: A function that computes the Minkowski distance between two vectors.
+    :return: The Minkowski distance.
     :rtype: callable
     """
 
@@ -90,24 +77,22 @@ def minkowski(p):
 
 def cosine():
     """
-    Return a function that computes the cosine distance between two vectors.
-
+    Return the cosine distance for vectors.
     
-    :param p: The order of the Minkowski distance.
-    :type p: int
+    The cosine similarity between the input vectors, which ranges from -1.0 to 1.0.
+    A value of 1.0 indicates that the vectors are identical, 0.0 indicates orthogonality,
+    and -1.0 indicates they are diametrically opposed.
 
-    :return: The cosine similarity between the input vectors, which ranges from -1.0 to 1.0.
-        A value of 1.0 indicates that the vectors are identical, 0.0 indicates orthogonality,
-        and -1.0 indicates they are diametrically opposed.
-
+    :return: The cosine distance.
     :rtype: callable
     """
+
     return _metrics.cosine
 
 
 def get_metric(metric, **kwargs):
     """
-    Returns a distance metric function based on the specified metric string or callable.
+    Returns a distance metric based on the specified metric string or callable.
 
     :param metric: The metric to use. If a callable function is provided, it is returned directly.
         Otherwise, predefined metric returned by `tdamapper.utils.metrics.get_supported_metrics`
