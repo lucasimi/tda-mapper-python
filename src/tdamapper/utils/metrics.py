@@ -32,7 +32,7 @@ def get_supported_metrics():
     ]
 
 
-def euclidean(x, y):
+def euclidean():
     """
     Compute the Euclidean distance between two vectors.
 
@@ -48,10 +48,10 @@ def euclidean(x, y):
     :rtype: double
     """
 
-    return _metrics.euclidean(x, y)
+    return _metrics.euclidean
 
 
-def chebyshev(x, y):
+def chebyshev():
     """
     Compute the Chebyshev distance between two vectors.
 
@@ -67,7 +67,7 @@ def chebyshev(x, y):
     :rtype: double
     """
 
-    return _metrics.chebyshev(x, y)
+    return _metrics.chebyshev
 
 
 def minkowski(p):
@@ -84,10 +84,11 @@ def minkowski(p):
     :return: A function that computes the Minkowski distance between two vectors.
     :rtype: callable
     """
+
     return lambda x, y: _metrics.minkowski(p, x, y)
 
 
-def cosine(x, y):
+def cosine():
     """
     Return a function that computes the cosine distance between two vectors.
 
@@ -101,7 +102,7 @@ def cosine(x, y):
 
     :rtype: callable
     """
-    return _metrics.cosine(x, y)
+    return _metrics.cosine
 
 
 def get_metric(metric, **kwargs):
@@ -124,13 +125,13 @@ def get_metric(metric, **kwargs):
     if callable(metric):
         return metric
     elif metric == _EUCLIDEAN:
-        return euclidean
+        return euclidean()
     elif metric == _MINKOWSKI:
         p = kwargs.get(_MINKOWSKI_P, 2)
         return minkowski(p)
     elif metric == _CHEBYSHEV:
-        return chebyshev
+        return chebyshev()
     elif metric == _COSINE:
-        return cosine
+        return cosine()
     else:
         raise ValueError('metric must be a string or callable')

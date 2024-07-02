@@ -269,7 +269,7 @@ class CubicalProximity(Proximity):
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
-        _metric = _pullback(self._gamma_n, chebyshev)
+        _metric = _pullback(self._gamma_n, chebyshev())
         self.__ball_proximity = BallProximity(self.__radius, _metric, flat=flat)
 
     def _gamma_n(self, x):
