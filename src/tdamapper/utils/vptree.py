@@ -20,6 +20,12 @@ class VPTree:
             self.__pivoting = self._pivoting_furthest
         self.__tree = self._build_rec(0, len(self.__dataset), True)
 
+    def __getitem__(self, k):
+        return self.__dataset[k]
+
+    def __len__(self):
+        return len(self.__dataset)
+
     def _pivoting_disabled(self, start, end):
         pass
 

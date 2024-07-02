@@ -124,26 +124,25 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(0.0 in dists)
 
     def check_vptree(self, vpt):
-        data = vpt._VPTree__dataset
         dist = vpt._VPTree__distance
         leaf_capacity = vpt._VPTree__leaf_capacity
         leaf_radius = vpt._VPTree__leaf_radius
         def check_sub(start, end):
-            v_radius, v_point = data[start]
+            v_radius, v_point = vpt[start]
             mid = (start + end) // 2
             for i in range(start + 1, mid):
-                _, y = data[i]
+                _, y = vpt[i]
                 self.assertTrue(dist(v_point, y) <= v_radius)
             for i in range(mid, end):
-                _, y = data[i]
+                _, y = vpt[i]
                 self.assertTrue(dist(v_point, y) >= v_radius)
         def check_rec(start, end):
-            v_radius, v_point = data[start]
+            v_radius, _ = vpt[start]
             if (end - start > leaf_capacity) and (v_radius > leaf_radius):
                 check_sub(start, end)
                 mid = (start + end) // 2
                 check_rec(start + 1, mid)
                 check_rec(mid, end)
-        check_rec(0, len(data))
+        check_rec(0, len(vpt))
             
             

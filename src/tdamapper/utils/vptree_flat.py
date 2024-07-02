@@ -2,15 +2,20 @@
 from random import randrange
 
 from tdamapper.utils.cython.metrics import get_metric
-from tdamapper.utils.quickselect import quickselect
+from tdamapper.utils.quickselect import quickselect_tuple
 from tdamapper.utils.heap import MaxHeap
+
+
+def _swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
 
 
 class VPTree:
 
     def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None):
         self.__distance = get_metric(distance)
-        self.__dataset = [(0.0, x) for x in dataset]
+        self.__arr_data = list(dataset)
+        self.__arr_ord = [0.0 for _ in dataset]
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
         self.__pivoting = self._pivoting_disabled
@@ -20,20 +25,29 @@ class VPTree:
             self.__pivoting = self._pivoting_furthest
         self._build_iter()
 
+    def __getitem__(self, k):
+        x_ord = self.__arr_ord[k]
+        x_data = self.__arr_data[k]
+        return x_ord, x_data
+
+    def __len__(self):
+        return len(self.__arr_data)
+
     def _pivoting_disabled(self, start, end):
         pass
 
     def _pivoting_random(self, start, end):
         pivot = randrange(start, end)
         if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+            _swap(self.__arr_data, start, pivot)
+            _swap(self.__arr_ord, start, pivot)
 
     def _furthest(self, start, end, i):
         furthest_dist = 0.0
         furthest = start
-        _, i_point = self.__dataset[i]
+        i_point = self.__arr_data[i]
         for j in range(start, end):
-            _, j_point = self.__dataset[j]
+            j_point = self.__arr_data[j]
             j_dist = self.__distance(i_point, j_point)
             if j_dist > furthest_dist:
                 furthest = j
@@ -45,27 +59,27 @@ class VPTree:
         furthest_rnd = self._furthest(start, end, rnd)
         furthest = self._furthest(start, end, furthest_rnd)
         if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+            _swap(self.__arr_data, start, furthest)
+            _swap(self.__arr_ord, start, furthest)
 
     def _update(self, start, end):
         self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
+        v_point = self.__arr_data[start]
         for i in range(start, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
+            point = self.__arr_data[i]
+            self.__arr_ord[i] = self.__distance(v_point, point)
 
     def _build_iter(self):
-        stack = [(0, len(self.__dataset))]
+        stack = [(0, len(self.__arr_data))]
         while stack:
             start, end = stack.pop()
             if end - start <= self.__leaf_capacity:
                 continue
             mid = (end + start) // 2
             self._update(start, end)
-            _, v_point = self.__dataset[start]
-            quickselect(self.__dataset, start + 1, end, mid)
-            v_radius, _ = self.__dataset[mid]
-            self.__dataset[start] = (v_radius, v_point)
+            quickselect_tuple(self.__arr_ord, self.__arr_data, start + 1, end, mid)
+            v_radius = self.__arr_ord[mid]
+            self.__arr_ord[start] = v_radius
             if end - mid > self.__leaf_capacity:
                 stack.append((mid, end))
             if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
@@ -73,12 +87,12 @@ class VPTree:
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
-        stack = [_BallSearchVisit(0, len(self.__dataset), float('inf'))]
+        stack = [_BallSearchVisit(0, len(self.__arr_data), float('inf'))]
         return self._search_iter(search, stack)
 
     def knn_search(self, point, neighbors):
         search = _KNNSearch(self.__distance, point, neighbors)
-        stack = [_KNNSearchVisitPre(0, len(self.__dataset), float('inf'))]
+        stack = [_KNNSearchVisitPre(0, len(self.__arr_data), float('inf'))]
         return self._search_iter(search, stack)
 
     def _search_iter(self, search, stack):
@@ -86,9 +100,9 @@ class VPTree:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
             if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
-                search.process_all([x for _, x in self.__dataset[start:end]])
+                search.process_all(self.__arr_data[start:end])
             else:
-                visit.after(self.__dataset, stack, search)
+                visit.after(self.__arr_ord, self.__arr_data, stack, search)
         return search.get_items()
 
 
@@ -176,8 +190,9 @@ class _BallSearchVisit:
     def bounds(self):
         return self.__start, self.__end, self.__m_radius
 
-    def after(self, dataset, stack, search):
-        v_radius, v_point = dataset[self.__start]
+    def after(self, arr_ord, arr_data, stack, search):
+        v_radius = arr_ord[self.__start]
+        v_point = arr_data[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
         if dist <= v_radius:
@@ -201,8 +216,9 @@ class _KNNSearchVisitPre:
     def bounds(self):
         return self.__start, self.__end, self.__m_radius
 
-    def after(self, dataset, stack, search):
-        v_radius, v_point = dataset[self.__start]
+    def after(self, arr_ord, arr_data, stack, search):
+        v_radius = arr_ord[self.__start]
+        v_point = arr_data[self.__start]
         dist = search.process(v_point)
         mid = (self.__end + self.__start) // 2
         if dist <= v_radius:
@@ -227,6 +243,6 @@ class _KNNSearchVisitPost:
     def bounds(self):
         return self.__start, self.__end, self.__m_radius
 
-    def after(self, _, stack, search):
+    def after(self, _, __, stack, search):
         if abs(self.__dist - self.__v_radius) <= search.get_radius():
             stack.append(_KNNSearchVisitPre(self.__start, self.__end, self.__m_radius))
