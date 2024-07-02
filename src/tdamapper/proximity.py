@@ -13,7 +13,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
-from tdamapper.utils.cython.metrics import get_metric, chebyshev
+from tdamapper.utils.metrics import get_metric, chebyshev
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tdamapper.utils.vptree import VPTree as VPT
 

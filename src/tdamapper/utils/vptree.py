@@ -1,7 +1,7 @@
 """A class for fast knn and range searches, depending only on a given metric"""
 from random import randrange
 
-from tdamapper.utils.cython.metrics import get_metric
+from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.quickselect import quickselect
 from tdamapper.utils.heap import MaxHeap
 
