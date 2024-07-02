@@ -13,7 +13,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
-from tdamapper.utils.cython.metrics import get_metric, chebyshev
+from tdamapper.utils.metrics import get_metric, chebyshev
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tdamapper.utils.vptree import VPTree as VPT
 
@@ -112,19 +112,19 @@ class BallProximity(Proximity):
 
     :param radius: The radius of the open balls, must be positive.
     :type radius: float
-    :param metric: The (pseudo-)metric function that defines the distance
-        between points, must be symmetric, positive, and satisfy the
-        triangle-inequality, i.e.
-        :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
-        in the dataset.
-    :type metric: Callable
+    :param metric: The metric defining the distance between points. Anything that 
+        could be supplied to `tdamapper.utils.metrics.get_metric`.
+    :type metric: String or callable
     :param flat: A flag that indicates whether to use a flat or a hierarchical
         vantage point tree, defaults to False.
     :type flat: bool, optional
+    :param kwargs: Optional arguments for metric that could be passed to
+        `tdamapper.utils.metrics.get_metric`.
+    :type kwargs: dict, optional
     """
 
-    def __init__(self, radius, metric, flat=True):
-        _metric = get_metric(metric)
+    def __init__(self, radius, metric, flat=True, **kwargs):
+        _metric = get_metric(metric, **kwargs)
         self.__metric = lambda x, y: _metric(x[1], y[1])
         self.__radius = radius
         self.__data = None
@@ -182,20 +182,20 @@ class KNNProximity(Proximity):
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the length of the dataset.
     :type neighbors: int
-    :param metric: The (pseudo-)metric function that defines the distance
-        between points, must be symmetric, positive, and satisfy the
-        triangle-inequality, i.e.
-        :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
-        in the dataset.
-    :type metric: Callable
+    :param metric: The metric defining the distance between points. Anything that 
+        could be supplied to `tdamapper.utils.metrics.get_metric`.
+    :type metric: String or callable
     :param flat: A flag that indicates whether to use a flat or a hierarchical
         vantage point tree, defaults to False.
     :type flat: bool, optional
+    :param kwargs: Optional arguments for metric that could be passed to
+        `tdamapper.utils.metrics.get_metric`.
+    :type kwargs: dict, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True):
+    def __init__(self, neighbors, metric, flat=True, **kwargs):
         self.__neighbors = neighbors
-        _metric = get_metric(metric)
+        _metric = get_metric(metric, **kwargs)
         self.__metric = _pullback(lambda x: x[1], _metric)
         self.__data = None
         self.__vptree = None
@@ -269,7 +269,7 @@ class CubicalProximity(Proximity):
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
-        _metric = _pullback(self._gamma_n, chebyshev)
+        _metric = _pullback(self._gamma_n, chebyshev())
         self.__ball_proximity = BallProximity(self.__radius, _metric, flat=flat)
 
     def _gamma_n(self, x):
