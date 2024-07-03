@@ -19,6 +19,7 @@ from tdamapper.core import MapperAlgorithm, ATTR_SIZE
 from tdamapper.cover import CubicalCover, BallCover, TrivialCover
 from tdamapper.clustering import TrivialClustering, FailSafeClustering
 from tdamapper.plot import MapperLayoutInteractive
+from tdamapper.utils.metrics import minkowski
 
 
 MAX_NODES = 1000
@@ -182,7 +183,7 @@ class Results:
 
 
 def lp_metric(p):
-    return lambda x, y: np.linalg.norm(x - y, ord=p)
+    return minkowski(p)
 
 
 def fix_data(data):
