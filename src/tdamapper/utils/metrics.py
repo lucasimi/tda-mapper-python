@@ -1,9 +1,24 @@
 """
-Utilities for computing distance metrics.
+Utilities for computing metrics.
 
-A distance metric is any function  is a function that maps to points into a double value.
-It's required for a distance metric to be symmetric, positive, and satisfy the triangle-inequality,
-i.e. :math:`d(x, z) \leq d(x, y) + d(y, z)` for every x, y, z in the dataset.
+This module provides functions to calculate various distance metrics. A metric, or
+distance function, is a function that maps two points to a double value, representing 
+the "distance" between them. For a function to qualify as a valid metric, it must satisfy
+the following properties:
+
+1. Symmetry: The distance between two points is the same regardless of the order, i.e.:
+        :math:`d(x, y) = d(y, x)` for all x and y.
+2. Positivity: The distance between two distinct points is always positive, i.e.:
+        :math:`d(x, y) > 0` for all distinct x and y, and :math:`d(x, x) = 0` for every x.
+3. Triangle inequality: The distance between two points is less than or equal to the sum
+   of the distances from a third point, i.e.:
+        :math:`d(x, z) \leq d(x, y) + d(y, z)` for all points x, y, z.
+
+Supported distance metrics include:
+- Euclidean: The square root of the sum of squared differences between the components of vectors.
+- Minkowski: A generalization of the Euclidean and Chebyshev distances, parameterized by an order `p`.
+- Chebyshev: The maximum absolute difference between the components of vectors.
+- Cosine: A distance on unit vectors based on cosine similarity.
 """
 
 import tdamapper.utils._metrics as _metrics
@@ -23,7 +38,6 @@ def get_supported_metrics():
     :return: A list of supported metric names.
     :rtype: list of str
     """
-    
     return [
         _EUCLIDEAN,
         _MINKOWSKI,
@@ -34,69 +48,76 @@ def get_supported_metrics():
 
 def euclidean():
     """
-    Return the Euclidean distance for vectors.
+    Return the Euclidean distance function for vectors.
 
     The Euclidean distance is defined as the square root of the sum of
     the squared differences between the components of the vectors.
 
-    :return: The Euclidean distance.
+    :return: The Euclidean distance function.
     :rtype: callable
     """
-
     return _metrics.euclidean
 
 
 def chebyshev():
     """
-    Return the Chebyshev distance for vectors.
+    Return the Chebyshev distance function for vectors.
 
     The Chebyshev distance is defined as the maximum absolute difference
     between the components of the vectors.
 
-    :return: The Chebyshev distance.
+    :return: The Chebyshev distance function.
     :rtype: callable
     """
-
     return _metrics.chebyshev
 
 
 def minkowski(p):
     """
-    Return the Minkowski distance for order p on vectors.
+    Return the Minkowski distance function for order p on vectors.
 
     The Minkowski distance is a generalization of the Euclidean and
     Chebyshev distances. When p = 1, it is equivalent to the Manhattan
     distance, and when p = 2, it is equivalent to the Euclidean distance.
 
-    :return: The Minkowski distance.
+    :param p: The order of the Minkowski distance.
+    :type p: int
+
+    :return: The Minkowski distance function.
     :rtype: callable
     """
-
     return lambda x, y: _metrics.minkowski(p, x, y)
 
 
 def cosine():
     """
-    Return the cosine distance for vectors.
-    
-    The cosine similarity between the input vectors, which ranges from -1.0 to 1.0.
-    A value of 1.0 indicates that the vectors are identical, 0.0 indicates orthogonality,
-    and -1.0 indicates they are diametrically opposed.
+    Return the cosine distance function for vectors.
 
-    :return: The cosine distance.
+    The cosine similarity between the input vectors ranges from -1.0 to 1.0.
+    - A value of 1.0 indicates that the vectors are in the same direction.
+    - A value of 0.0 indicates orthogonality (the vectors are perpendicular).
+    - A value of -1.0 indicates that the vectors are diametrically opposed.
+
+    The cosine distance is derived from the cosine similarity :math:`s` and 
+    is defined as:
+        :math:`d(x, y) = \sqrt{2 \times (1 - s(x, y))}`
+
+    This definition ensures that the cosine distance satisfies the triangle
+    inequality on unit vectors.
+
+    :return: The cosine distance function.
     :rtype: callable
     """
-
     return _metrics.cosine
 
 
 def get_metric(metric, **kwargs):
     """
-    Returns a distance metric based on the specified metric string or callable.
+    Return a distance function based on the specified string or callable.
 
     :param metric: The metric to use. If a callable function is provided, it is returned directly.
-        Otherwise, predefined metric returned by `tdamapper.utils.metrics.get_supported_metrics`
-        are supported.
+        Otherwise, predefined metric names returned by `get_supported_metrics()` are supported.
+    :type metric: str or callable
 
     :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski distance).
     :type kwargs: dict
@@ -106,7 +127,6 @@ def get_metric(metric, **kwargs):
 
     :raises ValueError: If an invalid metric string is provided.
     """
-
     if callable(metric):
         return metric
     elif metric == _EUCLIDEAN:

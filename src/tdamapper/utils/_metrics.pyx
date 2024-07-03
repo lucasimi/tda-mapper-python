@@ -30,8 +30,10 @@ cpdef double cosine(double[:] x, double[:] y) nogil:
     cdef double norm_x = 0.0
     cdef double norm_y = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
+    cdef double similarity = 0.0
     for i in range(n):
         dot_product += x[i] * y[i]
         norm_x += pow(x[i], 2)
         norm_y += pow(y[i], 2)
-    return 1.0 - (dot_product / sqrt(norm_x * norm_y))
+    similarity = dot_product / sqrt(norm_x * norm_y)
+    return sqrt(2.0 * (1.0 - similarity))
