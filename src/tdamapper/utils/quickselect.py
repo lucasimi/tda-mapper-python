@@ -13,6 +13,8 @@ def partition(data, start, end, p_ord):
 
 
 def quickselect(data, start, end, k):
+    if end - start < 2:
+        return
     start_, end_, higher = start, end, None
     while higher != k + 1:
         p, _ = data[k]
@@ -37,6 +39,8 @@ def partition_tuple(data_ord, data_arr, start, end, p_ord):
 
 
 def quickselect_tuple(data_ord, data_arr, start, end, k):
+    if end - start < 2:
+        return
     start_, end_, higher = start, end, None
     while higher != k + 1:
         p_ord = data_ord[k]

@@ -58,17 +58,14 @@ class VPTree:
         stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
-            if end - start <= self.__leaf_capacity:
-                continue
             mid = (end + start) // 2
             self._update(start, end)
             _, v_point = self.__dataset[start]
             quickselect(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            if end - mid > self.__leaf_capacity:
+            if (end - start > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                 stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                 stack.append((start + 1, mid))
 
     def ball_search(self, point, eps, inclusive=True):
@@ -86,7 +83,8 @@ class VPTree:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
             if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
-                search.process_all([x for _, x in self.__dataset[start:end]])
+                #search.process_all([x for _, x in self.__dataset[start:end]])
+                search.process_all(self.__dataset, start, end)
             else:
                 visit.after(self.__dataset, stack, search)
         return search.get_items()
@@ -107,8 +105,15 @@ class _BallSearch:
     def get_radius(self):
         return self.__radius
 
-    def process_all(self, values):
-        inside = [x for x in values if self.__inside(self._from_center(x))]
+    def process_all(self, data, start, end):
+        inside = []
+        _, v_point = data[start]
+        vp_center_dist = self._from_center(v_point)
+        for d, p in data[start:end]:
+            if self.__radius + d >= vp_center_dist:
+                if self.__inside(self._from_center(p)):
+                    inside.append(p)
+        #inside = [x for x in values if self.__inside(self._from_center(x))]
         self.__items.extend(inside)
 
     def process(self, value):
@@ -161,8 +166,8 @@ class _KNNSearch:
             self.__items.pop()
         return dist
 
-    def process_all(self, values):
-        for value in values:
+    def process_all(self, data, start, end):
+        for _, value in data[start:end]:
             self.process(value)
 
 
