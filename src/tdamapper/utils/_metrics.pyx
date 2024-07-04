@@ -1,7 +1,7 @@
 from libc.math cimport sqrt, pow, fabs
 
 
-cpdef double chebyshev(double[:] x, double[:] y) nogil:
+cpdef inline double chebyshev(double[:] x, double[:] y) nogil:
     cdef double max_diff = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
     for i in range(n):
@@ -9,7 +9,7 @@ cpdef double chebyshev(double[:] x, double[:] y) nogil:
     return max_diff
 
 
-cpdef double euclidean(double[:] x, double[:] y) nogil:
+cpdef inline double euclidean(double[:] x, double[:] y) nogil:
     cdef double norm_squared = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
     for i in range(n):
@@ -17,7 +17,7 @@ cpdef double euclidean(double[:] x, double[:] y) nogil:
     return sqrt(norm_squared)
 
 
-cdef double minkowski(int p, double[:] x, double[:] y) nogil:
+cdef inline double minkowski(int p, double[:] x, double[:] y) nogil:
     cdef double norm_p = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
     for i in range(n):
@@ -25,7 +25,7 @@ cdef double minkowski(int p, double[:] x, double[:] y) nogil:
     return pow(norm_p, 1.0 / p)
 
 
-cpdef double cosine(double[:] x, double[:] y) nogil:
+cpdef inline double cosine(double[:] x, double[:] y) nogil:
     cdef double dot_product = 0.0
     cdef double norm_x = 0.0
     cdef double norm_y = 0.0

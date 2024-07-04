@@ -5,12 +5,14 @@ from time import time
 import numpy as np
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
-from tdamapper.utils.metrics import get_metric
+from tdamapper.utils.metrics import get_metric, euclidean
 from tdamapper.utils.vptree import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
+from tests.ball_tree import SkBallTree
 
-dist = 'euclidean'
+
+dist = euclidean()
 
 
 def dataset(dim=10, num=1000):
@@ -47,14 +49,17 @@ class TestBenchmark(unittest.TestCase):
         self.logger.info('[build]')
         vpt = self._testBuild(data, ' * VPT  ', VPT)
         fvpt = self._testBuild(data, ' * FVPT ', FVPT)
+        skbt = self._testBuild(data, ' * SKBT', SkBallTree)
         self.logger.info('[ball search]')
         self._testBallSearchNaive(data, ' * Naive ')
         self._testBallSearch(data, ' * VPT  ', vpt)
         self._testBallSearch(data, ' * FVPT ', fvpt)
+        self._testBallSearch(data, ' * SKBT', skbt)
         self.logger.info('[knn search]')
         self._testKNNSearchNaive(data, ' * Naive ')
         self._testKNNSearch(data, ' * VPT  ', vpt)
         self._testKNNSearch(data, ' * FVPT ', fvpt)
+        self._testKNNSearch(data, ' * SKBT ', skbt)
 
     def _testBuild(self, data, name, builder):
         t0 = time()
