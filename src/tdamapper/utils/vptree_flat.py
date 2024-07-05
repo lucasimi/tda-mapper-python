@@ -107,14 +107,12 @@ class _BallSearch:
         return self.__radius
 
     def process_all(self, data, start, end):
-        inside = []
         _, v_point = data[start]
         vp_center_dist = self._from_center(v_point)
         for d, p in data[start:end]:
             if self.__radius + d >= vp_center_dist:
                 if self.__inside(self._from_center(p)):
-                    inside.append(p)
-        self.__items.extend(inside)
+                    self.__items.append(p)
 
     def process(self, value):
         dist = self._from_center(value)

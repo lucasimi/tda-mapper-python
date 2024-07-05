@@ -61,14 +61,13 @@ class VPTree:
         _, v_point = self.__dataset[start]
         quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
-        v_ball = _Ball(v_point, v_radius)
         if (v_radius <= self.__leaf_radius) or (end - start <= self.__leaf_capacity):
-            left = _Tree(v_ball, start, mid)
-            right = _Tree(v_ball, mid, end)
+            left = _Tree(v_point, v_radius, start, mid)
+            right = _Tree(v_point, v_radius, mid, end)
         else:
             left = self._build_rec(start, mid, False)
             right = self._build_rec(mid, end, True)
-        return _Tree(v_ball, start, end, left=left, right=right)
+        return _Tree(v_point, v_radius, start, end, left=left, right=right)
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
@@ -81,12 +80,11 @@ class VPTree:
         return search.get_items()
 
     def _search_rec(self, tree, search):
-        v_ball = tree.get_ball()
+        start, end = tree.get_bounds()
+        v_radius, v_point = tree.get_ball()
         if tree.is_terminal():
-            search.process_all(self.__dataset, v_ball, tree)
+            search.process_all(self.__dataset, start, end, v_point)
         else:
-            v_point = v_ball.get_center()
-            v_radius = v_ball.get_radius()
             point = search.get_center()
             dist = self.__distance(v_point, point)
             if dist <= v_radius:
@@ -113,15 +111,16 @@ class _Ball:
 
 class _Tree:
 
-    def __init__(self, ball, start, end, left=None, right=None):
-        self.__ball = ball
+    def __init__(self, center, radius, start, end, left=None, right=None):
+        self.__center = center
+        self.__radius = radius
         self.__start = start
         self.__end = end
         self.__left = left
         self.__right = right
 
     def get_ball(self):
-        return self.__ball
+        return self.__radius, self.__center
 
     def get_bounds(self):
         return self.__start, self.__end
@@ -165,19 +164,14 @@ class _BallSearch:
     def get_center(self):
         return self.__center
 
-    def process_all(self, data, ball, tree):
-        inside = []
-        start, end = tree.get_bounds()
-        _, v_point = ball.get_radius(), ball.get_center()
-        vp_center_dist = self._from_center(v_point)
+    def process_all(self, data, start, end, v_point):
+        vp_center_dist = self._dist_from_center(v_point)
         for d, p in data[start:end]:
             if self.__radius + d >= vp_center_dist:
-                if self.__inside(self._from_center(p)):
-                    inside.append(p)
-        #inside = [x for _, x in data[start:end] if self.__inside(self._from_center(x))]
-        self.__items.extend(inside)
+                if self.__inside(self._dist_from_center(p)):
+                    self.__items.append(p)
 
-    def _from_center(self, value):
+    def _dist_from_center(self, value):
         return self.__distance(self.__center, value)
 
     def _inside_inclusive(self, dist):
@@ -189,8 +183,8 @@ class _BallSearch:
 
 class _KNNSearch:
 
-    def __init__(self, dist, center, neighbors):
-        self.__dist = dist
+    def __init__(self, distance, center, neighbors):
+        self.__distance = distance
         self.__center = center
         self.__neighbors = neighbors
         self.__items = MaxHeap()
@@ -209,15 +203,27 @@ class _KNNSearch:
     def get_center(self):
         return self.__center
 
+    def _dist_from_center(self, value):
+        return self.__distance(self.__center, value)
+
     def _process(self, value):
-        dist = self.__dist(self.__center, value)
+        dist = self._dist_from_center(value)
         if dist >= self.get_radius():
             return
         self.__items.add(dist, value)
         if len(self.__items) > self.__neighbors:
             self.__items.pop()
 
-    def process_all(self, data, ball, tree):
-        start, end = tree.get_bounds()
-        for _, val in data[start: end]:
-            self._process(val)
+    def process_all(self, data, start, end, v_point):
+        vp_center_dist = self._dist_from_center(v_point)
+        radius = self.get_radius()
+        for d, p in data[start:end]:
+            if radius + d >= vp_center_dist:
+                dist = self._dist_from_center(p)
+                if dist < radius:
+                    self.__items.add(dist, p)
+                    if len(self.__items) > self.__neighbors:
+                        self.__items.pop()
+                    radius = self.get_radius()
+
+
