@@ -56,7 +56,7 @@ class VPTree:
 
     def _build_rec(self, start, end, update):
         if end - start <= self.__leaf_capacity:
-            return _Tree([x for _, x in self.__dataset[start:end]])
+            return _Leaf([x for _, x in self.__dataset[start:end]])
         mid = (end + start) // 2
         if update:
             self._update(start, end)
@@ -64,11 +64,11 @@ class VPTree:
         quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
         if v_radius <= self.__leaf_radius:
-            left = _Tree([x for _, x in self.__dataset[start:mid]])
+            left = _Leaf([x for _, x in self.__dataset[start:mid]])
         else:
             left = self._build_rec(start, mid, False)
         right = self._build_rec(mid, end, True)
-        return _Tree(_Ball(v_point, v_radius), left, right)
+        return _Node(v_radius, v_point, left, right)
 
     def ball_search(self, point, eps, inclusive=True):
         search = _BallSearch(self.__distance, point, eps, inclusive)
@@ -84,8 +84,7 @@ class VPTree:
         if tree.is_terminal():
             search.process_all(tree.get_data())
         else:
-            v_ball = tree.get_data()
-            v_radius, v_point = v_ball.get_radius(), v_ball.get_center()
+            v_radius, v_point = tree.get_ball()
             point = search.get_center()
             dist = self.__distance(v_point, point)
             if dist <= v_radius:
@@ -97,28 +96,19 @@ class VPTree:
                 self._search_rec(snd, search)
 
 
-class _Ball:
+class _Node:
 
-    def __init__(self, center, radius):
-        self.__center = center
+    def __init__(self, radius, center, left, right):
         self.__radius = radius
-
-    def get_radius(self):
-        return self.__radius
-
-    def get_center(self):
-        return self.__center
-
-
-class _Tree:
-
-    def __init__(self, data, left=None, right=None):
-        self.__data = data
+        self.__center = center
         self.__left = left
         self.__right = right
 
-    def get_data(self):
-        return self.__data
+    def get_ball(self):
+        return self.__radius, self.__center
+    
+    def is_terminal(self):
+        return False
 
     def get_left(self):
         return self.__left
@@ -126,19 +116,17 @@ class _Tree:
     def get_right(self):
         return self.__right
 
-    def is_terminal(self):
-        return (self.__left is None) and (self.__right is None)
 
-    def get_height(self):
-        if self.__left is None:
-            if self.__right is None:
-                return 0
-            return self.__right.get_height() + 1
-        if self.__right is None:
-            return self.__left.get_height() + 1
-        l_height = self.__left.get_height()
-        r_height = self.__right.get_height()
-        return max(l_height, r_height) + 1
+class _Leaf:
+
+    def __init__(self, data):
+        self.__data = data
+
+    def get_data(self):
+        return self.__data
+
+    def is_terminal(self):
+        return True
 
 
 class _BallSearch:
@@ -160,8 +148,9 @@ class _BallSearch:
         return self.__center
 
     def process_all(self, values):
-        inside = [x for x in values if self.__inside(self._from_center(x))]
-        self.__items.extend(inside)
+        for x in values:
+            if self.__inside(self._from_center(x)):
+                self.__items.append(x)
 
     def _from_center(self, value):
         return self.__distance(self.__center, value)
