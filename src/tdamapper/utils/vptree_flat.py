@@ -82,7 +82,8 @@ class VPTree:
         while stack:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
-            if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
+            v_radius, _ = self.__dataset[start]
+            if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius) or (v_radius <= self.__leaf_radius):
                 #search.process_all([x for _, x in self.__dataset[start:end]])
                 search.process_all(self.__dataset, start, end)
             else:
@@ -113,7 +114,6 @@ class _BallSearch:
             if self.__radius + d >= vp_center_dist:
                 if self.__inside(self._from_center(p)):
                     inside.append(p)
-        #inside = [x for x in values if self.__inside(self._from_center(x))]
         self.__items.extend(inside)
 
     def process(self, value):
