@@ -62,8 +62,8 @@ class VPTree:
         quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
         if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
-            left = _Leaf(v_radius, v_point, self.__dataset[start:mid])
-            right = _Leaf(v_radius, v_point, self.__dataset[mid:end])
+            left = _Leaf(self.__dataset[start:mid])
+            right = _Leaf(self.__dataset[mid:end])
         else:
             left = self._build_rec(start, mid, False)
             right = self._build_rec(mid, end, True)
@@ -118,13 +118,8 @@ class _Node:
 
 class _Leaf:
 
-    def __init__(self, radius, center, data):
-        self.__radius = radius
-        self.__center = center
+    def __init__(self, data):
         self.__data = data
-
-    def get_ball(self):
-        return self.__radius, self.__center
 
     def get_data(self):
         return self.__data
