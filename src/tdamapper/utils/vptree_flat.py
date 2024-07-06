@@ -28,6 +28,8 @@ class VPTree:
         pass
 
     def _pivoting_random(self, start, end):
+        if end - start < 2:
+            return
         pivot = randrange(start, end)
         if pivot > start:
             _swap(self.__dataset, start, pivot)
@@ -45,6 +47,8 @@ class VPTree:
         return furthest
 
     def _pivoting_furthest(self, start, end):
+        if end - start < 2:
+            return
         rnd = randrange(start, end)
         furthest_rnd = self._furthest(start, end, rnd)
         furthest = self._furthest(start, end, furthest_rnd)
