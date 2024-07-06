@@ -55,19 +55,18 @@ class VPTree:
             self.__dataset[i] = self.__distance(v_point, point), point
 
     def _build_rec(self, start, end, update):
-        if end - start <= self.__leaf_capacity:
-            return _Leaf([x for _, x in self.__dataset[start:end]])
         mid = (end + start) // 2
         if update:
             self._update(start, end)
         _, v_point = self.__dataset[start]
         quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
-        if v_radius <= self.__leaf_radius:
-            left = _Leaf([x for _, x in self.__dataset[start:mid]])
+        if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+            left = _Leaf(v_radius, v_point, self.__dataset[start:mid])
+            right = _Leaf(v_radius, v_point, self.__dataset[mid:end])
         else:
             left = self._build_rec(start, mid, False)
-        right = self._build_rec(mid, end, True)
+            right = self._build_rec(mid, end, True)
         return _Node(v_radius, v_point, left, right)
 
     def ball_search(self, point, eps, inclusive=True):
@@ -119,8 +118,13 @@ class _Node:
 
 class _Leaf:
 
-    def __init__(self, data):
+    def __init__(self, radius, center, data):
+        self.__radius = radius
+        self.__center = center
         self.__data = data
+
+    def get_ball(self):
+        return self.__radius, self.__center
 
     def get_data(self):
         return self.__data
@@ -147,13 +151,13 @@ class _BallSearch:
     def get_center(self):
         return self.__center
 
-    def process_all(self, values):
-        for x in values:
-            if self.__inside(self._from_center(x)):
-                self.__items.append(x)
+    def process_all(self, data):
+        for _, p in data:
+            if self.__inside(self._dist_from_center(p)):
+                self.__items.append(p)
 
-    def _from_center(self, value):
-        return self.__distance(self.__center, value)
+    def _dist_from_center(self, p):
+        return self.__distance(self.__center, p)
 
     def _inside_inclusive(self, dist):
         return dist <= self.__radius
@@ -164,8 +168,8 @@ class _BallSearch:
 
 class _KNNSearch:
 
-    def __init__(self, dist, center, neighbors):
-        self.__dist = dist
+    def __init__(self, distance, center, neighbors):
+        self.__distance = distance
         self.__center = center
         self.__neighbors = neighbors
         self.__items = MaxHeap()
@@ -184,14 +188,13 @@ class _KNNSearch:
     def get_center(self):
         return self.__center
 
-    def _process(self, value):
-        dist = self.__dist(self.__center, value)
-        if dist >= self.get_radius():
-            return
-        self.__items.add(dist, value)
-        if len(self.__items) > self.__neighbors:
-            self.__items.pop()
+    def _dist_from_center(self, value):
+        return self.__distance(self.__center, value)
 
-    def process_all(self, values):
-        for val in values:
-            self._process(val)
+    def process_all(self, data):
+        for _, p in data:
+            dist = self._dist_from_center(p)
+            if dist < self.get_radius():
+                self.__items.add(dist, p)
+                if len(self.__items) > self.__neighbors:
+                    self.__items.pop()
