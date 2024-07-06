@@ -30,7 +30,7 @@ def cover(vpt, X, r):
 
 
 def run(X, r, dist, vp, **kwargs):
-    XX = np.array([[1] + [xi for xi in x] for x in X])
+    XX = np.array([[i] + [xi for xi in x] for i, x in enumerate(X)])
     d = lambda x, y: dist(x[1:], y[1:])
     t0 = time.time()
     vpt = vp(dataset=XX, distance=d, **kwargs)
@@ -42,16 +42,16 @@ def run(X, r, dist, vp, **kwargs):
 class TestVpSettings(unittest.TestCase):
 
     def testCoverRandom(self):
-        for r in [10.0, 100.0]:
-            for n in [100, 1000]:
+        for r in [1.0, 10.0, 100.0]:
+            for n in [100, 1000, 10000]:
                 print(f'============= n: {n}, r: {r} =============')
                 X = dataset(num=n)
                 print('>>>>>>> HVPT >>>>>>')
-                run(X, r, dist, HVPT)
-                run(X, r, dist, HVPT, leaf_radius=r)
+                run(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
+                run(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
                 print('>>>>>>> FVPT >>>>>>')
-                run(X, r, dist, FVPT)
-                run(X, r, dist, FVPT, leaf_radius=r)
+                run(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
+                run(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
                 print('>>>>>> SKBT >>>>>>')
                 run(X, r, dist, SkBallTree)
                 run(X, r, dist, SkBallTree, leaf_radius=r)
@@ -63,11 +63,11 @@ class TestVpSettings(unittest.TestCase):
         for r in [1.0, 10.0, 100.0]:
             print(f'============= r: {r} =============')
             print('>>>>>>> HVPT >>>>>>')
-            run(X, r, dist, HVPT)
-            run(X, r, dist, HVPT, leaf_radius=r)
+            run(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
+            run(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
             print('>>>>>>> FVPT >>>>>>')
-            run(X, r, dist, FVPT)
-            run(X, r, dist, FVPT, leaf_radius=r)
+            run(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
+            run(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
             print('>>>>>> SKBT >>>>>>')
             run(X, r, dist, SkBallTree)
             run(X, r, dist, SkBallTree, leaf_radius=r)
