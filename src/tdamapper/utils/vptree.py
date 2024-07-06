@@ -62,8 +62,8 @@ class VPTree:
         quickselect(self.__dataset, start + 1, end, mid)
         v_radius, _ = self.__dataset[mid]
         if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
-            left = _Leaf(self.__dataset[start:mid])
-            right = _Leaf(self.__dataset[mid:end])
+            left = _Leaf(start, mid)
+            right = _Leaf(mid, end)
         else:
             left = self._build_rec(start, mid, False)
             right = self._build_rec(mid, end, True)
@@ -81,7 +81,8 @@ class VPTree:
 
     def _search_rec(self, tree, search):
         if tree.is_terminal():
-            search.process_all(tree.get_data())
+            start, end = tree.get_bounds()
+            search.process_all(self.__dataset, start, end)
         else:
             v_radius, v_point = tree.get_ball()
             point = search.get_center()
@@ -118,11 +119,12 @@ class _Node:
 
 class _Leaf:
 
-    def __init__(self, data):
-        self.__data = data
+    def __init__(self, start, end):
+        self.__start = start
+        self.__end = end
 
-    def get_data(self):
-        return self.__data
+    def get_bounds(self):
+        return self.__start, self.__end
 
     def is_terminal(self):
         return True
@@ -146,8 +148,8 @@ class _BallSearch:
     def get_center(self):
         return self.__center
 
-    def process_all(self, data):
-        for _, p in data:
+    def process_all(self, data, start, end):
+        for _, p in data[start:end]:
             if self.__inside(self._dist_from_center(p)):
                 self.__items.append(p)
 
@@ -186,8 +188,8 @@ class _KNNSearch:
     def _dist_from_center(self, value):
         return self.__distance(self.__center, value)
 
-    def process_all(self, data):
-        for _, p in data:
+    def process_all(self, data, start, end):
+        for _, p in data[start:end]:
             dist = self._dist_from_center(p)
             if dist < self.get_radius():
                 self.__items.add(dist, p)
