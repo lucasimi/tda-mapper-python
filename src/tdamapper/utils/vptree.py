@@ -6,6 +6,10 @@ from tdamapper.utils.quickselect import quickselect
 from tdamapper.utils.heap import MaxHeap
 
 
+def _swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
+
+
 class VPTree:
 
     def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
@@ -26,7 +30,7 @@ class VPTree:
     def _pivoting_random(self, start, end):
         pivot = randrange(start, end)
         if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+            _swap(self.__dataset, start, pivot)
 
     def _furthest(self, start, end, i):
         furthest_dist = 0.0
@@ -45,7 +49,7 @@ class VPTree:
         furthest_rnd = self._furthest(start, end, rnd)
         furthest = self._furthest(start, end, furthest_rnd)
         if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+            _swap(self.__dataset, start, furthest)
 
     def _update(self, start, end):
         self.__pivoting(start, end)
@@ -185,8 +189,8 @@ class _KNNSearch:
     def get_center(self):
         return self.__center
 
-    def _dist_from_center(self, value):
-        return self.__distance(self.__center, value)
+    def _dist_from_center(self, p):
+        return self.__distance(self.__center, p)
 
     def process_all(self, data, start, end):
         for _, p in data[start:end]:
