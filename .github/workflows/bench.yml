@@ -1,4 +1,4 @@
-name: test
+name: bench
 
 on: 
   push:
@@ -19,11 +19,6 @@ jobs:
       - name: Install dependencies
         run: | 
           python -m pip install -e .[dev]
-      - name: Run tests and code coverage
+      - name: Run benchmarks
         run: | 
-          coverage run --source=src -m unittest discover -s tests/unit
-          coverage report -m
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          python -m unittest discover -s tests/bench
