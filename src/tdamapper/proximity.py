@@ -112,25 +112,25 @@ class BallProximity(Proximity):
     :param radius: The radius of the open balls. Must be a positive value.
     :type radius: float
     :param metric: The metric used to define the distance between points.
-    Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-    Defaults to 'euclidean'.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-    passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-    point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-    'flat'.
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
+        to 'flat'.
     :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
-    vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value. Defaults to 1.
     :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-    defaults to the value of `radius`. Must be a positive value. Defaults to
-    None.
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
     :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
-    Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     :type pivoting: str or callable, optional
     """
 
@@ -207,28 +207,28 @@ class KNNProximity(Proximity):
     point itself.
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
-    function, must be positive and less than the length of the dataset.
+        function, must be positive and less than the length of the dataset.
     :type neighbors: int
     :param metric: The metric used to define the distance between points.
-    Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-    Defaults to 'euclidean'.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-    passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-    point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-    'flat'.
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
+        to 'flat'.
     :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
-    vantage point tree. If not specified, it defaults to the value of
-    `neighbors`. Must be a positive value. Defaults to None.
+        vantage point tree. If not specified, it defaults to the value of
+        `neighbors`. Must be a positive value. Defaults to None.
     :type leaf_capacity: int, optional
     :param leaf_radius: The radius of the leaf nodes. Must be a positive value.
-    Defaults to 0.0.
+        Defaults to 0.0.
     :type leaf_radius: float
     :param pivoting: The method used for pivoting in the vantage point tree.
-    Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     :type pivoting: str or callable, optional
     """
 
@@ -307,21 +307,21 @@ class CubicalProximity(Proximity):
     intervals and the overlap fraction parameters. This class maps each point to
     the hypercube with the nearest center.
 
-    :param n_intervals: The number of intervals to use for each dimension, must
-    be positive and less than or equal to the length of the dataset.
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
     :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
-    each dimension, must be in the range (0.0, 1.0).
+        each dimension, must be in the range (0.0, 1.0).
     :type overlap_frac: float
     :param metric: The metric used to define the distance between points.
-    Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-    Defaults to 'euclidean'.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-    passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-    point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
     'flat'.
     :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
