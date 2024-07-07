@@ -84,12 +84,29 @@ class BallCover(ProximityCover):
         in the dataset.
     :type metric: Callable
     :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
+        vantage point tree, defaults to True.
     :type flat: bool, optional
     """
 
-    def __init__(self, radius, metric, flat=True):
-        prox = BallProximity(radius=radius, metric=metric, flat=flat)
+    def __init__(
+        self,
+        radius,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
+        prox = BallProximity(
+            radius=radius,
+            metric=metric,
+            metric_params=metric_params,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
+        )
         super().__init__(proximity=prox)
 
 
@@ -112,8 +129,25 @@ class KNNCover(ProximityCover):
     :type flat: bool, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True):
-        prox = KNNProximity(neighbors=neighbors, metric=metric, flat=flat)
+    def __init__(
+        self,
+        neighbors,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=None,
+        leaf_radius=0.0,
+        pivoting=None,
+    ):
+        prox = KNNProximity(
+            neighbors=neighbors,
+            metric=metric,
+            metric_params=metric_params,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
+        )
         super().__init__(proximity=prox)
 
 
@@ -133,11 +167,23 @@ class CubicalCover(ProximityCover):
     :type flat: bool, optional
     """
 
-    def __init__(self, n_intervals, overlap_frac, flat=True):
+    def __init__(
+        self,
+        n_intervals,
+        overlap_frac,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
         prox = CubicalProximity(
             n_intervals=n_intervals, 
             overlap_frac=overlap_frac,
-            flat=flat)
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
+        )
         super().__init__(proximity=prox)
 
 

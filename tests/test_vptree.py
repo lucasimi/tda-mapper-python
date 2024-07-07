@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree import VPTree
+from tdamapper.utils.vptree_hier import VPTree
 from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
 from tests.ball_tree import SkBallTree
 

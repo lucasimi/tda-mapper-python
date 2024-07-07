@@ -14,8 +14,7 @@ the class :class:`tdamapper.cover.ProximityCover`.
 import numpy as np
 
 from tdamapper.utils.metrics import get_metric, chebyshev
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree import VPTree as VPT
+from tdamapper.utils.vptree import VPTree
 
 
 def proximity_net(X, proximity):
@@ -116,26 +115,34 @@ class BallProximity(Proximity):
         could be supplied to `tdamapper.utils.metrics.get_metric`.
     :type metric: String or callable
     :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
+        vantage point tree, defaults to True.
     :type flat: bool, optional
     :param kwargs: Optional arguments for metric that could be passed to
         `tdamapper.utils.metrics.get_metric`.
     :type kwargs: dict, optional
     """
 
-    def __init__(self, radius, metric, flat=True, **kwargs):
-        _metric = get_metric(metric, **kwargs)
-        self.__metric = lambda x, y: _metric(x[1], y[1])
+    def __init__(
+        self,
+        radius,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
         self.__radius = radius
+        _metric = get_metric(metric, **(metric_params or {}))
+        self.__vptree_metric = lambda x, y: _metric(x[1], y[1])
+        self.__vptree_metric_params = None
+        self.__vptree_kind = kind
+        self.__vptree_leaf_capacity = leaf_capacity
+        self.__vptree_leaf_radius = radius if leaf_radius is None else leaf_radius
+        self.__vptree_pivoting = pivoting
         self.__data = None
         self.__vptree = None
-        self.__flat = flat
 
-    def __flat_vpt(self):
-        return FVPT(self.__data, metric=self.__metric, leaf_radius=self.__radius)
-
-    def __vpt(self):
-        return VPT(self.__data, metric=self.__metric, leaf_radius=self.__radius)
 
     def fit(self, X):
         """
@@ -152,7 +159,15 @@ class BallProximity(Proximity):
         :rtype: self
         """
         self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__vptree = VPTree(
+            self.__data,
+            metric=self.__vptree_metric,
+            metric_params=self.__vptree_metric_params,
+            kind=self.__vptree_kind,
+            leaf_capacity=self.__vptree_leaf_capacity,
+            leaf_radius=self.__vptree_leaf_radius,
+            pivoting=self.__vptree_pivoting,
+        )
         return self
 
     def search(self, x):
@@ -186,26 +201,34 @@ class KNNProximity(Proximity):
         could be supplied to `tdamapper.utils.metrics.get_metric`.
     :type metric: String or callable
     :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
+        vantage point tree, defaults to True.
     :type flat: bool, optional
     :param kwargs: Optional arguments for metric that could be passed to
         `tdamapper.utils.metrics.get_metric`.
     :type kwargs: dict, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True, **kwargs):
+    def __init__(
+        self,
+        neighbors,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=None,
+        leaf_radius=0.0,
+        pivoting=None,
+    ):
         self.__neighbors = neighbors
-        _metric = get_metric(metric, **kwargs)
-        self.__metric = _pullback(lambda x: x[1], _metric)
+        _metric = get_metric(metric, **(metric_params or {}))
+        self.__vptree_metric = _pullback(lambda x: x[1], _metric)
+        self.__vptree_metric_params = None
+        self.__vptree_kind = kind
+        self.__vptree_leaf_capacity = neighbors if leaf_capacity is None else leaf_capacity
+        self.__vptree_leaf_radius = leaf_radius
+        self.__vptree_pivoting = pivoting
         self.__data = None
         self.__vptree = None
-        self.__flat = flat
 
-    def __flat_vpt(self):
-        return FVPT(self.__data, metric=self.__metric, leaf_capacity=self.__neighbors)
-
-    def __vpt(self):
-        return VPT(self.__data, metric=self.__metric, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         """
@@ -222,7 +245,15 @@ class KNNProximity(Proximity):
         :rtype: self
         """
         self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__vptree = VPTree(
+            self.__data,
+            metric=self.__vptree_metric,
+            metric_params=self.__vptree_metric_params,
+            kind=self.__vptree_kind,
+            leaf_capacity=self.__vptree_leaf_capacity,
+            leaf_radius=self.__vptree_leaf_radius,
+            pivoting=self.__vptree_pivoting,
+        )
         return self
 
     def search(self, x):
@@ -259,18 +290,33 @@ class CubicalProximity(Proximity):
         each dimension, must be in the range (0.0, 1.0).
     :type overlap_frac: float
     :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
+        vantage point tree, defaults to True.
     :type flat: bool, optional
     """
 
-    def __init__(self, n_intervals, overlap_frac, flat=True):
+    def __init__(
+        self,
+        n_intervals,
+        overlap_frac,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
         self.__n_intervals = n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
         _metric = _pullback(self._gamma_n, chebyshev())
-        self.__ball_proximity = BallProximity(self.__radius, _metric, flat=flat)
+        self.__ball_proximity = BallProximity(
+            self.__radius,
+            _metric,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting
+        )
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__minimum) / self.__delta
