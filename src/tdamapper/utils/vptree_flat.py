@@ -10,6 +10,10 @@ def _swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
 
 
+def _mid(start, end):
+    return (start + end) // 2
+
+
 class VPTree:
 
     def __init__(self, X, metric='euclidean', leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
@@ -66,7 +70,7 @@ class VPTree:
         stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
-            mid = (end + start) // 2
+            mid = _mid(start, end)
             self._update(start, end)
             _, v_point = self.__dataset[start]
             quickselect(self.__dataset, start + 1, end, mid)
@@ -189,7 +193,7 @@ class _BallSearchVisit:
     def after(self, dataset, stack, search):
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
-        mid = (self.__end + self.__start) // 2
+        mid = _mid(self.__start, self.__end)
         if dist <= v_radius:
             fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
             snd_start, snd_end, snd_radius = mid, self.__end, float('inf')
@@ -214,7 +218,7 @@ class _KNNSearchVisitPre:
     def after(self, dataset, stack, search):
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
-        mid = (self.__end + self.__start) // 2
+        mid = _mid(self.__start, self.__end)
         if dist <= v_radius:
             fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
             snd_start, snd_end, snd_radius = mid, self.__end, float('inf')

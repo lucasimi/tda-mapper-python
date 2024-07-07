@@ -10,6 +10,10 @@ def _swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
 
 
+def _mid(start, end):
+    return (start + end) // 2
+
+
 class VPTree:
 
     def __init__(self, X, metric='euclidean', leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
@@ -59,7 +63,7 @@ class VPTree:
             self.__dataset[i] = self.__distance(v_point, point), point
 
     def _build_rec(self, start, end, update):
-        mid = (end + start) // 2
+        mid = _mid(start, end)
         if update:
             self._update(start, end)
         _, v_point = self.__dataset[start]
