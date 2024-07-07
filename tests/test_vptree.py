@@ -4,8 +4,8 @@ import random
 import numpy as np
 
 from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree_hier import VPTree
-from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
+from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tests.ball_tree import SkBallTree
 
 
@@ -22,7 +22,7 @@ class TestVPTree(unittest.TestCase):
 
     neighbors = 5
 
-    def _testBallSearch(self, data, dist, vpt):
+    def _test_ball_search(self, data, dist, vpt):
         for _ in range(len(data) // 10):
             point = random.choice(data)
             ball = vpt.ball_search(point, self.eps)
@@ -33,7 +33,7 @@ class TestVPTree(unittest.TestCase):
             for x in near:
                 self.assertTrue(any(d(x, y) == 0.0 for y in ball))
 
-    def _testKNNSearch(self, data, dist, vpt):
+    def _test_knn_search(self, data, dist, vpt):
         for _ in range(len(data) // 10):
             point = random.choice(data)
             neigh = vpt.knn_search(point, self.neighbors)
@@ -48,50 +48,50 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(dist_neigh, dist_data[:self.neighbors])
             self.assertEqual(set(dist_neigh), set(dist_data[:self.neighbors]))
 
-    def _testNNSearch(self, data, dist, vpt):
+    def _test_nn_search(self, data, dist, vpt):
         d = get_metric(dist)
         for val in data:
             neigh = vpt.knn_search(val, 1)
             self.assertEqual(0.0, d(val, neigh[0]))
 
-    def _testVPTree(self, builder, data, dist):
+    def _test_vptree(self, builder, data, dist):
         vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors)
-        self._testBallSearch(data, dist, vpt)
-        self._testKNNSearch(data, dist, vpt)
-        self._testNNSearch(data, dist, vpt)
+        self._test_ball_search(data, dist, vpt)
+        self._test_knn_search(data, dist, vpt)
+        self._test_nn_search(data, dist, vpt)
         vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
-        self._testBallSearch(data, dist, vpt)
-        self._testKNNSearch(data, dist, vpt)
-        self._testNNSearch(data, dist, vpt)
+        self._test_ball_search(data, dist, vpt)
+        self._test_knn_search(data, dist, vpt)
+        self._test_nn_search(data, dist, vpt)
         vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
-        self._testBallSearch(data, dist, vpt)
-        self._testKNNSearch(data, dist, vpt)
-        self._testNNSearch(data, dist, vpt)
+        self._test_ball_search(data, dist, vpt)
+        self._test_knn_search(data, dist, vpt)
+        self._test_nn_search(data, dist, vpt)
 
-    def testVPTreeRefs(self):
+    def test_vptree_hier_refs(self):
         data = dataset()
         data_refs = list(range(len(data)))
         d = get_metric(distance)
         def dist_refs(i, j):
             return d(data[i], data[j])
-        self._testVPTree(VPTree, data_refs, dist_refs)
+        self._test_vptree(HVPT, data_refs, dist_refs)
 
-    def testVPTreeData(self):
+    def test_vptree_hier_data(self):
         data = dataset()
-        self._testVPTree(VPTree, data, distance)
+        self._test_vptree(HVPT, data, distance)
 
-    def testFlatVPTreeRefs(self):
+    def test_vptree_flat_refs(self):
         data = dataset()
         data_refs = list(range(len(data)))
         d = get_metric(distance)
         def dist_refs(i, j):
             return d(data[i], data[j])
-        self._testVPTree(FlatVPTree, data_refs, dist_refs)
+        self._test_vptree(FVPT, data_refs, dist_refs)
 
-    def testFlatVPTreeData(self):
+    def test_vptree_flat_data(self):
         data = dataset()
-        self._testVPTree(FlatVPTree, data, distance)
+        self._test_vptree(FVPT, data, distance)
 
-    def testSkBallTreeData(self):
+    def test_ball_tree_data(self):
         data = dataset()
-        self._testVPTree(SkBallTree, data, distance)
+        self._test_vptree(SkBallTree, data, distance)

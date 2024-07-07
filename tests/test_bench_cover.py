@@ -41,7 +41,7 @@ def run(X, r, dist, vp, **kwargs):
 
 class TestVpSettings(unittest.TestCase):
 
-    def testCoverRandom(self):
+    def test_cover_random(self):
         for r in [1.0, 10.0, 100.0]:
             for n in [100, 1000, 10000]:
                 print(f'============= n: {n}, r: {r} =============')
@@ -57,7 +57,7 @@ class TestVpSettings(unittest.TestCase):
                 run(X, r, dist, SkBallTree, leaf_radius=r)
                 print('')
 
-    def testCoverDigits(self):
+    def test_cover_digits(self):
         X, _ = load_digits(return_X_y=True)
         #X = PCA(n_components=3).fit_transform(X)
         for r in [1.0, 10.0, 100.0]:

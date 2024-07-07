@@ -10,17 +10,13 @@ from tdamapper.proximity import (
 )
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
-
-
 def dataset(dim=1, num=10000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
 class TestProximity(unittest.TestCase):
 
-    def testBallProximity(self):
+    def test_ball_proximity(self):
         data = list(range(100))
         prox = BallProximity(radius=10, metric=lambda x,y: abs(x - y))
         prox.fit(data)
@@ -29,7 +25,7 @@ class TestProximity(unittest.TestCase):
             expected = [y for y in data if abs(x - y) <= 10]
             self.assertEqual(len(expected), len(result))
 
-    def testKNNProximity(self):
+    def test_knn_proximity(self):
         data = list(range(100))
         prox = KNNProximity(neighbors=11, metric=lambda x,y: abs(x - y))
         prox.fit(data)
@@ -38,7 +34,7 @@ class TestProximity(unittest.TestCase):
             expected = [x + i for i in range(-5, 6)]
             self.assertEqual(set(expected), set(result))
 
-    def testCubicalProximity(self):
+    def test_cubical_proximity(self):
         m, M = 0, 99
         n = 10
         p = 0.1

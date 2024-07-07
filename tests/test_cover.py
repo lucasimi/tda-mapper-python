@@ -10,39 +10,35 @@ from tdamapper.cover import (
 )
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
-
-
 def dataset(dim=1, num=10000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
 class TestCover(unittest.TestCase):
 
-    def testTrivialCover(self):
+    def test_trivial_cover(self):
         data = dataset()
         cover = TrivialCover()
         charts = list(cover.apply(data))
         self.assertEqual(1, len(charts))
 
-    def testBallCoverSimple(self):
+    def test_ball_cover_simple(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
-        cover = BallCover(radius=1.1, metric=dist)
+        cover = BallCover(radius=1.1, metric='euclidean')
         charts = list(cover.apply(data))
         self.assertEqual(2, len(charts))
 
-    def testKNNCoverSimple(self):
+    def test_knn_cover_simple(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
-        cover = KNNCover(neighbors=2, metric=dist)
+        cover = KNNCover(neighbors=2, metric='euclidean')
         charts = list(cover.apply(data))
         self.assertEqual(2, len(charts))
 
-    def testCubicalCoverSimple(self):
+    def test_cubical_cover_simple(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
