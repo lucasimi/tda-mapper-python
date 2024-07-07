@@ -33,7 +33,7 @@ def run(X, r, dist, vp, **kwargs):
     XX = np.array([[i] + [xi for xi in x] for i, x in enumerate(X)])
     d = lambda x, y: dist(x[1:], y[1:])
     t0 = time.time()
-    vpt = vp(dataset=XX, distance=d, **kwargs)
+    vpt = vp(XX, metric=d, **kwargs)
     list(cover(vpt, XX, r))
     t1 = time.time()
     print(f'time: {t1 - t0}')

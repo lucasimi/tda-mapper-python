@@ -132,10 +132,10 @@ class BallProximity(Proximity):
         self.__flat = flat
 
     def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
+        return FVPT(self.__data, metric=self.__metric, leaf_radius=self.__radius)
 
     def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
+        return VPT(self.__data, metric=self.__metric, leaf_radius=self.__radius)
 
     def fit(self, X):
         """
@@ -202,10 +202,10 @@ class KNNProximity(Proximity):
         self.__flat = flat
 
     def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+        return FVPT(self.__data, metric=self.__metric, leaf_capacity=self.__neighbors)
 
     def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
+        return VPT(self.__data, metric=self.__metric, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         """

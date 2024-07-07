@@ -63,7 +63,7 @@ class TestBenchmark(unittest.TestCase):
 
     def _testBuild(self, data, name, builder):
         t0 = time()
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.k, pivoting='furthest')
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.k, pivoting='furthest')
         t1 = time()
         self.logger.info(f'{name}: {t1 - t0}')
         return vpt

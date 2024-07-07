@@ -55,15 +55,15 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(0.0, d(val, neigh[0]))
 
     def _testVPTree(self, builder, data, dist):
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors)
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors)
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)

@@ -12,9 +12,9 @@ def _swap(arr, i, j):
 
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
-        self.__distance = get_metric(distance, **kwargs)
-        self.__dataset = [(0.0, x) for x in dataset]
+    def __init__(self, X, metric='euclidean', leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
+        self.__distance = get_metric(metric, **kwargs)
+        self.__dataset = [(0.0, x) for x in X]
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
         self.__pivoting = self._pivoting_disabled
