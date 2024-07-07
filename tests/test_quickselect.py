@@ -20,6 +20,13 @@ class TestQuickSelect(unittest.TestCase):
             for i in range(h, n):
                 self.assertTrue(arr[i][0] >= choice)
 
+    def test_quickselect_bounds(self):
+        arr = [(0, 4), (1, 5), (-1, 6)]
+        quickselect(arr, 1, 2, 0)
+        self.assertEqual((0, 4), arr[0])
+        self.assertEqual((1, 5), arr[1])
+        self.assertEqual((-1, 6), arr[2])
+
     def test_quickselect(self):
         n = 1000
         arr = [(i, random.randint(0, n - 1)) for i in range(n)]

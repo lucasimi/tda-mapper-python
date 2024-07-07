@@ -6,11 +6,27 @@ from tdamapper.utils.quickselect import quickselect
 from tdamapper.utils.heap import MaxHeap
 
 
+def _swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
+
+
+def _mid(start, end):
+    return (start + end) // 2
+
+
 class VPTree:
 
-    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
-        self.__distance = get_metric(distance, **kwargs)
-        self.__dataset = [(0.0, x) for x in dataset]
+    def __init__(
+        self,
+        X,
+        metric='euclidean',
+        metric_params=None,
+        leaf_capacity=1,
+        leaf_radius=0.0,
+        pivoting=None,
+    ):
+        self.__distance = get_metric(metric, **(metric_params or {}))
+        self.__dataset = [(0.0, x) for x in X]
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
         self.__pivoting = self._pivoting_disabled
@@ -24,9 +40,11 @@ class VPTree:
         pass
 
     def _pivoting_random(self, start, end):
+        if end - start < 2:
+            return
         pivot = randrange(start, end)
         if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+            _swap(self.__dataset, start, pivot)
 
     def _furthest(self, start, end, i):
         furthest_dist = 0.0
@@ -41,11 +59,13 @@ class VPTree:
         return furthest
 
     def _pivoting_furthest(self, start, end):
+        if end - start < 2:
+            return
         rnd = randrange(start, end)
         furthest_rnd = self._furthest(start, end, rnd)
         furthest = self._furthest(start, end, furthest_rnd)
         if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+            _swap(self.__dataset, start, furthest)
 
     def _update(self, start, end):
         self.__pivoting(start, end)
@@ -58,17 +78,14 @@ class VPTree:
         stack = [(0, len(self.__dataset))]
         while stack:
             start, end = stack.pop()
-            if end - start <= self.__leaf_capacity:
-                continue
-            mid = (end + start) // 2
+            mid = _mid(start, end)
             self._update(start, end)
             _, v_point = self.__dataset[start]
             quickselect(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            if end - mid > self.__leaf_capacity:
+            if (end - start > 2 * self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                 stack.append((mid, end))
-            if (mid - start - 1 > self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                 stack.append((start + 1, mid))
 
     def ball_search(self, point, eps, inclusive=True):
@@ -85,8 +102,9 @@ class VPTree:
         while stack:
             visit = stack.pop()
             start, end, m_radius = visit.bounds()
-            if (end - start <= self.__leaf_capacity) or (m_radius <= self.__leaf_radius):
-                search.process_all([x for _, x in self.__dataset[start:end]])
+            v_radius, _ = self.__dataset[start]
+            if (end - start <= 2 * self.__leaf_capacity) or (m_radius <= self.__leaf_radius) or (v_radius <= self.__leaf_radius):
+                search.process_all(self.__dataset, start, end)
             else:
                 visit.after(self.__dataset, stack, search)
         return search.get_items()
@@ -107,18 +125,19 @@ class _BallSearch:
     def get_radius(self):
         return self.__radius
 
-    def process_all(self, values):
-        inside = [x for x in values if self.__inside(self._from_center(x))]
-        self.__items.extend(inside)
+    def process_all(self, data, start, end):
+        for _, x in data[start:end]:
+            if self.__inside(self._dist_from_center(x)):
+                self.__items.append(x)
 
-    def process(self, value):
-        dist = self._from_center(value)
+    def process(self, p):
+        dist = self._dist_from_center(p)
         if self.__inside(dist):
-            self.__items.append(value)
+            self.__items.append(p)
         return dist
 
-    def _from_center(self, value):
-        return self.__distance(self.__center, value)
+    def _dist_from_center(self, p):
+        return self.__distance(self.__center, p)
 
     def _inside_inclusive(self, dist):
         return dist <= self.__radius
@@ -129,8 +148,8 @@ class _BallSearch:
 
 class _KNNSearch:
 
-    def __init__(self, dist, center, neighbors):
-        self.__dist = dist
+    def __init__(self, distance, center, neighbors):
+        self.__distance = distance
         self.__center = center
         self.__neighbors = neighbors
         self.__items = MaxHeap()
@@ -152,18 +171,21 @@ class _KNNSearch:
         furthest_dist, _ = self.__items.top()
         return furthest_dist
 
-    def process(self, value):
-        dist = self.__dist(self.__center, value)
+    def _dist_from_center(self, p):
+        return self.__distance(self.__center, p)
+
+    def process(self, x):
+        dist = self._dist_from_center(x)
         if dist >= self.get_radius():
             return dist
-        self.__items.add(dist, value)
+        self.__items.add(dist, x)
         while len(self.__items) > self.__neighbors:
             self.__items.pop()
         return dist
 
-    def process_all(self, values):
-        for value in values:
-            self.process(value)
+    def process_all(self, data, start, end):
+        for _, x in data[start:end]:
+            self.process(x)
 
 
 class _BallSearchVisit:
@@ -179,7 +201,7 @@ class _BallSearchVisit:
     def after(self, dataset, stack, search):
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
-        mid = (self.__end + self.__start) // 2
+        mid = _mid(self.__start, self.__end)
         if dist <= v_radius:
             fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
             snd_start, snd_end, snd_radius = mid, self.__end, float('inf')
@@ -204,7 +226,7 @@ class _KNNSearchVisitPre:
     def after(self, dataset, stack, search):
         v_radius, v_point = dataset[self.__start]
         dist = search.process(v_point)
-        mid = (self.__end + self.__start) // 2
+        mid = _mid(self.__start, self.__end)
         if dist <= v_radius:
             fst_start, fst_end, fst_radius = self.__start + 1, mid, v_radius
             snd_start, snd_end, snd_radius = mid, self.__end, float('inf')

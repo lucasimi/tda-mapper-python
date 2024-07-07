@@ -107,7 +107,7 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(x_dist in dists)
 
     def testVPTree(self):
-        vptree = VPTree(euclidean, X[:80], leaf_capacity=5)
+        vptree = VPTree(X[:80], metric=euclidean, leaf_capacity=5)
         neigh = vptree.knn_search(x, 5)
         dists = [euclidean(x, y) for y in neigh]
         x_dist = euclidean(x, X[5])
@@ -116,7 +116,7 @@ class TestKNN(unittest.TestCase):
 
     def testVPTreeSimple(self):
         XX = np.array([np.array([x, x/2]) for x in range(30)])
-        vptree = VPTree(euclidean, XX, leaf_capacity=5, leaf_radius=0.0)
+        vptree = VPTree(XX, metric=euclidean, leaf_capacity=5, leaf_radius=0.0)
         xx = np.array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
         dists = [euclidean(xx, y) for y in neigh]

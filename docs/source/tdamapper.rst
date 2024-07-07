@@ -41,6 +41,14 @@ tdamapper.utils.metrics
    :undoc-members:
    :show-inheritance:
 
+tdamapper.utils.vptree
+-----------------------
+
+.. automodule:: tdamapper.utils.vptree
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tdamapper.plot
 --------------
 

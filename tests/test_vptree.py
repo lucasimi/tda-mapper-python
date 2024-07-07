@@ -4,8 +4,9 @@ import random
 import numpy as np
 
 from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree import VPTree
+from tdamapper.utils.vptree_hier import VPTree
 from tdamapper.utils.vptree_flat import VPTree as FlatVPTree
+from tests.ball_tree import SkBallTree
 
 
 distance = 'euclidean'
@@ -54,15 +55,15 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(0.0, d(val, neigh[0]))
 
     def _testVPTree(self, builder, data, dist):
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors)
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors)
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)
-        vpt = builder(dist, data, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
+        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
         self._testBallSearch(data, dist, vpt)
         self._testKNNSearch(data, dist, vpt)
         self._testNNSearch(data, dist, vpt)
@@ -90,3 +91,7 @@ class TestVPTree(unittest.TestCase):
     def testFlatVPTreeData(self):
         data = dataset()
         self._testVPTree(FlatVPTree, data, distance)
+
+    def testSkBallTreeData(self):
+        data = dataset()
+        self._testVPTree(SkBallTree, data, distance)

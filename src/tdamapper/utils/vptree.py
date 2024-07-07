@@ -1,208 +1,68 @@
-"""A class for fast knn and range searches, depending only on a given metric"""
-from random import randrange
-
-from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.quickselect import quickselect
-from tdamapper.utils.heap import MaxHeap
+from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 
 class VPTree:
+    """
+    A Vantage Point Tree, or vp-tree, for fast range-queries and knn-queries.
 
-    def __init__(self, distance, dataset, leaf_capacity=1, leaf_radius=0.0, pivoting=None, **kwargs):
-        self.__distance = get_metric(distance, **kwargs)
-        self.__dataset = [(0.0, x) for x in dataset]
-        self.__leaf_capacity = leaf_capacity
-        self.__leaf_radius = leaf_radius
-        self.__pivoting = self._pivoting_disabled
-        if pivoting == 'random':
-            self.__pivoting = self._pivoting_random
-        elif pivoting == 'furthest':
-            self.__pivoting = self._pivoting_furthest
-        self.__tree = self._build_rec(0, len(self.__dataset), True)
+    :param X: A dataset of n points to be covered with open subsets.
+    :type X: array-like of shape (n, m) or list-like of length n
 
-    def _pivoting_disabled(self, start, end):
-        pass
+    :param metric: The metric used to define the distance between points.
+    Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+    Defaults to 'euclidean'.
+    :type metric: str or callable
 
-    def _pivoting_random(self, start, end):
-        pivot = randrange(start, end)
-        if pivot > start:
-            self.__dataset[start], self.__dataset[pivot] = self.__dataset[pivot], self.__dataset[start]
+    :param metric_params: Additional parameters for the metric function, to be
+    passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+    :type metric_params: dict, optional
 
-    def _furthest(self, start, end, i):
-        furthest_dist = 0.0
-        furthest = start
-        _, i_point = self.__dataset[i]
-        for j in range(start, end):
-            _, j_point = self.__dataset[j]
-            j_dist = self.__distance(i_point, j_point)
-            if j_dist > furthest_dist:
-                furthest = j
-                furthest_dist = j_dist
-        return furthest
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+    point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+    'flat'.
+    :type kind: str
 
-    def _pivoting_furthest(self, start, end):
-        rnd = randrange(start, end)
-        furthest_rnd = self._furthest(start, end, rnd)
-        furthest = self._furthest(start, end, furthest_rnd)
-        if furthest > start:
-            self.__dataset[start], self.__dataset[furthest] = self.__dataset[furthest], self.__dataset[start]
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+    vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
 
-    def _update(self, start, end):
-        self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
-        for i in range(start + 1, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
+    :param leaf_radius: The radius of the leaf nodes. Must be a positive
+    value. Defaults to 0.0.
+    :type leaf_radius: float
 
-    def _build_rec(self, start, end, update):
-        if end - start <= self.__leaf_capacity:
-            return _Tree([x for _, x in self.__dataset[start:end]])
-        mid = (end + start) // 2
-        if update:
-            self._update(start, end)
-        _, v_point = self.__dataset[start]
-        quickselect(self.__dataset, start + 1, end, mid)
-        v_radius, _ = self.__dataset[mid]
-        if v_radius <= self.__leaf_radius:
-            left = _Tree([x for _, x in self.__dataset[start:mid]])
+    :param pivoting: The method used for pivoting in the vantage point tree.
+    Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
+
+    def __init__(
+        self,
+        X,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=0.0,
+        pivoting=None
+    ):
+        builder = FVPT
+        if kind == 'flat':
+            builder = FVPT
+        elif kind == 'hierarchical':
+            builder = HVPT
         else:
-            left = self._build_rec(start, mid, False)
-        right = self._build_rec(mid, end, True)
-        return _Tree(_Ball(v_point, v_radius), left, right)
+            raise ValueError(f'Unknown kind of vptree: {kind}')
+        self.__vpt = builder(
+            X,
+            metric=metric,
+            metric_params=metric_params,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting)
 
     def ball_search(self, point, eps, inclusive=True):
-        search = _BallSearch(self.__distance, point, eps, inclusive)
-        self._search_rec(self.__tree, search)
-        return search.get_items()
+        return self.__vpt.ball_search(point, eps, inclusive=inclusive)
 
     def knn_search(self, point, k):
-        search = _KNNSearch(self.__distance, point, k)
-        self._search_rec(self.__tree, search)
-        return search.get_items()
-
-    def _search_rec(self, tree, search):
-        if tree.is_terminal():
-            search.process_all(tree.get_data())
-        else:
-            v_ball = tree.get_data()
-            v_radius, v_point = v_ball.get_radius(), v_ball.get_center()
-            point = search.get_center()
-            dist = self.__distance(v_point, point)
-            if dist <= v_radius:
-                fst, snd = tree.get_left(), tree.get_right()
-            else:
-                fst, snd = tree.get_right(), tree.get_left()
-            self._search_rec(fst, search)
-            if abs(dist - v_radius) <= search.get_radius():
-                self._search_rec(snd, search)
-
-
-class _Ball:
-
-    def __init__(self, center, radius):
-        self.__center = center
-        self.__radius = radius
-
-    def get_radius(self):
-        return self.__radius
-
-    def get_center(self):
-        return self.__center
-
-
-class _Tree:
-
-    def __init__(self, data, left=None, right=None):
-        self.__data = data
-        self.__left = left
-        self.__right = right
-
-    def get_data(self):
-        return self.__data
-
-    def get_left(self):
-        return self.__left
-
-    def get_right(self):
-        return self.__right
-
-    def is_terminal(self):
-        return (self.__left is None) and (self.__right is None)
-
-    def get_height(self):
-        if self.__left is None:
-            if self.__right is None:
-                return 0
-            return self.__right.get_height() + 1
-        if self.__right is None:
-            return self.__left.get_height() + 1
-        l_height = self.__left.get_height()
-        r_height = self.__right.get_height()
-        return max(l_height, r_height) + 1
-
-
-class _BallSearch:
-
-    def __init__(self, distance, center, radius, inclusive):
-        self.__distance = distance
-        self.__center = center
-        self.__radius = radius
-        self.__items = []
-        self.__inside = self._inside_inclusive if inclusive else self._inside_not_inclusive
-
-    def get_items(self):
-        return self.__items
-
-    def get_radius(self):
-        return self.__radius
-
-    def get_center(self):
-        return self.__center
-
-    def process_all(self, values):
-        inside = [x for x in values if self.__inside(self._from_center(x))]
-        self.__items.extend(inside)
-
-    def _from_center(self, value):
-        return self.__distance(self.__center, value)
-
-    def _inside_inclusive(self, dist):
-        return dist <= self.__radius
-
-    def _inside_not_inclusive(self, dist):
-        return dist < self.__radius
-
-
-class _KNNSearch:
-
-    def __init__(self, dist, center, neighbors):
-        self.__dist = dist
-        self.__center = center
-        self.__neighbors = neighbors
-        self.__items = MaxHeap()
-
-    def get_items(self):
-        while len(self.__items) > self.__neighbors:
-            self.__items.pop()
-        return [x for (_, x) in self.__items]
-
-    def get_radius(self):
-        if len(self.__items) < self.__neighbors:
-            return float('inf')
-        furthest_dist, _ = self.__items.top()
-        return furthest_dist
-
-    def get_center(self):
-        return self.__center
-
-    def _process(self, value):
-        dist = self.__dist(self.__center, value)
-        if dist >= self.get_radius():
-            return
-        self.__items.add(dist, value)
-        if len(self.__items) > self.__neighbors:
-            self.__items.pop()
-
-    def process_all(self, values):
-        for val in values:
-            self._process(val)
+        return self.__vpt.knn_search(point, k)
