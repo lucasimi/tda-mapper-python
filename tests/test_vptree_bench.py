@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
 from tdamapper.utils.metrics import get_metric, euclidean
-from tdamapper.utils.vptree import VPTree as VPT
+from tdamapper.utils.vptree_hier import VPTree as VPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 from tests.ball_tree import SkBallTree
