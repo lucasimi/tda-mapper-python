@@ -1,3 +1,7 @@
+"""
+A module for fast knn and range searches, depending only on a given metric
+"""
+
 from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 

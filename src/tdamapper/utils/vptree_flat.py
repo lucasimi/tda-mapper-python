@@ -1,4 +1,3 @@
-"""A class for fast knn and range searches, depending only on a given metric"""
 from random import randrange
 
 from tdamapper.utils.metrics import get_metric
