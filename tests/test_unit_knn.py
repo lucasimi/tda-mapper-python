@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from tdamapper.proximity import KNNProximity
+from tdamapper.utils.metrics import euclidean
 from tdamapper.utils.vptree_flat import VPTree
 
 
@@ -92,34 +93,33 @@ X = np.array([
 x = np.array([ 99.73199663, 100.8024564 ])
 
 
-def euclidean(x, y):
-    return np.linalg.norm(x - y)
-
-
 class TestKNN(unittest.TestCase):
 
-    def testKNNSearch(self):
-        knn_prox = KNNProximity(neighbors=5, metric=euclidean)
+    def test_knn_search(self):
+        knn_prox = KNNProximity(neighbors=5, metric='euclidean')
         knn_prox.fit(X)
         neigh_ids = knn_prox.search(x)
-        dists = [euclidean(x, X[j]) for j in neigh_ids]
-        x_dist = euclidean(x, X[5])
+        d = euclidean()
+        dists = [d(x, X[j]) for j in neigh_ids]
+        x_dist = d(x, X[5])
         self.assertTrue(x_dist in dists)
 
-    def testVPTree(self):
-        vptree = VPTree(euclidean, X[:80], leaf_capacity=5)
+    def test_vptree(self):
+        vptree = VPTree(X[:80], metric='euclidean', leaf_capacity=5)
         neigh = vptree.knn_search(x, 5)
-        dists = [euclidean(x, y) for y in neigh]
-        x_dist = euclidean(x, X[5])
+        d = euclidean()
+        dists = [d(x, y) for y in neigh]
+        x_dist = d(x, X[5])
         self.check_vptree(vptree)
         self.assertTrue(x_dist in dists)
 
-    def testVPTreeSimple(self):
+    def test_vptree_simple(self):
         XX = np.array([np.array([x, x/2]) for x in range(30)])
-        vptree = VPTree(euclidean, XX, leaf_capacity=5, leaf_radius=0.0)
+        vptree = VPTree(XX, metric='euclidean', leaf_capacity=5, leaf_radius=0.0)
         xx = np.array([3, 3/2])
         neigh = vptree.knn_search(xx, 2)
-        dists = [euclidean(xx, y) for y in neigh]
+        d = euclidean()
+        dists = [d(xx, y) for y in neigh]
         self.check_vptree(vptree)
         self.assertTrue(0.0 in dists)
 
@@ -138,7 +138,7 @@ class TestKNN(unittest.TestCase):
                 _, y = data[i]
                 self.assertTrue(dist(v_point, y) >= v_radius)
         def check_rec(start, end):
-            v_radius, v_point = data[start]
+            v_radius, _ = data[start]
             if (end - start > leaf_capacity) and (v_radius > leaf_radius):
                 check_sub(start, end)
                 mid = (start + end) // 2

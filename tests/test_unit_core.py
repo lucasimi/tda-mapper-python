@@ -9,8 +9,7 @@ from tdamapper.cover import TrivialCover, BallCover
 from tdamapper.clustering import TrivialClustering
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
+dist = 'euclidean'
 
 
 def dataset(dim=10, num=1000):
@@ -19,7 +18,7 @@ def dataset(dim=10, num=1000):
 
 class TestMapper(unittest.TestCase):
 
-    def testTrivial(self):
+    def test_trivial(self):
         data = dataset()
         mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
         g = mp.fit_transform(data, data)
@@ -30,7 +29,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, TrivialCover(), TrivialClustering())
         self.assertEqual(len(data), len(ccs2))
 
-    def testBallSmallRadius(self):
+    def test_ball_small_radius(self):
         data = np.array([[float(i)] for i in range(1000)])
         cover = BallCover(0.5, metric=dist)
         clustering = TrivialClustering()
@@ -44,7 +43,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def testBallSmallRadiusList(self):
+    def test_ball_small_radius_list(self):
         data = [np.array([float(i)]) for i in range(1000)]
         cover = BallCover(0.5, metric=dist)
         clustering = DBSCAN(eps=1.0, min_samples=1)
@@ -60,7 +59,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def testBallLargeRadius(self):
+    def test_ball_large_radius(self):
         data = np.array([[float(i)] for i in range(1000)])
         cover = BallCover(1000.0, metric=dist)
         clustering = TrivialClustering()
@@ -76,7 +75,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def testTwoDisconnectedClusters(self):
+    def test_two_disconnected_clusters(self):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         data = np.array(data)
@@ -94,7 +93,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def testTwoConnectedClusters(self):
+    def test_two_connected_clusters(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
@@ -112,7 +111,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def testCCS(self):
+    def test_connected_components(self):
         data = [0, 1, 2, 3]
 
         class MockCover:
@@ -132,7 +131,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(cc0, ccs[2])
         self.assertEqual(cc0, ccs[3])
 
-    def testLabels(self):
+    def test_labels(self):
         data = [0, 1, 2, 3]
 
         class MockCover:

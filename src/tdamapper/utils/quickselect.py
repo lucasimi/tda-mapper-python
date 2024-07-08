@@ -1,44 +1,54 @@
-def partition(data, start, end, p, fun=lambda x: x):
-    higher = start
-    p_val = fun(p)
-    for j in range(start, end):
-        if fun(data[j]) < p_val:
-            data[higher], data[j] = data[j], data[higher]
-            higher += 1
-    return higher
+def __swap(arr, i, j):
+    arr[i], arr[j] = arr[j], arr[i]
 
 
-def partition_tuple(data, start, end, p):
+def partition(data, start, end, p_ord):
     higher = start
-    p_ord, _ = p
     for j in range(start, end):
         j_ord, _ = data[j]
         if j_ord < p_ord:
-            data[higher], data[j] = data[j], data[higher]
+            __swap(data, higher, j)
             higher += 1
     return higher
 
 
-def quickselect(data, start, end, k, fun=lambda x: x):
+def quickselect(data, start, end, k):
+    if (k < start) or (k >= end):
+        return
     start_, end_, higher = start, end, None
     while higher != k + 1:
-        p = data[k]
-        data[start_], data[k] = data[k], data[start_]
-        higher = partition(data, start_ + 1, end_, p, fun)
-        data[start_], data[higher - 1] = data[higher - 1], data[start_]
+        p, _ = data[k]
+        __swap(data, start_, k)
+        higher = partition(data, start_ + 1, end_, p)
+        __swap(data, start_, higher - 1)
         if k <= higher - 1:
             end_ = higher
         else:
             start_ = higher
 
 
-def quickselect_tuple(data, start, end, k):
+def partition_tuple(data_ord, data_arr, start, end, p_ord):
+    higher = start
+    for j in range(start, end):
+        j_ord = data_ord[j]
+        if j_ord < p_ord:
+            __swap(data_arr, higher, j)
+            __swap(data_ord, higher, j)
+            higher += 1
+    return higher
+
+
+def quickselect_tuple(data_ord, data_arr, start, end, k):
+    if (k < start) or (k >= end):
+        return
     start_, end_, higher = start, end, None
     while higher != k + 1:
-        p = data[k]
-        data[start_], data[k] = data[k], data[start_]
-        higher = partition_tuple(data, start_ + 1, end_, p)
-        data[start_], data[higher - 1] = data[higher - 1], data[start_]
+        p_ord = data_ord[k]
+        __swap(data_arr, start_, k)
+        __swap(data_ord, start_, k)
+        higher = partition_tuple(data_ord, data_arr, start_ + 1, end_, p_ord)
+        __swap(data_arr, start_, higher - 1)
+        __swap(data_ord, start_, higher - 1)
         if k <= higher - 1:
             end_ = higher
         else:

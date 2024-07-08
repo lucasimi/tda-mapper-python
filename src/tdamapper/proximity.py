@@ -13,8 +13,8 @@ the class :class:`tdamapper.cover.ProximityCover`.
 
 import numpy as np
 
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree import VPTree as VPT
+from tdamapper.utils.metrics import get_metric, chebyshev
+from tdamapper.utils.vptree import VPTree
 
 
 def proximity_net(X, proximity):
@@ -61,11 +61,6 @@ def _rho(x):
     return np.floor(x) + 0.5
 
 
-def _l_infty(x, y):
-    # in alternative: np.linalg.norm(x - y, ord=np.inf)
-    return np.max(np.abs(x - y))
-
-
 class Proximity:
     """
     Abstract interface for proximity functions.
@@ -110,35 +105,56 @@ class BallProximity(Proximity):
     """
     Proximity function based on open balls of fixed radius.
 
-    An open ball is a set of points placed within a certain distance from a
-    center. This class maps each point to the open ball of fixed radius centered
-    on the point itself.
+    An open ball is a set of points within a specified distance from a center
+    point. This class maps each point to its corresponding open ball with a 
+    fixed radius centered on the point itself.
 
-    :param radius: The radius of the open balls, must be positive.
+    :param radius: The radius of the open balls. Must be a positive value.
     :type radius: float
-    :param metric: The (pseudo-)metric function that defines the distance
-        between points, must be symmetric, positive, and satisfy the
-        triangle-inequality, i.e.
-        :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
-        in the dataset.
-    :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param metric: The metric used to define the distance between points.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the metric function, to be
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
+        to 'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
     """
 
-    def __init__(self, radius, metric, flat=True):
-        self.__metric = lambda x, y: metric(x[1], y[1])
+    def __init__(
+        self,
+        radius,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
         self.__radius = radius
+        _metric = get_metric(metric, **(metric_params or {}))
+        self.__vptree_metric = lambda x, y: _metric(x[1], y[1])
+        self.__vptree_metric_params = None
+        self.__vptree_kind = kind
+        self.__vptree_leaf_capacity = leaf_capacity
+        self.__vptree_leaf_radius = radius if leaf_radius is None else leaf_radius
+        self.__vptree_pivoting = pivoting
         self.__data = None
         self.__vptree = None
-        self.__flat = flat
 
-    def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_radius=self.__radius)
-
-    def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_radius=self.__radius)
 
     def fit(self, X):
         """
@@ -155,7 +171,15 @@ class BallProximity(Proximity):
         :rtype: self
         """
         self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__vptree = VPTree(
+            self.__data,
+            metric=self.__vptree_metric,
+            metric_params=self.__vptree_metric_params,
+            kind=self.__vptree_kind,
+            leaf_capacity=self.__vptree_leaf_capacity,
+            leaf_radius=self.__vptree_leaf_radius,
+            pivoting=self.__vptree_pivoting,
+        )
         return self
 
     def search(self, x):
@@ -185,29 +209,50 @@ class KNNProximity(Proximity):
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the length of the dataset.
     :type neighbors: int
-    :param metric: The (pseudo-)metric function that defines the distance
-        between points, must be symmetric, positive, and satisfy the
-        triangle-inequality, i.e.
-        :math:`metric(x, z) \leq metric(x, y) + metric(y, z)` for every x, y, z
-        in the dataset.
-    :type metric: Callable
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param metric: The metric used to define the distance between points.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the metric function, to be
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
+        to 'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. If not specified, it defaults to the value of
+        `neighbors`. Must be a positive value. Defaults to None.
+    :type leaf_capacity: int, optional
+    :param leaf_radius: The radius of the leaf nodes. Must be a positive value.
+        Defaults to 0.0.
+    :type leaf_radius: float
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
     """
 
-    def __init__(self, neighbors, metric, flat=True):
+    def __init__(
+        self,
+        neighbors,
+        metric='euclidean',
+        metric_params=None,
+        kind='flat',
+        leaf_capacity=None,
+        leaf_radius=0.0,
+        pivoting=None,
+    ):
         self.__neighbors = neighbors
-        self.__metric = _pullback(lambda x: x[1], metric)
+        _metric = get_metric(metric, **(metric_params or {}))
+        self.__vptree_metric = _pullback(lambda x: x[1], _metric)
+        self.__vptree_metric_params = None
+        self.__vptree_kind = kind
+        self.__vptree_leaf_capacity = neighbors if leaf_capacity is None else leaf_capacity
+        self.__vptree_leaf_radius = leaf_radius
+        self.__vptree_pivoting = pivoting
         self.__data = None
         self.__vptree = None
-        self.__flat = flat
 
-    def __flat_vpt(self):
-        return FVPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
-
-    def __vpt(self):
-        return VPT(self.__metric, self.__data, leaf_capacity=self.__neighbors)
 
     def fit(self, X):
         """
@@ -224,7 +269,15 @@ class KNNProximity(Proximity):
         :rtype: self
         """
         self.__data = list(enumerate(X))
-        self.__vptree = self.__flat_vpt() if self.__flat else self.__vpt()
+        self.__vptree = VPTree(
+            self.__data,
+            metric=self.__vptree_metric,
+            metric_params=self.__vptree_metric_params,
+            kind=self.__vptree_kind,
+            leaf_capacity=self.__vptree_leaf_capacity,
+            leaf_radius=self.__vptree_leaf_radius,
+            pivoting=self.__vptree_pivoting,
+        )
         return self
 
     def search(self, x):
@@ -254,25 +307,58 @@ class CubicalProximity(Proximity):
     intervals and the overlap fraction parameters. This class maps each point to
     the hypercube with the nearest center.
 
-    :param n_intervals: The number of intervals to use for each dimension, must
-        be positive and less than or equal to the length of the dataset.
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
     :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 1.0).
     :type overlap_frac: float
-    :param flat: A flag that indicates whether to use a flat or a hierarchical
-        vantage point tree, defaults to False.
-    :type flat: bool, optional
+    :param metric: The metric used to define the distance between points.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the metric function, to be
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+    'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+    vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+    defaults to the value of `radius`. Must be a positive value. Defaults to
+    None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+    Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
     """
 
-    def __init__(self, n_intervals, overlap_frac, flat=True):
+    def __init__(
+        self,
+        n_intervals,
+        overlap_frac,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
         self.__n_intervals = n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
         self.__minimum = None
         self.__maximum = None
         self.__delta = None
-        metric = _pullback(self._gamma_n, _l_infty)
-        self.__ball_proximity = BallProximity(self.__radius, metric, flat=flat)
+        _metric = _pullback(self._gamma_n, chebyshev())
+        self.__ball_proximity = BallProximity(
+            self.__radius,
+            _metric,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting
+        )
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__minimum) / self.__delta
@@ -296,6 +382,9 @@ class CubicalProximity(Proximity):
         delta = self.__maximum - self.__minimum
         self.__delta = np.maximum(eps, delta)
 
+    def _convert(self, X):
+        return np.asarray(X).reshape(len(X), -1).astype(float)
+
     def fit(self, X):
         """
         Train internal parameters.
@@ -309,8 +398,9 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        self._set_bounds(X)
-        self.__ball_proximity.fit(X)
+        XX = self._convert(X)
+        self._set_bounds(XX)
+        self.__ball_proximity.fit(XX)
         return self
 
     def search(self, x):

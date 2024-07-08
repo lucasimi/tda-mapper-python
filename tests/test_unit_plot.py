@@ -8,17 +8,13 @@ from tdamapper.clustering import TrivialClustering
 from tdamapper.plot import MapperLayoutInteractive, MapperLayoutStatic
 
 
-def dist(x, y):
-    return np.linalg.norm(x - y)
-
-
 class TestMapperPlot(unittest.TestCase):
 
-    def testTwoConnectedClusters(self):
+    def test_two_connected_clusters(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
-        mp = MapperAlgorithm(cover=BallCover(1.1, metric=dist),
+        mp = MapperAlgorithm(cover=BallCover(1.1, metric='euclidean'),
             clustering=TrivialClustering())
         g = mp.fit_transform(data, data)
         mp_plot1 = MapperLayoutInteractive(g, dim=2,

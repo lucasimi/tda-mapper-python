@@ -5,7 +5,7 @@ from tdamapper.utils.unionfind import UnionFind
 
 class TestUnionFind(unittest.TestCase):
 
-    def testList(self):
+    def test_list(self):
         data = [1, 2, 3, 4]
         uf = UnionFind(data)
         for i in data:

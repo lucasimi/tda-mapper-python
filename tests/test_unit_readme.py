@@ -3,5 +3,5 @@ import unittest
 
 class TestReadme(unittest.TestCase):
 
-    def testRun(self):
+    def test_run(self):
         import tests.example
