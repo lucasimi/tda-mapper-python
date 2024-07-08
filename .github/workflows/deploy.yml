@@ -21,8 +21,14 @@ jobs:
           python -m pip install -e .
       - name: Build package
         run: | 
-          python -m build
+          python -m build --sdist --wheel
           python -m twine check dist/*
+      - name: Upload package to TestPyPI
+        run: | 
+          python -m twine upload -r testpypi dist/* --verbose
+        env:
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME_TEST }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD_TEST }}
       - name: Upload package to PyPI
         run: | 
           python -m twine upload -r pypi dist/* --verbose
