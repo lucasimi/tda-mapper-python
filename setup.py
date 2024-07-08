@@ -6,6 +6,8 @@ from Cython.Build import cythonize
 setup(
     ext_modules=cythonize([
         Extension(
-            "tdamapper.utils._metrics",
-            ["src/tdamapper/utils/_metrics.pyx"])
-    ]))
+            name="tdamapper.utils._metrics",
+            sources=["src/tdamapper/utils/_metrics.pyx"],
+        ),
+    ])
+)
