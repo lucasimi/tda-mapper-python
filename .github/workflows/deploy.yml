@@ -21,7 +21,7 @@ jobs:
           python -m pip install -e .
       - name: Build package
         run: | 
-          python -m build
+          python -m build --sdist --wheel
           python -m twine check dist/*
       - name: Upload package to TestPyPI
         run: | 
