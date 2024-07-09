@@ -22,7 +22,7 @@ dependencies = [
     "numpy>=1.20.1, <2.0.0",
     "plotly>=4.14.3"
 ]
-requires-python = ">=3.6"
+requires-python = "> 3.6"
 
 [project.optional-dependencies]
 dev = ["coverage", "pandas", "scikit-learn"]
