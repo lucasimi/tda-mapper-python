@@ -19,13 +19,16 @@ keywords = ["tda", "mapper", "topology", "topological data analysis"]
 dependencies = [
     "matplotlib>=3.3.4",
     "networkx>=2.5",
-    "numpy>=1.20.1",
+    "numpy>=1.20.1, <2.0.0",
     "plotly>=4.14.3"
 ]
 requires-python = ">=3.6"
 
 [project.optional-dependencies]
 dev = ["coverage", "pandas", "scikit-learn"]
+
+[tool.setuptools.package-data]
+"tdamapper.utils" = ["_metrics.c", "_metrics.pyx"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
