@@ -17,7 +17,7 @@ cpdef inline double euclidean(double[:] x, double[:] y) nogil:
     return sqrt(norm_squared)
 
 
-cdef inline double minkowski(int p, double[:] x, double[:] y) nogil:
+cpdef inline double minkowski(int p, double[:] x, double[:] y) nogil:
     cdef double norm_p = 0.0
     cdef Py_ssize_t i, n = x.shape[0]
     for i in range(n):
