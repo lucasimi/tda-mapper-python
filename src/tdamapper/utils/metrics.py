@@ -21,7 +21,6 @@ Supported distance metrics include:
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-import np
 import tdamapper.utils._metrics as _metrics
 
 
