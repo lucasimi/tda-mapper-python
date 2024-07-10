@@ -13,7 +13,5 @@ ext_modules = [
 ]
 
 setup(
-    name='tda-mapper',
-    version='0.7.0',
     ext_modules=cythonize(ext_modules),
 )

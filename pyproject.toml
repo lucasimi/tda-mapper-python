@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "Cython"]
+requires = ["setuptools", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -22,15 +22,18 @@ dependencies = [
     "numpy>=1.20.1, <2.0.0",
     "plotly>=4.14.3"
 ]
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 
 [project.optional-dependencies]
 dev = ["coverage", "pandas", "scikit-learn"]
-
-[tool.setuptools.package-data]
-"tdamapper.utils" = ["_metrics.c", "_metrics.pyx"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
 Documentation = "https://tda-mapper.readthedocs.io"
 Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
+
+[tool.setuptools.package-data]
+"tdamapper.utils" = ["_metrics.c", "_metrics.pyx"]
+
+[tool.cibuildwheel]
+skip = "cp36-*"

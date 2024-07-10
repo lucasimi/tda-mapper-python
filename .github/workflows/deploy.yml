@@ -55,7 +55,7 @@ jobs:
           path: dist/*.tar.gz
 
   upload_pypi:
-    needs: [build_wheels, build_sdist]
+    needs: [build_locally, build_wheels, build_sdist]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
