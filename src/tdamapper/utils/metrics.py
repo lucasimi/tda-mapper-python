@@ -21,10 +21,12 @@ Supported distance metrics include:
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
+import np
 import tdamapper.utils._metrics as _metrics
 
 
 _EUCLIDEAN = 'euclidean'
+_MANHATTAN = 'manhattan'
 _MINKOWSKI = 'minkowski'
 _MINKOWSKI_P = 'p'
 _CHEBYSHEV = 'chebyshev'
@@ -40,6 +42,7 @@ def get_supported_metrics():
     """
     return [
         _EUCLIDEAN,
+        _MANHATTAN,
         _MINKOWSKI,
         _CHEBYSHEV,
         _COSINE,
@@ -59,6 +62,19 @@ def euclidean():
     return _metrics.euclidean
 
 
+def manhattan():
+    """
+    Return the Manhattan distance function for vectors.
+
+    The Manhattan distance is defined as the sum of the absolute differences
+    between the components of the vectors.
+
+    :return: The Manhattan distance function.
+    :rtype: callable
+    """
+    return _metrics.manhattan
+
+
 def chebyshev():
     """
     Return the Chebyshev distance function for vectors.
@@ -76,9 +92,10 @@ def minkowski(p):
     """
     Return the Minkowski distance function for order p on vectors.
 
-    The Minkowski distance is a generalization of the Euclidean and
-    Chebyshev distances. When p = 1, it is equivalent to the Manhattan
-    distance, and when p = 2, it is equivalent to the Euclidean distance.
+    The Minkowski distance is a generalization of the Euclidean and Chebyshev
+    distances. When p = 1, it is equivalent to the Manhattan distance, and
+    when p = 2, it is equivalent to the Euclidean distance. When p is infinite,
+    it is equivalent to the Chebyshev distance.
 
     :param p: The order of the Minkowski distance.
     :type p: int
@@ -86,6 +103,12 @@ def minkowski(p):
     :return: The Minkowski distance function.
     :rtype: callable
     """
+    if p == 1:
+        return manhattan()
+    elif p == 2:
+        return euclidean()
+    elif np.isinf(p):
+        return chebyshev()
     return lambda x, y: _metrics.minkowski(p, x, y)
 
 
@@ -131,6 +154,8 @@ def get_metric(metric, **kwargs):
         return metric
     elif metric == _EUCLIDEAN:
         return euclidean()
+    elif metric == _MANHATTAN:
+        return manhattan()
     elif metric == _MINKOWSKI:
         p = kwargs.get(_MINKOWSKI_P, 2)
         return minkowski(p)
