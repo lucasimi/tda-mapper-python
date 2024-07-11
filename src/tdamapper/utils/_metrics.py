@@ -12,7 +12,6 @@ def manhattan(x, y):
     return np.linalg.norm(x - y, ord=1)
 
 
-
 @njit(fastmath=True)
 def chebyshev(x, y):
     return np.linalg.norm(x - y, ord=np.inf)
