@@ -6,9 +6,12 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  build:
-    name: Build
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -28,26 +31,7 @@ jobs:
           python -m build
           python -m twine check dist/*
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          path: ./dist
-
-  publish:
-    name: Publish
-    needs: [build]
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-      
       - name: Publish to TestPyPI 
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
