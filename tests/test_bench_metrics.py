@@ -4,29 +4,37 @@ import timeit
 import pandas as pd
 import numpy as np
 
+import numba
+
 import tdamapper.utils.metrics as metrics
 
 
+@numba.njit(fastmath=True)
 def euclidean_numpy(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
 
+@numba.njit(fastmath=True)
 def euclidean_numpy_linalg(a, b):
     return np.linalg.norm(a - b)
 
 
+@numba.njit(fastmath=True)
 def manhattan_numpy(a, b):
     return np.sum(np.abs(a - b))
 
 
+@numba.njit(fastmath=True)
 def manhattan_numpy_linalg(a, b):
     return np.linalg.norm(a - b, ord=1)
 
 
+@numba.njit(fastmath=True)
 def chebyshev_numpy(a, b):
     return np.max(np.abs(a - b))
 
 
+@numba.njit(fastmath=True)
 def chebyshev_numpy_linalg(a, b):
     return np.linalg.norm(a - b, ord=np.inf)
 
@@ -37,7 +45,8 @@ def eval_dist(X, d):
 
 
 def run_dist_bench(X, d):
-    return timeit.timeit(lambda: eval_dist(X, d), number=30)
+    eval_dist(X, d)
+    return timeit.timeit(lambda: eval_dist(X, d), number=100)
 
 
 def run_euclidean_bench(X):

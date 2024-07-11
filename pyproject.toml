@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools", "wheel", "Cython"]
+requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tda-mapper"
-version = "0.7.1"
+version = "0.7.2"
 description = "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
@@ -19,21 +19,19 @@ keywords = ["tda", "mapper", "topology", "topological data analysis"]
 dependencies = [
     "matplotlib>=3.3.4",
     "networkx>=2.5",
+    "numba>=0.54",
     "numpy>=1.20.1, <2.0.0",
     "plotly>=4.14.3"
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.6"
 
 [project.optional-dependencies]
-dev = ["coverage", "pandas", "scikit-learn"]
+dev = ["coverage[toml]", "pandas", "scikit-learn"]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
 Documentation = "https://tda-mapper.readthedocs.io"
 Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
 
-[tool.setuptools.package-data]
-"tdamapper.utils" = ["_metrics.c", "_metrics.pyx"]
-
-[tool.cibuildwheel]
-skip = "cp36-*"
+[tool.coverage.run]
+omit = ["**/_*.py"]
