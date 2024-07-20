@@ -9,7 +9,7 @@ class _Node:
         if children is None:
             self.__children = []
         else:
-            self.__children = children
+            self.__children = [x for x in children]
 
     def get_point(self):
         return self.__point
@@ -61,8 +61,26 @@ class CoverTree:
                 far_s.difference_update(cov_ids)
             return _Node(i, p, c)
 
+    def get_tree(self):
+        return self.__tree
+
     def get_max_level(self):
         return self.__tree.get_level()
+
+    def get_level_nodes(self, i):
+        return self._get_level_nodes(self.__tree, i)
+
+    def _get_level_nodes(self, t, i):
+        l = t.get_level()
+        if l == i:
+            return [t]
+        elif l > i:
+            p = []
+            for c in t.get_children():
+                p.extend(self._get_level_nodes(c, i))
+            return p
+        else:
+            return []
 
     def get_level_points(self, i):
         return self._get_level_points(self.__tree, i)
