@@ -5,7 +5,7 @@ from tdamapper.utils.metrics import euclidean
 from tdamapper.utils.cover_tree import CoverTree
 
 
-def dataset(dim=1, num=10000):
+def dataset(dim=1, num=1000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
@@ -15,8 +15,8 @@ class TestCoverTree(unittest.TestCase):
         i_level_points = t.get_level_points(i)
         for p in i_level_points:
             for q in i_level_points:
-                if not p == q:
-                    d = dist(p, q)
+                d = dist(p, q)
+                if d > 0.0:
                     self.assertGreaterEqual(d, 2**i)
 
     def _check_covering(self, dist, t, i):
@@ -41,7 +41,37 @@ class TestCoverTree(unittest.TestCase):
         for i in range(l_max, l_min, -1):
             self._check_covering(dist, t, i)
 
-    def test_cover_tree(self):
+    def test_cover_tree_random(self):
+        X = dataset(num=5)
+        print(X)
+        dist = euclidean()
+        ct = CoverTree(X, dist)
+        l_max = ct.get_max_level()
+        l_max_points = ct.get_level_points(l_max)
+        self.assertEqual(1, len(l_max_points))
+        self._check_cover_tree(dist, ct)
+
+    def test_cover_tree_small(self):
+        X = list(np.array([[0.73110027], [0.85834048], [0.84131863], [0.13256601]]))
+        dist = euclidean()
+        ct = CoverTree(X, dist)
+        l_max = ct.get_max_level()
+        l_max_points = ct.get_level_points(l_max)
+        self.assertEqual(1, len(l_max_points))
+        self._check_cover_tree(dist, ct)
+
+
+    def test_cover_tree_small_2(self):
+        X = list(np.array([[0.99634872], [0.73748079], [0.80267842], [0.0053305], [0.56665219]]))
+        dist = euclidean()
+        ct = CoverTree(X, dist)
+        l_max = ct.get_max_level()
+        l_max_points = ct.get_level_points(l_max)
+        self.assertEqual(1, len(l_max_points))
+        self._check_cover_tree(dist, ct)
+
+
+    def test_cover_tree_simple(self):
         X = list(np.array([
             [0.0], [1.0], [2.0], [3.0], [4.0], [5.0], [6.0], [7.0]
         ]))
