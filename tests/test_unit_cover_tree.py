@@ -42,7 +42,7 @@ class TestCoverTree(unittest.TestCase):
             self._check_covering(dist, t, i)
 
     def test_cover_tree_random(self):
-        X = dataset(num=5)
+        X = dataset(num=1000)
         print(X)
         dist = euclidean()
         ct = CoverTree(X, dist)
@@ -62,7 +62,7 @@ class TestCoverTree(unittest.TestCase):
 
 
     def test_cover_tree_small_2(self):
-        X = list(np.array([[0.99634872], [0.73748079], [0.80267842], [0.0053305], [0.56665219]]))
+        X = list(np.array([[1.0], [0.7], [0.8], [0.55]]))
         dist = euclidean()
         ct = CoverTree(X, dist)
         l_max = ct.get_max_level()

@@ -37,28 +37,27 @@ class CoverTree:
             d = max([self.__metric(p, x) for x in self.__X])
             i = math.ceil(math.log2(d))
             ids = list(range(len(self.__X)))
-            self.__tree = self.__build_rec(ids, set(), 0, i)
+            self.__tree = self.__build_rec(set(ids), set(), 0, i)
 
     def __build_rec(self, ids, cov_ids, p_idx, i):
         p = self.__X[p_idx]
-        near_ids = [j for j in ids if self.__metric(p, self.__X[j]) < 2**(i - 1)]
-        far_ids = [j for j in ids if self.__metric(p, self.__X[j]) >= 2**(i - 1)]
+        near_ids = {j for j in ids if self.__metric(p, self.__X[j]) < 2**(i - 1)}
+        far_ids = {j for j in ids if self.__metric(p, self.__X[j]) >= 2**(i - 1)}
         if len(ids) < 2:
             cov_ids.add(p_idx)
             return _Node(i, p)
         else:
             t = self.__build_rec(near_ids, cov_ids, p_idx, i - 1)
-            far_s = set(far_ids)
-            far_s.difference_update(cov_ids)
             c = [t]
-            while far_s:
-                q_idx = far_s.pop()
+            far_ids.difference_update(cov_ids)
+            while far_ids:
+                q_idx = far_ids.pop()
                 q = self.__X[q_idx]
-                near_ids = [j for j in ids if self.__metric(q, self.__X[j]) < 2**(i - 1)]
+                near_ids = {j for j, x in enumerate(self.__X) if self.__metric(q, x) < 2**(i - 1)}
+                near_ids.difference_update(cov_ids)
                 t1 = self.__build_rec(near_ids, cov_ids, q_idx, i - 1)
                 c.append(t1)
-                far_s.difference_update(near_ids)
-                far_s.difference_update(cov_ids)
+                far_ids.difference_update(cov_ids)
             return _Node(i, p, c)
 
     def get_tree(self):
