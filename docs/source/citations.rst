@@ -26,10 +26,10 @@ you can use the
 
     @misc{simi_2024_10659652,
         author       = {Simi, Luca},
-        title        = {A Scalable Implementation of Mapper for Topological Data Analysis via Vantage Point Trees},
+        title        = {A Scalable Approach for Mapper via Vantage Point Trees},
         month        = feb,
         year         = 2024,
         publisher    = {Zenodo},
-        doi          = {10.5281/zenodo.10659652},
-        url          = {https://doi.org/10.5281/zenodo.10659652}
+        doi          = {10.5281/zenodo.10659651},
+        url          = {https://doi.org/10.5281/zenodo.10659651}
     }

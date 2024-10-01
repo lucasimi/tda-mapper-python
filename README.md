@@ -32,7 +32,7 @@ read
 This library contains an implementation of Mapper, where the construction 
 of open covers is based on *vp-trees* for improved performance and scalability.
 The details about this methodology are contained in
-[our preprint](https://doi.org/10.5281/zenodo.10659652).
+[our preprint](https://doi.org/10.5281/zenodo.10659651).
 
 | Step 1 | Step 2 | Step 3 | Step 4 |
 | ------ | ------ | ------ | ------ |
