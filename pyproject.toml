@@ -36,5 +36,5 @@ Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
 [tool.coverage.run]
 omit = [
     "**/_*.py",
-    "benchmarks/**.py",
+    "benchmarks/*.py",
 ]
