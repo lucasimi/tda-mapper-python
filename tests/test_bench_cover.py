@@ -14,6 +14,9 @@ from tests.ball_tree import SkBallTree
 dist = euclidean()
 
 
+dist(np.array([0.0]), np.array([0.0]))  # jit-compile numba
+
+
 def dataset(dim=10, num=1000):
     return [np.random.rand(dim) for _ in range(num)]
 

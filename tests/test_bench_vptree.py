@@ -15,6 +15,9 @@ from tests.ball_tree import SkBallTree
 dist = euclidean()
 
 
+dist(np.array([0.0]), np.array([0.0]))  # jit-compile numba
+
+
 def dataset(dim=10, num=1000):
     return [np.random.rand(dim) for _ in range(num)]
 
@@ -44,7 +47,7 @@ class TestBenchmark(unittest.TestCase):
         self.logger.info('==== Dataset digits =============')
         digits, _ = load_digits(as_frame=True, return_X_y=True)
         self._test_compare(list(digits.to_numpy()))
-    
+
     def _test_compare(self, data):
         self.logger.info('[build]')
         hvpt = self._test_build(data, ' * HVPT  ', HVPT)
