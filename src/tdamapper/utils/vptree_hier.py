@@ -24,69 +24,109 @@ class VPTree:
         leaf_radius=0.0,
         pivoting=None,
     ):
-        self.__distance = get_metric(metric, **(metric_params or {}))
-        self.__dataset = [(0.0, x) for x in X]
+        self.__metric = metric
+        self.__metric_params = metric_params
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
-        self.__pivoting = self._pivoting_disabled
-        if pivoting == 'random':
-            self.__pivoting = self._pivoting_random
-        elif pivoting == 'furthest':
-            self.__pivoting = self._pivoting_furthest
-        self.__tree = self._build_rec(0, len(self.__dataset))
+        self.__pivoting = pivoting
+        tree, dataset = self._Build(self, X).build()
+        self.__tree, self.__dataset = tree, dataset
 
-    def _pivoting_disabled(self, start, end):
-        pass
+    def get_metric(self):
+        return self.__metric
 
-    def _pivoting_random(self, start, end):
-        if end <= start:
-            return
-        pivot = randrange(start, end)
-        if pivot > start:
-            _swap(self.__dataset, start, pivot)
+    def get_metric_params(self):
+        return self.__metric_params
 
-    def _furthest(self, start, end, i):
-        furthest_dist = 0.0
-        furthest = start
-        _, i_point = self.__dataset[i]
-        for j in range(start, end):
-            _, j_point = self.__dataset[j]
-            j_dist = self.__distance(i_point, j_point)
-            if j_dist > furthest_dist:
-                furthest = j
-                furthest_dist = j_dist
-        return furthest
+    def get_leaf_capacity(self):
+        return self.__leaf_capacity
 
-    def _pivoting_furthest(self, start, end):
-        if end <= start:
-            return
-        rnd = randrange(start, end)
-        furthest_rnd = self._furthest(start, end, rnd)
-        furthest = self._furthest(start, end, furthest_rnd)
-        if furthest > start:
-            _swap(self.__dataset, start, furthest)
+    def get_leaf_radius(self):
+        return self.__leaf_radius
 
-    def _update(self, start, end):
-        self.__pivoting(start, end)
-        _, v_point = self.__dataset[start]
-        for i in range(start + 1, end):
-            _, point = self.__dataset[i]
-            self.__dataset[i] = self.__distance(v_point, point), point
+    def get_pivoting(self):
+        return self.__pivoting
 
-    def _build_rec(self, start, end):
-        mid = _mid(start, end)
-        self._update(start, end)
-        _, v_point = self.__dataset[start]
-        quickselect(self.__dataset, start + 1, end, mid)
-        v_radius, _ = self.__dataset[mid]
-        self.__dataset[start] = (v_radius, v_point)
-        if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
-            left = _Leaf(start + 1, mid)
-            right = _Leaf(mid, end)
-        else:
-            left = self._build_rec(start + 1, mid)
-            right = self._build_rec(mid, end)
-        return _Node(v_radius, v_point, left, right)
+    def _get_tree(self):
+        return self.__tree
+
+    def _get_dataset(self):
+        return self.__dataset
+
+    def _get_distance(self):
+        metric_params = self.__metric_params or {}
+        return get_metric(self.__metric, **metric_params)
+
+    class _Build:
+
+        def __init__(self, vpt, X):
+            self.__distance = vpt._get_distance()
+            self.__dataset = [(0.0, x) for x in X]
+            self.__leaf_capacity = vpt.get_leaf_capacity()
+            self.__leaf_radius = vpt.get_leaf_radius()
+            pivoting = vpt.get_pivoting()
+            self.__pivoting = self._pivoting_disabled
+            if pivoting == 'random':
+                self.__pivoting = self._pivoting_random
+            elif pivoting == 'furthest':
+                self.__pivoting = self._pivoting_furthest
+
+        def _pivoting_disabled(self, start, end):
+            pass
+
+        def _pivoting_random(self, start, end):
+            if end <= start:
+                return
+            pivot = randrange(start, end)
+            if pivot > start:
+                _swap(self.__dataset, start, pivot)
+
+        def _furthest(self, start, end, i):
+            furthest_dist = 0.0
+            furthest = start
+            _, i_point = self.__dataset[i]
+            for j in range(start, end):
+                _, j_point = self.__dataset[j]
+                j_dist = self.__distance(i_point, j_point)
+                if j_dist > furthest_dist:
+                    furthest = j
+                    furthest_dist = j_dist
+            return furthest
+
+        def _pivoting_furthest(self, start, end):
+            if end <= start:
+                return
+            rnd = randrange(start, end)
+            furthest_rnd = self._furthest(start, end, rnd)
+            furthest = self._furthest(start, end, furthest_rnd)
+            if furthest > start:
+                _swap(self.__dataset, start, furthest)
+
+        def _update(self, start, end):
+            self.__pivoting(start, end)
+            _, v_point = self.__dataset[start]
+            for i in range(start + 1, end):
+                _, point = self.__dataset[i]
+                self.__dataset[i] = self.__distance(v_point, point), point
+
+        def build(self):
+            tree = self._build_rec(0, len(self.__dataset))
+            return tree, self.__dataset
+
+        def _build_rec(self, start, end):
+            mid = _mid(start, end)
+            self._update(start, end)
+            _, v_point = self.__dataset[start]
+            quickselect(self.__dataset, start + 1, end, mid)
+            v_radius, _ = self.__dataset[mid]
+            self.__dataset[start] = (v_radius, v_point)
+            if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+                left = _Leaf(start + 1, mid)
+                right = _Leaf(mid, end)
+            else:
+                left = self._build_rec(start + 1, mid)
+                right = self._build_rec(mid, end)
+            return _Node(v_radius, v_point, left, right)
 
     def ball_search(self, point, eps, inclusive=True):
         return self._BallSearch(self, point, eps, inclusive).search()
@@ -94,15 +134,16 @@ class VPTree:
     class _BallSearch:
 
         def __init__(self, vpt, point, eps, inclusive=True):
-            self.__tree = vpt._VPTree__tree
-            self.__distance = vpt._VPTree__distance
-            self.__dataset = vpt._VPTree__dataset
+            self.__tree = vpt._get_tree()
+            self.__dataset = vpt._get_dataset()
+            self.__distance = vpt._get_distance()
             self.__point = point
             self.__eps = eps
             self.__inclusive = inclusive
             self.__result = []
 
         def search(self):
+            self.__result.clear()
             self._search_rec(self.__tree)
             return self.__result
 
@@ -137,9 +178,9 @@ class VPTree:
     class _KnnSearch:
 
         def __init__(self, vpt, point, neighbors):
-            self.__tree = vpt._VPTree__tree
-            self.__distance = vpt._VPTree__distance
-            self.__dataset = vpt._VPTree__dataset
+            self.__tree = vpt._get_tree()
+            self.__dataset = vpt._get_dataset()
+            self.__distance = vpt._get_distance()
             self.__point = point
             self.__neighbors = neighbors
             self.__items = MaxHeap()

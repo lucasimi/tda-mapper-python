@@ -50,17 +50,17 @@ class TestBenchmark(unittest.TestCase):
 
     def _test_compare(self, data):
         self.logger.info('[build]')
-        hvpt = self._test_build(data, ' * HVPT  ', HVPT)
+        hvpt = self._test_build(data, ' * HVPT ', HVPT)
         fvpt = self._test_build(data, ' * FVPT ', FVPT)
         skbt = self._test_build(data, ' * SKBT', SkBallTree)
         self.logger.info('[ball search]')
         self._test_ball_search_naive(data, ' * Naive ')
-        self._test_ball_search(data, ' * HVPT  ', hvpt)
+        self._test_ball_search(data, ' * HVPT ', hvpt)
         self._test_ball_search(data, ' * FVPT ', fvpt)
         self._test_ball_search(data, ' * SKBT', skbt)
         self.logger.info('[knn search]')
         self._test_knn_search_naive(data, ' * Naive ')
-        self._test_knn_search(data, ' * HVPT  ', hvpt)
+        self._test_knn_search(data, ' * HVPT ', hvpt)
         self._test_knn_search(data, ' * FVPT ', fvpt)
         self._test_knn_search(data, ' * SKBT ', skbt)
 
@@ -73,6 +73,7 @@ class TestBenchmark(unittest.TestCase):
 
     def _test_ball_search_naive(self, data, name):
         d = get_metric(dist)
+        d(np.array([0.0]), np.array([0.0]))  # jit-compile numba
         t0 = time()
         for val in data:
             neigh = [x for x in data if d(val, x) <= self.eps]
@@ -88,6 +89,7 @@ class TestBenchmark(unittest.TestCase):
 
     def _test_knn_search_naive(self, data, name):
         d = get_metric(dist)
+        d(np.array([0.0]), np.array([0.0]))  # jit-compile numba
         t0 = time()
         for val in data:
             data.sort(key=lambda x: d(x, val))
