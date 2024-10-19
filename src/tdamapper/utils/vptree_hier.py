@@ -201,6 +201,10 @@ class VPTree:
             furthest_dist, _ = self.__items.top()
             return furthest_dist
 
+        def search(self):
+            self._search_rec(self.__tree)
+            return self._get_items()
+
         def _search_rec(self, tree):
             if tree.is_terminal():
                 start, end = tree.get_bounds()
@@ -220,10 +224,6 @@ class VPTree:
                 self._search_rec(fst)
                 if abs(dist - v_radius) <= self._get_radius():
                     self._search_rec(snd)
-
-        def search(self):
-            self._search_rec(self.__tree)
-            return self._get_items()
 
 
 class _Node:

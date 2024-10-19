@@ -131,8 +131,8 @@ class VPTree:
         def __init__(self, vpt, center, radius, inclusive):
             self.__distance = vpt._get_distance()
             self.__dataset = vpt._get_dataset()
-            self.__leaf_capacity = vpt._get_leaf_capacity()
-            self.__leaf_radius = vpt._get_leaf_radius()
+            self.__leaf_capacity = vpt.get_leaf_capacity()
+            self.__leaf_radius = vpt.get_leaf_radius()
             self.__center = center
             self.__radius = radius
             self.__items = []
@@ -186,10 +186,10 @@ class VPTree:
     class _KNNSearch:
 
         def __init__(self, vpt, center, neighbors):
-            self.__distance = vpt._VPTree__distance
-            self.__dataset = vpt._VPTree__dataset
-            self.__leaf_capacity = vpt._VPTree__leaf_capacity
-            self.__leaf_radius = vpt._VPTree__leaf_radius
+            self.__distance = vpt._get_distance()
+            self.__dataset = vpt._get_dataset()
+            self.__leaf_capacity = vpt.get_leaf_capacity()
+            self.__leaf_radius = vpt.get_leaf_radius()
             self.__center = center
             self.__neighbors = neighbors
             self.__items = MaxHeap()
