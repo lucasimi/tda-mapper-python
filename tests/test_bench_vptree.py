@@ -7,6 +7,7 @@ from sklearn.datasets import load_iris, load_breast_cancer, load_digits
 
 from tdamapper.utils.metrics import get_metric, euclidean
 from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_iter import VPTree as IVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 from tests.ball_tree import SkBallTree
@@ -51,16 +52,19 @@ class TestBenchmark(unittest.TestCase):
     def _test_compare(self, data):
         self.logger.info('[build]')
         hvpt = self._test_build(data, ' * HVPT ', HVPT)
+        ivpt = self._test_build(data, ' * IVPT ', IVPT)
         fvpt = self._test_build(data, ' * FVPT ', FVPT)
         skbt = self._test_build(data, ' * SKBT', SkBallTree)
         self.logger.info('[ball search]')
         self._test_ball_search_naive(data, ' * Naive ')
         self._test_ball_search(data, ' * HVPT ', hvpt)
+        self._test_ball_search(data, ' * IVPT ', ivpt)
         self._test_ball_search(data, ' * FVPT ', fvpt)
         self._test_ball_search(data, ' * SKBT', skbt)
         self.logger.info('[knn search]')
         self._test_knn_search_naive(data, ' * Naive ')
         self._test_knn_search(data, ' * HVPT ', hvpt)
+        self._test_knn_search(data, ' * IVPT ', ivpt)
         self._test_knn_search(data, ' * FVPT ', fvpt)
         self._test_knn_search(data, ' * SKBT ', skbt)
 

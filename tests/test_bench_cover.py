@@ -6,6 +6,7 @@ from sklearn.datasets import load_digits
 
 from tdamapper.utils.metrics import euclidean
 from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_iter import VPTree as IVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 from tests.ball_tree import SkBallTree
@@ -52,6 +53,9 @@ class TestVpSettings(unittest.TestCase):
                 print('>>>>>>> HVPT >>>>>>')
                 run(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
                 run(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
+                print('>>>>>>> IVPT >>>>>>')
+                run(X, r, dist, IVPT, leaf_radius=r, pivoting='random')
+                run(X, r, dist, IVPT, leaf_radius=r, pivoting='furthest')
                 print('>>>>>>> FVPT >>>>>>')
                 run(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
                 run(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
@@ -68,6 +72,9 @@ class TestVpSettings(unittest.TestCase):
             print('>>>>>>> HVPT >>>>>>')
             run(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
             run(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
+            print('>>>>>>> IVPT >>>>>>')
+            run(X, r, dist, IVPT, leaf_radius=r, pivoting='random')
+            run(X, r, dist, IVPT, leaf_radius=r, pivoting='furthest')
             print('>>>>>>> FVPT >>>>>>')
             run(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
             run(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
