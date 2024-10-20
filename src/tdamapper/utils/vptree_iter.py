@@ -193,23 +193,21 @@ class VPTree:
             self.__distance = vpt._get_distance()
             self.__point = point
             self.__neighbors = neighbors
+            self.__radius = float('inf')
             self.__result = MaxHeap()
 
         def _add(self, dist, x):
             self.__result.add(dist, x)
-            if len(self.__result) > self.__neighbors:
+            while len(self.__result) > self.__neighbors:
                 self.__result.pop()
+            if len(self.__result) == self.__neighbors:
+                radius, _ = self.__result.top()
+                self.__radius = radius
 
         def _get_items(self):
             while len(self.__result) > self.__neighbors:
                 self.__result.pop()
             return [x for (_, x) in self.__result]
-
-        def _get_radius(self):
-            if len(self.__result) < self.__neighbors:
-                return float('inf')
-            furthest_dist, _ = self.__result.top()
-            return furthest_dist
 
         def search(self):
             self._search_iter()
@@ -217,11 +215,9 @@ class VPTree:
 
         def _process(self, x):
             dist = self.__distance(self.__point, x)
-            if dist >= self._get_radius():
+            if dist >= self.__radius:
                 return dist
-            self.__result.add(dist, x)
-            while len(self.__result) > self.__neighbors:
-                self.__result.pop()
+            self._add(dist, x)
             return dist
 
         def _pre(self, tree, stack):
@@ -235,7 +231,7 @@ class VPTree:
             stack.append((fst, None, None, 0))
 
         def _post(self, tree, dist, v_radius, stack):
-            if abs(dist - v_radius) <= self._get_radius():
+            if abs(dist - v_radius) <= self.__radius:
                 stack.append((tree, None, None, 0))
 
         def _search_iter(self):
