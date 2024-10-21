@@ -138,23 +138,17 @@ class VPTree:
             self.__items = []
             self.__inclusive = inclusive
 
-        class _BSVisit:
-
-            def __init__(self, start, end, m_radius):
-                self.__start = start
-                self.__end = end
-                self.__m_radius = m_radius
-
-            def bounds(self):
-                return self.__start, self.__end, self.__m_radius
+        def _inside(self, dist):
+            if self.__inclusive:
+                return dist <= self.__radius
+            return dist < self.__radius
 
         def search(self):
-            stack = [self._BSVisit(0, len(self.__dataset), float('inf'))]
+            stack = [(0, len(self.__dataset))]
             while stack:
-                visit = stack.pop()
-                start, end, m_radius = visit.bounds()
+                start, end = stack.pop()
                 v_radius, v_point = self.__dataset[start]
-                if (end - start <= 2 * self.__leaf_capacity) or (m_radius <= self.__leaf_radius) or (v_radius <= self.__leaf_radius):
+                if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
                     for _, x in self.__dataset[start:end]:
                         dist = self.__distance(self.__center, x)
                         if self._inside(dist):
@@ -165,20 +159,15 @@ class VPTree:
                         self.__items.append(v_point)
                     mid = _mid(start, end)
                     if dist <= v_radius:
-                        fst_start, fst_end, fst_radius = start + 1, mid, v_radius
-                        snd_start, snd_end, snd_radius = mid, end, float('inf')
+                        fst_start, fst_end = start + 1, mid
+                        snd_start, snd_end = mid, end
                     else:
-                        fst_start, fst_end, fst_radius = mid, end, float('inf')
-                        snd_start, snd_end, snd_radius = start + 1, mid, v_radius
+                        fst_start, fst_end = mid, end
+                        snd_start, snd_end = start + 1, mid
                     if abs(dist - v_radius) <= self.__radius:
-                        stack.append(self._BSVisit(snd_start, snd_end, snd_radius))
-                    stack.append(self._BSVisit(fst_start, fst_end, fst_radius))
+                        stack.append((snd_start, snd_end))
+                    stack.append((fst_start, fst_end))
             return self.__items
-
-        def _inside(self, dist):
-            if self.__inclusive:
-                return dist <= self.__radius
-            return dist < self.__radius
 
     def knn_search(self, point, neighbors):
         return self._KNNSearch(self, point, neighbors).search()
@@ -192,6 +181,7 @@ class VPTree:
             self.__leaf_radius = vpt.get_leaf_radius()
             self.__center = center
             self.__neighbors = neighbors
+            self.__radius = float('inf')
             self.__items = MaxHeap()
 
         def _get_items(self):
@@ -199,75 +189,39 @@ class VPTree:
                 self.__items.pop()
             return [x for (_, x) in self.__items]
 
-        def _get_radius(self):
-            if len(self.__items) < self.__neighbors:
-                return float('inf')
-            furthest_dist, _ = self.__items.top()
-            return furthest_dist
-
         def _process(self, x):
             dist = self.__distance(self.__center, x)
-            if dist >= self._get_radius():
+            if dist >= self.__radius:
                 return dist
             self.__items.add(dist, x)
             while len(self.__items) > self.__neighbors:
                 self.__items.pop()
+            if len(self.__items) == self.__neighbors:
+                self.__radius, _ = self.__items.top()
             return dist
 
-        def pre(self, pre, stack):
-            start, end, _ = pre.bounds()
-            v_radius, v_point = self.__dataset[start]
-            dist = self._process(v_point)
-            mid = _mid(start, end)
-            if dist <= v_radius:
-                fst_start, fst_end, fst_radius = start + 1, mid, v_radius
-                snd_start, snd_end, snd_radius = mid, end, float('inf')
-            else:
-                fst_start, fst_end, fst_radius = mid, end, float('inf')
-                snd_start, snd_end, snd_radius = start + 1, mid, v_radius
-            stack.append((self._KVPost(snd_start, snd_end, snd_radius, dist, v_radius), self.post))
-            stack.append((self._KVPre(fst_start, fst_end, fst_radius), self.pre))
-
-        def post(self, post, stack):
-            start, end, _ = post.bounds()
-            m_radius, dist, v_radius = post.rad()
-            if abs(dist - v_radius) <= self._get_radius():
-                stack.append((self._KVPre(start, end, m_radius), self.pre))
-
         def search(self):
-            stack = [(self._KVPre(0, len(self.__dataset), float('inf')), self.pre)]
+            PRE, POST = 0, 1
+            stack = [(0, len(self.__dataset), 0.0, PRE)]
             while stack:
-                visit, after = stack.pop()
-                start, end, m_radius = visit.bounds()
-                v_radius, _ = self.__dataset[start]
-                if (end - start <= 2 * self.__leaf_capacity) or (m_radius <= self.__leaf_radius) or (v_radius <= self.__leaf_radius):
+                start, end, thr, action = stack.pop()
+                v_radius, v_point = self.__dataset[start]
+                if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
                     for _, x in self.__dataset[start:end]:
                         self._process(x)
                 else:
-                    after(visit, stack)
+                    if action == PRE:
+                        dist = self._process(v_point)
+                        mid = _mid(start, end)
+                        if dist <= v_radius:
+                            fst_start, fst_end = start + 1, mid
+                            snd_start, snd_end = mid, end
+                        else:
+                            fst_start, fst_end = mid, end
+                            snd_start, snd_end = start + 1, mid
+                        stack.append((snd_start, snd_end, abs(v_radius - dist), POST))
+                        stack.append((fst_start, fst_end, 0.0, PRE))
+                    elif action == POST:
+                        if self.__radius > thr:
+                            stack.append((start, end, 0.0, PRE))
             return self._get_items()
-
-        class _KVPre:
-
-            def __init__(self, start, end, m_radius):
-                self.__start = start
-                self.__end = end
-                self.__m_radius = m_radius
-
-            def bounds(self):
-                return self.__start, self.__end, self.__m_radius
-
-        class _KVPost:
-
-            def __init__(self, start, end, m_radius, dist, v_radius):
-                self.__start = start
-                self.__end = end
-                self.__m_radius = m_radius
-                self.__dist = dist
-                self.__v_radius = v_radius
-
-            def bounds(self):
-                return self.__start, self.__end, self.__m_radius
-
-            def rad(self):
-                return self.__m_radius, self.__dist, self.__v_radius
