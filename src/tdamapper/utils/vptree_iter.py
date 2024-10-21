@@ -114,10 +114,11 @@ class VPTree:
             return tree, self.__dataset
 
         def _build_iter(self):
+            PRE, POST = 0, 1
             root = _Node(None, None, None, None)
-            stack = [(0, len(self.__dataset), root, 0)]
+            stack = [(0, len(self.__dataset), root, PRE)]
             while stack:
-                start, end, parent, side = stack.pop()
+                start, end, parent, action = stack.pop()
                 mid = _mid(start, end)
                 self._update(start, end)
                 _, v_point = self.__dataset[start]
@@ -126,13 +127,13 @@ class VPTree:
                 self.__dataset[start] = (v_radius, v_point)
                 if (end - start > 2 * self.__leaf_capacity) and (v_radius > self.__leaf_radius):
                     node = _Node(v_radius, v_point, None, None)
-                    stack.append((mid, end, node, 1))
-                    stack.append((start + 1, mid, node, 0))
+                    stack.append((mid, end, node, POST))
+                    stack.append((start + 1, mid, node, PRE))
                 else:
                     node = _Leaf(start, end)
-                if side == 0:
+                if action == PRE:
                     parent._set_left(node)
-                elif side == 1:
+                elif action == POST:
                     parent._set_right(node)
             return root.get_left()
 
@@ -196,14 +197,6 @@ class VPTree:
             self.__radius = float('inf')
             self.__result = MaxHeap()
 
-        def _add(self, dist, x):
-            self.__result.add(dist, x)
-            while len(self.__result) > self.__neighbors:
-                self.__result.pop()
-            if len(self.__result) == self.__neighbors:
-                radius, _ = self.__result.top()
-                self.__radius = radius
-
         def _get_items(self):
             while len(self.__result) > self.__neighbors:
                 self.__result.pop()
@@ -217,37 +210,36 @@ class VPTree:
             dist = self.__distance(self.__point, x)
             if dist >= self.__radius:
                 return dist
-            self._add(dist, x)
+            self.__result.add(dist, x)
+            while len(self.__result) > self.__neighbors:
+                self.__result.pop()
+            if len(self.__result) == self.__neighbors:
+                self.__radius, _ = self.__result.top()
             return dist
 
-        def _pre(self, tree, stack):
-            v_radius, v_point = tree.get_ball()
-            dist = self._process(v_point)
-            if dist <= v_radius:
-                fst, snd = tree.get_left(), tree.get_right()
-            else:
-                fst, snd = tree.get_right(), tree.get_left()
-            stack.append((snd, dist, v_radius, 1))
-            stack.append((fst, None, None, 0))
-
-        def _post(self, tree, dist, v_radius, stack):
-            if abs(dist - v_radius) <= self.__radius:
-                stack.append((tree, None, None, 0))
-
         def _search_iter(self):
+            PRE, POST = 0, 1
             self.__result = MaxHeap()
-            stack = [(self.__tree, None, None, 0)]
+            stack = [(self.__tree, 0.0, PRE)]
             while stack:
-                tree, dist, v_radius, after = stack.pop()
+                tree, thr, action = stack.pop()
                 if tree.is_terminal():
                     start, end = tree.get_bounds()
                     for _, x in self.__dataset[start:end]:
                         self._process(x)
                 else:
-                    if after == 0:
-                        self._pre(tree, stack)
-                    elif after == 1:
-                        self._post(tree, dist, v_radius, stack)
+                    if action == PRE:
+                        v_radius, v_point = tree.get_ball()
+                        dist = self._process(v_point)
+                        if dist <= v_radius:
+                            fst, snd = tree.get_left(), tree.get_right()
+                        else:
+                            fst, snd = tree.get_right(), tree.get_left()
+                        stack.append((snd, abs(v_radius - dist), POST))
+                        stack.append((fst, 0.0, PRE))
+                    elif action == POST:
+                        if self.__radius > thr:
+                            stack.append((tree, 0.0, PRE))
             return self._get_items()
 
 
