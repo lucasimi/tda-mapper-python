@@ -51,7 +51,7 @@ class MaxHeap:
 
     def top(self):
         if not self.__heap:
-            return None
+            return (None, None)
         return self.__heap[0].get()
 
     def pop(self):
