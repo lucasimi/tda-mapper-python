@@ -120,7 +120,10 @@ class VPTree:
             quickselect(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+            if (
+                (end - start <= 2 * self.__leaf_capacity) or
+                (v_radius <= self.__leaf_radius)
+            ):
                 left = _Leaf(start + 1, mid)
                 right = _Leaf(mid, end)
             else:

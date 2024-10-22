@@ -125,7 +125,10 @@ class VPTree:
                 quickselect(self.__dataset, start + 1, end, mid)
                 v_radius, _ = self.__dataset[mid]
                 self.__dataset[start] = (v_radius, v_point)
-                if (end - start > 2 * self.__leaf_capacity) and (v_radius > self.__leaf_radius):
+                if (
+                    (end - start > 2 * self.__leaf_capacity) and
+                    (v_radius > self.__leaf_radius)
+                ):
                     node = _Node(v_radius, v_point, None, None)
                     stack.append((mid, end, node, POST))
                     stack.append((start + 1, mid, node, PRE))

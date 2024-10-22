@@ -119,7 +119,10 @@ class VPTree:
                 quickselect(self.__dataset, start + 1, end, mid)
                 v_radius, _ = self.__dataset[mid]
                 self.__dataset[start] = (v_radius, v_point)
-                if (end - start > 2 * self.__leaf_capacity) and (v_radius > self.__leaf_radius):
+                if (
+                    (end - start > 2 * self.__leaf_capacity) and
+                    (v_radius > self.__leaf_radius)
+                ):
                     stack.append((mid, end))
                     stack.append((start + 1, mid))
 
@@ -148,7 +151,10 @@ class VPTree:
             while stack:
                 start, end = stack.pop()
                 v_radius, v_point = self.__dataset[start]
-                if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+                if (
+                    (end - start <= 2 * self.__leaf_capacity) or
+                    (v_radius <= self.__leaf_radius)
+                ):
                     for _, x in self.__dataset[start:end]:
                         dist = self.__distance(self.__center, x)
                         if self._inside(dist):
@@ -206,7 +212,10 @@ class VPTree:
             while stack:
                 start, end, thr, action = stack.pop()
                 v_radius, v_point = self.__dataset[start]
-                if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+                if (
+                    (end - start <= 2 * self.__leaf_capacity) or
+                    (v_radius <= self.__leaf_radius)
+                ):
                     for _, x in self.__dataset[start:end]:
                         self._process(x)
                 else:
