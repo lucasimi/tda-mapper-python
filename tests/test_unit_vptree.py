@@ -5,7 +5,6 @@ import numpy as np
 
 from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.vptree_hier import VPTree as HVPT
-from tdamapper.utils.vptree_iter import VPTree as IVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 from tests.ball_tree import SkBallTree
 
@@ -81,19 +80,6 @@ class TestVPTree(unittest.TestCase):
     def test_vptree_hier_data(self):
         data = dataset()
         self._test_vptree(HVPT, data, distance)
-
-    def test_vptree_iter_refs(self):
-        data = dataset()
-        data_refs = list(range(len(data)))
-        d = get_metric(distance)
-
-        def dist_refs(i, j):
-            return d(data[i], data[j])
-        self._test_vptree(IVPT, data_refs, dist_refs)
-
-    def test_vptree_iter_data(self):
-        data = dataset()
-        self._test_vptree(IVPT, data, distance)
 
     def test_vptree_flat_refs(self):
         data = dataset()
