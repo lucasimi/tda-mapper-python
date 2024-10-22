@@ -120,7 +120,10 @@ class VPTree:
             quickselect(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            if (end - start <= 2 * self.__leaf_capacity) or (v_radius <= self.__leaf_radius):
+            if (
+                (end - start <= 2 * self.__leaf_capacity) or
+                (v_radius <= self.__leaf_radius)
+            ):
                 left = _Leaf(start + 1, mid)
                 right = _Leaf(mid, end)
             else:
@@ -201,6 +204,10 @@ class VPTree:
             furthest_dist, _ = self.__items.top()
             return furthest_dist
 
+        def search(self):
+            self._search_rec(self.__tree)
+            return self._get_items()
+
         def _search_rec(self, tree):
             if tree.is_terminal():
                 start, end = tree.get_bounds()
@@ -220,10 +227,6 @@ class VPTree:
                 self._search_rec(fst)
                 if abs(dist - v_radius) <= self._get_radius():
                     self._search_rec(snd)
-
-        def search(self):
-            self._search_rec(self.__tree)
-            return self._get_items()
 
 
 class _Node:
