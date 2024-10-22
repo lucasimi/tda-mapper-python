@@ -10,6 +10,7 @@ from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
 
 from tests.ball_tree import SkBallTree
+import tests.setup_logging
 
 
 dist = euclidean()
@@ -29,11 +30,6 @@ class TestBenchmark(unittest.TestCase):
     k = 5
 
     logger = logging.getLogger(__name__)
-
-    logging.basicConfig(
-        format = '%(asctime)s %(module)s %(levelname)s: %(message)s',
-        datefmt = '%m/%d/%Y %I:%M:%S %p',
-        level = logging.INFO)
 
     def test_bench(self):
         self.logger.info('==== Dataset random =============')

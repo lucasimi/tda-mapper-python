@@ -1,4 +1,5 @@
 import unittest
+import logging
 import timeit
 
 import pandas as pd
@@ -7,6 +8,8 @@ import numpy as np
 import numba
 
 import tdamapper.utils.metrics as metrics
+
+import tests.setup_logging
 
 
 @numba.njit(fastmath=True)
@@ -106,7 +109,9 @@ def run_bench(X):
 
 class TestBenchMetrics(unittest.TestCase):
 
+    logger = logging.getLogger(__name__)
+
     def test_bench(self):
         X = np.random.rand(1000, 1000)
         df_bench = run_bench(X)
-        print(df_bench)
+        self.logger.info(df_bench)
