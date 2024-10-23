@@ -72,6 +72,7 @@ class TestVPTree(unittest.TestCase):
         data = dataset()
         data_refs = list(range(len(data)))
         d = get_metric(distance)
+
         def dist_refs(i, j):
             return d(data[i], data[j])
         self._test_vptree(HVPT, data_refs, dist_refs)
@@ -84,6 +85,7 @@ class TestVPTree(unittest.TestCase):
         data = dataset()
         data_refs = list(range(len(data)))
         d = get_metric(distance)
+
         def dist_refs(i, j):
             return d(data[i], data[j])
         self._test_vptree(FVPT, data_refs, dist_refs)

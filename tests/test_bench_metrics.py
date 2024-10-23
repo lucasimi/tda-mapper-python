@@ -1,4 +1,5 @@
 import unittest
+import logging
 import timeit
 
 import pandas as pd
@@ -7,6 +8,8 @@ import numpy as np
 import numba
 
 import tdamapper.utils.metrics as metrics
+
+from tests.setup_logging import setup_logging
 
 
 @numba.njit(fastmath=True)
@@ -46,7 +49,7 @@ def eval_dist(X, d):
 
 def run_dist_bench(X, d):
     eval_dist(X, d)
-    return timeit.timeit(lambda: eval_dist(X, d), number=100)
+    return timeit.timeit(lambda: eval_dist(X, d), number=200)
 
 
 def run_euclidean_bench(X):
@@ -106,7 +109,12 @@ def run_bench(X):
 
 class TestBenchMetrics(unittest.TestCase):
 
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
     def test_bench(self):
         X = np.random.rand(1000, 1000)
         df_bench = run_bench(X)
-        print(df_bench)
+        df_str = str(df_bench)
+        for line in df_str.split('\n'):
+            self.logger.info(line)
