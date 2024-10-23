@@ -9,7 +9,7 @@ import numba
 
 import tdamapper.utils.metrics as metrics
 
-import tests.setup_logging
+from tests.setup_logging import setup_logging
 
 
 @numba.njit(fastmath=True)
@@ -109,6 +109,7 @@ def run_bench(X):
 
 class TestBenchMetrics(unittest.TestCase):
 
+    setup_logging()
     logger = logging.getLogger(__name__)
 
     def test_bench(self):
