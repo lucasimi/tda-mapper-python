@@ -114,4 +114,6 @@ class TestBenchMetrics(unittest.TestCase):
     def test_bench(self):
         X = np.random.rand(1000, 1000)
         df_bench = run_bench(X)
-        self.logger.info(df_bench)
+        df_str = str(df_bench)
+        for line in df_str.split('\n'):
+            self.logger.info(line)
