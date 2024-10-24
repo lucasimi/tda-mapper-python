@@ -66,3 +66,10 @@ class TestMapperPlot(unittest.TestCase):
             height=300,
             colors=data
         )
+        mp_plot3.plot_pyvis(
+            width='100%',
+            height=512,
+            colors=data,
+            output_file='network.html',
+            notebook=False
+        )

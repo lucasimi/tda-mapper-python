@@ -10,34 +10,35 @@ from tdamapper.core import (
 
 def plot_pyvis(
             mapper_plot,
-            width,
-            height,
+            notebook,
+            output_file,
             colors,
             agg,
+            title,
+            width,
+            height,
             cmap,
-            notebook,
-            output_file
         ):
     net = _compute_net(
-        mapper_plot,
-        width,
-        height,
-        colors,
-        agg,
-        cmap,
-        notebook,
+        mapper_plot=mapper_plot,
+        width=width,
+        height=height,
+        colors=colors,
+        agg=agg,
+        cmap=cmap,
+        notebook=notebook,
     )
-    net.show(output_file)
+    net.show(output_file, notebook=notebook)
 
 
 def _compute_net(
             mapper_plot,
-            width,
-            height,
+            notebook,
             colors,
             agg,
+            width,
+            height,
             cmap,
-            notebook,
         ):
     net = Network(
         height=height,
@@ -74,22 +75,31 @@ def _compute_net(
             min_node_color = node_color
 
     def _size(node):
-        node_size = int(nodes[node]['size'])
-        node_size_norm = (node_size - min_node_size) / (max_node_size - min_node_size) * 25
+        if max_node_size == min_node_size:
+            node_size_norm = 12
+        else:
+            node_size = int(nodes[node]['size'])
+            node_size_norm = (node_size - min_node_size) / (max_node_size - min_node_size) * 25
         return int(round(node_size_norm))
 
     def _color(node):
-        node_color = node_colors[node]
-        node_color = (node_color - min_node_color) / (max_node_color - min_node_color)
+        if max_node_color == min_node_color:
+            node_color = 0.5
+        else:
+            node_color = node_colors[node]
+            node_color = (node_color - min_node_color) / (max_node_color - min_node_color)
         node_color = colormap(node_color)
         return mcolors.to_hex(node_color)
 
     def _blend_color(source, target):
-        source_color = node_colors[source]
-        source_color = (source_color - min_node_color) / (max_node_color - min_node_color)
-        target_color = node_colors[target]
-        target_color = (target_color - min_node_color) / (max_node_color - min_node_color)
-        blend_color = (source_color + target_color) / 2.0
+        if max_node_color == min_node_color:
+            blend_color = 0.5
+        else:
+            source_color = node_colors[source]
+            source_color = (source_color - min_node_color) / (max_node_color - min_node_color)
+            target_color = node_colors[target]
+            target_color = (target_color - min_node_color) / (max_node_color - min_node_color)
+            blend_color = (source_color + target_color) / 2.0
         blend_color = colormap(blend_color)
         return mcolors.to_hex(blend_color)
 
