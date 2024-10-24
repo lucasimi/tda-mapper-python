@@ -219,3 +219,228 @@ class MapperPlot:
             height=height,
             cmap=cmap,
         )
+
+
+class MapperLayoutInteractive:
+    """
+    Class for generating and visualizing the Mapper graph.
+
+    This class creates a metric embedding of the Mapper graph in 2D or 3D and
+    converts it into a Plotly figure suitable for interactive display.
+
+    :param graph: The precomputed Mapper graph to be embedded. This can be
+        obtained by calling :func:`tdamapper.core.mapper_graph` or
+        :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
+    :type graph: :class:`networkx.Graph`, required
+    :param dim: The dimension of the graph embedding (2 or 3).
+    :type dim: int
+    :param seed: The random seed used to construct the graph embedding.
+    :type seed: int, optional (default: 42)
+    :param iterations: The number of iterations used to construct the graph embedding.
+    :type iterations: int, optional (default: 50)
+    :param colors: An array of values that determine the color of each node in
+        the graph, useful for highlighting different features of the data.
+    :type colors: array-like of shape (n,) or list-like of size n
+    :param agg: A function used to aggregate the `colors` data when multiple
+        points are mapped to a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :type agg: Callable, optional
+    :param title: The title to be displayed alongside the figure.
+    :type title: str, optional
+    :param width: The desired width of the figure in pixels.
+    :type width: int, optional (default: 512)
+    :param height: The desired height of the figure in pixels.
+    :type height: int, optional (default: 512)
+    :param cmap: The name of a colormap used to map `color` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :type cmap: str, optional
+    """
+
+    def __init__(
+                self,
+                graph,
+                dim,
+                seed=42,
+                iterations=50,
+                colors=None,
+                agg=np.nanmean,
+                title=None,
+                width=512,
+                height=512,
+                cmap='jet'
+            ):
+        self.__graph = graph
+        self.__dim = dim
+        self.__iterations = iterations
+        self.__seed = seed
+        self.__mapper_plot = MapperPlot(
+            graph=self.__graph,
+            dim=self.__dim,
+            iterations=self.__iterations,
+            seed=self.__seed
+        )
+        self.__colors = colors
+        self.__agg = agg
+        self.__title = title
+        self.__width = width
+        self.__height = height
+        self.__cmap = cmap
+        self.__fig = self.__mapper_plot.plot_plotly(
+            colors=self.__colors,
+            agg=self.__agg,
+            title=self.__title,
+            width=self.__width,
+            height=self.__height,
+            cmap=self.__cmap
+        )
+
+    def update(
+                self,
+                seed=None,
+                iterations=None,
+                colors=None,
+                agg=None,
+                title=None,
+                width=None,
+                height=None,
+                cmap=None
+            ):
+        """
+        Update the figure.
+
+        This method modifies the figure returned by the `plot` function. After
+        calling this method, the figure will be updated according to the supplied
+        parameters.
+
+        :param seed: The random seed used to construct the graph embedding.
+        :type seed: int, optional
+        :param iterations: The number of iterations used to construct the graph embedding.
+        :type iterations: int, optional
+        :param colors: An array of values that determine the color of each node in
+            the graph, useful for highlighting different features of the data.
+        :type colors: array-like of shape (n,) or list-like of size n
+        :param agg: A function used to aggregate the `colors` data when multiple
+            points are mapped to a single node. The final color of each node is
+            obtained by mapping the aggregated value with the colormap `cmap`.
+        :type agg: Callable, optional
+        :param title: The title to be displayed alongside the figure.
+        :type title: str, optional
+        :param width: The desired width of the figure in pixels.
+        :type width: int, optional
+        :param height: The desired height of the figure in pixels.
+        :type height: int, optional
+        :param cmap: The name of a colormap used to map `color` data values,
+            aggregated by `agg`, to actual RGBA colors.
+        :type cmap: str, optional
+        """
+        _update_pos = False
+        if seed is not None:
+            self.__seed = seed
+            _update_pos = True
+        if iterations is not None:
+            self.__iterations = iterations
+            _update_pos = True
+        if _update_pos:
+            self.__mapper_plot = MapperPlot(
+                graph=self.__graph,
+                dim=self.__dim,
+                iterations=self.__iterations,
+                seed=self.__seed
+            )
+        self.__mapper_plot.plot_plotly_update(
+            self.__fig,
+            colors=colors,
+            agg=agg,
+            title=title,
+            width=width,
+            height=height,
+            cmap=cmap
+        )
+
+    def plot(self):
+        """
+        Plot the Mapper graph.
+        
+        :return: An interactive Plotly figure that can be displayed on screen and notebooks.
+            For 3D embeddings, the figure requires a WebGL context to be shown.
+        :rtype: :class:`plotly.graph_objects.Figure`
+        """
+        return self.__fig
+
+
+class MapperLayoutStatic:
+    """
+    Class for generating and visualizing the Mapper graph.
+
+    This class creates a metric embedding of the Mapper graph in 2D and
+    converts it into a matplotlib figure suitable for static display.
+
+    :param graph: The precomputed Mapper graph to be embedded. This can be
+        obtained by calling :func:`tdamapper.core.mapper_graph` or
+        :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
+    :type graph: :class:`networkx.Graph`, required
+    :param dim: The dimension of the graph embedding (only 2 is supported, for compatibility).
+    :type dim: int
+    :param seed: The random seed used to construct the graph embedding.
+    :type seed: int, optional (default: 42)
+    :param iterations: The number of iterations used to construct the graph embedding.
+    :type iterations: int, optional (default: 50)
+    :param colors: An array of values that determine the color of each node in
+        the graph, useful for highlighting different features of the data.
+    :type colors: array-like of shape (n,) or list-like of size n
+    :param agg: A function used to aggregate the `colors` data when multiple
+        points are mapped to a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :type agg: Callable, optional
+    :param title: The title to be displayed alongside the figure.
+    :type title: str, optional
+    :param width: The desired width of the figure in pixels.
+    :type width: int, optional (default: 512)
+    :param height: The desired height of the figure in pixels.
+    :type height: int, optional (default: 512)
+    :param cmap: The name of a colormap used to map `color` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :type cmap: str, optional
+    """
+
+    def __init__(
+                self,
+                graph,
+                dim,
+                seed=42,
+                iterations=50,
+                colors=None,
+                agg=np.nanmean,
+                title=None,
+                width=512,
+                height=512,
+                cmap='jet'
+            ):
+        self.__colors = colors
+        self.__agg = agg
+        self.__title = title
+        self.__width = width
+        self.__height = height
+        self.__cmap = cmap
+        self.mapper_plot = MapperPlot(
+            graph=graph,
+            dim=dim,
+            iterations=iterations,
+            seed=seed
+        )
+
+    def plot(self):
+        """
+        Plot the Mapper graph.
+        
+        :return: A static matplotlib figure that can be displayed on screen and notebooks.
+        :rtype: :class:`matplotlib.figure.Figure`, :class:`matplotlib.axes.Axes`
+        """
+        return self.mapper_plot.plot_matplotlib(
+            colors=self.__colors,
+            agg=self.__agg,
+            title=self.__title,
+            width=self.__width,
+            height=self.__height,
+            cmap=self.__cmap
+        )

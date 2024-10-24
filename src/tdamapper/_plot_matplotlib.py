@@ -39,7 +39,7 @@ def plot_matplotlib(
     ax.get_yaxis().set_visible(False)
     _plot_edges(mapper_plot, ax)
     _plot_nodes(mapper_plot, title, colors, agg, cmap, ax)
-    return fig
+    return fig, ax
 
 
 def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
