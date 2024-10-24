@@ -1,6 +1,7 @@
 """
 This module provides functionalities to visualize the Mapper graph.
 """
+import warnings
 
 import networkx as nx
 
@@ -9,6 +10,15 @@ import numpy as np
 from tdamapper._plot_matplotlib import plot_matplotlib
 from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper._plot_pyvis import plot_pyvis
+
+
+def _deprecated(deprecated, substitute):
+    msg = f'{deprecated} is deprecated and will be removed in a future version. Use {substitute} instead.'
+    warnings.warn(
+        msg,
+        DeprecationWarning,
+        stacklevel=2
+    )
 
 
 class MapperPlot:
@@ -269,6 +279,10 @@ class MapperLayoutInteractive:
                 height=512,
                 cmap='jet'
             ):
+        _deprecated(
+            MapperLayoutInteractive.__qualname__,
+            MapperPlot.__qualname__,
+        )
         self.__graph = graph
         self.__dim = dim
         self.__iterations = iterations
@@ -333,6 +347,10 @@ class MapperLayoutInteractive:
             aggregated by `agg`, to actual RGBA colors.
         :type cmap: str, optional
         """
+        _deprecated(
+            MapperLayoutInteractive.update.__qualname__,
+            MapperPlot.plot_plotly_update.__qualname__
+        )
         _update_pos = False
         if seed is not None:
             self.__seed = seed
@@ -361,10 +379,15 @@ class MapperLayoutInteractive:
         """
         Plot the Mapper graph.
         
-        :return: An interactive Plotly figure that can be displayed on screen and notebooks.
-            For 3D embeddings, the figure requires a WebGL context to be shown.
+        :return: An interactive Plotly figure that can be displayed on screen
+            and notebooks. For 3D embeddings, the figure requires a WebGL
+            context to be shown.
         :rtype: :class:`plotly.graph_objects.Figure`
         """
+        _deprecated(
+            MapperLayoutInteractive.plot.__qualname__,
+            MapperPlot.plot_plotly.__qualname__
+        )
         return self.__fig
 
 
@@ -416,6 +439,7 @@ class MapperLayoutStatic:
                 height=512,
                 cmap='jet'
             ):
+        _deprecated(MapperLayoutStatic.__qualname__, MapperPlot.__qualname__)
         self.__colors = colors
         self.__agg = agg
         self.__title = title
@@ -432,10 +456,14 @@ class MapperLayoutStatic:
     def plot(self):
         """
         Plot the Mapper graph.
-        
+
         :return: A static matplotlib figure that can be displayed on screen and notebooks.
         :rtype: :class:`matplotlib.figure.Figure`, :class:`matplotlib.axes.Axes`
         """
+        _deprecated(
+            MapperLayoutStatic.plot.__qualname__,
+            MapperPlot.plot_matplotlib.__qualname__
+        )
         return self.mapper_plot.plot_matplotlib(
             colors=self.__colors,
             agg=self.__agg,

@@ -12,14 +12,17 @@ X, y = make_circles(                # load a labelled dataset
     n_samples=5000,
     noise=0.05,
     factor=0.3,
-    random_state=42)
+    random_state=42
+)
 lens = PCA(2).fit_transform(X)
 
 mapper_algo = MapperAlgorithm(
     cover=CubicalCover(
         n_intervals=10,
-        overlap_frac=0.3),
-    clustering=DBSCAN())
+        overlap_frac=0.3
+    ),
+    clustering=DBSCAN()
+)
 mapper_graph = mapper_algo.fit_transform(X, lens)
 
 mapper_plot = MapperPlot(
@@ -40,7 +43,7 @@ fig = mapper_plot.plot_plotly(
 
 fig.show(config={'scrollZoom': True})
 
-mapper_plot.plot_plotly_update(                 
+mapper_plot.plot_plotly_update(
     fig,                            # reuse the plot with the same positions
     colors=y,
     cmap='viridis',                 # viridis colormap, for ranges
