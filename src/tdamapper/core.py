@@ -5,14 +5,14 @@ The Mapper algorithm is a method for exploring the shape and structure of
 high-dimensional datasets, by constructing a graph representation called Mapper
 graph. The algorithm has three main steps:
 
-1. **Filtering**: Apply a lens function (also called filter) to map the data points
-   to a lower-dimensional space, such as a scalar value or a 2D plane.
+1. **Filtering**: Apply a lens function (also called filter) to map the data
+   points to a lower-dimensional space, such as a scalar value or a 2D plane.
 
 2. **Covering**: Arrange the lens space into overlapping open sets, using a
    cover algorithm such as uniform intervals or balls.
 
-3. **Clustering**: Group the data points in each open set into clusters, using a
-   clustering algorithm such as single-linkage or DBSCAN.
+3. **Clustering**: Group the data points in each open set into clusters, using
+   a clustering algorithm such as single-linkage or DBSCAN.
 
 The Mapper graph consists of nodes that represent clusters of data
 points, and edges that connect overlapping clusters (clusters obtained from
@@ -24,10 +24,11 @@ algorithm and its applications, see
     Eurographics Symposium on Point-Based Graphics, 2007.
 
 This module provides the class :class:`tdamapper.core.MapperAlgorithm`, which
-encapsulates the algorithm and its parameters. The Mapper graph produced by this
-module is a NetworkX graph object.
+encapsulates the algorithm and its parameters. The Mapper graph produced by
+this module is a NetworkX graph object.
 """
 
+import logging
 import networkx as nx
 
 from tdamapper.utils.unionfind import UnionFind
@@ -35,6 +36,18 @@ from tdamapper.utils.unionfind import UnionFind
 
 ATTR_IDS = 'ids'
 ATTR_SIZE = 'size'
+
+
+_logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    format='%(asctime)s %(module)s %(levelname)s: %(message)s',
+    datefmt='%m/%d/%Y %I:%M:%S %p',
+    level=logging.INFO,
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 
 
 def mapper_labels(X, y, cover, clustering):
@@ -52,8 +65,8 @@ def mapper_labels(X, y, cover, clustering):
     The function returns a list of node labels for each point in the dataset.
     The list at position i contains the labels of the nodes that the point at
     position i belongs to. The labels are sorted in ascending order, and there
-    are no duplicates. If i < j, the labels at position i are strictly less than
-    those at position j.
+    are no duplicates. If i < j, the labels at position i are strictly less
+    than those at position j.
 
     :param X: The dataset to be mapped.
     :type X: array-like of shape (n, m) or list-like of length n
@@ -86,10 +99,10 @@ def mapper_connected_components(X, y, cover, clustering):
     """
     Identify the connected components of the Mapper graph.
 
-    A connected component is a maximal set of nodes that are reachable from each
-    other by following the edges. This function assigns a unique integer label
-    to each point in the dataset, based on the connected component of the Mapper
-    graph that it belongs to.
+    A connected component is a maximal set of nodes that are reachable from
+    each other by following the edges. This function assigns a unique integer
+    label to each point in the dataset, based on the connected component of
+    the Mapper graph that it belongs to.
 
     This function uses a union-find data structure to efficiently keep track of
     the connected components as it scans the points of the dataset. This
@@ -180,11 +193,11 @@ def aggregate_graph(X, graph, agg):
     """
     Apply an aggregation function to the nodes of a graph.
 
-    This function takes a dataset and a graph, and computes an aggregation value
-    for each node of the graph, based on the data points that are associated
-    with that node. The aggregation function can be any callable that takes a
-    list of values and returns a single value, such as `sum`, `mean`, `max`,
-    `min`, etc.
+    This function takes a dataset and a graph, and computes an aggregation
+    value for each node of the graph, based on the data points that are
+    associated with that node. The aggregation function can be any callable
+    that takes a list of values and returns a single value, such as `sum`,
+    `mean`, `max`, `min`, etc.
 
     The function returns a dictionary that maps each node of the graph to its
     aggregation value. The keys of the dictionary are the nodes of the graph,
@@ -226,14 +239,34 @@ class MapperAlgorithm:
     :param cover: The cover algorithm to apply to lens space.
     :type cover: A class compatible with :class:`tdamapper.cover.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
-        dataset.
+        dataset. If no clustering is specified,
+        :class:`tdamapper.core.TrivialClustering` is used, which produces a
+        single cluster for each subset. Defaults to None.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
-        :mod:`sklearn.cluster`
+        :mod:`sklearn.cluster`, optional
+    :param failsafe: A flag that is used to prevent failures. If True, the
+        clustering object is wrapped by
+        :class:`tdamapper.core.FailSafeClustering`. Defaults to True.
+    :type failsafe: bool, optional
+    :param verbose: A flag that is used for logging, supplied to
+        :class:`tdamapper.core.FailSafeClustering`. If True, clustering
+        failures are logged. Set to False to suppress these messages. Defaults
+        to True.
+    :type verbose: bool, optional
     """
 
-    def __init__(self, cover, clustering):
+    def __init__(self, cover, clustering=None, failsafe=True, verbose=True):
         self.__cover = cover
         self.__clustering = clustering
+        if self.__clustering is None:
+            self.__clustering = TrivialClustering()
+        self.__failsafe = failsafe
+        self.__verbose = verbose
+        if self.__failsafe:
+            self.__clustering = FailSafeClustering(
+                clustering=self.__clustering,
+                verbose=self.__verbose
+            )
         self.graph_ = None
 
     def fit(self, X, y=None):
@@ -267,3 +300,61 @@ class MapperAlgorithm:
         :rtype: :class:`networkx.Graph`
         """
         return mapper_graph(X, y, self.__cover, self.__clustering)
+
+
+class FailSafeClustering:
+    """
+    A delegating clustering algorithm that prevents failure.
+
+    This class wraps a clustering algorithm and handles any exceptions that may
+    occur during the fitting process. If the clustering algorithm fails,
+    instead of throwing an exception, a single cluster containing all points is
+    returned. This can be useful for robustness and debugging purposes.
+
+    :param clustering: A clustering algorithm to delegate to.
+    :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
+    :param verbose: A flag to log clustering exceptions. Set to True to
+        enable logging, or False to suppress it. Defaults to True.
+    :type verbose: bool, optional.
+    """
+
+    def __init__(self, clustering, verbose=True):
+        self.__clustering = clustering
+        self.__verbose = verbose
+        self.labels_ = None
+
+    def fit(self, X, y=None):
+        try:
+            self.__clustering.fit(X, y)
+            self.labels_ = self.__clustering.labels_
+        except ValueError as err:
+            if self.__verbose:
+                _logger.warning('Unable to perform clustering on local chart: %s', err)
+            self.labels_ = [0 for _ in X]
+        return self
+
+
+class TrivialClustering:
+    """
+    A clustering algorithm that returns a single cluster.
+
+    This class implements a trivial clustering algorithm that assigns all data
+    points to the same cluster. It can be used as an argument of the class
+    :class:`tdamapper.core.MapperAlgorithm` to skip clustering in the
+    construction of the Mapper graph.
+    """
+
+    def __init__(self):
+        self.labels_ = None
+
+    def fit(self, X, y=None):
+        """
+        Fit the clustering algorithm to the data.
+
+        :param X: The dataset to be mapped.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :param y: Ignored.
+        :return: self
+        """
+        self.labels_ = [0 for _ in X]
+        return self
