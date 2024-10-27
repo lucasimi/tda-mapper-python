@@ -103,8 +103,8 @@ def _update_edge_trace_col(mapper_plot, fig, cmap, colors_agg, colors_list):
             patch=dict(
                 line_color=colors_avg,
                 line_colorscale=cmap,
-                line_cmax=max(colors_list),
-                line_cmin=min(colors_list)),
+                line_cmax=max(colors_list, default=None),
+                line_cmin=min(colors_list, default=None)),
             selector=dict(
                 name='edges_trace'))
 
@@ -114,8 +114,8 @@ def _update_node_trace_col(mapper_plot, fig, colors_agg, colors_list):
         patch=dict(
             text=_text(mapper_plot, colors_agg),
             marker_color=colors_list,
-            marker_cmax=max(colors_list),
-            marker_cmin=min(colors_list)),
+            marker_cmax=max(colors_list, default=None),
+            marker_cmin=min(colors_list, default=None)),
         selector=dict(
             name='nodes_trace'))
 
@@ -163,7 +163,7 @@ def _figure(mapper_plot, node_col, width, height, title, cmap):
 
 def _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap):
     attr_size = nx.get_node_attributes(mapper_plot.graph, ATTR_SIZE)
-    max_size = max(attr_size.values()) if attr_size else 1.0
+    max_size = max(attr_size.values(), default=1.0)
     scatter_text = _text(mapper_plot, node_col)
     marker_size = [25.0 * math.sqrt(attr_size[n] / max_size) for n in mapper_plot.graph.nodes()]
     colors = list(node_col.values())
@@ -185,8 +185,8 @@ def _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap):
             line_colorscale=cmap,
             color=colors,
             colorscale=cmap,
-            cmin=min(colors),
-            cmax=max(colors),
+            cmin=min(colors, default=None),
+            cmax=max(colors, default=None),
             colorbar=_colorbar(mapper_plot, title)))
     if mapper_plot.dim == 3:
         scatter.update(dict(
@@ -217,8 +217,8 @@ def _edges_trace(mapper_plot, edge_pos_arr, node_col, cmap):
         scatter.update(dict(
             z=edge_pos_arr[2],
             line_color=colors_avg,
-            line_cmin=min(colors),
-            line_cmax=max(colors),
+            line_cmin=min(colors, default=None),
+            line_cmax=max(colors, default=None),
             line_colorscale=cmap))
         return go.Scatter3d(scatter)
     elif mapper_plot.dim == 2:

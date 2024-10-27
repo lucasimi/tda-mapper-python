@@ -49,7 +49,7 @@ def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
         mapper_plot.positions
     )
     attr_size = nx.get_node_attributes(mapper_plot.graph, ATTR_SIZE)
-    max_size = max(attr_size.values()) if attr_size else 1.0
+    max_size = max(attr_size.values(), default=1.0)
     colors_agg = aggregate_graph(colors, mapper_plot.graph, agg)
     marker_color = [colors_agg[n] for n in mapper_plot.graph.nodes()]
     marker_size = [200.0 * math.sqrt(attr_size[n] / max_size) for n in mapper_plot.graph.nodes()]
@@ -60,8 +60,8 @@ def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
         s=marker_size,
         cmap=cmap,
         alpha=1.0,
-        vmin=min(marker_color),
-        vmax=max(marker_color),
+        vmin=min(marker_color, default=None),
+        vmax=max(marker_color, default=None),
         edgecolors=_NODE_OUTER_COLOR,
         linewidths=_NODE_OUTER_WIDTH)
     colorbar = plt.colorbar(
