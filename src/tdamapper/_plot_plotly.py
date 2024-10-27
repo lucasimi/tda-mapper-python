@@ -154,14 +154,14 @@ def _figure(mapper_plot, node_col, width, height, title, cmap):
     node_pos_arr = _node_pos_array(mapper_plot.graph, mapper_plot.dim, node_pos)
     edge_pos_arr = _edge_pos_array(mapper_plot.graph, mapper_plot.dim, node_pos)
     _edges_tr = _edges_trace(mapper_plot, edge_pos_arr, node_col, cmap)
-    _nodes_tr = _nodes_trace(mapper_plot, node_pos_arr, node_col, width, height, title, cmap)
+    _nodes_tr = _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap)
     _layout_ = _layout(width, height)
     return go.Figure(
         data=[_edges_tr, _nodes_tr],
         layout=_layout_)
 
 
-def _nodes_trace(mapper_plot, node_pos_arr, node_col, width, height, title, cmap):
+def _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap):
     attr_size = nx.get_node_attributes(mapper_plot.graph, ATTR_SIZE)
     max_size = max(attr_size.values()) if attr_size else 1.0
     scatter_text = _text(mapper_plot, node_col)

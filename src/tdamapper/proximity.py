@@ -21,20 +21,15 @@ def proximity_net(X, proximity):
     """
     Compute proximity-net for a given proximity function.
 
-    This function uses an iterative algorithm to construct the proximity-net. It
-    starts with an arbitrary point and builds an open cover around it based on
-    the proximity function. Then it discards the covered points and repeats the
-    process on the remaining points until all points are covered.
-
-    This function applies an iterative algorithm to create the proximity-net. It
-    picks an arbitrary point and forms an open cover calling the proximity
+    This function applies an iterative algorithm to create the proximity-net.
+    It picks an arbitrary point and forms an open cover calling the proximity
     function on the chosen point. The points contained in the open cover are
     then marked as covered, and discarded in the following steps. The procedure
     is repeated on the leftover points until every point is eventually covered.
 
     This function returns a generator that yields each element of the
-    proximity-net as a list of ids. The ids are the indices of the points in the
-    original dataset.
+    proximity-net as a list of ids. The ids are the indices of the points in
+    the original dataset.
 
     :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
@@ -95,7 +90,8 @@ class Proximity:
 
         :param x: A query point for which we want to find neighbors.
         :type x: Any
-        :return: A list containing all the indices of the points in the dataset.
+        :return: A list containing all the indices of the points in the
+            dataset.
         :rtype: list[int]
         """
         return list(range(0, len(self.__X)))
@@ -155,7 +151,6 @@ class BallProximity(Proximity):
         self.__data = None
         self.__vptree = None
 
-
     def fit(self, X):
         """
         Train internal parameters.
@@ -195,7 +190,11 @@ class BallProximity(Proximity):
         """
         if self.__vptree is None:
             return []
-        neighs = self.__vptree.ball_search((-1, x), self.__radius)
+        neighs = self.__vptree.ball_search(
+            (-1, x),
+            self.__radius,
+            inclusive=False
+        )
         return [x for (x, _) in neighs]
 
 
@@ -253,7 +252,6 @@ class KNNProximity(Proximity):
         self.__data = None
         self.__vptree = None
 
-
     def fit(self, X):
         """
         Train internal parameters.
@@ -304,8 +302,8 @@ class CubicalProximity(Proximity):
 
     A hypercube is a multidimensional generalization of a square or a cube.
     The size and overlap of the hypercubes are determined by the number of
-    intervals and the overlap fraction parameters. This class maps each point to
-    the hypercube with the nearest center.
+    intervals and the overlap fraction parameters. This class maps each point
+    to the hypercube with the nearest center.
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
@@ -322,17 +320,17 @@ class CubicalProximity(Proximity):
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-    'flat'.
+        'flat'.
     :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
-    vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value. Defaults to 1.
     :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-    defaults to the value of `radius`. Must be a positive value. Defaults to
-    None.
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
     :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
-    Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     :type pivoting: str or callable, optional
     """
 
@@ -454,4 +452,3 @@ class TrivialProximity(Proximity):
         :rtype: list[int]
         """
         return list(range(len(self.__data)))
-

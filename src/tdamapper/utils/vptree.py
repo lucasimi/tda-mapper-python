@@ -57,7 +57,8 @@ class VPTree:
             metric_params=metric_params,
             leaf_capacity=leaf_capacity,
             leaf_radius=leaf_radius,
-            pivoting=pivoting)
+            pivoting=pivoting
+        )
 
     def ball_search(self, point, eps, inclusive=True):
         """

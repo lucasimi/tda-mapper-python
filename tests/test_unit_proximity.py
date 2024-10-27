@@ -22,7 +22,7 @@ class TestProximity(unittest.TestCase):
         prox.fit(data)
         for x in data:
             result = prox.search(x)
-            expected = [y for y in data if abs(x - y) <= 10]
+            expected = [y for y in data if abs(x - y) < 10]
             self.assertEqual(len(expected), len(result))
 
     def test_knn_proximity(self):

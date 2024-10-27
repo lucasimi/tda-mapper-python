@@ -1,22 +1,27 @@
 """
 Utilities for computing metrics.
 
-This module provides functions to calculate various distance metrics. A metric, or
-distance function, is a function that maps two points to a double value, representing 
-the "distance" between them. For a function to qualify as a valid metric, it must satisfy
-the following properties:
+This module provides functions to calculate various distance metrics. A metric,
+or distance function, is a function that maps two points to a double value,
+representing the "distance" between them. For a function to qualify as a valid
+metric, it must satisfy the following properties:
 
-1. Symmetry: The distance between two points is the same regardless of the order, i.e.:
-        :math:`d(x, y) = d(y, x)` for all x and y.
-2. Positivity: The distance between two distinct points is always positive, i.e.:
-        :math:`d(x, y) > 0` for all distinct x and y, and :math:`d(x, x) = 0` for every x.
-3. Triangle inequality: The distance between two points is less than or equal to the sum
-   of the distances from a third point, i.e.:
-        :math:`d(x, z) \leq d(x, y) + d(y, z)` for all points x, y, z.
+1. Symmetry: The distance between two points is the same regardless of the
+    order, i.e.:
+    :math:`d(x, y) = d(y, x)` for all x and y.
+2. Positivity: The distance between two distinct points is always positive,
+    i.e.:
+    :math:`d(x, y) > 0` for all distinct x and y, and :math:`d(x, x) = 0`
+    for every x.
+3. Triangle inequality: The distance between two points is less than or equal
+    to the sum of the distances from a third point, i.e.:
+    :math:`d(x, z) \leq d(x, y) + d(y, z)` for all points x, y, z.
 
 Supported distance metrics include:
-- Euclidean: The square root of the sum of squared differences between the components of vectors.
-- Minkowski: A generalization of the Euclidean and Chebyshev distances, parameterized by an order `p`.
+- Euclidean: The square root of the sum of squared differences between the
+components of vectors.
+- Minkowski: A generalization of the Euclidean and Chebyshev distances,
+parameterized by an order `p`.
 - Chebyshev: The maximum absolute difference between the components of vectors.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
@@ -121,9 +126,9 @@ def cosine():
     - A value of 0.0 indicates orthogonality (the vectors are perpendicular).
     - A value of -1.0 indicates that the vectors are diametrically opposed.
 
-    The cosine distance is derived from the cosine similarity :math:`s` and 
+    The cosine distance is derived from the cosine similarity :math:`s` and
     is defined as:
-        :math:`d(x, y) = \sqrt{2 \times (1 - s(x, y))}`
+    :math:`d(x, y) = \sqrt{2 \cdot (1 - s(x, y))}`
 
     This definition ensures that the cosine distance satisfies the triangle
     inequality on unit vectors.
@@ -138,11 +143,13 @@ def get_metric(metric, **kwargs):
     """
     Return a distance function based on the specified string or callable.
 
-    :param metric: The metric to use. If a callable function is provided, it is returned directly.
-        Otherwise, predefined metric names returned by `get_supported_metrics()` are supported.
+    :param metric: The metric to use. If a callable function is provided, it
+        is returned directly. Otherwise, predefined metric names returned by
+        `get_supported_metrics()` are supported.
     :type metric: str or callable
 
-    :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski distance).
+    :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski
+        distance).
     :type kwargs: dict
 
     :return: The selected distance metric function.

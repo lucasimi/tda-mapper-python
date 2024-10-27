@@ -91,7 +91,7 @@ class MapperPlot:
             title=title,
             width=width,
             height=height,
-            cmap=cmap,
+            cmap=cmap
         )
 
     def plot_plotly(
