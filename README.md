@@ -25,9 +25,27 @@ For further details, please refer to our [preprint](https://doi.org/10.5281/zeno
 - **Interactive Visualizations**: Multiple plotting backends for flexibility.
 - **Data Exploration App**: Interactive tool for quick, in-depth data exploration.
 
+## Basics
+
+The Mapper algorithm is a well-known technique in the field of topological
+data analysis that allows data to be represented as a graph.
+Mapper is used in various fields such as machine learning, data mining, and
+social sciences, due to its ability to preserve topological features of the
+underlying space, providing a visual representation that facilitates
+exploration and interpretation.
+
+For an in-depth coverage of Mapper you can read
+[the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+
+| Step 1 | Step 2 | Step 3 | Step 4 |
+| ------ | ------ | ------ | ------ |
+| ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
+| Chose *lens* | Cover image | Run clustering | Build graph |
+
 ## Quick Start
 
-Here's a minimal example using the **circles dataset** from `scikit-learn` to demonstrate Mapper with **tda-mapper**:
+Here's a minimal example using the **circles dataset** from `scikit-learn`.
+It's fairly easy to recover the shape of this dataset using **tda-mapper**, as you can see in the following code:
 
 ```python
 import numpy as np
@@ -42,7 +60,7 @@ from tdamapper.plot import MapperPlot
 
 # load a labelled dataset
 X, labels = make_circles(n_samples=5000, noise=0.05, factor=0.3, random_state=42)
-y = PCA(2).fit_transform(X)
+y = PCA(2, random_state=42).fit_transform(X)
 
 cover = CubicalCover(n_intervals=10, overlap_frac=0.3)
 clust = DBSCAN()
@@ -73,16 +91,8 @@ To assess the features of **tda-mapper** you can start from the demo app.
     streamlit run app/streamlit_app.py
     ```
 
-## References and Citations
+## Citations
 
-The Mapper algorithm is a well-known technique in the field of topological
-data analysis that allows data to be represented as a graph.
-Mapper is used in various fields such as machine learning, data mining, and
-social sciences, due to its ability to preserve topological features of the
-underlying space, providing a visual representation that facilitates
-exploration and interpretation. For an in-depth coverage of Mapper you can
-read
-[the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
 - **tda-mapper**: To cite this library reference the Zenodo [archive](https://doi.org/10.5281/zenodo.10642381),
 pointing to the specific version of the release used in your work.
