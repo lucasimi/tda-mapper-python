@@ -96,6 +96,25 @@ class Proximity:
         """
         return list(range(0, len(self.__X)))
 
+    def get_params(self, deep=True):
+        """
+        Get all public parameters of the object as a dictionary.
+
+        :param deep: A flag for returning also nested parameters.
+        :type deep: bool, optional.
+        """
+        params = self.__dict__.items()
+        return {k: v for k, v in params if not k.startswith('_')}
+
+    def set_params(self, **params):
+        """
+        Set public parameters. Only updates attributes that already exist.
+        """
+        for k, v in params.items():
+            if hasattr(self, k) and not k.startswith('_'):
+                setattr(self, k, v)
+        return self
+
 
 class BallProximity(Proximity):
     """
@@ -140,16 +159,13 @@ class BallProximity(Proximity):
         leaf_radius=None,
         pivoting=None,
     ):
-        self.__radius = radius
-        _metric = get_metric(metric, **(metric_params or {}))
-        self.__vptree_metric = lambda x, y: _metric(x[1], y[1])
-        self.__vptree_metric_params = None
-        self.__vptree_kind = kind
-        self.__vptree_leaf_capacity = leaf_capacity
-        self.__vptree_leaf_radius = radius if leaf_radius is None else leaf_radius
-        self.__vptree_pivoting = pivoting
-        self.__data = None
-        self.__vptree = None
+        self.radius = radius
+        self.metric = metric
+        self.metric_params = metric_params
+        self.kind = kind
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
 
     def fit(self, X):
         """
@@ -165,15 +181,17 @@ class BallProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
+        metric = get_metric(self.metric, **(self.metric_params or {}))
+        self.__radius = self.radius
         self.__data = list(enumerate(X))
         self.__vptree = VPTree(
             self.__data,
-            metric=self.__vptree_metric,
-            metric_params=self.__vptree_metric_params,
-            kind=self.__vptree_kind,
-            leaf_capacity=self.__vptree_leaf_capacity,
-            leaf_radius=self.__vptree_leaf_radius,
-            pivoting=self.__vptree_pivoting,
+            metric=_pullback(lambda x: x[1], metric),
+            metric_params=None,
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius or self.radius,
+            pivoting=self.pivoting,
         )
         return self
 
@@ -241,16 +259,13 @@ class KNNProximity(Proximity):
         leaf_radius=0.0,
         pivoting=None,
     ):
-        self.__neighbors = neighbors
-        _metric = get_metric(metric, **(metric_params or {}))
-        self.__vptree_metric = _pullback(lambda x: x[1], _metric)
-        self.__vptree_metric_params = None
-        self.__vptree_kind = kind
-        self.__vptree_leaf_capacity = neighbors if leaf_capacity is None else leaf_capacity
-        self.__vptree_leaf_radius = leaf_radius
-        self.__vptree_pivoting = pivoting
-        self.__data = None
-        self.__vptree = None
+        self.neighbors = neighbors
+        self.metric = metric
+        self.metric_params = metric_params
+        self.kind = kind
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
 
     def fit(self, X):
         """
@@ -266,15 +281,17 @@ class KNNProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
+        metric = get_metric(self.metric, **(self.metric_params or {}))
+        self.__neighbors = self.neighbors
         self.__data = list(enumerate(X))
         self.__vptree = VPTree(
             self.__data,
-            metric=self.__vptree_metric,
-            metric_params=self.__vptree_metric_params,
-            kind=self.__vptree_kind,
-            leaf_capacity=self.__vptree_leaf_capacity,
-            leaf_radius=self.__vptree_leaf_radius,
-            pivoting=self.__vptree_pivoting,
+            metric=_pullback(lambda x: x[1], metric),
+            metric_params=None,
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity or self.neighbors,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting,
         )
         return self
 
@@ -343,31 +360,23 @@ class CubicalProximity(Proximity):
         leaf_radius=None,
         pivoting=None,
     ):
-        self.__n_intervals = n_intervals
-        self.__radius = 1.0 / (2.0 - 2.0 * overlap_frac)
-        self.__minimum = None
-        self.__maximum = None
-        self.__delta = None
-        _metric = _pullback(self._gamma_n, chebyshev())
-        self.__ball_proximity = BallProximity(
-            self.__radius,
-            _metric,
-            kind=kind,
-            leaf_capacity=leaf_capacity,
-            leaf_radius=leaf_radius,
-            pivoting=pivoting
-        )
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+        self.kind = kind
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
 
     def _gamma_n(self, x):
-        return self.__n_intervals * (x - self.__minimum) / self.__delta
+        return self.__n_intervals * (x - self.__min) / self.__delta
 
     def _gamma_n_inv(self, x):
-        return self.__minimum + self.__delta * x / self.__n_intervals
+        return self.__min + self.__delta * x / self.__n_intervals
 
     def _phi(self, x):
         return self._gamma_n_inv(_rho(self._gamma_n(x)))
 
-    def _set_bounds(self, data):
+    def _get_bounds(self, data):
         if (data is None) or len(data) == 0:
             return
         minimum, maximum = data[0], data[0]
@@ -375,10 +384,10 @@ class CubicalProximity(Proximity):
         for w in data:
             minimum = np.minimum(minimum, np.array(w))
             maximum = np.maximum(maximum, np.array(w))
-        self.__minimum = np.nan_to_num(minimum, nan=-float(eps))
-        self.__maximum = np.nan_to_num(maximum, nan=float(eps))
-        delta = self.__maximum - self.__minimum
-        self.__delta = np.maximum(eps, delta)
+        _min = np.nan_to_num(minimum, nan=-float(eps))
+        _max = np.nan_to_num(maximum, nan=float(eps))
+        _delta = np.maximum(eps, _max - _min)
+        return _min, _max, _delta
 
     def _convert(self, X):
         return np.asarray(X).reshape(len(X), -1).astype(float)
@@ -396,8 +405,19 @@ class CubicalProximity(Proximity):
         :return: The object itself.
         :rtype: self
         """
+        self.__overlap_frac = self.overlap_frac
+        self.__n_intervals = self.n_intervals
+        self.__radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
         XX = self._convert(X)
-        self._set_bounds(XX)
+        self.__ball_proximity = BallProximity(
+            self.__radius,
+            metric=_pullback(self._gamma_n, chebyshev()),
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting
+        )
+        self.__min, self.__max, self.__delta = self._get_bounds(XX)
         self.__ball_proximity.fit(XX)
         return self
 

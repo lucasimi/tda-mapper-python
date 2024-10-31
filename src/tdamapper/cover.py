@@ -1,8 +1,8 @@
 """
 Open cover construction for the Mapper algorithm.
 
-An open cover is a collection of open subsets of a dataset whose union spans the
-whole dataset. Unlike clustering, open subsets do not need to be disjoint.
+An open cover is a collection of open subsets of a dataset whose union spans
+the whole dataset. Unlike clustering, open subsets do not need to be disjoint.
 Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
@@ -59,8 +59,8 @@ class ProximityCover(Cover):
         Covers the dataset using proximity-net on the specified proximity
         function.
 
-        The proximity function is used to create an open set whenever a point is
-        picked from :func:`tdamapper.proximity.proximity_net`.
+        The proximity function is used to create an open set whenever a point
+        is picked from :func:`tdamapper.proximity.proximity_net`.
 
         :param X: A dataset of n points to be covered with open subsets.
         :type X: array-like of shape (n, m) or list-like of length n
@@ -220,7 +220,7 @@ class CubicalCover(ProximityCover):
         pivoting=None,
     ):
         prox = CubicalProximity(
-            n_intervals=n_intervals, 
+            n_intervals=n_intervals,
             overlap_frac=overlap_frac,
             kind=kind,
             leaf_capacity=leaf_capacity,

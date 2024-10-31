@@ -54,3 +54,33 @@ class TestProximity(unittest.TestCase):
             for c in expected:
                 self.assertTrue(c in result)
             #self.assertEqual(set(expected), set(result))
+
+    def test_cubical_params(self):
+        prox = CubicalProximity(n_intervals=10, overlap_frac=0.5)
+        params = prox.get_params()
+        self.assertEqual(10, params['n_intervals'])
+        self.assertEqual(0.5, params['overlap_frac'])
+        prox.set_params(n_intervals=5, overlap_frac=0.25)
+        params = prox.get_params()
+        self.assertEqual(5, params['n_intervals'])
+        self.assertEqual(0.25, params['overlap_frac'])
+
+    def test_knn_params(self):
+        prox = KNNProximity(neighbors=10, metric='chebyshev')
+        params = prox.get_params()
+        self.assertEqual(10, params['neighbors'])
+        self.assertEqual('chebyshev', params['metric'])
+        prox.set_params(neighbors=5, metric='euclidean')
+        params = prox.get_params()
+        self.assertEqual(5, params['neighbors'])
+        self.assertEqual('euclidean', params['metric'])
+
+    def test_ball_params(self):
+        prox = BallProximity(radius=10.0, metric='chebyshev')
+        params = prox.get_params()
+        self.assertEqual(10.0, params['radius'])
+        self.assertEqual('chebyshev', params['metric'])
+        prox.set_params(radius=5.0, metric='euclidean')
+        params = prox.get_params()
+        self.assertEqual(5.0, params['radius'])
+        self.assertEqual('euclidean', params['metric'])
