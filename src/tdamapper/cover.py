@@ -13,9 +13,10 @@ from tdamapper.proximity import (
     CubicalProximity,
     TrivialProximity
 )
+from tdamapper._common import ParamsMixin
 
 
-class Cover:
+class Cover(ParamsMixin):
     """
     Abstract interface for cover algorithms.
 

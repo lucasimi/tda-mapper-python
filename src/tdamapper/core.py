@@ -31,7 +31,9 @@ this module is a NetworkX graph object.
 import logging
 import networkx as nx
 
+from tdamapper.cover import TrivialCover
 from tdamapper.utils.unionfind import UnionFind
+from tdamapper._common import ParamsMixin
 
 
 ATTR_IDS = 'ids'
@@ -221,7 +223,7 @@ def aggregate_graph(X, graph, agg):
     return agg_values
 
 
-class MapperAlgorithm:
+class MapperAlgorithm(ParamsMixin):
     """
     A class for creating and analyzing Mapper graphs.
 
@@ -255,19 +257,11 @@ class MapperAlgorithm:
     :type verbose: bool, optional
     """
 
-    def __init__(self, cover, clustering=None, failsafe=True, verbose=True):
-        self.__cover = cover
-        self.__clustering = clustering
-        if self.__clustering is None:
-            self.__clustering = TrivialClustering()
-        self.__failsafe = failsafe
-        self.__verbose = verbose
-        if self.__failsafe:
-            self.__clustering = FailSafeClustering(
-                clustering=self.__clustering,
-                verbose=self.__verbose
-            )
-        self.graph_ = None
+    def __init__(self, cover=None, clustering=None, failsafe=True, verbose=True):
+        self.cover = cover
+        self.clustering = clustering
+        self.failsafe = failsafe
+        self.verbose = verbose
 
     def fit(self, X, y=None):
         """
@@ -282,7 +276,19 @@ class MapperAlgorithm:
         :type y: array-like of shape (n, k) or list-like of length n
         :return: The object itself.
         """
-        self.graph_ = self.fit_transform(X, y)
+        self.__cover = TrivialCover() if self.cover is None \
+            else self.cover
+        self.__clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
+        self.__verbose = self.verbose
+        self.__failsafe = self.failsafe
+        if self.__failsafe:
+            self.__clustering = FailSafeClustering(
+                clustering=self.__clustering,
+                verbose=self.__verbose
+            )
+        y = X if y is None else y
+        self.graph_ = mapper_graph(X, y, self.__cover, self.__clustering)
         return self
 
     def fit_transform(self, X, y):
@@ -299,10 +305,11 @@ class MapperAlgorithm:
         :return: The Mapper graph.
         :rtype: :class:`networkx.Graph`
         """
-        return mapper_graph(X, y, self.__cover, self.__clustering)
+        self.fit(X, y)
+        return self.graph_
 
 
-class FailSafeClustering:
+class FailSafeClustering(ParamsMixin):
     """
     A delegating clustering algorithm that prevents failure.
 
@@ -318,12 +325,15 @@ class FailSafeClustering:
     :type verbose: bool, optional.
     """
 
-    def __init__(self, clustering, verbose=True):
-        self.__clustering = clustering
-        self.__verbose = verbose
-        self.labels_ = None
+    def __init__(self, clustering=None, verbose=True):
+        self.clustering = clustering
+        self.verbose = verbose
 
     def fit(self, X, y=None):
+        self.__clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
+        self.__verbose = self.verbose
+        self.labels_ = None
         try:
             self.__clustering.fit(X, y)
             self.labels_ = self.__clustering.labels_
@@ -334,7 +344,7 @@ class FailSafeClustering:
         return self
 
 
-class TrivialClustering:
+class TrivialClustering(ParamsMixin):
     """
     A clustering algorithm that returns a single cluster.
 
@@ -345,7 +355,7 @@ class TrivialClustering:
     """
 
     def __init__(self):
-        self.labels_ = None
+        pass
 
     def fit(self, X, y=None):
         """
