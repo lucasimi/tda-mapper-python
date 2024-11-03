@@ -15,6 +15,9 @@ def warn_deprecated(deprecated, substitute):
 
 class ParamsMixin:
 
+    def _is_param_internal(self, k):
+        return k.startswith('_') or k.endswith('_')
+
     def get_params(self, deep=True):
         """
         Get all public parameters of the object as a dictionary.
@@ -23,7 +26,7 @@ class ParamsMixin:
         :type deep: bool, optional.
         """
         params = self.__dict__.items()
-        return {k: v for k, v in params if not k.startswith('_')}
+        return {k: v for k, v in params if not self._is_param_internal(k)}
 
     def set_params(self, **params):
         """
@@ -33,3 +36,9 @@ class ParamsMixin:
             if hasattr(self, k) and not k.startswith('_'):
                 setattr(self, k, v)
         return self
+
+
+def clone(estimator):
+    params = estimator.get_params(deep=True)
+    return type(estimator)(**params)
+

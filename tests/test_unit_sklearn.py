@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from sklearn.utils import check_X_y
 from sklearn.utils.estimator_checks import check_estimator
+from sklearn.utils.validation import check_array
 from sklearn.cluster import KMeans
 
 from tdamapper.clustering import (
@@ -10,104 +11,46 @@ from tdamapper.clustering import (
     MapperClustering,
     FailSafeClustering
 )
+from tdamapper.core import TrivialCover, MapperAlgorithm
 from tdamapper.cover import (
-    TrivialCover,
     BallCover,
     KNNCover,
     CubicalCover
 )
+from tdamapper._common import ParamsMixin
 
 
 def euclidean(x, y):
     return np.linalg.norm(x - y)
 
 
-class Estimator:
-
-    def get_params(self, deep=True):
-        params = {}
-        for k, v in vars(self).items():
-            if not k.startswith('_'):
-                params[k] = v
-        return params
-
-    def set_params(self, **parmeters):
-        for k, v in parmeters.items():
-            if not k.startswith('_'):
-                setattr(self, k, v)
-        return self
-
-    def get_clustering(self):
-        return TrivialClustering()
+class ValidationMixin:
 
     def fit(self, X, y=None):
         X, y = check_X_y(X, y)
-        clustering = self.get_clustering()
-        self.labels_ = clustering.fit(X, y).labels_
+        res = super().fit(X, y)
         self.n_features_in_ = X.shape[1]
-        return self
+        return res
 
 
-class MapperClusteringEstimator(Estimator):
-
-    def __init__(self,
-            cover='cubical',
-            n_intervals=10,
-            overlap_frac=0.25,
-            radius=0.5,
-            neighbors=5,
-            metric=euclidean):
-        self.cover = cover
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-        self.radius = radius
-        self.neighbors = neighbors
-        self.metric = metric
-
-    def __get_cover(self):
-        if self.cover == 'trivial':
-            return TrivialCover()
-        elif self.cover == 'cubical':
-            return CubicalCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
-        elif self.cover == 'ball':
-            return BallCover(radius=self.radius, metric=self.metric)
-        elif self.cover == 'knn':
-            return KNNCover(neighbors=self.neighbors, metric=self.metric)
-        else:
-            raise ValueError(f'Unknown cover algorithm {self.cover}')
-
-    def get_clustering(self):
-        return MapperClustering(self.__get_cover())
-
-
-class PermissiveKMeans(Estimator):
-
-    def __init__(self, n=8):
-        self.n = n
-
-    def get_clustering(self):
-        return FailSafeClustering(KMeans(n_clusters=self.n, n_init='auto'), verbose=False)
-
-
-class TrivialClusteringEstimator(Estimator):
-
-    def get_clustering(self):
-        return TrivialClustering()
+class MapperEstimator(ValidationMixin, MapperAlgorithm):
+    pass
 
 
 class TestSklearn(unittest.TestCase):
 
-    def test_clustering(self):
-        check_estimator(TrivialClusteringEstimator())
+    def test_trivial(self):
+        est = MapperEstimator()
+        check_estimator(est)
 
     def test_ball(self):
-        check_estimator(MapperClusteringEstimator(cover='ball'))
+        est = MapperEstimator(cover=BallCover(metric=euclidean))
+        check_estimator(est)
 
     def test_knn(self):
-        check_estimator(MapperClusteringEstimator(cover='knn'))
+        est = MapperEstimator(cover=KNNCover(metric=euclidean))
+        check_estimator(est)
 
     def test_cubical(self):
-        check_estimator(MapperClusteringEstimator())
-
-    def test_permissive(self):
-        check_estimator(PermissiveKMeans())
+        est = MapperEstimator(cover=CubicalCover())
+        check_estimator(est)

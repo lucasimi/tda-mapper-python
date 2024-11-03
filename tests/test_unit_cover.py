@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
+from tdamapper.core import TrivialCover
 from tdamapper.cover import (
-    TrivialCover,
     BallCover,
     KNNCover,
     CubicalCover

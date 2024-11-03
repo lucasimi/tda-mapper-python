@@ -31,9 +31,8 @@ this module is a NetworkX graph object.
 import logging
 import networkx as nx
 
-from tdamapper.cover import TrivialCover
 from tdamapper.utils.unionfind import UnionFind
-from tdamapper._common import ParamsMixin
+from tdamapper._common import ParamsMixin, clone
 
 
 ATTR_IDS = 'ids'
@@ -75,10 +74,10 @@ def mapper_labels(X, y, cover, clustering):
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
+    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
-    :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
+    :type clustering: A class compatible with scikit-learn estimators from
         :mod:`sklearn.cluster`
     :return: A list of node labels for each point in the dataset.
     :rtype: list[list[int]]
@@ -86,7 +85,8 @@ def mapper_labels(X, y, cover, clustering):
     itm_lbls = [[] for _ in X]
     max_lbl = 0
     for local_ids in cover.apply(y):
-        local_lbls = clustering.fit([X[j] for j in local_ids]).labels_
+        clust = clone(clustering)
+        local_lbls = clust.fit([X[j] for j in local_ids]).labels_
         max_local_lbl = 0
         for local_id, local_lbl in zip(local_ids, local_lbls):
             if local_lbl >= 0:
@@ -117,7 +117,7 @@ def mapper_connected_components(X, y, cover, clustering):
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
+    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -163,7 +163,7 @@ def mapper_graph(X, y, cover, clustering):
     :param y: The lens values for each point in the dataset.
     :type y: array-like of shape (n, k) or list-like of length n
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
+    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
     :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
@@ -223,6 +223,134 @@ def aggregate_graph(X, graph, agg):
     return agg_values
 
 
+class Cover(ParamsMixin):
+    """
+    Abstract interface for cover algorithms.
+
+    This is a naive implementation. Subclasses should override the methods of
+    this class to implement more meaningful cover algorithms.
+    """
+
+    def apply(self, X):
+        """
+        Covers the dataset with a single open set.
+
+        This is a naive implementation that should be overridden by subclasses
+        to implement more meaningful cover algorithms.
+
+        :param X: A dataset of n points to be covered with open subsets.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator that produces a single list of ints whose elements
+            are the indices of the data points, ranging from 0 to n - 1.
+        :rtype: generator of lists of ints
+        """
+        yield list(range(0, len(X)))
+
+
+class Proximity(Cover):
+    """
+    Abstract interface for proximity functions. A proximity function is a
+    function that maps each point into a subset of the dataset that contains
+    the point itself.
+
+    Every proximity function defines also a covering algorithm based on
+    proximity-net.
+
+    Proximity functions, implemented as subclasses of class
+    :class:`tdamapper.core.Proximity`, are a convenient way to implement open
+    cover algorithms by using the `proximity_net` construction. Proximity-net
+    is implemented by function :func:`tdamapper.core.Proximity.apply`, and
+    used by the class :class:`tdamapper.core.Proximity`.
+
+    This is a naive implementation. Subclasses should override the methods
+    `tdamapper.core.Proximity.fit` and `tdamapper.core.Proximity.search` of
+    this class to implement more meaningful proximity functions.
+    """
+
+    def fit(self, X):
+        """
+        Train internal parameters.
+
+        This is a naive implementation that should be overridden by subclasses
+        to implement more meaningful proximity functions.
+
+        :param X: A dataset of n points used to extract parameters and perform
+            training.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: The object itself.
+        :rtype: self
+        """
+        self.__X = X
+        return self
+
+    def search(self, x):
+        """
+        Return a list of neighbors for the query point.
+
+        This is a naive implementation that returns all the points in the
+        dataset as neighbors. This method should be overridden by subclasses to
+        implement more meaningful proximity functions.
+
+        :param x: A query point for which we want to find neighbors.
+        :type x: Any
+        :return: A list containing all the indices of the points in the
+            dataset.
+        :rtype: list[int]
+        """
+        return list(range(0, len(self.__X)))
+
+    def apply(self, X):
+        """
+        Covers the dataset using proximity-net.
+
+        This function applies an iterative algorithm to create the
+        proximity-net. It picks an arbitrary point and forms an open cover
+        calling the proximity function on the chosen point. The points
+        contained in the open cover are then marked as covered, and discarded
+        in the following steps. The procedure is repeated on the leftover
+        points until every point is eventually covered.
+
+        This function returns a generator that yields each element of the
+        proximity-net as a list of ids. The ids are the indices of the points
+        in the original dataset.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator of lists of ids.
+        :rtype: generator of lists of ints
+        """
+        covered_ids = set()
+        self.fit(X)
+        for i, xi in enumerate(X):
+            if i not in covered_ids:
+                neigh_ids = self.search(xi)
+                covered_ids.update(neigh_ids)
+                if neigh_ids:
+                    yield neigh_ids
+
+
+class TrivialCover(Cover):
+    """
+    Cover algorithm that covers data with a single subset containing the whole
+    dataset.
+
+    This class creates a single open set that contains all the points in the
+    dataset.
+    """
+
+    def apply(self, X):
+        """
+        Covers the dataset with a single open set.
+
+        :param X: A dataset of n points to be covered with open subsets.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator that produces a single list of ints whose elements
+            are the indices of the data points, ranging from 0 to n - 1.
+        :rtype: generator of lists of ints
+        """
+        yield list(range(0, len(X)))
+
+
 class MapperAlgorithm(ParamsMixin):
     """
     A class for creating and analyzing Mapper graphs.
@@ -239,7 +367,7 @@ class MapperAlgorithm(ParamsMixin):
     supplied parameters.
 
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class compatible with :class:`tdamapper.cover.Cover`
+    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset. If no clustering is specified,
         :class:`tdamapper.core.TrivialClustering` is used, which produces a
@@ -287,6 +415,8 @@ class MapperAlgorithm(ParamsMixin):
                 clustering=self.__clustering,
                 verbose=self.__verbose
             )
+        self.__cover = clone(self.__cover)
+        self.__clustering = clone(self.__clustering)
         y = X if y is None else y
         self.graph_ = mapper_graph(X, y, self.__cover, self.__clustering)
         return self
@@ -319,7 +449,8 @@ class FailSafeClustering(ParamsMixin):
     returned. This can be useful for robustness and debugging purposes.
 
     :param clustering: A clustering algorithm to delegate to.
-    :type clustering: Anything compatible with a :mod:`sklearn.cluster` class.
+    :type clustering: A class compatible with scikit-learn estimators from
+        :mod:`sklearn.cluster`.
     :param verbose: A flag to log clustering exceptions. Set to True to
         enable logging, or False to suppress it. Defaults to True.
     :type verbose: bool, optional.

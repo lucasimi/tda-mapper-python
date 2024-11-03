@@ -7,9 +7,9 @@ algorithm of choice. The clusters are then used to form the nodes of the Mapper
 graph, and are connected by edges if they share points in the overlap.
 """
 
-from tdamapper.core import mapper_connected_components
-from tdamapper.cover import TrivialCover
+from tdamapper.core import mapper_connected_components, TrivialCover
 import tdamapper.core
+from tdamapper._common import ParamsMixin
 
 
 class TrivialClustering(tdamapper.core.TrivialClustering):
@@ -20,7 +20,7 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
     pass
 
 
-class MapperClustering:
+class MapperClustering(ParamsMixin):
     """
     A clustering algorithm based on the Mapper graph.
 
@@ -33,10 +33,10 @@ class MapperClustering:
     :func:`tdamapper.core.mapper_connected_components`.
 
     :param cover: The cover algorithm to apply to lens space.
-    :type cover: A class from :mod:`tdamapper.cover`
+    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
-    :type clustering: A class from :mod:`tdamapper.clustering`, or a class from
+    :type clustering: A class compatible with scikit-learn estimators from
         :mod:`sklearn.cluster`
     """
 
@@ -45,8 +45,10 @@ class MapperClustering:
         self.clustering = clustering
 
     def fit(self, X, y=None):
-        cover = self.cover if self.cover else TrivialCover()
-        clustering = self.clustering if self.clustering else TrivialClustering()
+        cover = TrivialCover() if self.cover is None \
+            else self.cover
+        clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
         itm_lbls = mapper_connected_components(X, y, cover, clustering)
         self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
         return self
