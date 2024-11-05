@@ -33,12 +33,20 @@ class ParamsMixin:
         Set public parameters. Only updates attributes that already exist.
         """
         for k, v in params.items():
-            if hasattr(self, k) and not k.startswith('_'):
+            if hasattr(self, k) and not self._is_param_internal(k):
                 setattr(self, k, v)
         return self
 
 
 def clone(estimator):
+    """
+    Clone an estimator with the same parameters.
+
+    :param estimator: An estimator to be cloned.
+    :type estimator: A scikit-learn compatible estimator
+    :return: A new estimator with the same parameters.
+    :rtype: A scikit-learn compatible estimator
+    """
+
     params = estimator.get_params(deep=True)
     return type(estimator)(**params)
-

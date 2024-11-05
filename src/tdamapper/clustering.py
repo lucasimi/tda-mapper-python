@@ -1,10 +1,5 @@
 """
-Clustering module for the Mapper algorithm.
-
-This module implements some tools for the clustering step of Mapper algorithm,
-which groups the data points in each open set into clusters using a clustering
-algorithm of choice. The clusters are then used to form the nodes of the Mapper
-graph, and are connected by edges if they share points in the overlap.
+Clustering tools based on the Mapper algorithm.
 """
 
 from tdamapper.core import mapper_connected_components, TrivialCover
@@ -13,10 +8,16 @@ from tdamapper._common import ParamsMixin
 
 
 class TrivialClustering(tdamapper.core.TrivialClustering):
+    """
+    Deprecated. Use :class:`tdamapper.core.TrivialClustering`.
+    """
     pass
 
 
 class FailSafeClustering(tdamapper.core.FailSafeClustering):
+    """
+    Deprecated. Use :class:`tdamapper.core.FailSafeClustering`.
+    """
     pass
 
 
