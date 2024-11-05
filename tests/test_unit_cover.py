@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
+from tdamapper.core import TrivialCover
 from tdamapper.cover import (
-    TrivialCover,
     BallCover,
     KNNCover,
     CubicalCover
@@ -45,3 +45,9 @@ class TestCover(unittest.TestCase):
         cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
         charts = list(cover.apply(data))
         self.assertEqual(4, len(charts))
+
+    def test_params(self):
+        cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
+        params = cover.get_params(deep=True)
+        #self.assertEqual(2, params['n_intervals'])
+        #self.assertEqual(0.5, params['overlap_frac'])

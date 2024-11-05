@@ -9,7 +9,7 @@ from tdamapper._plot_matplotlib import plot_matplotlib
 from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper._plot_pyvis import plot_pyvis
 
-from tdamapper._common import _deprecated
+from tdamapper._common import warn_deprecated
 
 
 class MapperPlot:
@@ -302,7 +302,7 @@ class MapperLayoutInteractive:
                 height=512,
                 cmap='jet'
             ):
-        _deprecated(
+        warn_deprecated(
             MapperLayoutInteractive.__qualname__,
             MapperPlot.__qualname__,
         )
@@ -373,7 +373,7 @@ class MapperLayoutInteractive:
             aggregated by `agg`, to actual RGBA colors.
         :type cmap: str, optional
         """
-        _deprecated(
+        warn_deprecated(
             MapperLayoutInteractive.update.__qualname__,
             MapperPlot.plot_plotly_update.__qualname__
         )
@@ -410,7 +410,7 @@ class MapperLayoutInteractive:
             context to be shown.
         :rtype: :class:`plotly.graph_objects.Figure`
         """
-        _deprecated(
+        warn_deprecated(
             MapperLayoutInteractive.plot.__qualname__,
             MapperPlot.plot_plotly.__qualname__
         )
@@ -467,7 +467,10 @@ class MapperLayoutStatic:
                 height=512,
                 cmap='jet'
             ):
-        _deprecated(MapperLayoutStatic.__qualname__, MapperPlot.__qualname__)
+        warn_deprecated(
+            MapperLayoutStatic.__qualname__,
+            MapperPlot.__qualname__
+        )
         self.__colors = colors
         self.__agg = agg
         self.__title = title
@@ -490,7 +493,7 @@ class MapperLayoutStatic:
         :rtype: :class:`matplotlib.figure.Figure`,
             :class:`matplotlib.axes.Axes`
         """
-        _deprecated(
+        warn_deprecated(
             MapperLayoutStatic.plot.__qualname__,
             MapperPlot.plot_matplotlib.__qualname__
         )
