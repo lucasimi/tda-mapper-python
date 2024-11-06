@@ -4,7 +4,7 @@ Clustering tools based on the Mapper algorithm.
 
 from tdamapper.core import mapper_connected_components, TrivialCover
 import tdamapper.core
-from tdamapper._common import ParamsMixin
+from tdamapper._common import ParamsMixin, clone
 
 
 class TrivialClustering(tdamapper.core.TrivialClustering):
@@ -50,8 +50,10 @@ class MapperClustering(ParamsMixin):
     def fit(self, X, y=None):
         cover = TrivialCover() if self.cover is None \
             else self.cover
+        cover = clone(cover)
         clustering = TrivialClustering() if self.clustering is None \
             else self.clustering
+        clustering = clone(clustering)
         y = X if y is None else y
         itm_lbls = mapper_connected_components(X, y, cover, clustering)
         self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]

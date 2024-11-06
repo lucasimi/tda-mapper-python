@@ -12,6 +12,7 @@ from tdamapper.cover import (
     KNNCover,
     CubicalCover
 )
+from tdamapper.clustering import MapperClustering
 
 from tests.setup_logging import setup_logging
 
@@ -67,6 +68,10 @@ class MapperEstimator(ValidationMixin, MapperAlgorithm):
     pass
 
 
+class MapperClusteringEstimator(ValidationMixin, MapperClustering):
+    pass
+
+
 class TestSklearn(unittest.TestCase):
 
     setup_logging()
@@ -91,4 +96,12 @@ class TestSklearn(unittest.TestCase):
 
     def test_cubical(self):
         est = MapperEstimator(cover=CubicalCover())
+        self.run_tests(est)
+
+    def test_clustering_trivial(self):
+        est = MapperClusteringEstimator()
+        self.run_tests(est)
+
+    def test_clustering_ball(self):
+        est = MapperClusteringEstimator(cover=BallCover(metric=euclidean))
         self.run_tests(est)
