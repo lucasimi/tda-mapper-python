@@ -274,9 +274,10 @@ class MapperLayoutInteractive:
     :param colors: An array of values that determine the color of each node in
         the graph, useful for highlighting different features of the data.
     :type colors: array-like of shape (n,) or list-like of size n
-    :param agg: A function used to aggregate the `colors` data when multiple
-        points are mapped to a single node. The final color of each node is
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
         obtained by mapping the aggregated value with the colormap `cmap`.
+        Defaults to `numpy.nanmean`.
     :type agg: Callable, optional
     :param title: The title to be displayed alongside the figure.
     :type title: str, optional
@@ -361,7 +362,7 @@ class MapperLayoutInteractive:
         :param agg: A function used to aggregate the `colors` data when
             multiple points are mapped to a single node. The final color of
             each node is obtained by mapping the aggregated value with the
-            colormap `cmap`.
+            colormap `cmap`. Defaults to None.
         :type agg: Callable, optional
         :param title: The title to be displayed alongside the figure.
         :type title: str, optional
@@ -439,9 +440,10 @@ class MapperLayoutStatic:
     :param colors: An array of values that determine the color of each node in
         the graph, useful for highlighting different features of the data.
     :type colors: array-like of shape (n,) or list-like of size n
-    :param agg: A function used to aggregate the `colors` data when multiple
-        points are mapped to a single node. The final color of each node is
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
         obtained by mapping the aggregated value with the colormap `cmap`.
+        Defaults to `numpy.nanmean`.
     :type agg: Callable, optional
     :param title: The title to be displayed alongside the figure.
     :type title: str, optional

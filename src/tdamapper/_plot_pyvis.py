@@ -1,3 +1,8 @@
+"""
+This module provides functionalities to visualize the Mapper graph based on
+pyvis.
+"""
+
 from pyvis.network import Network
 
 import matplotlib.pyplot as plt

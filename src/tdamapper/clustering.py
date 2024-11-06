@@ -29,11 +29,13 @@ class MapperClustering(ParamsMixin):
     represents a cluster of points and each edge represents an overlap between
     clusters. Each point in the dataset belongs to one or more nodes in the
     graph. These nodes are therefore all connected and share the same connected
-    component in the Mapper graph. This class clusters point according to their
-    connected component in the Mapper graph calling the function
-    :func:`tdamapper.core.mapper_connected_components`.
+    component in the Mapper graph. This class builds clusters of points
+    according to their connected component in the Mapper graph.
 
-    :param cover: The cover algorithm to apply to lens space.
+    This class does not compute the Mapper graph but calls the function
+    :func:`tdamapper.core.mapper_connected_components`, which is faster.
+
+    :param cover: A cover algorithm.
     :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
@@ -50,6 +52,7 @@ class MapperClustering(ParamsMixin):
             else self.cover
         clustering = TrivialClustering() if self.clustering is None \
             else self.clustering
+        y = X if y is None else y
         itm_lbls = mapper_connected_components(X, y, cover, clustering)
         self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
         return self

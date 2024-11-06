@@ -1,5 +1,6 @@
 """
-This module provides functionalities to visualize the Mapper graph.
+This module provides functionalities to visualize the Mapper graph based on
+matplotlib.
 """
 
 import math

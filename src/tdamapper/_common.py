@@ -14,6 +14,10 @@ def warn_deprecated(deprecated, substitute):
 
 
 class ParamsMixin:
+    """
+    Mixin to add setters and getters for public parameters, compatible with
+    scikit-learn `get_params` and `set_params`.
+    """
 
     def _is_param_internal(self, k):
         return k.startswith('_') or k.endswith('_')
@@ -40,13 +44,13 @@ class ParamsMixin:
 
 def clone(estimator):
     """
-    Clone an estimator with the same parameters.
+    Clone an estimator, returning a new one, unfitted, having the same public
+    parameters.
 
     :param estimator: An estimator to be cloned.
     :type estimator: A scikit-learn compatible estimator
     :return: A new estimator with the same parameters.
     :rtype: A scikit-learn compatible estimator
     """
-
     params = estimator.get_params(deep=True)
     return type(estimator)(**params)

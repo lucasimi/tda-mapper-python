@@ -92,8 +92,7 @@ class BallCover(Proximity):
         range queries in the func:`tdamapper.cover.BallCover.search`
         method.
 
-        :param X: A dataset of n points used to extract parameters and perform
-            training.
+        :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
@@ -194,8 +193,7 @@ class KNNCover(Proximity):
         KNN queries in the func:`tdamapper.cover.BallCover.search`
         method.
 
-        :param X: A dataset of n points used to extract parameters and perform
-            training.
+        :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
@@ -320,8 +318,7 @@ class CubicalCover(Proximity):
         This method builds an internal :class:`tdamapper.cover.BallCover`
         attribute that allows efficient queries of the dataset.
 
-        :param X: A dataset of n points used to extract parameters and perform
-            training.
+        :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
