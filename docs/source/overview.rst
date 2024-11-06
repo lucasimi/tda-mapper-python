@@ -1,14 +1,38 @@
 Overview
 ========
 
-**tda-mapper** is a simple and efficient implementation of Mapper algorithm for
-Topological Data Analysis.
+**tda-mapper** is a simple and efficient Python library implementing the Mapper algorithm for Topological Data Analysis (TDA).
+It enables fast computation of Mapper graphs using *vp-trees* to optimize the construction of open covers for enhanced performance and scalability.
 
--  **Installation**: ``pip install tda-mapper``
+For further details, please refer to our 
+`preprint <https://doi.org/10.5281/zenodo.10659651>`__.
 
--  **Documentation**: https://tda-mapper.readthedocs.io/en/main/
+- **Installation**: ``pip install tda-mapper``
 
--  **Demo App**: https://tda-mapper-app.streamlit.app/
+- **Documentation**: https://tda-mapper.readthedocs.io/en/main/
+
+Features
+--------
+
+- **Efficient Mapper Computation**: Optimized for higher-dimensional lenses.
+
+- **Interactive Visualizations**: Multiple plotting backends for flexibility.
+
+- **Data Exploration App**: Interactive tool for quick, in-depth data exploration.
+
+Demo App
+--------
+
+To assess the features of **tda-mapper** you can start from the demo app.
+
+- **Live demo:** https://tda-mapper-app.streamlit.app/
+
+- **Run locally:** use the following commands
+
+  .. code:: bash
+
+    pip install -r app/requirements.txt
+    streamlit run app/streamlit_app.py
 
 The Mapper algorithm is a well-known technique in the field of
 topological data analysis that allows data to be represented as a graph.
@@ -18,20 +42,3 @@ of the underlying space, providing a visual representation that
 facilitates exploration and interpretation. For an in-depth coverage of
 Mapper you can read 
 `the original paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
-
-This library contains an implementation of Mapper, where the construction 
-of open covers is based on *vp-trees* for improved performance and scalability.
-The details about this methodology are contained in
-`our preprint <https://doi.org/10.5281/zenodo.10659652>`__.
-
-+-----------------+-----------------+-----------------+-----------------+
-| Step 1          | Step 2          | Step 3          | Step 4          |
-+=================+=================+=================+=================+
-| |Step 1|        | |Step 2|        | |Step 3|        | |Step 4|        |
-+-----------------+-----------------+-----------------+-----------------+
-
-.. |Step 1| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png
-.. |Step 2| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png
-.. |Step 3| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png
-.. |Step 4| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png
-

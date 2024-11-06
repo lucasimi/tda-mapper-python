@@ -20,7 +20,7 @@ Contents
    overview
    examples 
    citations
-   modules
+   apiref
 
 .. |Logo| image:: logos/tda-mapper-logo-horizontal.png
    :alt: tda-mapper
