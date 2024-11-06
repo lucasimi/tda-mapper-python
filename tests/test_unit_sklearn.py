@@ -13,7 +13,7 @@ from tdamapper.cover import (
     CubicalCover
 )
 
-from .setup_logging import setup_logging
+from tests.setup_logging import setup_logging
 
 
 def euclidean(x, y):
