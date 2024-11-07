@@ -14,16 +14,16 @@ from tdamapper.core import (
 
 
 def plot_pyvis(
-            mapper_plot,
-            notebook,
-            output_file,
-            colors,
-            agg,
-            title,
-            width,
-            height,
-            cmap,
-        ):
+    mapper_plot,
+    notebook,
+    output_file,
+    colors,
+    agg,
+    title,
+    width,
+    height,
+    cmap,
+):
     net = _compute_net(
         mapper_plot=mapper_plot,
         width=width,
@@ -37,14 +37,14 @@ def plot_pyvis(
 
 
 def _compute_net(
-            mapper_plot,
-            notebook,
-            colors,
-            agg,
-            width,
-            height,
-            cmap,
-        ):
+    mapper_plot,
+    notebook,
+    colors,
+    agg,
+    width,
+    height,
+    cmap,
+):
     net = Network(
         height=height,
         width=width,
@@ -52,7 +52,7 @@ def _compute_net(
         notebook=notebook,
         select_menu=True,
         filter_menu=True,
-        neighborhood_highlight=True
+        neighborhood_highlight=True,
     )
     net.toggle_physics(False)
     graph = mapper_plot.graph

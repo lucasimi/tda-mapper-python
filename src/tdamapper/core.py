@@ -30,6 +30,7 @@ this module is a NetworkX graph object.
 
 import logging
 import networkx as nx
+from joblib import Parallel, delayed
 
 from tdamapper.utils.unionfind import UnionFind
 from tdamapper._common import ParamsMixin, clone
@@ -51,7 +52,7 @@ logging.basicConfig(
 )
 
 
-def mapper_labels(X, y, cover, clustering):
+def mapper_labels(X, y, cover, clustering, n_jobs=1):
     """
     Identify the nodes of the Mapper graph.
 
@@ -78,14 +79,23 @@ def mapper_labels(X, y, cover, clustering):
     :param clustering: A clustering algorithm.
     :type clustering: An estimator compatible with scikit-learn's clustering
         interface, typically from :mod:`sklearn.cluster`.
+    :param n_jobs: The maximum number of parallel clustering jobs. This
+        parameter is passed to the constructor of :class:`joblib.Parallel`.
+        Defaults to 1.
+    :type n_jobs: int
     :return: A list of node labels for each point in the dataset.
     :rtype: list[list[int]]
     """
-    itm_lbls = [[] for _ in X]
-    max_lbl = 0
-    for local_ids in cover.apply(y):
+    def _run_clustering(local_ids):
         clust = clone(clustering)
         local_lbls = clust.fit([X[j] for j in local_ids]).labels_
+        return local_ids, local_lbls
+    _lbls = Parallel(n_jobs)(
+        delayed(_run_clustering)(local_ids) for local_ids in cover.apply(y)
+    )
+    itm_lbls = [[] for _ in X]
+    max_lbl = 0
+    for local_ids, local_lbls in _lbls:
         max_local_lbl = 0
         for local_id, local_lbl in zip(local_ids, local_lbls):
             if local_lbl >= 0:
@@ -96,7 +106,7 @@ def mapper_labels(X, y, cover, clustering):
     return itm_lbls
 
 
-def mapper_connected_components(X, y, cover, clustering):
+def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     """
     Identify the connected components of the Mapper graph.
 
@@ -121,11 +131,15 @@ def mapper_connected_components(X, y, cover, clustering):
         dataset.
     :type clustering: An estimator compatible with scikit-learn's clustering
         interface, typically from :mod:`sklearn.cluster`.
+    :param n_jobs: The maximum number of parallel clustering jobs. This
+        parameter is passed to the constructor of :class:`joblib.Parallel`.
+        Defaults to 1.
+    :type n_jobs: int
     :return: A list of labels. The label at position i identifies the connected
         component of the point at position i in the dataset.
     :rtype: list[int]
     """
-    itm_lbls = mapper_labels(X, y, cover, clustering)
+    itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
     label_values = set()
     for lbls in itm_lbls:
         label_values.update(lbls)
@@ -142,7 +156,7 @@ def mapper_connected_components(X, y, cover, clustering):
     return labels
 
 
-def mapper_graph(X, y, cover, clustering):
+def mapper_graph(X, y, cover, clustering, n_jobs=1):
     """
     Create the Mapper graph.
 
@@ -167,10 +181,14 @@ def mapper_graph(X, y, cover, clustering):
         dataset.
     :type clustering: An estimator compatible with scikit-learn's clustering
         interface, typically from :mod:`sklearn.cluster`.
+    :param n_jobs: The maximum number of parallel clustering jobs. This
+        parameter is passed to the constructor of :class:`joblib.Parallel`.
+        Defaults to 1.
+    :type n_jobs: int
     :return: The Mapper graph.
     :rtype: :class:`networkx.Graph`
     """
-    itm_lbls = mapper_labels(X, y, cover, clustering)
+    itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
     graph = nx.Graph()
     for n, lbls in enumerate(itm_lbls):
         for lbl in lbls:
@@ -380,13 +398,25 @@ class MapperAlgorithm(ParamsMixin):
         failures are logged. Set to False to suppress these messages. Defaults
         to True.
     :type verbose: bool, optional
+    :param n_jobs: The maximum number of parallel clustering jobs. This
+        parameter is passed to the constructor of :class:`joblib.Parallel`.
+        Defaults to 1.
+    :type n_jobs: int
     """
 
-    def __init__(self, cover=None, clustering=None, failsafe=True, verbose=True):
+    def __init__(
+        self,
+        cover=None,
+        clustering=None,
+        failsafe=True,
+        verbose=True,
+        n_jobs=1,
+    ):
         self.cover = cover
         self.clustering = clustering
         self.failsafe = failsafe
         self.verbose = verbose
+        self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
         """
@@ -414,8 +444,15 @@ class MapperAlgorithm(ParamsMixin):
             )
         self.__cover = clone(self.__cover)
         self.__clustering = clone(self.__clustering)
+        self.__n_jobs = self.n_jobs
         y = X if y is None else y
-        self.graph_ = mapper_graph(X, y, self.__cover, self.__clustering)
+        self.graph_ = mapper_graph(
+            X,
+            y,
+            self.__cover,
+            self.__clustering,
+            n_jobs=self.__n_jobs
+        )
         return self
 
     def fit_transform(self, X, y):
