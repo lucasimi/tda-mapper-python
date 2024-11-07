@@ -440,7 +440,7 @@ class MapperAlgorithm(ParamsMixin):
         if self.__failsafe:
             self.__clustering = FailSafeClustering(
                 clustering=self.__clustering,
-                verbose=self.__verbose
+                verbose=self.__verbose,
             )
         self.__cover = clone(self.__cover)
         self.__clustering = clone(self.__clustering)
@@ -451,7 +451,7 @@ class MapperAlgorithm(ParamsMixin):
             y,
             self.__cover,
             self.__clustering,
-            n_jobs=self.__n_jobs
+            n_jobs=self.__n_jobs,
         )
         return self
 

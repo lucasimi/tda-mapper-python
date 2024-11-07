@@ -130,7 +130,7 @@ class BallCover(Proximity):
         neighs = self.__vptree.ball_search(
             (-1, x),
             self.__radius,
-            inclusive=False
+            inclusive=False,
         )
         return [x for (x, _) in neighs]
 
@@ -349,7 +349,7 @@ class CubicalCover(Proximity):
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
             leaf_radius=self.leaf_radius,
-            pivoting=self.pivoting
+            pivoting=self.pivoting,
         )
         self.__min, self.__max, self.__delta = self._get_bounds(XX)
         self.__ball_proximity.fit(XX)

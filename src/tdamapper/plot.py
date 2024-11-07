@@ -318,7 +318,7 @@ class MapperLayoutInteractive:
             graph=self.__graph,
             dim=self.__dim,
             iterations=self.__iterations,
-            seed=self.__seed
+            seed=self.__seed,
         )
         self.__colors = colors
         self.__agg = agg
@@ -332,7 +332,7 @@ class MapperLayoutInteractive:
             title=self.__title,
             width=self.__width,
             height=self.__height,
-            cmap=self.__cmap
+            cmap=self.__cmap,
         )
 
     def update(
@@ -389,7 +389,7 @@ class MapperLayoutInteractive:
                 graph=self.__graph,
                 dim=self.__dim,
                 iterations=self.__iterations,
-                seed=self.__seed
+                seed=self.__seed,
             )
         self.__mapper_plot.plot_plotly_update(
             self.__fig,
@@ -398,7 +398,7 @@ class MapperLayoutInteractive:
             title=title,
             width=width,
             height=height,
-            cmap=cmap
+            cmap=cmap,
         )
 
     def plot(self):
@@ -465,8 +465,12 @@ class MapperLayoutStatic:
         title=None,
         width=512,
         height=512,
-        cmap='jet'
+        cmap='jet',
     ):
+        warn_deprecated(
+            MapperLayoutStatic.__qualname__,
+            MapperPlot.__qualname__,
+        )
         self.__colors = colors
         self.__agg = agg
         self.__title = title
@@ -477,7 +481,7 @@ class MapperLayoutStatic:
             graph=graph,
             dim=dim,
             iterations=iterations,
-            seed=seed
+            seed=seed,
         )
 
     def plot(self):
@@ -495,5 +499,5 @@ class MapperLayoutStatic:
             title=self.__title,
             width=self.__width,
             height=self.__height,
-            cmap=self.__cmap
+            cmap=self.__cmap,
         )
