@@ -13,6 +13,10 @@ def warn_deprecated(deprecated, substitute):
     )
 
 
+def warn_user(msg):
+    warnings.warn(msg, UserWarning, stacklevel=2)
+
+
 class ParamsMixin:
     """
     Mixin to add setters and getters for public parameters, compatible with

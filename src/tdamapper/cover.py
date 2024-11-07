@@ -12,6 +12,8 @@ from tdamapper.core import Proximity
 from tdamapper.utils.metrics import get_metric, chebyshev
 from tdamapper.utils.vptree import VPTree
 
+from tdamapper._common import warn_user
+
 
 class _Pullback:
 
@@ -273,7 +275,7 @@ class CubicalCover(Proximity):
     def __init__(
         self,
         n_intervals=1,
-        overlap_frac=0.5,
+        overlap_frac=None,
         kind='flat',
         leaf_capacity=1,
         leaf_radius=None,
@@ -285,6 +287,8 @@ class CubicalCover(Proximity):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
+        if (self.overlap_frac <= 0.0) or (self.overlap_frac > 0.5):
+            warn_user('The parameter overlap_frac is expected within range (0.0, 0.5]')
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__min) / self.__delta
