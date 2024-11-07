@@ -26,14 +26,14 @@ _EDGE_COLOR = '#777'
 
 
 def plot_matplotlib(
-            mapper_plot,
-            width,
-            height,
-            title,
-            colors,
-            agg,
-            cmap,
-        ):
+    mapper_plot,
+    width,
+    height,
+    title,
+    colors,
+    agg,
+    cmap,
+):
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
     fig, ax = plt.subplots(figsize=(width * px, height * px))
     ax.get_xaxis().set_visible(False)

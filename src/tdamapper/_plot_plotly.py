@@ -48,29 +48,29 @@ def _edge_pos_array(graph, dim, node_pos):
 
 
 def plot_plotly(
-            mapper_plot,
-            width,
-            height,
-            title,
-            colors,
-            agg=np.nanmean,
-            cmap='jet'
-        ):
+    mapper_plot,
+    width,
+    height,
+    title,
+    colors,
+    agg=np.nanmean,
+    cmap='jet',
+):
     node_col = aggregate_graph(colors, mapper_plot.graph, agg)
     fig = _figure(mapper_plot, node_col, width, height, title, cmap)
     return fig
 
 
 def plot_plotly_update(
-            mapper_plot,
-            fig,
-            width=None,
-            height=None,
-            title=None,
-            colors=None,
-            agg=None,
-            cmap=None
-        ):
+    mapper_plot,
+    fig,
+    width=None,
+    height=None,
+    title=None,
+    colors=None,
+    agg=None,
+    cmap=None,
+):
     if (colors is not None) and (agg is not None) and (cmap is not None):
         _update_traces_col(mapper_plot, fig, colors, agg, cmap)
     if cmap is not None:
@@ -105,9 +105,10 @@ def _update_edge_trace_col(mapper_plot, fig, cmap, colors_agg, colors_list):
                 line_color=colors_avg,
                 line_colorscale=cmap,
                 line_cmax=max(colors_list, default=None),
-                line_cmin=min(colors_list, default=None)),
-            selector=dict(
-                name='edges_trace'))
+                line_cmin=min(colors_list, default=None),
+            ),
+            selector=dict(name='edges_trace'),
+        )
 
 
 def _update_node_trace_col(mapper_plot, fig, colors_agg, colors_list):
@@ -116,44 +117,53 @@ def _update_node_trace_col(mapper_plot, fig, colors_agg, colors_list):
             text=_text(mapper_plot, colors_agg),
             marker_color=colors_list,
             marker_cmax=max(colors_list, default=None),
-            marker_cmin=min(colors_list, default=None)),
-        selector=dict(
-            name='nodes_trace'))
+            marker_cmin=min(colors_list, default=None),
+        ),
+        selector=dict(name='nodes_trace'),
+    )
 
 
 def _update_traces_cmap(mapper_plot, fig, cmap):
     fig.update_traces(
         patch=dict(
             marker_colorscale=cmap,
-            marker_line_colorscale=cmap),
-        selector=dict(
-            name='nodes_trace'))
+            marker_line_colorscale=cmap,
+        ),
+        selector=dict(name='nodes_trace'),
+    )
     if mapper_plot.dim == 3:
         fig.update_traces(
-            patch=dict(
-                line_colorscale=cmap),
-            selector=dict(
-                name='edges_trace'))
+            patch=dict(line_colorscale=cmap),
+            selector=dict(name='edges_trace'),
+        )
 
 
 def _update_traces_title(mapper_plot, fig, title):
     fig.update_traces(
-        patch=dict(
-            marker_colorbar=_colorbar(mapper_plot, title)),
-        selector=dict(
-            name='nodes_trace'))
+        patch=dict(marker_colorbar=_colorbar(mapper_plot, title)),
+        selector=dict(name='nodes_trace'),
+    )
 
 
 def _update_layout(fig, width, height):
     fig.update_layout(
         width=width,
-        height=height)
+        height=height,
+    )
 
 
 def _figure(mapper_plot, node_col, width, height, title, cmap):
     node_pos = mapper_plot.positions
-    node_pos_arr = _node_pos_array(mapper_plot.graph, mapper_plot.dim, node_pos)
-    edge_pos_arr = _edge_pos_array(mapper_plot.graph, mapper_plot.dim, node_pos)
+    node_pos_arr = _node_pos_array(
+        mapper_plot.graph,
+        mapper_plot.dim,
+        node_pos,
+    )
+    edge_pos_arr = _edge_pos_array(
+        mapper_plot.graph,
+        mapper_plot.dim,
+        node_pos,
+    )
     _edges_tr = _edges_trace(mapper_plot, edge_pos_arr, node_col, cmap)
     _nodes_tr = _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap)
     _layout_ = _layout(width, height)
@@ -166,7 +176,8 @@ def _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap):
     attr_size = nx.get_node_attributes(mapper_plot.graph, ATTR_SIZE)
     max_size = max(attr_size.values(), default=1.0)
     scatter_text = _text(mapper_plot, node_col)
-    marker_size = [25.0 * math.sqrt(attr_size[n] / max_size) for n in mapper_plot.graph.nodes()]
+    marker_size = [25.0 * math.sqrt(attr_size[n] / max_size) for n in
+                   mapper_plot.graph.nodes()]
     colors = list(node_col.values())
     scatter = dict(
         name='nodes_trace',
@@ -188,10 +199,11 @@ def _nodes_trace(mapper_plot, node_pos_arr, node_col, title, cmap):
             colorscale=cmap,
             cmin=min(colors, default=None),
             cmax=max(colors, default=None),
-            colorbar=_colorbar(mapper_plot, title)))
+            colorbar=_colorbar(mapper_plot, title),
+        ),
+    )
     if mapper_plot.dim == 3:
-        scatter.update(dict(
-            z=node_pos_arr[2]))
+        scatter.update(dict(z=node_pos_arr[2]))
         return go.Scatter3d(scatter)
     elif mapper_plot.dim == 2:
         return go.Scatter(scatter)
@@ -206,7 +218,8 @@ def _edges_trace(mapper_plot, edge_pos_arr, node_col, cmap):
         opacity=_EDGE_OPACITY,
         line_width=_EDGE_WIDTH,
         line_color=_EDGE_COLOR,
-        hoverinfo='skip')
+        hoverinfo='skip',
+    )
     if mapper_plot.dim == 3:
         colors_avg = []
         for e in mapper_plot.graph.edges():
@@ -216,16 +229,20 @@ def _edges_trace(mapper_plot, edge_pos_arr, node_col, cmap):
             colors_avg.append(c1)
         colors = list(node_col.values())
         scatter.update(dict(
-            z=edge_pos_arr[2],
-            line_color=colors_avg,
-            line_cmin=min(colors, default=None),
-            line_cmax=max(colors, default=None),
-            line_colorscale=cmap))
+                z=edge_pos_arr[2],
+                line_color=colors_avg,
+                line_cmin=min(colors, default=None),
+                line_cmax=max(colors, default=None),
+                line_colorscale=cmap,
+            ),
+        )
         return go.Scatter3d(scatter)
     elif mapper_plot.dim == 2:
         scatter.update(dict(
-            marker_colorscale=cmap,
-            marker_line_colorscale=cmap))
+                marker_colorscale=cmap,
+                marker_line_colorscale=cmap,
+            ),
+        )
         return go.Scatter(scatter)
 
 
@@ -239,7 +256,8 @@ def _layout(width, height):
         showticklabels=False,
         showgrid=False,
         zeroline=False,
-        title='')
+        title='',
+    )
     scene_axis = dict(
         showgrid=True,
         visible=True,
@@ -252,7 +270,8 @@ def _layout(width, height):
         linewidth=1,
         mirror=True,
         showticklabels=False,
-        title='')
+        title='',
+    )
     return go.Layout(
         uirevision='constant',
         plot_bgcolor='rgba(0, 0, 0, 0)',
@@ -267,7 +286,9 @@ def _layout(width, height):
         scene=dict(
             xaxis=scene_axis,
             yaxis=scene_axis,
-            zaxis=scene_axis))
+            zaxis=scene_axis,
+        ),
+    )
 
 
 def _colorbar(mapper_plot, title):
@@ -285,7 +306,8 @@ def _colorbar(mapper_plot, title):
         tickwidth=1,
         tickformat='.2g',
         nticks=_TICKS_NUM,
-        tickmode='auto')
+        tickmode='auto',
+    )
     if title is not None:
         cbar['title'] = title
     if mapper_plot.dim == 3:
