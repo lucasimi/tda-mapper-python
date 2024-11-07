@@ -42,18 +42,18 @@ class MapperPlot:
             self.graph,
             dim=self.dim,
             seed=self.seed,
-            iterations=self.iterations
+            iterations=self.iterations,
         )
 
     def plot_matplotlib(
-                self,
-                colors,
-                agg=np.nanmean,
-                title=None,
-                width=512,
-                height=512,
-                cmap='jet'
-            ):
+        self,
+        colors,
+        agg=np.nanmean,
+        title=None,
+        width=512,
+        height=512,
+        cmap='jet',
+    ):
         """
         Draw a static plot using Matplotlib.
 
@@ -91,18 +91,18 @@ class MapperPlot:
             title=title,
             width=width,
             height=height,
-            cmap=cmap
+            cmap=cmap,
         )
 
     def plot_plotly(
-                self,
-                colors,
-                agg=np.nanmean,
-                title=None,
-                width=512,
-                height=512,
-                cmap='jet'
-            ):
+        self,
+        colors,
+        agg=np.nanmean,
+        title=None,
+        width=512,
+        height=512,
+        cmap='jet',
+    ):
         """
         Draw an interactive plot using Plotly.
 
@@ -139,19 +139,19 @@ class MapperPlot:
             title=title,
             width=width,
             height=height,
-            cmap=cmap
+            cmap=cmap,
         )
 
     def plot_plotly_update(
-                self,
-                fig,
-                colors=None,
-                agg=None,
-                title=None,
-                width=None,
-                height=None,
-                cmap=None
-            ):
+        self,
+        fig,
+        colors=None,
+        agg=None,
+        title=None,
+        width=None,
+        height=None,
+        cmap=None,
+    ):
         """
         Draw an interactive plot using Plotly on a previously rendered figure.
 
@@ -196,20 +196,20 @@ class MapperPlot:
             title=title,
             width=width,
             height=height,
-            cmap=cmap
+            cmap=cmap,
         )
 
     def plot_pyvis(
-                self,
-                notebook,
-                output_file,
-                colors,
-                agg=np.nanmean,
-                title=None,
-                width=512,
-                height=512,
-                cmap='jet'
-            ):
+        self,
+        notebook,
+        output_file,
+        colors,
+        agg=np.nanmean,
+        title=None,
+        width=512,
+        height=512,
+        cmap='jet',
+    ):
         """
         Draw an interactive HTML plot using PyVis.
 
@@ -255,6 +255,9 @@ class MapperPlot:
 
 class MapperLayoutInteractive:
     """
+    **DEPRECATED**: This class is deprecated and will be removed in a future
+    release. Use :class:`tdamapper.plot.MapperPlot`.
+
     Class for generating and visualizing the Mapper graph.
 
     This class creates a metric embedding of the Mapper graph in 2D or 3D and
@@ -291,18 +294,18 @@ class MapperLayoutInteractive:
     """
 
     def __init__(
-                self,
-                graph,
-                dim,
-                seed=42,
-                iterations=50,
-                colors=None,
-                agg=np.nanmean,
-                title=None,
-                width=512,
-                height=512,
-                cmap='jet'
-            ):
+        self,
+        graph,
+        dim,
+        seed=42,
+        iterations=50,
+        colors=None,
+        agg=np.nanmean,
+        title=None,
+        width=512,
+        height=512,
+        cmap='jet',
+    ):
         warn_deprecated(
             MapperLayoutInteractive.__qualname__,
             MapperPlot.__qualname__,
@@ -333,16 +336,16 @@ class MapperLayoutInteractive:
         )
 
     def update(
-                self,
-                seed=None,
-                iterations=None,
-                colors=None,
-                agg=None,
-                title=None,
-                width=None,
-                height=None,
-                cmap=None
-            ):
+        self,
+        seed=None,
+        iterations=None,
+        colors=None,
+        agg=None,
+        title=None,
+        width=None,
+        height=None,
+        cmap=None,
+    ):
         """
         Update the figure.
 
@@ -374,10 +377,6 @@ class MapperLayoutInteractive:
             aggregated by `agg`, to actual RGBA colors.
         :type cmap: str, optional
         """
-        warn_deprecated(
-            MapperLayoutInteractive.update.__qualname__,
-            MapperPlot.plot_plotly_update.__qualname__
-        )
         _update_pos = False
         if seed is not None:
             self.__seed = seed
@@ -411,15 +410,14 @@ class MapperLayoutInteractive:
             context to be shown.
         :rtype: :class:`plotly.graph_objects.Figure`
         """
-        warn_deprecated(
-            MapperLayoutInteractive.plot.__qualname__,
-            MapperPlot.plot_plotly.__qualname__
-        )
         return self.__fig
 
 
 class MapperLayoutStatic:
     """
+    **DEPRECATED**: This class is deprecated and will be removed in a future
+    release. Use :class:`tdamapper.plot.MapperPlot`.
+
     Class for generating and visualizing the Mapper graph.
 
     This class creates a metric embedding of the Mapper graph in 2D and
@@ -457,22 +455,18 @@ class MapperLayoutStatic:
     """
 
     def __init__(
-                self,
-                graph,
-                dim,
-                seed=42,
-                iterations=50,
-                colors=None,
-                agg=np.nanmean,
-                title=None,
-                width=512,
-                height=512,
-                cmap='jet'
-            ):
-        warn_deprecated(
-            MapperLayoutStatic.__qualname__,
-            MapperPlot.__qualname__
-        )
+        self,
+        graph,
+        dim,
+        seed=42,
+        iterations=50,
+        colors=None,
+        agg=np.nanmean,
+        title=None,
+        width=512,
+        height=512,
+        cmap='jet'
+    ):
         self.__colors = colors
         self.__agg = agg
         self.__title = title
@@ -495,10 +489,6 @@ class MapperLayoutStatic:
         :rtype: :class:`matplotlib.figure.Figure`,
             :class:`matplotlib.axes.Axes`
         """
-        warn_deprecated(
-            MapperLayoutStatic.plot.__qualname__,
-            MapperPlot.plot_matplotlib.__qualname__
-        )
         return self.mapper_plot.plot_matplotlib(
             colors=self.__colors,
             agg=self.__agg,
