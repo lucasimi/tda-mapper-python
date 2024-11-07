@@ -6,6 +6,7 @@ the whole dataset. Unlike clustering, open subsets do not need to be disjoint.
 Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
+import math
 import numpy as np
 
 from tdamapper.core import Proximity
@@ -247,7 +248,9 @@ class CubicalCover(Proximity):
         Defaults to 1.
     :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
-        each dimension, must be in the range (0.0, 1.0). Defaults to 0.5.
+        each dimension, must be in the range (0.0, 0.5]. If not specified, the
+        overlap_frac is computed such that the volume of the overlap within
+        each hypercube is half the total volume. Defaults to None.
     :type overlap_frac: float
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
@@ -287,8 +290,6 @@ class CubicalCover(Proximity):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        if (self.overlap_frac <= 0.0) or (self.overlap_frac > 0.5):
-            warn_user('The parameter overlap_frac is expected within range (0.0, 0.5]')
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__min) / self.__delta
@@ -315,6 +316,10 @@ class CubicalCover(Proximity):
     def _convert(self, X):
         return np.asarray(X).reshape(len(X), -1).astype(float)
 
+    def _get_overlap_frac(self, dim, overlap_vol_frac):
+        beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
+        return 1.0 - 1.0 / (2.0 - beta)
+
     def fit(self, X):
         """
         Train internal parameters.
@@ -327,7 +332,14 @@ class CubicalCover(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        self.__overlap_frac = self.overlap_frac
+        X = np.asarray(X)
+        if self.overlap_frac is None:
+            dim = 1 if X.ndim == 1 else X.shape[1]
+            self.__overlap_frac = self._get_overlap_frac(dim, 0.5)
+        else:
+            self.__overlap_frac = self.overlap_frac
+        if (self.__overlap_frac <= 0.0) or (self.__overlap_frac > 0.5):
+            warn_user('The parameter overlap_frac is expected within range (0.0, 0.5]')
         self.__n_intervals = self.n_intervals
         self.__radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
         XX = self._convert(X)
