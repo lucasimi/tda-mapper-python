@@ -26,11 +26,11 @@ class EstimatorMixin:
         return hasattr(X, 'toarray')
 
     def _validate_X_y(self, X, y):
-        X = np.asarray(X)
-        y = np.asarray(y)
-
         if self._is_sparse(X):
             raise ValueError('Sparse data not supported.')
+
+        X = np.asarray(X)
+        y = np.asarray(y)
 
         if X.size == 0:
             msg = f'0 feature(s) (shape={X.shape}) while a minimum of 1 is required.'
