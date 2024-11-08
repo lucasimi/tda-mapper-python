@@ -22,7 +22,7 @@ class VPTree:
         metric_params=None,
         leaf_capacity=1,
         leaf_radius=0.0,
-        pivoting=None,
+        pivoting=None
     ):
         self.__metric = metric
         self.__metric_params = metric_params

@@ -1,113 +1,55 @@
 import unittest
+import logging
 
 import numpy as np
-from sklearn.utils import check_X_y
-from sklearn.utils.estimator_checks import check_estimator
-from sklearn.cluster import KMeans
 
-from tdamapper.clustering import (
-    TrivialClustering,
-    MapperClustering,
-    FailSafeClustering
-)
+from sklearn.utils.estimator_checks import check_estimator
+
+from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import (
-    TrivialCover,
     BallCover,
     KNNCover,
     CubicalCover
 )
+from tdamapper.clustering import MapperClustering
+
+from tests.setup_logging import setup_logging
 
 
 def euclidean(x, y):
     return np.linalg.norm(x - y)
 
 
-class Estimator:
-
-    def get_params(self, deep=True):
-        params = {}
-        for k, v in vars(self).items():
-            if not k.startswith('_'):
-                params[k] = v
-        return params
-
-    def set_params(self, **parmeters):
-        for k, v in parmeters.items():
-            if not k.startswith('_'):
-                setattr(self, k, v)
-        return self
-
-    def get_clustering(self):
-        return TrivialClustering()
-
-    def fit(self, X, y=None):
-        X, y = check_X_y(X, y)
-        clustering = self.get_clustering()
-        self.labels_ = clustering.fit(X, y).labels_
-        self.n_features_in_ = X.shape[1]
-        return self
-
-
-class MapperClusteringEstimator(Estimator):
-
-    def __init__(self,
-            cover='cubical',
-            n_intervals=10,
-            overlap_frac=0.25,
-            radius=0.5,
-            neighbors=5,
-            metric=euclidean):
-        self.cover = cover
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-        self.radius = radius
-        self.neighbors = neighbors
-        self.metric = metric
-
-    def __get_cover(self):
-        if self.cover == 'trivial':
-            return TrivialCover()
-        elif self.cover == 'cubical':
-            return CubicalCover(n_intervals=self.n_intervals, overlap_frac=self.overlap_frac)
-        elif self.cover == 'ball':
-            return BallCover(radius=self.radius, metric=self.metric)
-        elif self.cover == 'knn':
-            return KNNCover(neighbors=self.neighbors, metric=self.metric)
-        else:
-            raise ValueError(f'Unknown cover algorithm {self.cover}')
-
-    def get_clustering(self):
-        return MapperClustering(self.__get_cover())
-
-
-class PermissiveKMeans(Estimator):
-
-    def __init__(self, n=8):
-        self.n = n
-
-    def get_clustering(self):
-        return FailSafeClustering(KMeans(n_clusters=self.n, n_init='auto'), verbose=False)
-
-
-class TrivialClusteringEstimator(Estimator):
-
-    def get_clustering(self):
-        return TrivialClustering()
-
-
 class TestSklearn(unittest.TestCase):
 
-    def test_clustering(self):
-        check_estimator(TrivialClusteringEstimator())
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
+    def run_tests(self, estimator):
+        for est, check in check_estimator(estimator, generate_only=True):
+            # self.logger.info(f'{check}')
+            check(est)
+
+    def test_trivial(self):
+        est = MapperAlgorithm()
+        self.run_tests(est)
 
     def test_ball(self):
-        check_estimator(MapperClusteringEstimator(cover='ball'))
+        est = MapperAlgorithm(cover=BallCover(metric=euclidean))
+        self.run_tests(est)
 
     def test_knn(self):
-        check_estimator(MapperClusteringEstimator(cover='knn'))
+        est = MapperAlgorithm(cover=KNNCover(metric=euclidean))
+        self.run_tests(est)
 
     def test_cubical(self):
-        check_estimator(MapperClusteringEstimator())
+        est = MapperAlgorithm(cover=CubicalCover())
+        self.run_tests(est)
 
-    def test_permissive(self):
-        check_estimator(PermissiveKMeans())
+    def test_clustering_trivial(self):
+        est = MapperClustering()
+        self.run_tests(est)
+
+    def test_clustering_ball(self):
+        est = MapperClustering(cover=BallCover(metric=euclidean))
+        self.run_tests(est)

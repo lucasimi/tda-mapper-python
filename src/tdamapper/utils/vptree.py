@@ -10,7 +10,7 @@ class VPTree:
     """
     A Vantage Point Tree, or vp-tree, for fast range-queries and knn-queries.
 
-    :param X: A dataset of n points to be covered with open subsets.
+    :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
@@ -57,7 +57,8 @@ class VPTree:
             metric_params=metric_params,
             leaf_capacity=leaf_capacity,
             leaf_radius=leaf_radius,
-            pivoting=pivoting)
+            pivoting=pivoting
+        )
 
     def ball_search(self, point, eps, inclusive=True):
         """

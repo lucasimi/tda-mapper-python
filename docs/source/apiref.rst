@@ -1,5 +1,5 @@
-tdamapper
-=========
+API Reference
+=============
 
 tdamapper.core
 --------------
@@ -13,14 +13,6 @@ tdamapper.cover
 ---------------
 
 .. automodule:: tdamapper.cover
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tdamapper.proximity
--------------------
-
-.. automodule:: tdamapper.proximity
    :members:
    :undoc-members:
    :show-inheritance:

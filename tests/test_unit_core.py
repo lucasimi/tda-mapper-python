@@ -4,8 +4,13 @@ import numpy as np
 import networkx as nx
 from sklearn.cluster import DBSCAN
 
-from tdamapper.core import MapperAlgorithm, mapper_connected_components, mapper_labels
-from tdamapper.cover import TrivialCover, BallCover
+from tdamapper.core import (
+    MapperAlgorithm,
+    mapper_connected_components,
+    mapper_labels,
+    TrivialCover,
+)
+from tdamapper.cover import BallCover
 from tdamapper.clustering import TrivialClustering
 
 
