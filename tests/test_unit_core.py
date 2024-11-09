@@ -116,6 +116,26 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
+    def test_two_connected_clusters_parallel(self):
+        data = [
+            np.array([0.0, 1.0]), np.array([1.0, 0.0]),
+            np.array([0.0, 0.0]), np.array([1.0, 1.0])]
+        cover = BallCover(1.1, metric=dist)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(
+            cover=cover,
+            clustering=clustering,
+            n_jobs=4,
+        )
+        g = mp.fit_transform(data, data)
+        self.assertEqual(2, len(g))
+        for node in g.nodes():
+            self.assertEqual(1, len(list(g.neighbors(node))))
+        ccs = list(nx.connected_components(g))
+        self.assertEqual(1, len(ccs))
+        ccs2 = mapper_connected_components(data, data, cover, clustering)
+        self.assertEqual(len(data), len(ccs2))
+
     def test_connected_components(self):
         data = [0, 1, 2, 3]
 
