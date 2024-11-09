@@ -9,7 +9,7 @@ Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 import math
 import numpy as np
 
-from tdamapper.core import Proximity
+from tdamapper.core import Cover, Proximity
 from tdamapper.utils.metrics import get_metric, chebyshev
 from tdamapper.utils.vptree import VPTree
 
@@ -368,3 +368,93 @@ class CubicalCover(Proximity):
         :rtype: list[int]
         """
         return self.__ball_proximity.search(self._phi(x))
+
+
+class StandardCover(Cover):
+
+    def __init__(
+        self,
+        n_intervals=1,
+        overlap_frac=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+        self.kind = kind
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
+
+    def _gamma_n(self, x):
+        return self.n_intervals * (x - self.__min) / self.__delta
+
+    def _gamma_n_inv(self, x):
+        return self.__min + self.__delta * x / self.n_intervals
+
+    def _phi(self, x):
+        return self._gamma_n_inv(_rho(self._gamma_n(x)))
+
+    def _get_bounds(self, data):
+        if (data is None) or len(data) == 0:
+            return
+        minimum, maximum = data[0], data[0]
+        eps = np.finfo(np.float64).eps
+        for w in data:
+            minimum = np.minimum(minimum, np.array(w))
+            maximum = np.maximum(maximum, np.array(w))
+        _min = np.nan_to_num(minimum, nan=-float(eps))
+        _max = np.nan_to_num(maximum, nan=float(eps))
+        _delta = np.maximum(eps, _max - _min)
+        return _min, _max, _delta
+
+    def _convert(self, X):
+        return np.asarray(X).reshape(len(X), -1).astype(float)
+
+    def _get_overlap_frac(self, dim, overlap_vol_frac):
+        beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
+        return 1.0 - 1.0 / (2.0 - beta)
+
+    def _cubical_landmarks(self, X):
+        lmrks = {}
+        for x in X:
+            lmrk = self._landmark(x)
+            if lmrk not in lmrks:
+                lmrks[lmrk] = x
+        return lmrks
+
+    def _landmark(self, x):
+        cell = self.n_intervals * (x - self.__min) // self.__delta
+        return tuple(cell)
+
+    def apply(self, X):
+        X = np.asarray(X)
+        if self.overlap_frac is None:
+            dim = 1 if X.ndim == 1 else X.shape[1]
+            _overlap_frac = self._get_overlap_frac(dim, 0.5)
+        else:
+            _overlap_frac = self.overlap_frac
+        if (_overlap_frac <= 0.0) or (_overlap_frac > 0.5):
+            warn_user('The parameter overlap_frac is expected within range (0.0, 0.5]')
+        self.__min, self.__max, self.__delta = self._get_bounds(X)
+
+        _radius = 1.0 / (2.0 - 2.0 * _overlap_frac)
+
+        _ball_cover = BallCover(
+            _radius,
+            metric=_Pullback(self._gamma_n, chebyshev()),
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting,
+        )
+        _ball_cover.fit(X)
+
+        lmrks_to_cover = self._cubical_landmarks(X)
+        while lmrks_to_cover:
+            _, lmrk = lmrks_to_cover.popitem()
+            neigh_ids = _ball_cover.search(self._phi(lmrk))
+            if neigh_ids:
+                yield neigh_ids
