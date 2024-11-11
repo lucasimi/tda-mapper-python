@@ -316,7 +316,11 @@ class _GridOverlap:
 class CubicalCover(_GridOverlap, Proximity):
     """
     Cover algorithm based on the `cubical proximity function`, covering data
-    with open hypercubes of uniform size and overlap.
+    with open hypercubes of uniform size and overlap. The cubical cover is
+    obtained by selecting a subsect of all the hypercubes that intersect the
+    dataset using proximity net (see :class:`tdamapper.core.Proximity`).
+    For an open cover containing all the hypercubes interecting the dataset
+    use :class:`tdamapper.core.StandardCover`.
 
     A hypercube is a multidimensional generalization of a square or a cube.
     The size and overlap of the hypercubes are determined by the number of
@@ -403,6 +407,47 @@ class CubicalCover(_GridOverlap, Proximity):
 
 
 class StandardCover(_GridOverlap, Cover):
+    """
+    Cover algorithm based on the standard open cover for Mapper, covering data
+    with open hypercubes of uniform size and overlap. The standard cover is
+    obtained by selecting all the hypercubes that intersect the dataset.
+
+    A hypercube is a multidimensional generalization of a square or a cube.
+    The size and overlap of the hypercubes are determined by the number of
+    intervals and the overlap fraction parameters. This class maps each point
+    to the hypercube with the nearest center.
+
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
+        Defaults to 1.
+    :type n_intervals: int
+    :param overlap_frac: The fraction of overlap between adjacent intervals on
+        each dimension, must be in the range (0.0, 0.5]. If not specified, the
+        overlap_frac is computed such that the volume of the overlap within
+        each hypercube is half the total volume. Defaults to None.
+    :type overlap_frac: float
+    :param metric: The metric used to define the distance between points.
+        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the metric function, to be
+        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
 
     def __init__(
         self,
