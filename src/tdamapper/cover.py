@@ -252,6 +252,7 @@ class _GridOverlap:
         self.pivoting = pivoting
 
     def fit(self, X):
+        X = np.asarray(X).reshape(len(X), -1).astype(float)
         if self.overlap_frac is None:
             dim = 1 if X.ndim == 1 else X.shape[1]
             self.__overlap_frac = self._get_overlap_frac(dim, 0.5)
@@ -271,15 +272,24 @@ class _GridOverlap:
             pivoting=self.pivoting,
         )
         self.__cover.fit(X)
+        return self
 
-    def get_center(self, x):
+    def search(self, x):
+        center = self._gamma_n_inv(_rho(self._gamma_n(x)))
+        return self.__cover.search(center)
+
+    def landmarks(self, X):
+        lmrks = {}
+        for x in X:
+            lmrk, center = self._get_center(x)
+            if lmrk not in lmrks:
+                lmrks[lmrk] = x
+        return lmrks
+
+    def _get_center(self, x):
         cell = self.__n_intervals * (x - self.__min) // self.__delta
         center = self._gamma_n_inv(_rho(self._gamma_n(x)))
         return tuple(cell), center
-
-    def get_cell(self, x):
-        _, center = self.get_center(x)
-        return self.__cover.search(center)
 
     def _get_overlap_frac(self, dim, overlap_vol_frac):
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
@@ -294,18 +304,16 @@ class _GridOverlap:
     def _get_bounds(self, X):
         if (X is None) or len(X) == 0:
             return
-        minimum, maximum = X[0], X[0]
+        _min, _max = X[0], X[0]
         eps = np.finfo(np.float64).eps
-        for w in X:
-            minimum = np.minimum(minimum, np.array(w))
-            maximum = np.maximum(maximum, np.array(w))
-        _min = np.nan_to_num(minimum, nan=-float(eps))
-        _max = np.nan_to_num(maximum, nan=float(eps))
-        _delta = np.maximum(eps, _max - _min)
+        _min = np.min(X, axis=0)
+        _max = np.max(X, axis=0)
+        _delta = _max - _min
+        _delta[(_delta >= -eps) & (_delta <= eps)] = self.__n_intervals
         return _min, _max, _delta
 
 
-class CubicalCover(Proximity):
+class CubicalCover(_GridOverlap, Proximity):
     """
     Cover algorithm based on the `cubical proximity function`, covering data
     with open hypercubes of uniform size and overlap.
@@ -356,15 +364,14 @@ class CubicalCover(Proximity):
         leaf_radius=None,
         pivoting=None,
     ):
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-        self.kind = kind
-        self.leaf_capacity = leaf_capacity
-        self.leaf_radius = leaf_radius
-        self.pivoting = pivoting
-
-    def _convert(self, X):
-        return np.asarray(X).reshape(len(X), -1).astype(float)
+        super().__init__(
+            n_intervals=n_intervals,
+            overlap_frac=overlap_frac,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
+        )
 
     def fit(self, X):
         """
@@ -378,17 +385,8 @@ class CubicalCover(Proximity):
         :return: The object itself.
         :rtype: self
         """
-        XX = self._convert(X)
-        self.__grid_overlap = _GridOverlap(
-            n_intervals=self.n_intervals,
-            overlap_frac=self.overlap_frac,
-            kind=self.kind,
-            leaf_capacity=self.leaf_capacity,
-            leaf_radius=self.leaf_radius,
-            pivoting=self.pivoting,
-        )
-        self.__grid_overlap.fit(XX)
-        return self
+        #X = np.asarray(X).reshape(len(X), -1).astype(float)
+        return super().fit(X)
 
     def search(self, x):
         """
@@ -402,10 +400,10 @@ class CubicalCover(Proximity):
         :return: The indices of the neighbors contained in the dataset.
         :rtype: list[int]
         """
-        return self.__grid_overlap.get_cell(x)
+        return super().search(x)
 
 
-class StandardCover(Cover):
+class StandardCover(_GridOverlap, Cover):
 
     def __init__(
         self,
@@ -416,32 +414,21 @@ class StandardCover(Cover):
         leaf_radius=None,
         pivoting=None,
     ):
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-        self.kind = kind
-        self.leaf_capacity = leaf_capacity
-        self.leaf_radius = leaf_radius
-        self.pivoting = pivoting
+        super().__init__(
+            n_intervals=n_intervals,
+            overlap_frac=overlap_frac,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
+        )
 
     def apply(self, X):
-        X = np.asarray(X)
-        _grid_overlap = _GridOverlap(
-            n_intervals=self.n_intervals,
-            overlap_frac=self.overlap_frac,
-            kind=self.kind,
-            leaf_capacity=self.leaf_capacity,
-            leaf_radius=self.leaf_radius,
-            pivoting=self.pivoting,
-        )
-        _grid_overlap.fit(X)
-
-        lmrks_to_cover = {}
-        for x in X:
-            lmrk, center = _grid_overlap.get_center(x)
-            if lmrk not in lmrks_to_cover:
-                lmrks_to_cover[lmrk] = x
+        #X = np.asarray(X).reshape(len(X), -1).astype(float)
+        super().fit(X)
+        lmrks_to_cover = super().landmarks(X)
         while lmrks_to_cover:
             _, x = lmrks_to_cover.popitem()
-            neigh_ids = _grid_overlap.get_cell(x)
+            neigh_ids = self.search(x)
             if neigh_ids:
                 yield neigh_ids
