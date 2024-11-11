@@ -467,6 +467,20 @@ class StandardCover(_GridOverlap, Cover):
         )
 
     def apply(self, X):
+        """
+        Covers the dataset using landmarks.
+
+        This function yields all the hypercubes intersecting the dataset.
+
+        This function returns a generator that yields each element of the
+        open cover as a list of ids. The ids are the indices of the points
+        in the original dataset.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator of lists of ids.
+        :rtype: generator of lists of ints
+        """
         super().fit(X)
         lmrks_to_cover = super().landmarks(X)
         while lmrks_to_cover:
