@@ -385,7 +385,6 @@ class CubicalCover(_GridOverlap, Proximity):
         :return: The object itself.
         :rtype: self
         """
-        #X = np.asarray(X).reshape(len(X), -1).astype(float)
         return super().fit(X)
 
     def search(self, x):
@@ -424,7 +423,6 @@ class StandardCover(_GridOverlap, Cover):
         )
 
     def apply(self, X):
-        #X = np.asarray(X).reshape(len(X), -1).astype(float)
         super().fit(X)
         lmrks_to_cover = super().landmarks(X)
         while lmrks_to_cover:
