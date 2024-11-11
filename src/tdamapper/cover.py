@@ -30,10 +30,6 @@ def _snd(x):
     return x[1]
 
 
-def _rho(x):
-    return np.floor(x) + 0.5
-
-
 class BallCover(Proximity):
     """
     Cover algorithm based on `ball proximity function`, covering data with
@@ -275,7 +271,7 @@ class _GridOverlap:
         return self
 
     def search(self, x):
-        center = self._gamma_n_inv(_rho(self._gamma_n(x)))
+        center = self._phi(x)
         return self.__cover.search(center)
 
     def landmarks(self, X):
@@ -288,12 +284,15 @@ class _GridOverlap:
 
     def _get_center(self, x):
         cell = self.__n_intervals * (x - self.__min) // self.__delta
-        center = self._gamma_n_inv(_rho(self._gamma_n(x)))
+        center = self._phi(x)
         return tuple(cell), center
 
     def _get_overlap_frac(self, dim, overlap_vol_frac):
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
+
+    def _phi(self, x):
+        return self._gamma_n_inv(0.5 + np.floor(self._gamma_n(x)))
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__min) / self.__delta
