@@ -7,7 +7,6 @@ from tdamapper.cover import (
     BallCover,
     KNNCover,
     CubicalCover,
-    StandardCover,
 )
 
 
@@ -57,6 +56,10 @@ class TestCover(unittest.TestCase):
         data = [
             np.array([0.0, 1.0]), np.array([1.1, 0.0]),
             np.array([0.0, 0.0]), np.array([1.1, 1.0])]
-        cover = StandardCover(n_intervals=2, overlap_frac=0.5)
+        cover = CubicalCover(
+            n_intervals=2,
+            overlap_frac=0.5,
+            algorithm='standard',
+        )
         charts = list(cover.apply(data))
         self.assertEqual(4, len(charts))
