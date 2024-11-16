@@ -6,7 +6,7 @@ from tdamapper.core import TrivialCover
 from tdamapper.cover import (
     BallCover,
     KNNCover,
-    CubicalCover
+    CubicalCover,
 )
 
 
@@ -49,5 +49,17 @@ class TestCover(unittest.TestCase):
     def test_params(self):
         cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
         params = cover.get_params(deep=True)
-        #self.assertEqual(2, params['n_intervals'])
-        #self.assertEqual(0.5, params['overlap_frac'])
+        self.assertEqual(2, params['n_intervals'])
+        self.assertEqual(0.5, params['overlap_frac'])
+
+    def test_standard_cover_simple(self):
+        data = [
+            np.array([0.0, 1.0]), np.array([1.1, 0.0]),
+            np.array([0.0, 0.0]), np.array([1.1, 1.0])]
+        cover = CubicalCover(
+            n_intervals=2,
+            overlap_frac=0.5,
+            algorithm='standard',
+        )
+        charts = list(cover.apply(data))
+        self.assertEqual(4, len(charts))

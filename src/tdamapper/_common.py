@@ -21,12 +21,12 @@ def warn_user(msg):
 
 class EstimatorMixin:
 
-    def _is_sparse(self, X):
+    def __is_sparse(self, X):
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, 'toarray')
 
     def _validate_X_y(self, X, y):
-        if self._is_sparse(X):
+        if self.__is_sparse(X):
             raise ValueError('Sparse data not supported.')
 
         X = np.asarray(X)
@@ -58,11 +58,8 @@ class EstimatorMixin:
 
         return X, y
 
-    def fit(self, X, y=None):
-        X, y = self._validate_X_y(X, y)
-        res = super().fit(X, y)
+    def _set_n_features_in(self, X):
         self.n_features_in_ = X.shape[1]
-        return res
 
 
 class ParamsMixin:
@@ -71,7 +68,7 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def _is_param_internal(self, k):
+    def __is_param_internal(self, k):
         return k.startswith('_') or k.endswith('_')
 
     def get_params(self, deep=True):
@@ -82,14 +79,14 @@ class ParamsMixin:
         :type deep: bool, optional.
         """
         params = self.__dict__.items()
-        return {k: v for k, v in params if not self._is_param_internal(k)}
+        return {k: v for k, v in params if not self.__is_param_internal(k)}
 
     def set_params(self, **params):
         """
         Set public parameters. Only updates attributes that already exist.
         """
         for k, v in params.items():
-            if hasattr(self, k) and not self._is_param_internal(k):
+            if hasattr(self, k) and not self.__is_param_internal(k):
                 setattr(self, k, v)
         return self
 

@@ -38,34 +38,7 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
         super().__init__(clustering, verbose)
 
 
-class _MapperClustering:
-
-    def __init__(self, cover=None, clustering=None, n_jobs=1):
-        self.cover = cover
-        self.clustering = clustering
-        self.n_jobs = n_jobs
-
-    def fit(self, X, y=None):
-        cover = TrivialCover() if self.cover is None \
-            else self.cover
-        cover = clone(cover)
-        clustering = TrivialClustering() if self.clustering is None \
-            else self.clustering
-        clustering = clone(clustering)
-        n_jobs = self.n_jobs
-        y = X if y is None else y
-        itm_lbls = mapper_connected_components(
-            X,
-            y,
-            cover,
-            clustering,
-            n_jobs=n_jobs,
-        )
-        self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
-        return self
-
-
-class MapperClustering(EstimatorMixin, _MapperClustering, ParamsMixin):
+class MapperClustering(EstimatorMixin, ParamsMixin):
     """
     A clustering algorithm based on the Mapper graph.
 
@@ -92,4 +65,27 @@ class MapperClustering(EstimatorMixin, _MapperClustering, ParamsMixin):
     """
 
     def __init__(self, cover=None, clustering=None, n_jobs=1):
-        super().__init__(cover=cover, clustering=clustering, n_jobs=n_jobs)
+        self.cover = cover
+        self.clustering = clustering
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y=None):
+        X, y = self._validate_X_y(X, y)
+        cover = TrivialCover() if self.cover is None \
+            else self.cover
+        cover = clone(cover)
+        clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
+        clustering = clone(clustering)
+        n_jobs = self.n_jobs
+        y = X if y is None else y
+        itm_lbls = mapper_connected_components(
+            X,
+            y,
+            cover,
+            clustering,
+            n_jobs=n_jobs,
+        )
+        self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
+        self._set_n_features_in(X)
+        return self
