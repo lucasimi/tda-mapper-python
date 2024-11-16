@@ -364,53 +364,7 @@ class TrivialCover(Cover):
         yield list(range(0, len(X)))
 
 
-class _MapperAlgorithm:
-
-    def __init__(
-        self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
-    ):
-        self.cover = cover
-        self.clustering = clustering
-        self.failsafe = failsafe
-        self.verbose = verbose
-        self.n_jobs = n_jobs
-
-    def fit(self, X, y=None):
-        self.__cover = TrivialCover() if self.cover is None \
-            else self.cover
-        self.__clustering = TrivialClustering() if self.clustering is None \
-            else self.clustering
-        self.__verbose = self.verbose
-        self.__failsafe = self.failsafe
-        if self.__failsafe:
-            self.__clustering = FailSafeClustering(
-                clustering=self.__clustering,
-                verbose=self.__verbose,
-            )
-        self.__cover = clone(self.__cover)
-        self.__clustering = clone(self.__clustering)
-        self.__n_jobs = self.n_jobs
-        y = X if y is None else y
-        self.graph_ = mapper_graph(
-            X,
-            y,
-            self.__cover,
-            self.__clustering,
-            n_jobs=self.__n_jobs,
-        )
-        return self
-
-    def fit_transform(self, X, y):
-        self.fit(X, y)
-        return self.graph_
-
-
-class MapperAlgorithm(EstimatorMixin, _MapperAlgorithm, ParamsMixin):
+class MapperAlgorithm(EstimatorMixin, ParamsMixin):
     """
     A class for creating and analyzing Mapper graphs.
 
@@ -458,13 +412,11 @@ class MapperAlgorithm(EstimatorMixin, _MapperAlgorithm, ParamsMixin):
         verbose=True,
         n_jobs=1,
     ):
-        super().__init__(
-            cover=cover,
-            clustering=clustering,
-            failsafe=failsafe,
-            verbose=verbose,
-            n_jobs=n_jobs,
-        )
+        self.cover = cover
+        self.clustering = clustering
+        self.failsafe = failsafe
+        self.verbose = verbose
+        self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
         """
@@ -479,7 +431,31 @@ class MapperAlgorithm(EstimatorMixin, _MapperAlgorithm, ParamsMixin):
         :type y: array-like of shape (n, k) or list-like of length n
         :return: The object itself.
         """
-        return super().fit(X, y)
+        X, y = self._validate_X_y(X, y)
+        self.__cover = TrivialCover() if self.cover is None \
+            else self.cover
+        self.__clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
+        self.__verbose = self.verbose
+        self.__failsafe = self.failsafe
+        if self.__failsafe:
+            self.__clustering = FailSafeClustering(
+                clustering=self.__clustering,
+                verbose=self.__verbose,
+            )
+        self.__cover = clone(self.__cover)
+        self.__clustering = clone(self.__clustering)
+        self.__n_jobs = self.n_jobs
+        y = X if y is None else y
+        self.graph_ = mapper_graph(
+            X,
+            y,
+            self.__cover,
+            self.__clustering,
+            n_jobs=self.__n_jobs,
+        )
+        self._set_n_features_in(X)
+        return self
 
     def fit_transform(self, X, y):
         """
@@ -495,7 +471,8 @@ class MapperAlgorithm(EstimatorMixin, _MapperAlgorithm, ParamsMixin):
         :return: The Mapper graph.
         :rtype: :class:`networkx.Graph`
         """
-        return super().fit_transform(X, y)
+        self.fit(X, y)
+        return self.graph_
 
 
 class FailSafeClustering(ParamsMixin):
