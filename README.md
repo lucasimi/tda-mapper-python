@@ -11,16 +11,20 @@
 
 # tda-mapper
 
-**tda-mapper** is a simple and efficient Python library implementing the Mapper algorithm for Topological Data Analysis (TDA).
-It enables fast computation of Mapper graphs using *vp-trees* to optimize the construction of open covers for enhanced performance and scalability.
+**tda-mapper** is a simple and efficient Python library implementing the
+Mapper algorithm for Topological Data Analysis (TDA).
+It enables fast computation of Mapper graphs using *vp-trees* to optimize the
+construction of open covers for enhanced performance and scalability.
 
-For further details, please refer to our [preprint](https://doi.org/10.5281/zenodo.10659651).
+For further details, please refer to our
+[preprint](https://doi.org/10.5281/zenodo.10659651).
 
 - **Installation**: `pip install tda-mapper`
 
 - **Documentation**: [Online on Read the Docs](https://tda-mapper.readthedocs.io/en/main/).
 
-- **Interactive App**: [Live Demo on Streamlit Cloud](https://tda-mapper-app.streamlit.app/), or run locally with:
+- **Interactive App**: [Live Demo on Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
+    or run locally with:
 
     ```
     pip install -r app/requirements.txt
@@ -54,7 +58,8 @@ read
 
 ## Quick Start
 
-Here's a minimal example using the **circles dataset** from `scikit-learn` to demonstrate how to use **tda-mapper**:
+Here's a minimal example using the **circles dataset** from `scikit-learn` to
+demonstrate how to use **tda-mapper**:
 
 ```python
 import numpy as np
@@ -85,36 +90,15 @@ fig.show(config={'scrollZoom': True})
 | ![Original Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper Graph](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) |
 
 More examples can be found in the
-[documentation](https://tda-mapper.readthedocs.io/en/main/).
+[documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
 
 ## Citations
 
-- **tda-mapper**: To cite this library, reference the Zenodo [archive](https://doi.org/10.5281/zenodo.10642381), pointing to the specific version of the release used in your work. For example to cite version 0.7.3 you can use:
-
-    ``` bibtex
-    @software{simi_2024_12729251,
-        author       = {Simi, Luca},
-        title        = {tda-mapper},
-        month        = jul,
-        year         = 2024,
-        publisher    = {Zenodo},
-        version      = {v0.7.3},
-        doi          = {10.5281/zenodo.12729251},
-        url          = {https://doi.org/10.5281/zenodo.12729251}
-    }
-    ```
-
-- **Methodology**: To cite our methodological foundation, refer to the [preprint](https://doi.org/10.5281/zenodo.10659651).
-
-    ``` bibtex
-    @misc{simi_2024_11187959,
-        author       = {Simi, Luca},
-        title        = {{A Scalable Approach for Mapper via Vantage Point 
-                        Trees}},
-        month        = may,
-        year         = 2024,
-        publisher    = {Zenodo},
-        doi          = {10.5281/zenodo.11187959},
-        url          = {https://doi.org/10.5281/zenodo.11187959}
-    }
-    ```
+If you use **tda-mapper** in your work, please consider citing both the
+[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
+Zenodo record, and the [preprint](https://doi.org/10.5281/zenodo.10659651),
+which provides a broader methodological overview.
+We recommend citing the specific version of the library used in your research,
+as well as the latest version of the preprint.
+For citation examples, refer to the
+[documentation](https://tda-mapper.readthedocs.io/en/main/citations.html).

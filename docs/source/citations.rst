@@ -1,10 +1,14 @@
 Citations
 =========
 
-- **tda-mapper**: To cite this library, reference the Zenodo
-  `archive <https://doi.org/10.5281/zenodo.10642381>`__, pointing to the
-  specific version of the release used in your work. For example to cite
-  version 0.7.3 you can use:
+If you use **tda-mapper** in your work, please consider citing both the 
+`library <https://doi.org/10.5281/zenodo.10642381>`__,
+archived in a permanent Zenodo record, and the 
+`preprint <https://doi.org/10.5281/zenodo.10659651>`__,
+which provides a broader methodological overview.
+We recommend citing the specific version of the library used in your research, as well as the latest version of the preprint.
+
+- **tda-mapper**: For example to cite version 0.7.3 you can use:
 
   .. code:: bibtex
 
@@ -19,8 +23,7 @@ Citations
          url          = {https://doi.org/10.5281/zenodo.12729251}
      }
 
-- **Methodology**: To cite our methodological foundation, refer to the
-  `preprint <https://doi.org/10.5281/zenodo.10659651>`__.
+- **Methodology**: For the preprint, you can use:
 
   .. code:: bibtex
 

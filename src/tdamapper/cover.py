@@ -534,7 +534,7 @@ class CubicalCover(Cover):
         """
         Train internal parameters.
 
-        This method delegates to the :method:`fit` method of the internal cubical
+        This method delegates to the :func:`fit` method of the internal cubical
         cover used.
 
         :param X: A dataset of n points.
