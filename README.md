@@ -13,10 +13,10 @@
 
 **tda-mapper** is a simple and efficient Python library implementing the
 Mapper algorithm for Topological Data Analysis (TDA).
-It enables fast computation of Mapper graphs using *vp-trees* to optimize the
-construction of open covers for enhanced performance and scalability.
+It enables fast computation of Mapper graphs by using *vp-trees* to optimize
+the construction of open covers, improving both performance and scalability.
 
-For further details, please refer to our
+For further details, please refer to the
 [preprint](https://doi.org/10.5281/zenodo.10659651).
 
 - **Installation**: `pip install tda-mapper`
