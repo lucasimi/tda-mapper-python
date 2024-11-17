@@ -1,5 +1,41 @@
 Quick Start
+===========
+
+
+Installation
+------------
+
+To install the latest version uploaded on PyPI
+
+.. code:: bash
+
+   pip install tda-mapper
+
+
+Development
 -----------
+
+- To install the latest version with dev dependencies
+
+.. code:: bash
+
+   pip install tda-mapper[dev]
+
+- To install from the latest commit on main branch
+
+.. code:: bash
+
+   pip install git+https://github.com/lucasimi/tda-mapper-python
+
+- To install from the latest commit of develop branch
+
+.. code:: bash
+
+   pip install git+https://github.com/lucasimi/tda-mapper-python@develop
+
+
+How To Use
+----------
 
 Here's a minimal example using the **circles dataset** from
 ``scikit-learn`` to demonstrate how to use **tda-mapper**:
@@ -36,6 +72,19 @@ Here's a minimal example using the **circles dataset** from
 
 More examples can be found in the
 `documentation <https://tda-mapper.readthedocs.io/en/main/>`__.
+
+Interactive App
+---------------
+
+You can see a live demo of **tda-mapper** without installing anything on the
+`Live Demo on Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
+or run Locally with:
+
+.. code:: bash
+
+   pip install -r app/requirements.txt
+   streamlit run app/streamlit_app.py
+
 
 .. |Original Dataset| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png
 .. |Mapper Graph| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png

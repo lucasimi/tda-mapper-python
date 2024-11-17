@@ -26,4 +26,12 @@ html_theme = 'sphinx_rtd_theme'
 html_logo = 'logos/tda-mapper-logo-horizontal.png'
 html_theme_options = {
     'sticky_navigation': True,
+    'vcs_pageview_mode': 'blob',
+}
+html_context = {
+    'display_github': True,
+    'github_user': 'lucasimi',
+    'github_repo': 'tda-mapper-python',
+    'github_version': 'main',
+    'conf_py_path': '/docs/source/',
 }

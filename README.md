@@ -17,21 +17,8 @@ It enables fast computation of Mapper graphs by using *vp-trees* to optimize
 the construction of open covers, improving both performance and scalability.
 
 For further details, please refer to the
-[preprint](https://doi.org/10.5281/zenodo.10659651).
-
-- **Installation**: `pip install tda-mapper`
-
-- **Documentation**: [Online on Read the Docs](https://tda-mapper.readthedocs.io/en/main/).
-
-- **Interactive App**: [Live Demo on Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
-    or run locally with:
-
-    ```
-    pip install -r app/requirements.txt
-    streamlit run app/streamlit_app.py
-    ```
-
-## Features
+[preprint](https://doi.org/10.5281/zenodo.10659651) and 
+[online documentation](https://tda-mapper.readthedocs.io/en/main/).
 
 - **Efficient Mapper Computation**: Optimized for higher-dimensional lenses.
 
@@ -56,7 +43,28 @@ read
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Chose lens | Cover image | Run clustering | Build graph |
 
+## Citations
+
+If you use **tda-mapper** in your work, please consider citing both the
+[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
+Zenodo record, and the [preprint](https://doi.org/10.5281/zenodo.10659651),
+which provides a broader methodological overview.
+We recommend citing the specific version of the library used in your research,
+as well as the latest version of the preprint.
+For citation examples, refer to the
+[documentation](https://tda-mapper.readthedocs.io/en/main/citations.html).
+
 ## Quick Start
+
+### Installation
+
+To install the latest version uploaded on PyPI
+
+```bash
+pip install tda-mapper
+```
+
+### How to Use
 
 Here's a minimal example using the **circles dataset** from `scikit-learn` to
 demonstrate how to use **tda-mapper**:
@@ -92,13 +100,13 @@ fig.show(config={'scrollZoom': True})
 More examples can be found in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
 
-## Citations
+## Interactive App
 
-If you use **tda-mapper** in your work, please consider citing both the
-[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
-Zenodo record, and the [preprint](https://doi.org/10.5281/zenodo.10659651),
-which provides a broader methodological overview.
-We recommend citing the specific version of the library used in your research,
-as well as the latest version of the preprint.
-For citation examples, refer to the
-[documentation](https://tda-mapper.readthedocs.io/en/main/citations.html).
+You can see a live demo of **tda-mapper** without installing anything on the
+[Live Demo on Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
+or run Locally with:
+
+```
+pip install -r app/requirements.txt
+streamlit run app/streamlit_app.py
+```
