@@ -102,9 +102,9 @@ More examples can be found in the
 
 ## Interactive App
 
-You can see a live demo of **tda-mapper** without installing anything on the
-[Live Demo on Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
-or run Locally with:
+You can explore a live demo of **tda-mapper** directly on
+[Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
+or run it locally using the following:
 
 ```
 pip install -r app/requirements.txt
