@@ -74,7 +74,6 @@ class TestMapperPlot(unittest.TestCase):
             height=512,
             colors=data,
             output_file='network.html',
-            notebook=False
         )
 
     def test_empty_graph(self):
@@ -82,7 +81,7 @@ class TestMapperPlot(unittest.TestCase):
         mapper_plot = MapperPlot(empty_graph, dim=2)
         mapper_plot.plot_matplotlib(colors=[])
         mapper_plot.plot_plotly(colors=[])
-        mapper_plot.plot_pyvis(colors=[], notebook=False, output_file='tmp.html')
+        mapper_plot.plot_pyvis(colors=[], output_file='tmp.html')
 
     def test_two_connected_clusters_deprecated(self):
         data = [
