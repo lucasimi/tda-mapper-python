@@ -70,7 +70,7 @@ class TestMapperPlot(unittest.TestCase):
             colors=data
         )
         mp_plot3.plot_pyvis(
-            width='100%',
+            width=512,
             height=512,
             colors=data,
             output_file='network.html',
