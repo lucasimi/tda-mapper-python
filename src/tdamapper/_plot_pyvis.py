@@ -11,6 +11,7 @@ import matplotlib.colors as mcolors
 
 import plotly.graph_objects as go
 import plotly.io as pio
+import plotly.colors as pc
 
 from tdamapper.core import (
     aggregate_graph,
@@ -20,6 +21,8 @@ from tdamapper.core import (
 _EDGE_WIDTH = 0.75
 
 _EDGE_COLOR = '#777'
+
+_TICKS_NUM = 10
 
 
 def __fmt(x, max_len=3):
@@ -33,21 +36,34 @@ def _colorbar(height, cmap, cmin, cmax, title):
         x=[None], y=[None],
         mode='markers',
         marker=dict(
+            showscale=True,
+            reversescale=False,
+            line_colorscale=cmap,
             colorscale=cmap,
             cmin=cmin,
             cmax=cmax,
             colorbar=dict(
-                title=title,
+                showticklabels=True,
+                outlinewidth=1,
+                borderwidth=0,
+                orientation='v',
                 thickness=20,
-                len=1.0,
+                thicknessmode='fraction',
+                xanchor='left',
+                titleside='right',
+                tickwidth=1,
+                tickformat='.2g',
+                nticks=_TICKS_NUM,
+                tickmode='auto',
+                title=title,
             ),
         ),
     ))
     colorbar_fig.update_layout(
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
-        margin=dict(l=50, r=50, t=0, b=0),
-        width=200,
+        margin=dict(l=0, r=100, t=0, b=0),
+        width=80,
         height=height,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -57,7 +73,14 @@ def _colorbar(height, cmap, cmin, cmax, title):
 
 def _combine(network, colorbar):
     network_html = network.generate_html()
-    colorbar_html = pio.to_html(colorbar, include_plotlyjs='cdn', full_html=False, config={'displayModeBar': False})
+    colorbar_html = pio.to_html(
+        colorbar,
+        include_plotlyjs='cdn',
+        full_html=False,
+        config={
+            'displayModeBar': False
+        },
+    )
     combined_html = f"""
     <!DOCTYPE html>
     <html>
@@ -70,43 +93,33 @@ def _combine(network, colorbar):
                 display: flex;
             }}
 
-            .container {{
-                flex: 1;
+            .combined {{
                 display: flex;
                 flex-direction: row;
+                margin: 0;
             }}
 
             .network {{
-                flex: 3;
                 display: flex;
-                justify-content: center;
                 align-items: start;
-                background-color: #f0f0f0;
-                height: 100%;
-            }}
-
-            .network-content {{
-                width: 100%;
-                height: 100%;
             }}
 
             .colorbar {{
-                flex: 3;
                 display: flex;
-                justify-content: center;
                 align-items: start;
-                background-color: #f0f0f0;
-                height: 100%;
             }}
 
-            .colorbar-content {{
-                width: 100%;
-                height: 100%;
+            .network .card {{
+                border-width: 0;
+            }}
+
+            .network #mynetwork {{
+                border-width: 0;
             }}
         </style>
     </head>
     <body>
-        <div class="container">
+        <div class="combined">
             <div class="network">
                 {network_html}
             </div>
@@ -118,7 +131,6 @@ def _combine(network, colorbar):
     </html>
     """
     return combined_html
-    #return network_html
 
 
 def plot_pyvis(
@@ -171,6 +183,7 @@ def _compute_net(
     net.toggle_physics(False)
     graph = mapper_plot.graph
     nodes = graph.nodes
+    cmap_colorscale = pc.get_colorscale(cmap)
 
     min_node_size = float('inf')
     max_node_size = -float('inf')
@@ -207,20 +220,9 @@ def _compute_net(
         else:
             node_color = node_colors[node]
             node_color = (node_color - min_node_color) / (max_node_color - min_node_color)
-        node_color = colormap(node_color)
-        return mcolors.to_hex(node_color)
-
-    def _blend_color(source, target):
-        if max_node_color == min_node_color:
-            blend_color = 0.5
-        else:
-            source_color = node_colors[source]
-            source_color = (source_color - min_node_color) / (max_node_color - min_node_color)
-            target_color = node_colors[target]
-            target_color = (target_color - min_node_color) / (max_node_color - min_node_color)
-            blend_color = (source_color + target_color) / 2.0
-        blend_color = colormap(blend_color)
-        return mcolors.to_hex(blend_color)
+        node_color = max(0.0, min(1.0, node_color))
+        node_color_hex = pc.sample_colorscale(cmap_colorscale, node_color)[0]
+        return node_color_hex
 
     for node in nodes:
         node_id = int(node)
@@ -236,13 +238,12 @@ def _compute_net(
             color=node_color,
             title=node_label,
             x=node_pos[0] * width,
-            y=node_pos[1] * height,
+            y=-node_pos[1] * height,
         )
 
     for edge in graph.edges:
         source_id = int(edge[0])
         target_id = int(edge[1])
-        #edge_color = _blend_color(edge[0], edge[1])
         edge_color = _EDGE_COLOR
         edge_width = _EDGE_WIDTH
         edge_width = 1.5
