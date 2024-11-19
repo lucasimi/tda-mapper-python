@@ -201,7 +201,6 @@ class MapperPlot:
 
     def plot_pyvis(
         self,
-        notebook,
         output_file,
         colors,
         agg=np.nanmean,
@@ -213,8 +212,6 @@ class MapperPlot:
         """
         Draw an interactive HTML plot using PyVis.
 
-        :param notebook: Set to true when running inside Jupyter notebooks.
-        :type notebook: bool
         :param output_file: The path where the html file is written.
         :type output_file: str
         :type colors: array-like of shape (n,) or list-like of size n
@@ -242,7 +239,6 @@ class MapperPlot:
         """
         return plot_pyvis(
             self,
-            notebook=notebook,
             output_file=output_file,
             colors=colors,
             agg=agg,

@@ -27,7 +27,7 @@ def __fmt(x, max_len=3):
     return f'{x:{fmt}}'
 
 
-def _colorbar(width, height, cmap, cmin, cmax, title):
+def _colorbar(height, cmap, cmin, cmax, title):
     colorbar_fig = go.Figure()
     colorbar_fig.add_trace(go.Scatter(
         x=[None], y=[None],
@@ -47,7 +47,7 @@ def _colorbar(width, height, cmap, cmin, cmax, title):
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         margin=dict(l=50, r=50, t=0, b=0),
-        #width=width,
+        width=200,
         height=height,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -57,7 +57,7 @@ def _colorbar(width, height, cmap, cmin, cmax, title):
 
 def _combine(network, colorbar):
     network_html = network.generate_html()
-    colorbar_html = pio.to_html(colorbar, include_plotlyjs='cdn', full_html=False)
+    colorbar_html = pio.to_html(colorbar, include_plotlyjs='cdn', full_html=False, config={'displayModeBar': False})
     combined_html = f"""
     <!DOCTYPE html>
     <html>
@@ -65,33 +65,64 @@ def _combine(network, colorbar):
         <title>Network with Colorbar</title>
         <style>
             body {{
+                margin: 0;
+                height: 100vh;
+                display: flex;
+            }}
+
+            .container {{
+                flex: 1;
                 display: flex;
                 flex-direction: row;
-                margin: 0;
-                padding: 0;
-                height: 100vh;
             }}
+
             .network {{
                 flex: 3;
+                display: flex;
+                justify-content: center;
+                align-items: start;
+                background-color: #f0f0f0;
+                height: 100%;
+            }}
+
+            .network-content {{
+                width: 100%;
+                height: 100%;
+            }}
+
+            .colorbar {{
+                flex: 3;
+                display: flex;
+                justify-content: center;
+                align-items: start;
+                background-color: #f0f0f0;
+                height: 100%;
+            }}
+
+            .colorbar-content {{
+                width: 100%;
+                height: 100%;
             }}
         </style>
     </head>
     <body>
-        <div class="network">
-            {network_html}
-        </div>
-        <div class="colorbar">
-            {colorbar_html}
+        <div class="container">
+            <div class="network">
+                {network_html}
+            </div>
+            <div class="colorbar">
+                {colorbar_html}
+            </div>
         </div>
     </body>
     </html>
     """
     return combined_html
+    #return network_html
 
 
 def plot_pyvis(
     mapper_plot,
-    notebook,
     output_file,
     colors,
     agg,
@@ -100,21 +131,28 @@ def plot_pyvis(
     height,
     cmap,
 ):
-    net = _compute_net(
+    net, cmin, cmax = _compute_net(
         mapper_plot=mapper_plot,
         width=width,
         height=height,
         colors=colors,
         agg=agg,
         cmap=cmap,
-        notebook=notebook,
     )
-    net.show(output_file, notebook=notebook)
+    colorbar = _colorbar(
+        height=height,
+        cmap=cmap,
+        cmin=cmin,
+        cmax=cmax,
+        title=title
+    )
+    combined_html = _combine(net, colorbar)
+    with open(output_file, 'w') as file:
+        file.write(combined_html)
 
 
 def _compute_net(
     mapper_plot,
-    notebook,
     colors,
     agg,
     width,
@@ -122,12 +160,12 @@ def _compute_net(
     cmap,
 ):
     net = Network(
-        height=height,
-        width=width,
+        height=f'{height}px',
+        width=f'{width}px',
         directed=False,
-        notebook=notebook,
-        select_menu=True,
-        filter_menu=True,
+        notebook=True,
+        select_menu=False,
+        filter_menu=False,
         neighborhood_highlight=True,
     )
     net.toggle_physics(False)
@@ -210,4 +248,4 @@ def _compute_net(
         edge_width = 1.5
         net.add_edge(source_id, target_id, color=edge_color, width=edge_width)
 
-    return net
+    return net, min_node_color, max_node_color
