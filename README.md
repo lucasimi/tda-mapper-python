@@ -26,7 +26,7 @@ For further details, please refer to the
 
 - **Interactive App**: Interactive tool for quick, in-depth data exploration.
 
-## Background
+### Background
 
 The Mapper algorithm is a well-known technique in the field of topological
 data analysis that allows data to be represented as a graph.
@@ -43,7 +43,7 @@ read
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Chose lens | Cover image | Run clustering | Build graph |
 
-## Citations
+### Citations
 
 If you use **tda-mapper** in your work, please consider citing both the
 [library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
@@ -100,7 +100,7 @@ fig.show(config={'scrollZoom': True})
 More examples can be found in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
 
-## Interactive App
+### Interactive App
 
 You can explore a live demo of **tda-mapper** directly on
 [Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
