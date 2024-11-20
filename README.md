@@ -52,7 +52,7 @@ which provides a broader methodological overview.
 We recommend citing the specific version of the library used in your research,
 as well as the latest version of the preprint.
 For citation examples, refer to the
-[documentation](https://tda-mapper.readthedocs.io/en/main/citations.html).
+[documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
 
 ## Quick Start
 
