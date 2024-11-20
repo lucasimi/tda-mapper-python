@@ -4,7 +4,7 @@ from sklearn.datasets import make_circles
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
-from tdamapper.core import MapperAlgorithm
+from tdamapper.learn import MapperAlgorithm
 from tdamapper.cover import CubicalCover
 from tdamapper.plot import MapperPlot
 

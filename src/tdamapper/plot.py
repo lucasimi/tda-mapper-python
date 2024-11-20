@@ -9,7 +9,7 @@ from tdamapper._plot_matplotlib import plot_matplotlib
 from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper._plot_pyvis import plot_pyvis
 
-from tdamapper._common import warn_deprecated
+from tdamapper._common import deprecated
 
 
 class MapperPlot:
@@ -289,6 +289,10 @@ class MapperLayoutInteractive:
     :type cmap: str, optional
     """
 
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.plot.MapperPlot.'
+    )
     def __init__(
         self,
         graph,
@@ -302,10 +306,6 @@ class MapperLayoutInteractive:
         height=512,
         cmap='jet',
     ):
-        warn_deprecated(
-            MapperLayoutInteractive.__qualname__,
-            MapperPlot.__qualname__,
-        )
         self.__graph = graph
         self.__dim = dim
         self.__iterations = iterations
@@ -450,6 +450,10 @@ class MapperLayoutStatic:
     :type cmap: str, optional
     """
 
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.plot.MapperPlot.'
+    )
     def __init__(
         self,
         graph,
@@ -463,10 +467,6 @@ class MapperLayoutStatic:
         height=512,
         cmap='jet',
     ):
-        warn_deprecated(
-            MapperLayoutStatic.__qualname__,
-            MapperPlot.__qualname__,
-        )
         self.__colors = colors
         self.__agg = agg
         self.__title = title

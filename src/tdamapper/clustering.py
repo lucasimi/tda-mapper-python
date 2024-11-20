@@ -8,7 +8,7 @@ from tdamapper._common import (
     ParamsMixin,
     EstimatorMixin,
     clone,
-    warn_deprecated,
+    deprecated,
 )
 
 
@@ -17,12 +17,13 @@ class TrivialClustering(tdamapper.core.TrivialClustering):
     **DEPRECATED**: This class is deprecated and will be removed in a future
     release. Use :class:`tdamapper.core.TrivialClustering`.
     """
-    def __init__(self):
-        warn_deprecated(
-            TrivialClustering.__qualname__,
-            tdamapper.core.TrivialClustering.__qualname__,
-        )
-        super().__init__()
+
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.core.TrivialClustering.'
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class FailSafeClustering(tdamapper.core.FailSafeClustering):
@@ -30,12 +31,13 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
     **DEPRECATED**: This class is deprecated and will be removed in a future
     release. Use :class:`tdamapper.core.FailSafeClustering`.
     """
-    def __init__(self, clustering=None, verbose=True):
-        warn_deprecated(
-            FailSafeClustering.__qualname__,
-            tdamapper.core.FailSafeClustering.__qualname__,
-        )
-        super().__init__(clustering, verbose)
+
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.core.FailSafeClustering.'
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class _MapperClustering(EstimatorMixin, ParamsMixin):
@@ -73,13 +75,9 @@ class MapperClustering(_MapperClustering):
     release. Use :class:`tdamapper.learn.MapperClustering`.
     """
 
-    def __init__(self, cover=None, clustering=None, n_jobs=1):
-        warn_deprecated(
-            MapperClustering.__qualname__,
-            'tdamapper.learn.MapperClustering',
-        )
-        super().__init__(
-            cover=cover,
-            clustering=clustering,
-            n_jobs=n_jobs,
-        )
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.learn.MapperClustering.'
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
