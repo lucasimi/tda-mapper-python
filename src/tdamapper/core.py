@@ -35,7 +35,7 @@ from joblib import Parallel, delayed
 from tdamapper.utils.unionfind import UnionFind
 from tdamapper._common import (
     clone,
-    warn_deprecated,
+    deprecated,
     ParamsMixin,
     EstimatorMixin,
 )
@@ -424,25 +424,9 @@ class MapperAlgorithm(_MapperAlgorithm):
     release. Use :class:`tdamapper.learn.MapperAlgorithm`.
     """
 
-    def __init__(
-        self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
-    ):
-        warn_deprecated(
-            MapperAlgorithm.__qualname__,
-            'tdamapper.learn.MapperAlgorithm',
-        )
-        super().__init__(
-            cover=cover,
-            clustering=clustering,
-            failsafe=failsafe,
-            verbose=verbose,
-            n_jobs=n_jobs,
-        )
+    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.learn.MapperAlgorithm.')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class FailSafeClustering(ParamsMixin):

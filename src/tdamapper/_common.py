@@ -6,13 +6,20 @@ import warnings
 import numpy as np
 
 
-def warn_deprecated(deprecated, substitute):
-    msg = f'{deprecated} is deprecated and will be removed in a future version. Use {substitute} instead.'
-    warnings.warn(
-        msg,
-        DeprecationWarning,
-        stacklevel=2
-    )
+warnings.filterwarnings(
+    'default',
+    category=DeprecationWarning,
+    module=r'^tdamapper\.'
+)
+
+
+def deprecated(msg):
+    def deprecated_func(func):
+        def wrapper(*args, **kwargs):
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            return func(*args, **kwargs)
+        return wrapper
+    return deprecated_func
 
 
 def warn_user(msg):
