@@ -424,7 +424,10 @@ class MapperAlgorithm(_MapperAlgorithm):
     release. Use :class:`tdamapper.learn.MapperAlgorithm`.
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.learn.MapperAlgorithm.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.learn.MapperAlgorithm.'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

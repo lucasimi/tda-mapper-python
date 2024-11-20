@@ -18,7 +18,10 @@ class TrivialClustering(tdamapper.core.TrivialClustering):
     release. Use :class:`tdamapper.core.TrivialClustering`.
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.core.TrivialClustering.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.core.TrivialClustering.'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -29,7 +32,10 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
     release. Use :class:`tdamapper.core.FailSafeClustering`.
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.core.FailSafeClustering.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.core.FailSafeClustering.'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -69,6 +75,9 @@ class MapperClustering(_MapperClustering):
     release. Use :class:`tdamapper.learn.MapperClustering`.
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.learn.MapperClustering.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.learn.MapperClustering.'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

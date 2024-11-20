@@ -289,7 +289,10 @@ class MapperLayoutInteractive:
     :type cmap: str, optional
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.plot.MapperPlot.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.plot.MapperPlot.'
+    )
     def __init__(
         self,
         graph,
@@ -447,7 +450,10 @@ class MapperLayoutStatic:
     :type cmap: str, optional
     """
 
-    @deprecated('This class is deprecated and will be removed in a future release. Use tdamapper.plot.MapperPlot.')
+    @deprecated(
+        'This class is deprecated and will be removed in a future release. '
+        'Use tdamapper.plot.MapperPlot.'
+    )
     def __init__(
         self,
         graph,
