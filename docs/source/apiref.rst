@@ -17,6 +17,14 @@ tdamapper.cover
    :undoc-members:
    :show-inheritance:
 
+tdamapper.learn
+---------------
+
+.. automodule:: tdamapper.learn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tdamapper.clustering
 --------------------
 

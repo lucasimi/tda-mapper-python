@@ -38,31 +38,7 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
         super().__init__(clustering, verbose)
 
 
-class MapperClustering(EstimatorMixin, ParamsMixin):
-    """
-    A clustering algorithm based on the Mapper graph.
-
-    The Mapper algorithm constructs a graph from a dataset, where each node
-    represents a cluster of points and each edge represents an overlap between
-    clusters. Each point in the dataset belongs to one or more nodes in the
-    graph. These nodes are therefore all connected and share the same connected
-    component in the Mapper graph. This class builds clusters of points
-    according to their connected component in the Mapper graph.
-
-    This class does not compute the Mapper graph but calls the function
-    :func:`tdamapper.core.mapper_connected_components`, which is faster.
-
-    :param cover: A cover algorithm.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
-    :param clustering: The clustering algorithm to apply to each subset of the
-        dataset.
-    :type clustering: A class compatible with scikit-learn estimators from
-        :mod:`sklearn.cluster`
-    :param n_jobs: The maximum number of parallel clustering jobs. This
-        parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
-    :type n_jobs: int
-    """
+class _MapperClustering(EstimatorMixin, ParamsMixin):
 
     def __init__(self, cover=None, clustering=None, n_jobs=1):
         self.cover = cover
@@ -89,3 +65,21 @@ class MapperClustering(EstimatorMixin, ParamsMixin):
         self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
         self._set_n_features_in(X)
         return self
+
+
+class MapperClustering(_MapperClustering):
+    """
+    **DEPRECATED**: This class is deprecated and will be removed in a future
+    release. Use :class:`tdamapper.learn.MapperClustering`.
+    """
+
+    def __init__(self, cover=None, clustering=None, n_jobs=1):
+        warn_deprecated(
+            MapperClustering.__qualname__,
+            'tdamapper.learn.MapperClustering',
+        )
+        super().__init__(
+            cover=cover,
+            clustering=clustering,
+            n_jobs=n_jobs,
+        )
