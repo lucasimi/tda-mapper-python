@@ -1,18 +1,18 @@
-.. |PyPI version| image:: https://badge.fury.io/py/tda-mapper.svg
-   :target: https://badge.fury.io/py/tda-mapper
-.. |downloads| image:: https://img.shields.io/pypi/dm/tda-mapper
-   :target: https://pypi.python.org/pypi/tda-mapper/
-.. |test| image:: https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg
+.. |PyPI version| image:: https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver
+   :target: https://pypi.python.org/pypi/tda-mapper
+.. |downloads| image:: https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver
+   :target: https://pypi.python.org/pypi/tda-mapper
+.. |test| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/test.yml?logo=github&logoColor=silver&branch=main&label=test
    :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml
-.. |publish| image:: https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml/badge.svg
+.. |publish| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/publish.yml?logo=github&logoColor=silver&label=publish
    :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml
-.. |docs| image:: https://readthedocs.org/projects/tda-mapper/badge/?version=main
-   :target: https://tda-mapper.readthedocs.io/en/main/?badge=main
-.. |codecov| image:: https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R
+.. |docs| image:: https://img.shields.io/readthedocs/tda-mapper/main?logo=readthedocs&logoColor=silver
+   :target: https://tda-mapper.readthedocs.io/en/main/
+.. |codecov| image:: https://img.shields.io/codecov/c/github/lucasimi/tda-mapper-python?logo=codecov&logoColor=silver
    :target: https://codecov.io/github/lucasimi/tda-mapper-python
-.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg
+.. |DOI| image:: https://img.shields.io/badge/DOI-10.5281/zenodo.10642381-blue?logo=doi&logoColor=silver
    :target: https://doi.org/10.5281/zenodo.10642381
-.. |Streamlit App| image:: https://static.streamlit.io/badges/streamlit_badge_black_white.svg
+.. |Streamlit App| image:: https://img.shields.io/badge/Streamlit-App-blue?logo=streamlit&logoColor=silver
    :target: https://tda-mapper-app.streamlit.app/
 .. |Step 1| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png
 .. |Step 2| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png
@@ -80,35 +80,34 @@ archived in a permanent Zenodo record, and the
 which provides a broader methodological overview.
 We recommend citing the specific version of the library used in your research, as well as the latest version of the preprint.
 
-- **tda-mapper**: For example to cite version 0.7.3 you can use:
+- **tda-mapper**: For example to cite version 0.8.0 you can use:
 
   .. code:: bibtex
 
-     @software{simi_2024_12729251,
+      @software{simi_2024_14194667,
          author       = {Simi, Luca},
          title        = {tda-mapper},
-         month        = jul,
+         month        = nov,
          year         = 2024,
          publisher    = {Zenodo},
-         version      = {v0.7.3},
-         doi          = {10.5281/zenodo.12729251},
-         url          = {https://doi.org/10.5281/zenodo.12729251}
-     }
+         version      = {v0.8.0},
+         doi          = {10.5281/zenodo.14194667},
+         url          = {https://doi.org/10.5281/zenodo.14194667}
+      }
 
 - **Methodology**: For the preprint, you can use:
 
   .. code:: bibtex
 
-     @misc{simi_2024_11187959,
+      @misc{simi_2024_11187959,
          author       = {Simi, Luca},
-         title        = {{A Scalable Approach for Mapper via Vantage Point 
-                         Trees}},
+         title        = {{A Scalable Approach for Mapper via Vantage Point Trees}},
          month        = may,
          year         = 2024,
          publisher    = {Zenodo},
          doi          = {10.5281/zenodo.11187959},
          url          = {https://doi.org/10.5281/zenodo.11187959}
-     }
+      }
 
 
 .. toctree::

@@ -1,13 +1,13 @@
 ![Logo](https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png)
 
-[![PyPI version](https://badge.fury.io/py/tda-mapper.svg)](https://badge.fury.io/py/tda-mapper)
-[![downloads](https://img.shields.io/pypi/dm/tda-mapper)](https://pypi.python.org/pypi/tda-mapper/)
-[![test](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
-[![publish](https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml/badge.svg)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml)
-[![docs](https://readthedocs.org/projects/tda-mapper/badge/?version=main)](https://tda-mapper.readthedocs.io/en/main/?badge=main)
-[![codecov](https://codecov.io/github/lucasimi/tda-mapper-python/graph/badge.svg?token=FWSD8JUG6R)](https://codecov.io/github/lucasimi/tda-mapper-python)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10642381.svg)](https://doi.org/10.5281/zenodo.10642381)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tda-mapper-app.streamlit.app/)
+[![PyPI version](https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
+[![downloads](https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
+[![test](https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/test.yml?logo=github&logoColor=silver&branch=main&label=test)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
+[![publish](https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/publish.yml?logo=github&logoColor=silver&label=publish)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml)
+[![docs](https://img.shields.io/readthedocs/tda-mapper/main?logo=readthedocs&logoColor=silver)](https://tda-mapper.readthedocs.io/en/main/)
+[![codecov](https://img.shields.io/codecov/c/github/lucasimi/tda-mapper-python?logo=codecov&logoColor=silver)](https://codecov.io/github/lucasimi/tda-mapper-python)
+[![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.10642381-blue?logo=doi&logoColor=silver)](https://doi.org/10.5281/zenodo.10642381)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-blue?logo=streamlit&logoColor=silver)](https://tda-mapper-app.streamlit.app/)
 
 # tda-mapper
 
