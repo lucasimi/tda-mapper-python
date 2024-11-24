@@ -87,14 +87,16 @@ class MaxHeap:
     def _fix_down(self, i):
         local_max = self._get_local_max(i)
         if i < local_max:
-            self.__heap[i], self.__heap[local_max] = self.__heap[local_max], self.__heap[i]
+            self.__heap[i], self.__heap[local_max] = \
+                self.__heap[local_max], self.__heap[i]
             return local_max
         return i
 
     def _fix_up(self, i):
         parent = _parent(i)
         if self.__heap[parent] < self.__heap[i]:
-            self.__heap[i], self.__heap[parent] = self.__heap[parent], self.__heap[i]
+            self.__heap[i], self.__heap[parent] = \
+                self.__heap[parent], self.__heap[i]
             return parent
         return i
 

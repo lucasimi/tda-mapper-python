@@ -53,7 +53,8 @@ def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
     max_size = max(attr_size.values(), default=1.0)
     colors_agg = aggregate_graph(colors, mapper_plot.graph, agg)
     marker_color = [colors_agg[n] for n in mapper_plot.graph.nodes()]
-    marker_size = [200.0 * math.sqrt(attr_size[n] / max_size) for n in mapper_plot.graph.nodes()]
+    marker_size = [200.0 * math.sqrt(attr_size[n] / max_size) for n in
+                   mapper_plot.graph.nodes()]
     verts = ax.scatter(
         x=nodes_arr[0],
         y=nodes_arr[1],
@@ -86,7 +87,8 @@ def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
 
 
 def _plot_edges(mapper_plot, ax):
-    segments = [(mapper_plot.positions[e[0]], mapper_plot.positions[e[1]]) for e in mapper_plot.graph.edges()]
+    segments = [(mapper_plot.positions[e[0]], mapper_plot.positions[e[1]]) for
+                e in mapper_plot.graph.edges()]
     lines = LineCollection(
         segments,
         color=_EDGE_COLOR,

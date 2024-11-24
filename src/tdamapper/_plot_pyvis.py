@@ -6,9 +6,6 @@ import math
 
 from pyvis.network import Network
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.colors as pc
@@ -195,7 +192,6 @@ def _compute_net(
             min_node_size = node_size
 
     node_colors = aggregate_graph(colors, graph, agg)
-    colormap = plt.get_cmap(cmap)
 
     min_node_color = float('inf')
     max_node_color = -float('inf')
@@ -205,6 +201,7 @@ def _compute_net(
             max_node_color = node_color
         if node_color < min_node_color:
             min_node_color = node_color
+    node_color_range = max_node_color - min_node_color
 
     def _size(node):
         if max_node_size == min_node_size:
@@ -219,7 +216,7 @@ def _compute_net(
             node_color = 0.5
         else:
             node_color = node_colors[node]
-            node_color = (node_color - min_node_color) / (max_node_color - min_node_color)
+            node_color = (node_color - min_node_color) / node_color_range
         node_color = max(0.0, min(1.0, node_color))
         node_color_hex = pc.sample_colorscale(cmap_colorscale, node_color)[0]
         return node_color_hex

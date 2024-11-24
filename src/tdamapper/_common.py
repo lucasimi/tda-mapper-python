@@ -40,11 +40,17 @@ class EstimatorMixin:
         y = np.asarray(y)
 
         if X.size == 0:
-            msg = f'0 feature(s) (shape={X.shape}) while a minimum of 1 is required.'
+            msg = (
+                f'0 feature(s) (shape={X.shape}) while a minimum of 1 is '
+                'required.'
+            )
             raise ValueError(msg)
 
         if y.size == 0:
-            msg = f'0 feature(s) (shape={y.shape}) while a minimum of 1 is required.'
+            msg = (
+                f'0 feature(s) (shape={y.shape}) while a minimum of 1 is '
+                'required.'
+            )
             raise ValueError(msg)
 
         if X.ndim == 1:

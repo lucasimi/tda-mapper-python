@@ -304,7 +304,10 @@ class ProximityCubicalCover(Proximity):
             self.__overlap_frac = self.overlap_frac
         self.__n_intervals = self.n_intervals
         if (self.__overlap_frac <= 0.0) or (self.__overlap_frac > 0.5):
-            warn_user('The parameter overlap_frac is expected within range (0.0, 0.5]')
+            warn_user(
+                'The parameter overlap_frac is expected within range '
+                '(0.0, 0.5]'
+            )
         self.__min, self.__max, self.__delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
         self.__cover = BallCover(
@@ -528,7 +531,10 @@ class CubicalCover(Cover):
                 pivoting=pivoting,
             )
         else:
-            raise ValueError("The only possible values for algorithm are 'standard' and 'proximity'.")
+            raise ValueError(
+                "The only possible values for algorithm are 'standard' and "
+                "'proximity'."
+            )
 
     def fit(self, X):
         """
