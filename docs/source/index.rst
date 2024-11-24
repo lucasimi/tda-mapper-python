@@ -104,14 +104,14 @@ We recommend citing the specific version of the library used in your research, a
 
   .. code:: bibtex
 
-      @misc{simi_2024_11187959,
+      @misc{simi_2024_14212962,
          author       = {Simi, Luca},
-         title        = {{A Scalable Approach for Mapper via Vantage Point Trees}},
-         month        = may,
+         title        = {{A Scalable Approach for Mapper via Efficient Spatial Search}},
+         month        = nov,
          year         = 2024,
          publisher    = {Zenodo},
-         doi          = {10.5281/zenodo.11187959},
-         url          = {https://doi.org/10.5281/zenodo.11187959}
+         doi          = {10.5281/zenodo.14212962},
+         url          = {https://doi.org/10.5281/zenodo.14212962}
       }
 
 
