@@ -7,8 +7,8 @@ name = "tda-mapper"
 version = "0.8.0"
 description = "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis"
 readme = "README.md"
-authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
-maintainers = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
+authors = [{ name = "Luca Simi", email = "lucasimi90 [at] gmail [dot] com" }]
+maintainers = [{ name = "Luca Simi", email = "lucasimi90 [at] gmail [dot] com" }]
 license = { file = "LICENSE" } 
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
