@@ -76,9 +76,10 @@ More examples can be found in the
 Interactive App
 ---------------
 
-You can explore a live demo of **tda-mapper** directly on
+Use our Streamlit app to visualize and explore your data without writing code.
+You can run a live demo directly on
 `Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
-or run it locally using the following:
+or locally on your machine using the following:
 
 .. code:: bash
 

@@ -1,5 +1,6 @@
 ![Logo](https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png)
 
+[![Source Code](https://img.shields.io/badge/lucasimi-tda--mapper--python-blue?logo=github&logoColor=silver)](https://github.com/lucasimi/tda-mapper-python)
 [![PyPI version](https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
 [![downloads](https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
 [![test](https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/test.yml?logo=github&logoColor=silver&branch=main&label=test)](https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml)
@@ -11,37 +12,40 @@
 
 # tda-mapper
 
-**tda-mapper** is a simple and efficient Python library implementing the
-Mapper algorithm for Topological Data Analysis (TDA).
-It enables fast computation of Mapper graphs by using *vp-trees* to optimize
-the construction of open covers, improving both performance and scalability.
+**tda-mapper** is a Python library based on the Mapper algorithm, a key tool in
+Topological Data Analysis (TDA). Designed for efficient computations and backed
+by advanced spatial search techniques, it scales seamlessly to high dimensional
+data, making it suitable for applications in machine learning, data mining, and
+exploratory data analysis.
 
-For further details, please refer to the
-[preprint](https://doi.org/10.5281/zenodo.10659651) and 
-[online documentation](https://tda-mapper.readthedocs.io/en/main/).
+Further details in the
+[documentation](https://tda-mapper.readthedocs.io/en/main/)
+and in the
+[preprint](https://doi.org/10.5281/zenodo.10659651).
 
-- **Efficient Mapper Computation**: Optimized for higher-dimensional lenses.
+### Main Features
 
-- **Interactive Visualizations**: Multiple plotting backends for flexibility.
+- **Fast Mapper graph construction**: Accelerates computations with efficient spatial search, enabling analysis of large, high-dimensional datasets.
 
-- **Interactive App**: Interactive tool for quick, in-depth data exploration.
+- **Scikit-learn compatibility**: Easily integrate Mapper as a part of your machine learning workflows.
+
+- **Flexible visualization options**: Visualize Mapper graphs with multiple supported backends, tailored to your needs.
+
+- **Interactive exploration**: Explore data interactively through a user-friendly app.
 
 ### Background
 
-The Mapper algorithm is a well-known technique in the field of topological
-data analysis that allows data to be represented as a graph.
-Mapper is used in various fields such as machine learning, data mining, and
-social sciences, due to its ability to preserve topological features of the
-underlying space, providing a visual representation that facilitates
-exploration and interpretation. For an in-depth coverage of Mapper you can
-read
+The Mapper algorithm transforms complex datasets into graph representations
+that highlight clusters, transitions, and topological features. These insights
+reveal hidden patterns in data, applicable across fields like social sciences,
+biology, and machine learning. For an in-depth coverage of Mapper, including
+its mathematical foundations and applications, read the 
 [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
-
 
 | Step 1 | Step 2 | Step 3 | Step 4 |
 | ------ | ------ | ------ | ------ |
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
-| Chose lens | Cover image | Run clustering | Build graph |
+| Choose lens | Cover image | Run clustering | Build graph |
 
 ### Citations
 
@@ -53,6 +57,7 @@ We recommend citing the specific version of the library used in your research,
 as well as the latest version of the preprint.
 For citation examples, refer to the
 [documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
+
 
 ## Quick Start
 
@@ -102,9 +107,10 @@ More examples can be found in the
 
 ### Interactive App
 
-You can explore a live demo of **tda-mapper** directly on
+Use our Streamlit app to visualize and explore your data without writing code.
+You can run a live demo directly on
 [Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
-or run it locally using the following:
+or locally on your machine using the following:
 
 ```
 pip install -r app/requirements.txt
