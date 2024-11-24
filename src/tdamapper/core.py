@@ -463,7 +463,9 @@ class FailSafeClustering(ParamsMixin):
             self.labels_ = self.__clustering.labels_
         except ValueError as err:
             if self.__verbose:
-                _logger.warning('Unable to perform clustering on local chart: %s', err)
+                _logger.warning(
+                    'Unable to perform clustering on local chart: %s', err
+                )
             self.labels_ = [0 for _ in X]
         return self
 

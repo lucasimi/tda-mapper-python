@@ -1,3 +1,5 @@
+.. |Source Code| image:: https://img.shields.io/badge/lucasimi-tda--mapper--python-blue?logo=github&logoColor=silver
+   :target: https://github.com/lucasimi/tda-mapper-python
 .. |PyPI version| image:: https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver
    :target: https://pypi.python.org/pypi/tda-mapper
 .. |downloads| image:: https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver
@@ -23,52 +25,55 @@
    https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png
    :alt: Logo
 
-|PyPI version| |downloads| |test| |publish| |docs| |codecov| |DOI|
+|Source Code| |PyPI version| |downloads| |test| |publish| |docs| |codecov| |DOI|
 |Streamlit App|
 
 tda-mapper
 ==========
 
-**tda-mapper** is a simple and efficient Python library implementing the
-Mapper algorithm for Topological Data Analysis (TDA).
-It enables fast computation of Mapper graphs by using *vp-trees* to optimize
-the construction of open covers, improving both performance and scalability.
+**tda-mapper** is a Python library based on the Mapper algorithm, a key tool in
+Topological Data Analysis (TDA). Designed for efficient computations and backed
+by advanced spatial search techniques, it scales seamlessly to high dimensional
+data, making it suitable for applications in machine learning, data mining, and
+exploratory data analysis.
 
-For further details, please refer to the
-`preprint <https://doi.org/10.5281/zenodo.10659651>`__,
-and 
-`online documentation <https://tda-mapper.readthedocs.io/en/main/>`__.
+Further details in the
+`documentation <https://tda-mapper.readthedocs.io/en/main/>`__
+and in the
+`preprint <https://doi.org/10.5281/zenodo.10659651>`__.
 
-- **Efficient Mapper Computation**: Optimized for higher-dimensional
-  lenses.
+Main features
+-------------
 
-- **Interactive Visualizations**: Multiple plotting backends for
-  flexibility.
+- **Fast Mapper graph construction**: Accelerates computations with efficient
+  spatial search, enabling analysis of large, high-dimensional datasets.
 
-- **Interactive App**: Interactive tool for quick, in-depth data
-  exploration.
+- **Scikit-learn compatibility**: Easily integrate Mapper as a part of your
+  machine learning workflows.
 
+- **Flexible visualization options**: Visualize Mapper graphs with multiple
+  supported backends, tailored to your needs.
+
+- **Interactive exploration**: Explore data interactively through a
+  user-friendly app.
 
 Background
 ----------
 
-The Mapper algorithm is a well-known technique in the field of
-topological data analysis that allows data to be represented as a graph.
-Mapper is used in various fields such as machine learning, data mining,
-and social sciences, due to its ability to preserve topological features
-of the underlying space, providing a visual representation that
-facilitates exploration and interpretation. For an in-depth coverage of
-Mapper you can read `the original
-paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
+The Mapper algorithm transforms complex datasets into graph representations
+that highlight clusters, transitions, and topological features. These insights
+reveal hidden patterns in data, applicable across fields like social sciences,
+biology, and machine learning. For an in-depth coverage of Mapper, including
+its mathematical foundations and applications, read the 
+`original paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
 
 +-----------------+-----------------+-----------------+-----------------+
 | Step 1          | Step 2          | Step 3          | Step 4          |
 +=================+=================+=================+=================+
 | |Step 1|        | |Step 2|        | |Step 3|        | |Step 4|        |
 +-----------------+-----------------+-----------------+-----------------+
-| Chose lens      | Cover image     | Run clustering  | Build graph     |
+| Choose lens     | Cover image     | Run clustering  | Build graph     |
 +-----------------+-----------------+-----------------+-----------------+
-
 
 Citations
 ---------

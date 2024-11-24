@@ -15,7 +15,7 @@ metric, it must satisfy the following properties:
     for every x.
 3. Triangle inequality: The distance between two points is less than or equal
     to the sum of the distances from a third point, i.e.:
-    :math:`d(x, z) \leq d(x, y) + d(y, z)` for all points x, y, z.
+    :math:`d(x, z) \\leq d(x, y) + d(y, z)` for all points x, y, z.
 
 Supported distance metrics include:
 - Euclidean: The square root of the sum of squared differences between the
@@ -128,7 +128,7 @@ def cosine():
 
     The cosine distance is derived from the cosine similarity :math:`s` and
     is defined as:
-    :math:`d(x, y) = \sqrt{2 \cdot (1 - s(x, y))}`
+    :math:`d(x, y) = \\sqrt{2 \\cdot (1 - s(x, y))}`
 
     This definition ensures that the cosine distance satisfies the triangle
     inequality on unit vectors.

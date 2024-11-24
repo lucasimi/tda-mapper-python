@@ -127,7 +127,8 @@ class VPTree:
             _, v_point, is_terminal = self.__dataset[start]
             for i in range(start + 1, end):
                 _, point, _ = self.__dataset[i]
-                self.__dataset[i] = self.__distance(v_point, point), point, is_terminal
+                self.__dataset[i] = \
+                    self.__distance(v_point, point), point, is_terminal
 
         def build(self):
             self._build_iter()
@@ -252,7 +253,9 @@ class VPTree:
                         else:
                             fst_start, fst_end = mid, end
                             snd_start, snd_end = start + 1, mid
-                        stack.append((snd_start, snd_end, abs(v_radius - dist), POST))
+                        stack.append(
+                            (snd_start, snd_end, abs(v_radius - dist), POST)
+                        )
                         stack.append((fst_start, fst_end, 0.0, PRE))
                     elif action == POST:
                         if self.__radius > thr:
