@@ -146,5 +146,7 @@ def clone(estimator):
     :return: A new estimator with the same parameters.
     :rtype: A scikit-learn compatible estimator
     """
-    params = estimator.get_params(deep=False)
-    return type(estimator)(**params)
+    params = estimator.get_params(deep=True)
+    cloned = type(estimator)()
+    cloned.set_params(**params)
+    return cloned
