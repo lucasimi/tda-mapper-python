@@ -303,10 +303,14 @@ class ProximityCubicalCover(Proximity):
         else:
             self.__overlap_frac = self.overlap_frac
         self.__n_intervals = self.n_intervals
-        if (self.__overlap_frac <= 0.0) or (self.__overlap_frac > 0.5):
+        if self.__overlap_frac <= 0.0:
+            raise ValueError(
+                'The parameter overlap_frac is expected to be '
+                '> 0.0'
+            )
+        if self.__overlap_frac > 0.5:
             warn_user(
-                'The parameter overlap_frac is expected within range '
-                '(0.0, 0.5]'
+                'The parameter overlap_frac is expected to be <= 0.5'
             )
         self.__min, self.__max, self.__delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
@@ -337,16 +341,20 @@ class ProximityCubicalCover(Proximity):
         return self.__cover.search(center)
 
     def _get_center(self, x):
-        cell = self.__n_intervals * (x - self.__min) // self.__delta
+        offset = self._offset(x)
         center = self._phi(x)
-        return tuple(cell), center
+        return tuple(offset), center
 
     def _get_overlap_frac(self, dim, overlap_vol_frac):
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
+    def _offset(self, x):
+        return np.minimum(self.__n_intervals - 1, np.floor(self._gamma_n(x)))
+
     def _phi(self, x):
-        return self._gamma_n_inv(0.5 + np.floor(self._gamma_n(x)))
+        offset = self._offset(x)
+        return self._gamma_n_inv(0.5 + offset)
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__min) / self.__delta
@@ -512,24 +520,20 @@ class CubicalCover(Cover):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        if algorithm == 'proximity':
-            self.__cubical_cover = ProximityCubicalCover(
-                n_intervals=n_intervals,
-                overlap_frac=overlap_frac,
-                kind=kind,
-                leaf_capacity=leaf_capacity,
-                leaf_radius=leaf_radius,
-                pivoting=pivoting,
-            )
-        elif algorithm == 'standard':
-            self.__cubical_cover = StandardCubicalCover(
-                n_intervals=n_intervals,
-                overlap_frac=overlap_frac,
-                kind=kind,
-                leaf_capacity=leaf_capacity,
-                leaf_radius=leaf_radius,
-                pivoting=pivoting,
-            )
+
+    def __get_cubical_cover(self):
+        params = dict(
+            n_intervals=self.n_intervals,
+            overlap_frac=self.overlap_frac,
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting,
+        )
+        if self.algorithm == 'proximity':
+            return ProximityCubicalCover(**params)
+        elif self.algorithm == 'standard':
+            return StandardCubicalCover(**params)
         else:
             raise ValueError(
                 "The only possible values for algorithm are 'standard' and "
@@ -548,7 +552,9 @@ class CubicalCover(Cover):
         :return: The object itself.
         :rtype: self
         """
-        return self.__cubical_cover.fit(X)
+        self.__cubical_cover = self.__get_cubical_cover()
+        self.__cubical_cover.fit(X)
+        return self
 
     def search(self, x):
         """
@@ -576,4 +582,5 @@ class CubicalCover(Cover):
         :return: A generator of lists of ids.
         :rtype: generator of lists of ints
         """
+        self.__cubical_cover = self.__get_cubical_cover()
         return self.__cubical_cover.apply(X)

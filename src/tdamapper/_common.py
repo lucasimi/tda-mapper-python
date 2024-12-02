@@ -81,8 +81,14 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def __is_param_internal(self, k):
-        return k.startswith('_') or k.endswith('_')
+    def __is_param_public(self, k):
+        return (not k.startswith('_')) and (not k.endswith('_'))
+
+    def __split_param(self, k):
+        k_split = k.split('__')
+        outer = k_split[0]
+        inner = '__'.join(k_split[1:])
+        return outer, inner
 
     def get_params(self, deep=True):
         """
@@ -91,20 +97,47 @@ class ParamsMixin:
         :param deep: A flag for returning also nested parameters.
         :type deep: bool, optional.
         """
-        params = self.__dict__.items()
-        return {k: v for k, v in params if not self.__is_param_internal(k)}
+        params = {}
+        for k, v in self.__dict__.items():
+            if self.__is_param_public(k):
+                params[k] = v
+                if hasattr(v, 'get_params') and deep:
+                    for _k, _v in v.get_params().items():
+                        params[f'{k}__{_k}'] = _v
+        return params
 
     def set_params(self, **params):
         """
         Set public parameters. Only updates attributes that already exist.
         """
+        nested_params = []
         for k, v in params.items():
-            if hasattr(self, k) and not self.__is_param_internal(k):
-                setattr(self, k, v)
+            if self.__is_param_public(k):
+                k_outer, k_inner = self.__split_param(k)
+                if not k_inner:
+                    if hasattr(self, k_outer):
+                        setattr(self, k_outer, v)
+                else:
+                    nested_params.append((k_outer, k_inner, v))
+        for k_outer, k_inner, v in nested_params:
+            if hasattr(self, k_outer):
+                k_attr = getattr(self, k_outer)
+                k_attr.set_params(**{k_inner: v})
         return self
 
+    def __repr__(self):
+        obj_noargs = type(self)()
+        args_repr = []
+        for k, v in self.__dict__.items():
+            v_default = getattr(obj_noargs, k)
+            v_default_repr = repr(v_default)
+            v_repr = repr(v)
+            if self.__is_param_public(k) and not v_repr == v_default_repr:
+                args_repr.append(f'{k}={v_repr}')
+        return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
-def clone(estimator):
+
+def clone(obj):
     """
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
@@ -114,5 +147,7 @@ def clone(estimator):
     :return: A new estimator with the same parameters.
     :rtype: A scikit-learn compatible estimator
     """
-    params = estimator.get_params(deep=True)
-    return type(estimator)(**params)
+    params = obj.get_params(deep=True)
+    obj_noargs = type(obj)()
+    obj_noargs.set_params(**params)
+    return obj_noargs

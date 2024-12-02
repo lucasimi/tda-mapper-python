@@ -10,7 +10,7 @@ from tdamapper.core import (
     mapper_labels,
     TrivialCover,
 )
-from tdamapper.cover import BallCover
+from tdamapper.cover import BallCover, CubicalCover, ProximityCubicalCover, StandardCubicalCover
 from tdamapper.clustering import TrivialClustering
 
 
@@ -80,7 +80,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def test_two_disconnected_clusters(self):
+    def test_ball_two_disconnected_clusters(self):
         data = [np.array([float(i), 0.0]) for i in range(100)]
         data.extend([np.array([float(i), 500.0]) for i in range(100)])
         data = np.array(data)
@@ -98,7 +98,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def test_two_connected_clusters(self):
+    def test_ball_two_connected_clusters(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
@@ -116,7 +116,7 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def test_two_connected_clusters_parallel(self):
+    def test_ball_two_connected_clusters_parallel(self):
         data = [
             np.array([0.0, 1.0]), np.array([1.0, 0.0]),
             np.array([0.0, 0.0]), np.array([1.0, 1.0])]
@@ -136,7 +136,39 @@ class TestMapper(unittest.TestCase):
         ccs2 = mapper_connected_components(data, data, cover, clustering)
         self.assertEqual(len(data), len(ccs2))
 
-    def test_connected_components(self):
+    def test_proximity_cubical_line(self):
+        data = np.array([[float(i)] for i in range(1000)])
+        cover = ProximityCubicalCover(n_intervals=4, overlap_frac=0.5)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(cover, clustering)
+        g = mp.fit_transform(data, data)
+        self.assertEqual(4, len(g.nodes))
+
+    def test_standard_cubical_line(self):
+        data = np.array([[float(i)] for i in range(1000)])
+        cover = StandardCubicalCover(n_intervals=4, overlap_frac=0.5)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(cover, clustering)
+        g = mp.fit_transform(data, data)
+        self.assertEqual(4, len(g.nodes))
+
+    def test_cubical_line(self):
+        data = np.array([[float(i)] for i in range(1000)])
+        cover = CubicalCover(n_intervals=4, overlap_frac=0.5)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(cover, clustering)
+        g = mp.fit_transform(data, data)
+        self.assertEqual(4, len(g.nodes))
+
+    def test_cubical_no_overlap(self):
+        data = np.array([[0.0], [1.0], [2.0]])
+        cover = StandardCubicalCover(n_intervals=2, overlap_frac=0)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(cover, clustering)
+        with self.assertRaises(ValueError):
+            mp.fit_transform(data, data)
+
+    def test_mock_connected_components(self):
         data = [0, 1, 2, 3]
 
         class MockCover:
@@ -156,7 +188,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(cc0, ccs[2])
         self.assertEqual(cc0, ccs[3])
 
-    def test_labels(self):
+    def test_mock_labels(self):
         data = [0, 1, 2, 3]
 
         class MockCover:

@@ -43,7 +43,7 @@ class TestProximity(unittest.TestCase):
         data = list(range(m, M + 1))
         cover = CubicalCover(n_intervals=n, overlap_frac=p)
         cover.fit(data)
-        for x in data:
+        for x in data[:-1]:
             result = cover.search(x)
             i = math.floor((x - m) / (w - delta))
             a_i = m + i * (w - delta) - delta / 2.0
@@ -53,7 +53,9 @@ class TestProximity(unittest.TestCase):
                 self.assertTrue(c in expected)
             for c in expected:
                 self.assertTrue(c in result)
-            #self.assertEqual(set(expected), set(result))
+        x = data[-1]
+        last_result = cover.search(x)
+        self.assertEqual(result, last_result)
 
     def test_cubical_params(self):
         cover = CubicalCover(n_intervals=10, overlap_frac=0.5)
