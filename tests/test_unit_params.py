@@ -18,13 +18,13 @@ class TestParams(unittest.TestCase):
         obj_repr = repr(obj)
         obj_cln = clone(obj)
         cln_repr = repr(obj_cln)
-        self.assertEquals(obj_repr, cln_repr)
+        self.assertEqual(obj_repr, cln_repr)
 
     def __test_repr(self, obj):
         obj_repr = repr(obj)
         _obj = eval(obj_repr)
         _obj_repr = repr(_obj)
-        self.assertEquals(obj_repr, _obj_repr)
+        self.assertEqual(obj_repr, _obj_repr)
 
     def __test_clone_and_repr(self, obj):
         self.__test_clone(obj)
@@ -38,16 +38,16 @@ class TestParams(unittest.TestCase):
             ),
         )
         params = est.get_params(deep=False)
-        self.assertEquals(5, len(params))
+        self.assertEqual(5, len(params))
         params = est.get_params()
-        self.assertEquals(12, len(params))
-        self.assertEquals(3, params['cover__n_intervals'])
-        self.assertEquals(0.3, params['cover__overlap_frac'])
+        self.assertEqual(12, len(params))
+        self.assertEqual(3, params['cover__n_intervals'])
+        self.assertEqual(0.3, params['cover__overlap_frac'])
         est.set_params(cover__n_intervals=2, cover__overlap_frac=0.2)
         params = est.get_params()
-        self.assertEquals(12, len(params))
-        self.assertEquals(2, params['cover__n_intervals'])
-        self.assertEquals(0.2, params['cover__overlap_frac'])
+        self.assertEqual(12, len(params))
+        self.assertEqual(2, params['cover__n_intervals'])
+        self.assertEqual(0.2, params['cover__overlap_frac'])
 
     def test_params_mapper_clustering(self):
         est = MapperClustering(
@@ -57,16 +57,16 @@ class TestParams(unittest.TestCase):
             ),
         )
         params = est.get_params(deep=False)
-        self.assertEquals(3, len(params))
+        self.assertEqual(3, len(params))
         params = est.get_params()
-        self.assertEquals(10, len(params))
-        self.assertEquals(3, params['cover__n_intervals'])
-        self.assertEquals(0.3, params['cover__overlap_frac'])
+        self.assertEqual(10, len(params))
+        self.assertEqual(3, params['cover__n_intervals'])
+        self.assertEqual(0.3, params['cover__overlap_frac'])
         est.set_params(cover__n_intervals=2, cover__overlap_frac=0.2)
         params = est.get_params()
-        self.assertEquals(10, len(params))
-        self.assertEquals(2, params['cover__n_intervals'])
-        self.assertEquals(0.2, params['cover__overlap_frac'])
+        self.assertEqual(10, len(params))
+        self.assertEqual(2, params['cover__n_intervals'])
+        self.assertEqual(0.2, params['cover__overlap_frac'])
 
     def test_clone_and_repr_ball_cover(self):
         self.__test_clone_and_repr(BallCover())
