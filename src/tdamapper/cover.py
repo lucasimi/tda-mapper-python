@@ -303,10 +303,14 @@ class ProximityCubicalCover(Proximity):
         else:
             self.__overlap_frac = self.overlap_frac
         self.__n_intervals = self.n_intervals
-        if (self.__overlap_frac <= 0.0) or (self.__overlap_frac > 0.5):
+        if self.__overlap_frac <= 0.0:
+            raise ValueError(
+                'The parameter overlap_frac is expected to be '
+                '> 0.0'
+            )
+        if self.__overlap_frac > 0.5:
             warn_user(
-                'The parameter overlap_frac is expected within range '
-                '(0.0, 0.5]'
+                'The parameter overlap_frac is expected to be <= 0.5'
             )
         self.__min, self.__max, self.__delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)

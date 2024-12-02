@@ -160,6 +160,14 @@ class TestMapper(unittest.TestCase):
         g = mp.fit_transform(data, data)
         self.assertEqual(4, len(g.nodes))
 
+    def test_cubical_no_overlap(self):
+        data = np.array([[0.0], [1.0], [2.0]])
+        cover = StandardCubicalCover(n_intervals=2, overlap_frac=0)
+        clustering = TrivialClustering()
+        mp = MapperAlgorithm(cover, clustering)
+        with self.assertRaises(ValueError):
+            mp.fit_transform(data, data)
+
     def test_mock_connected_components(self):
         data = [0, 1, 2, 3]
 
