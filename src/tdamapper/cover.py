@@ -303,10 +303,14 @@ class ProximityCubicalCover(Proximity):
         else:
             self.__overlap_frac = self.overlap_frac
         self.__n_intervals = self.n_intervals
-        if (self.__overlap_frac <= 0.0) or (self.__overlap_frac > 0.5):
+        if self.__overlap_frac <= 0.0:
+            raise ValueError(
+                'The parameter overlap_frac is expected to be '
+                '> 0.0'
+            )
+        if self.__overlap_frac > 0.5:
             warn_user(
-                'The parameter overlap_frac is expected within range '
-                '(0.0, 0.5]'
+                'The parameter overlap_frac is expected to be <= 0.5'
             )
         self.__min, self.__max, self.__delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
@@ -337,16 +341,20 @@ class ProximityCubicalCover(Proximity):
         return self.__cover.search(center)
 
     def _get_center(self, x):
-        cell = self.__n_intervals * (x - self.__min) // self.__delta
+        offset = self._offset(x)
         center = self._phi(x)
-        return tuple(cell), center
+        return tuple(offset), center
 
     def _get_overlap_frac(self, dim, overlap_vol_frac):
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
+    def _offset(self, x):
+        return np.minimum(self.__n_intervals - 1, np.floor(self._gamma_n(x)))
+
     def _phi(self, x):
-        return self._gamma_n_inv(0.5 + np.floor(self._gamma_n(x)))
+        offset = self._offset(x)
+        return self._gamma_n_inv(0.5 + offset)
 
     def _gamma_n(self, x):
         return self.__n_intervals * (x - self.__min) / self.__delta
