@@ -126,17 +126,18 @@ class ParamsMixin:
         return self
 
     def __repr__(self):
-        obj = type(self)()
-        rep = f'{self.__class__.__name__}('
+        obj_noargs = type(self)()
+        args_repr = []
         for k, v in self.__dict__.items():
-            obj_v = getattr(obj, k)
-            if self.__is_param_public(k) and not v == obj_v:
-                rep += f'{k}={v}, '
-        rep += ')'
-        return rep
+            v_default = getattr(obj_noargs, k)
+            v_default_repr = repr(v_default)
+            v_repr = repr(v)
+            if self.__is_param_public(k) and not v_repr == v_default_repr:
+                args_repr.append(f'{k}={v_repr}')
+        return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
 
-def clone(estimator):
+def clone(obj):
     """
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
@@ -146,5 +147,7 @@ def clone(estimator):
     :return: A new estimator with the same parameters.
     :rtype: A scikit-learn compatible estimator
     """
-    params = estimator.get_params(deep=True)
-    return type(estimator)(**params)
+    params = obj.get_params(deep=True)
+    obj_noargs = type(obj)()
+    obj_noargs.set_params(**params)
+    return obj_noargs

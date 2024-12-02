@@ -512,24 +512,20 @@ class CubicalCover(Cover):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        if algorithm == 'proximity':
-            self.__cubical_cover = ProximityCubicalCover(
-                n_intervals=n_intervals,
-                overlap_frac=overlap_frac,
-                kind=kind,
-                leaf_capacity=leaf_capacity,
-                leaf_radius=leaf_radius,
-                pivoting=pivoting,
-            )
-        elif algorithm == 'standard':
-            self.__cubical_cover = StandardCubicalCover(
-                n_intervals=n_intervals,
-                overlap_frac=overlap_frac,
-                kind=kind,
-                leaf_capacity=leaf_capacity,
-                leaf_radius=leaf_radius,
-                pivoting=pivoting,
-            )
+
+    def __get_cubical_cover(self):
+        params = dict(
+            n_intervals=self.n_intervals,
+            overlap_frac=self.overlap_frac,
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting,
+        )
+        if self.algorithm == 'proximity':
+            return ProximityCubicalCover(**params)
+        elif self.algorithm == 'standard':
+            return StandardCubicalCover(**params)
         else:
             raise ValueError(
                 "The only possible values for algorithm are 'standard' and "
@@ -548,7 +544,9 @@ class CubicalCover(Cover):
         :return: The object itself.
         :rtype: self
         """
-        return self.__cubical_cover.fit(X)
+        self.__cubical_cover = self.__get_cubical_cover()
+        self.__cubical_cover.fit(X)
+        return self
 
     def search(self, x):
         """
@@ -576,4 +574,5 @@ class CubicalCover(Cover):
         :return: A generator of lists of ids.
         :rtype: generator of lists of ints
         """
+        self.__cubical_cover = self.__get_cubical_cover()
         return self.__cubical_cover.apply(X)
