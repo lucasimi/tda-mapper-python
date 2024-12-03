@@ -1,4 +1,4 @@
-name: publish-test
+name: publish-testpypi
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-test:
-    name: Publish
+  publish:
+    name: Publish [TestPyPI]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

@@ -1,8 +1,8 @@
-name: publish
+name: publish-pypi
 
 on:
   workflow_run:
-    workflows: ["publish-test"]
+    workflows: ["publish-testpypi"]
     types:
       - completed
     status: success
@@ -10,7 +10,7 @@ on:
 
 jobs:
   publish:
-    name: Publish
+    name: Publish [PyPI]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
