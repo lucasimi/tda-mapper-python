@@ -6,7 +6,7 @@ on:
     types:
       - completed
     status: success
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   publish:
