@@ -7,7 +7,7 @@ on:
       - main      
 
 jobs:
-  test-unit:
+  test-unit-job:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
