@@ -35,7 +35,7 @@ class MapperClustering(_MapperClustering):
         :mod:`sklearn.cluster`
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
+        Defaults to -1.
     :type n_jobs: int
     """
 
@@ -43,7 +43,7 @@ class MapperClustering(_MapperClustering):
         self,
         cover=None,
         clustering=None,
-        n_jobs=1,
+        n_jobs=-1,
     ):
         super().__init__(
             cover=cover,
@@ -99,7 +99,7 @@ class MapperAlgorithm(_MapperAlgorithm):
     :type verbose: bool, optional
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
+        Defaults to -1.
     :type n_jobs: int
     """
 
@@ -109,7 +109,7 @@ class MapperAlgorithm(_MapperAlgorithm):
         clustering=None,
         failsafe=True,
         verbose=True,
-        n_jobs=1,
+        n_jobs=-1,
     ):
         super().__init__(
             cover=cover,
