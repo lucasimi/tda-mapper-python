@@ -7,7 +7,7 @@ on:
       - main      
 
 jobs:
-  test:
+  test-bench:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
