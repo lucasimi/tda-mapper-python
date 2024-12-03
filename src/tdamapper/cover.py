@@ -229,7 +229,115 @@ class KNNCover(Proximity):
         return [x for (x, _) in neighs]
 
 
-class ProximityCubicalCover(Proximity):
+class BaseCubicalCover:
+
+    def __init__(
+        self,
+        n_intervals=1,
+        overlap_frac=None,
+        kind='flat',
+        leaf_capacity=1,
+        leaf_radius=None,
+        pivoting=None,
+    ):
+        self.n_intervals = n_intervals
+        self.overlap_frac = overlap_frac
+        self.kind = kind
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
+
+    def _get_center(self, x):
+        offset = self._offset(x)
+        center = self._phi(x)
+        return tuple(offset), center
+
+    def _get_overlap_frac(self, dim, overlap_vol_frac):
+        beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
+        return 1.0 - 1.0 / (2.0 - beta)
+
+    def _offset(self, x):
+        return np.minimum(self._n_intervals - 1, np.floor(self._gamma_n(x)))
+
+    def _phi(self, x):
+        offset = self._offset(x)
+        return self._gamma_n_inv(0.5 + offset)
+
+    def _gamma_n(self, x):
+        return self._n_intervals * (x - self._min) / self._delta
+
+    def _gamma_n_inv(self, x):
+        return self._min + self._delta * x / self._n_intervals
+
+    def _get_bounds(self, X):
+        if (X is None) or len(X) == 0:
+            return
+        _min, _max = X[0], X[0]
+        eps = np.finfo(np.float64).eps
+        _min = np.min(X, axis=0)
+        _max = np.max(X, axis=0)
+        _delta = _max - _min
+        _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
+        return _min, _max, _delta
+
+    def fit(self, X):
+        """
+        Train internal parameters.
+
+        This method builds an internal :class:`tdamapper.cover.BallCover`
+        attribute that allows efficient queries of the dataset.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: The object itself.
+        :rtype: self
+        """
+        X = np.asarray(X).reshape(len(X), -1).astype(float)
+        if self.overlap_frac is None:
+            dim = 1 if X.ndim == 1 else X.shape[1]
+            self._overlap_frac = self._get_overlap_frac(dim, 0.5)
+        else:
+            self._overlap_frac = self.overlap_frac
+        self._n_intervals = self.n_intervals
+        if self._overlap_frac <= 0.0:
+            raise ValueError(
+                'The parameter overlap_frac is expected to be '
+                '> 0.0'
+            )
+        if self._overlap_frac > 0.5:
+            warn_user(
+                'The parameter overlap_frac is expected to be <= 0.5'
+            )
+        self._min, self._max, self._delta = self._get_bounds(X)
+        radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
+        self._cover = BallCover(
+            radius,
+            metric=_Pullback(self._gamma_n, chebyshev()),
+            kind=self.kind,
+            leaf_capacity=self.leaf_capacity,
+            leaf_radius=self.leaf_radius,
+            pivoting=self.pivoting,
+        )
+        self._cover.fit(X)
+        return self
+
+    def search(self, x):
+        """
+        Return a list of neighbors for the query point.
+
+        This method takes a target point as input and returns the hypercube
+        whose center is closest to the target point.
+
+        :param x: A query point for which we want to find neighbors.
+        :type x: Any
+        :return: The indices of the neighbors contained in the dataset.
+        :rtype: list[int]
+        """
+        center = self._phi(x)
+        return self._cover.search(center)
+
+
+class ProximityCubicalCover(BaseCubicalCover, Proximity):
     """
     Cover algorithm based on the `cubical proximity function`, which covers
     data with open hypercubes of uniform size and overlap. The cubical cover is
@@ -277,104 +385,17 @@ class ProximityCubicalCover(Proximity):
         leaf_radius=None,
         pivoting=None,
     ):
-        self.n_intervals = n_intervals
-        self.overlap_frac = overlap_frac
-        self.kind = kind
-        self.leaf_capacity = leaf_capacity
-        self.leaf_radius = leaf_radius
-        self.pivoting = pivoting
-
-    def fit(self, X):
-        """
-        Train internal parameters.
-
-        This method builds an internal :class:`tdamapper.cover.BallCover`
-        attribute that allows efficient queries of the dataset.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: The object itself.
-        :rtype: self
-        """
-        X = np.asarray(X).reshape(len(X), -1).astype(float)
-        if self.overlap_frac is None:
-            dim = 1 if X.ndim == 1 else X.shape[1]
-            self.__overlap_frac = self._get_overlap_frac(dim, 0.5)
-        else:
-            self.__overlap_frac = self.overlap_frac
-        self.__n_intervals = self.n_intervals
-        if self.__overlap_frac <= 0.0:
-            raise ValueError(
-                'The parameter overlap_frac is expected to be '
-                '> 0.0'
-            )
-        if self.__overlap_frac > 0.5:
-            warn_user(
-                'The parameter overlap_frac is expected to be <= 0.5'
-            )
-        self.__min, self.__max, self.__delta = self._get_bounds(X)
-        radius = 1.0 / (2.0 - 2.0 * self.__overlap_frac)
-        self.__cover = BallCover(
-            radius,
-            metric=_Pullback(self._gamma_n, chebyshev()),
-            kind=self.kind,
-            leaf_capacity=self.leaf_capacity,
-            leaf_radius=self.leaf_radius,
-            pivoting=self.pivoting,
+        super().__init__(
+            n_intervals=n_intervals,
+            overlap_frac=overlap_frac,
+            kind=kind,
+            leaf_capacity=leaf_capacity,
+            leaf_radius=leaf_radius,
+            pivoting=pivoting,
         )
-        self.__cover.fit(X)
-        return self
-
-    def search(self, x):
-        """
-        Return a list of neighbors for the query point.
-
-        This method takes a target point as input and returns the hypercube
-        whose center is closest to the target point.
-
-        :param x: A query point for which we want to find neighbors.
-        :type x: Any
-        :return: The indices of the neighbors contained in the dataset.
-        :rtype: list[int]
-        """
-        center = self._phi(x)
-        return self.__cover.search(center)
-
-    def _get_center(self, x):
-        offset = self._offset(x)
-        center = self._phi(x)
-        return tuple(offset), center
-
-    def _get_overlap_frac(self, dim, overlap_vol_frac):
-        beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
-        return 1.0 - 1.0 / (2.0 - beta)
-
-    def _offset(self, x):
-        return np.minimum(self.__n_intervals - 1, np.floor(self._gamma_n(x)))
-
-    def _phi(self, x):
-        offset = self._offset(x)
-        return self._gamma_n_inv(0.5 + offset)
-
-    def _gamma_n(self, x):
-        return self.__n_intervals * (x - self.__min) / self.__delta
-
-    def _gamma_n_inv(self, x):
-        return self.__min + self.__delta * x / self.__n_intervals
-
-    def _get_bounds(self, X):
-        if (X is None) or len(X) == 0:
-            return
-        _min, _max = X[0], X[0]
-        eps = np.finfo(np.float64).eps
-        _min = np.min(X, axis=0)
-        _max = np.max(X, axis=0)
-        _delta = _max - _min
-        _delta[(_delta >= -eps) & (_delta <= eps)] = self.__n_intervals
-        return _min, _max, _delta
 
 
-class StandardCubicalCover(ProximityCubicalCover):
+class StandardCubicalCover(BaseCubicalCover, Cover):
     """
     Cover algorithm based on the standard open cover, which covers data with
     open hypercubes of uniform size and overlap. The standard cover is
@@ -521,7 +542,7 @@ class CubicalCover(Cover):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def __get_cubical_cover(self):
+    def _get_cubical_cover(self):
         params = dict(
             n_intervals=self.n_intervals,
             overlap_frac=self.overlap_frac,
@@ -552,8 +573,8 @@ class CubicalCover(Cover):
         :return: The object itself.
         :rtype: self
         """
-        self.__cubical_cover = self.__get_cubical_cover()
-        self.__cubical_cover.fit(X)
+        self._cubical_cover = self._get_cubical_cover()
+        self._cubical_cover.fit(X)
         return self
 
     def search(self, x):
@@ -568,7 +589,7 @@ class CubicalCover(Cover):
         :return: The indices of the neighbors contained in the dataset.
         :rtype: list[int]
         """
-        return self.__cubical_cover.search(x)
+        return self._cubical_cover.search(x)
 
     def apply(self, X):
         """
@@ -582,5 +603,5 @@ class CubicalCover(Cover):
         :return: A generator of lists of ids.
         :rtype: generator of lists of ints
         """
-        self.__cubical_cover = self.__get_cubical_cover()
-        return self.__cubical_cover.apply(X)
+        self._cubical_cover = self._get_cubical_cover()
+        return self._cubical_cover.apply(X)
