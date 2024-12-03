@@ -1,4 +1,4 @@
-name: bench
+name: test-unit
 
 on: 
   push:
@@ -7,7 +7,7 @@ on:
       - main      
 
 jobs:
-  test-job:
+  test-unit-job:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -19,6 +19,11 @@ jobs:
       - name: Install dependencies
         run: | 
           python -m pip install -e .[dev]
-      - name: Run benchmarks
+      - name: Run tests and code coverage
         run: | 
-          python -m unittest discover -s tests -p 'test_bench_*.py'
+          coverage run --source=src -m unittest discover -s tests -p 'test_unit_*.py'
+          coverage report -m
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

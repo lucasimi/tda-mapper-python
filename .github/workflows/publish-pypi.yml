@@ -1,14 +1,15 @@
-name: publish-test
+name: publish-pypi
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["publish-testpypi"]
+    types:
+      - completed
+    status: success
 
 jobs:
-  publish-test:
-    name: Publish
+  publish:
+    name: Publish [PyPI]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -32,7 +33,5 @@ jobs:
           python -m build
           python -m twine check dist/*
 
-      - name: Publish to TestPyPI 
+      - name: Publish to PyPI 
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/

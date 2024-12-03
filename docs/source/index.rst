@@ -4,10 +4,10 @@
    :target: https://pypi.python.org/pypi/tda-mapper
 .. |downloads| image:: https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver
    :target: https://pypi.python.org/pypi/tda-mapper
-.. |test| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/test.yml?logo=github&logoColor=silver&branch=main&label=test
-   :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/test.yml
-.. |publish| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/publish.yml?logo=github&logoColor=silver&label=publish
-   :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish.yml
+.. |test| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/test-unit.yml?logo=github&logoColor=silver&branch=main&label=test
+   :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/test-unit.yml
+.. |publish| image:: https://img.shields.io/github/actions/workflow/status/lucasimi/tda-mapper-python/publish-pypi.yml?logo=github&logoColor=silver&label=publish
+   :target: https://github.com/lucasimi/tda-mapper-python/actions/workflows/publish-pypi.yml
 .. |docs| image:: https://img.shields.io/readthedocs/tda-mapper/main?logo=readthedocs&logoColor=silver
    :target: https://tda-mapper.readthedocs.io/en/main/
 .. |codecov| image:: https://img.shields.io/codecov/c/github/lucasimi/tda-mapper-python?logo=codecov&logoColor=silver

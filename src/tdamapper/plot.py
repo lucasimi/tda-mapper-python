@@ -2,6 +2,7 @@
 This module provides functionalities to visualize the Mapper graph.
 """
 import networkx as nx
+import igraph as ig
 
 import numpy as np
 
@@ -31,19 +32,67 @@ class MapperPlot:
     :param seed: The random seed used to construct the graph embedding.
         Defaults to None.
     :type seed: int, optional
+    :param layout_engine: The engine used to compute the graph layout in the
+        specified dimensions. Possible values are 'igraph' and 'networkx'.
+        Defaults to 'igraph'.
+    :type layout_engine: str, optional
     """
 
-    def __init__(self, graph, dim, iterations=50, seed=None):
+    def __init__(
+        self,
+        graph,
+        dim,
+        iterations=50,
+        seed=None,
+        layout_engine='igraph',
+    ):
         self.graph = graph
         self.dim = dim
         self.iterations = iterations
         self.seed = seed
-        self.positions = nx.spring_layout(
+        self.layout_engine = layout_engine
+        self.positions = self._compute_pos()
+
+    def _compute_pos(self):
+        if self.layout_engine == 'igraph':
+            return self._compute_pos_ig()
+        elif self.layout_engine == 'networkx':
+            return self._compute_pos_nx()
+        else:
+            raise ValueError(
+                f'Unknown engine {self.layout_engine}. '
+                "Only possible values are 'igraph' and 'networkx'"
+            )
+
+    def _compute_pos_nx(self):
+        return nx.spring_layout(
             self.graph,
             dim=self.dim,
             seed=self.seed,
             iterations=self.iterations,
         )
+
+    def _compute_pos_ig(self):
+        if self.graph.number_of_nodes() == 0:
+            return {}
+        rng = np.random.default_rng(self.seed)
+        random_pos = rng.random((len(self.graph.nodes()), self.dim))
+        graph_ig = ig.Graph.from_networkx(self.graph)
+        if self.dim == 2:
+            layout = graph_ig.layout_fruchterman_reingold(
+                niter=self.iterations,
+                seed=random_pos,
+            )
+            pos = {node: (layout[i][0], layout[i][1]) for i, node in
+                   enumerate(self.graph.nodes())}
+        elif self.dim == 3:
+            layout = graph_ig.layout_fruchterman_reingold_3d(
+                niter=self.iterations,
+                seed=random_pos,
+            )
+            pos = {node: (layout[i][0], layout[i][1], layout[i][2])
+                   for i, node in enumerate(self.graph.nodes())}
+        return pos
 
     def plot_matplotlib(
         self,

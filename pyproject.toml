@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tda-mapper"
-version = "0.8.1"
+version = "0.9.0"
 description = "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
@@ -19,6 +19,7 @@ keywords = ["tda", "mapper", "topology", "topological data analysis"]
 dependencies = [
     "matplotlib>=3.3.4",
     "networkx>=2.5",
+    "igraph>=0.11.8",
     "numba>=0.54",
     "numpy>=1.20.1, <2.0.0",
     "plotly>=4.14.3",
