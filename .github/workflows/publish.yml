@@ -1,11 +1,12 @@
 name: publish
 
 on:
-  published:
+  workflow_run:
     workflows: ["publish-test"]
     types:
       - completed
     status: success
+  workflow_dispatch
 
 jobs:
   publish:
