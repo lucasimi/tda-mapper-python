@@ -2,6 +2,7 @@ import json
 import time
 import io
 import gzip
+from datetime import datetime
 
 import streamlit as st
 import pandas as pd
@@ -12,8 +13,16 @@ import networkx as nx
 from networkx.readwrite.json_graph import adjacency_data
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import (
+    AgglomerativeClustering,
+    DBSCAN,
+    HDBSCAN,
+    KMeans,
+    AffinityPropagation,
+)
 from sklearn.decomposition import PCA
+
+from umap import UMAP
 
 from tdamapper.core import ATTR_SIZE
 from tdamapper.learn import MapperAlgorithm
@@ -22,39 +31,25 @@ from tdamapper.plot import MapperPlot
 from tdamapper.utils.metrics import minkowski
 
 
-MAX_NODES = 1000
+OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
+
+S_RESULTS = 'stored_results'
 
 MAX_SAMPLES = 1000
 
 SAMPLE_FRAC = 0.1
 
-OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
+V_DATA_SUMMARY_FEAT = 'feature'
 
-GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
+V_DATA_SUMMARY_HIST = 'histogram'
 
-REPORT_BUG = f'{GIT_REPO_URL}/issues'
-
-ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
-
-DESCRIPTION = '''
-    Gain insights from your data with the *Mapper Algorithm*
-    '''
-
-FOOTER = f'''
-    If you find this app useful, please consider leaving a :star: on **[GitHub]({GIT_REPO_URL})**.
-    '''
-
-ICON_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png'
-
-LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png'
-
-APP_TITLE = 'TDA Mapper App'
-
-# V_* are reusable constant values
+V_DATA_SUMMARY_BINS = 15
 
 V_LENS_IDENTITY = 'Identity'
 
 V_LENS_PCA = 'PCA'
+
+V_LENS_UMAP = 'UMAP'
 
 V_COVER_TRIVIAL = 'Trivial'
 
@@ -66,145 +61,64 @@ V_CLUSTERING_TRIVIAL = 'Trivial'
 
 V_CLUSTERING_AGGLOMERATIVE = 'Agglomerative'
 
-V_DATA_SUMMARY_FEAT = 'feature'
+V_CLUSTERING_DBSCAN = 'DBSCAN'
 
-V_DATA_SUMMARY_HIST = 'histogram'
+V_CLUSTERING_HDBSCAN = 'HDBSCAN'
 
-V_DATA_SUMMARY_BINS = 15
+V_CLUSTERING_KMEANS = 'KMeans'
+
+V_CLUSTERING_AFFINITY_PROPAGATION = 'Affinity Propagation'
+
+VD_SEED = 42
 
 V_AGGREGATION_MEAN = 'Mean'
 
 V_AGGREGATION_STD = 'Std'
 
+V_AGGREGATION_MODE = 'Mode'
+
 V_AGGREGATION_QUANTILE = 'Quantile'
 
-V_CMAP_CONTINUOUS_JET = 'Continuous (Jet)'
+V_CMAP_JET = 'Jet (Sequential)'
 
-V_CMAP_CONTINUOUS_VIRIDIS = 'Continuous (Viridis)'
+V_CMAP_VIRIDIS = 'Viridis (Sequential)'
 
-V_CMAP_CYCLIC_HSV = 'Cyclic (HSV)'
+V_CMAP_CIVIDIS = 'Cividis (Sequential)'
 
-V_CMAP_CYCLIC_TWILIGHT = 'Cyclic (Twilight)'
+V_CMAP_SPECTRAL = 'Spectral (Diverging)'
 
-# VD_* are reusable default values
+V_CMAP_PORTLAND = 'Portland (Diverging)'
 
-VD_SEED = 42
+V_CMAP_HSV = 'HSV (Cyclic)'
 
-# S_* are reusable session stored objects
+V_CMAP_TWILIGHT = 'Twilight (Cyclic)'
 
-S_RESULTS = 'stored_results'
+GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
 
+ICON_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png'
 
-class Results:
+LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png'
 
-    def __init__(self):
-        self.df_X = pd.DataFrame()
-        self.df_y = pd.DataFrame()
-        self.df_X_sample = pd.DataFrame()
-        self.df_y_sample = pd.DataFrame()
-        self.df_all = pd.DataFrame()
-        self.df_all_sample = pd.DataFrame()
-        self.X = self.df_X.to_numpy()
-        self.df_summary = pd.DataFrame()
-        self.mapper_graph = None
-        self.mapper_plot = None
-        self.mapper_seed = None
-        self.mapper_dim = None
-        self.mapper_fig = None
-        self.auto_rendering = self._auto_rendering()
+APP_TITLE = 'tda-mapper'
 
-    def _auto_rendering(self):
-        if self.mapper_graph is None:
-            return False
-        nodes_num = self.mapper_graph.number_of_nodes()
-        return nodes_num <= MAX_NODES
+REPORT_BUG = f'{GIT_REPO_URL}/issues'
 
-    def set_df(self, X, y):
-        self.df_X = fix_data(X)
-        self.df_y = fix_data(y)
-        self.df_X_sample = get_sample(self.df_X)
-        self.df_y_sample = get_sample(self.df_y)
-        self.df_all = pd.concat([self.df_y, self.df_X], axis=1)
-        self.df_all_sample = pd.concat(
-            [self.df_y_sample, self.df_X_sample],
-            axis=1
-        )
-        self.X = self.df_X.to_numpy()
-        self.df_summary = _get_data_summary(self.df_X, self.df_y)
-        self.mapper_graph = None
-        self.mapper_plot = None
-        self.mapper_seed = None
-        self.mapper_dim = None
-        self.mapper_fig = None
-        self.auto_rendering = self._auto_rendering()
+ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
 
-    def set_mapper(self, mapper_graph, dim, seed):
-        self.mapper_graph = mapper_graph
-        self.mapper_plot = MapperPlot(
-            self.mapper_graph,
-            dim=dim,
-            seed=seed,
-        )
-        self.mapper_seed = seed
-        self.mapper_dim = dim
-        self.mapper_fig = None
-        self.auto_rendering = self._auto_rendering()
-
-    def set_mapper_fig(self, dim, seed, color_feat, agg, cmap, title):
-        colors = self.X
-        df_all = st.session_state[S_RESULTS].df_all
-        if color_feat in df_all.columns:
-            df_col = df_all[color_feat]
-            colors = df_col.to_numpy()
-        if self.mapper_fig is None:
-            self.mapper_fig = self.mapper_plot.plot_plotly(
-                colors=colors,
-                agg=agg,
-                cmap=cmap,
-                title=title,
-                height=500,
-                width=500,
-            )
-        else:
-            self.mapper_plot.plot_plotly_update(
-                self.mapper_fig,
-                colors=colors,
-                agg=agg,
-                cmap=cmap,
-                title=title,
-            )
-        self.mapper_fig.update_layout(
-            uirevision='constant',
-            margin=dict(b=0, l=0, r=0, t=0),
-        )
-        self.mapper_fig.update_xaxes(
-            showline=False,
-        )
-        self.mapper_fig.update_yaxes(
-            showline=False,
-            scaleanchor='x',
-            scaleratio=1,
-        )
+FOOTER = (
+    'If you find this app useful, please consider leaving a '
+    f':star: on **[GitHub]({GIT_REPO_URL})**.'
+)
 
 
-def lp_metric(p):
-    return minkowski(p)
+def mode(arr):
+    unique, counts = np.unique(arr, return_counts=True)
+    max_count_index = np.argmax(counts)
+    return unique[max_count_index]
 
 
-def fix_data(data):
-    df = pd.DataFrame(data)
-    df = df.select_dtypes(include='number')
-    df.dropna(axis=1, how='all', inplace=True)
-    df.fillna(df.mean(), inplace=True)
-    return df
-
-
-def get_gzip_bytes(string, encoding='utf-8'):
-    fileobj = io.BytesIO()
-    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
-    gzf.write(string.encode(encoding))
-    gzf.close()
-    return fileobj.getvalue()
+def quantile(q):
+    return lambda agg: np.nanquantile(agg, q=q)
 
 
 @st.cache_data
@@ -214,24 +128,12 @@ def get_sample(df: pd.DataFrame, frac=SAMPLE_FRAC, max_n=MAX_SAMPLES, rand=42):
     return df.sample(frac=frac, random_state=rand)
 
 
-@st.cache_data
-def cached_load_digits():
-    return load_digits(return_X_y=True, as_frame=True)
-
-
-@st.cache_data
-def cached_load_iris():
-    return load_iris(return_X_y=True, as_frame=True)
-
-
-@st.cache_data
-def cached_fetch_openml(source):
-    return fetch_openml(source, return_X_y=True, as_frame=True)
-
-
-@st.cache_data
-def df_to_csv(df):
-    return df.to_csv(index=False).encode('utf-8')
+def fix_data(data):
+    df = pd.DataFrame(data)
+    df = df.select_dtypes(include='number')
+    df.dropna(axis=1, how='all', inplace=True)
+    df.fillna(df.mean(), inplace=True)
+    return df
 
 
 def _get_data_summary(df_X, df_y):
@@ -246,115 +148,136 @@ def _get_data_summary(df_X, df_y):
     return df_summary
 
 
-def _initialize_state():
-    if S_RESULTS not in st.session_state:
-        st.session_state[S_RESULTS] = Results()
-
-
-def _initialize_page():
+def initialize():
     st.set_page_config(
         layout='wide',
         page_icon=ICON_URL,
         page_title=APP_TITLE,
         menu_items={
             'Report a bug': REPORT_BUG,
-            'About': ABOUT})
-
-
-def _initialize_sidebar():
-    with st.sidebar:
-        st.image(LOGO_URL)
-        st.markdown(DESCRIPTION)
-        st.link_button(
-            'More on **GitHub**',
-            url=GIT_REPO_URL,
-            use_container_width=True,
-            type='primary')
-        st.subheader('#')
-
-
-def _update_data(data_source):
-    X, y = pd.DataFrame(), pd.DataFrame()
-    if isinstance(data_source, io.BytesIO):
-        X, y = pd.read_csv(data_source), pd.DataFrame()
-    elif data_source == 'Digits':
-        X, y = cached_load_digits()
-    elif data_source == 'Iris':
-        X, y = cached_load_iris()
-    elif isinstance(data_source, str):
-        try:
-            X, y = cached_fetch_openml(data_source)
-        except ValueError as err:
-            st.toast(f'# {err}', icon='🚨')
-    df_X, df_y = fix_data(X), fix_data(y)
-    st.session_state[S_RESULTS].set_df(df_X, df_y)
-    st.toast('Successfully Loaded Data', icon='📦')
-
-
-def _update_mapper(X, lens, cover, clustering):
-    if (X is None) or (lens is None):
-        st.warning('Make sure you selected the right options')
-    mapper_algo = MapperAlgorithm(
-        cover=cover,
-        clustering=clustering,
-        verbose=False,
+            'About': ABOUT,
+        },
     )
-    mapper_graph = mapper_algo.fit_transform(X, lens)
-    st.session_state[S_RESULTS].set_mapper(mapper_graph)
-    st.toast('Successfully Computed Mapper', icon='🚀')
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    if not auto_rendering:
-        st.toast('Automatic Rendering Disabled: Graph Too Large', icon='⚠️')
+    with st.sidebar:
+        st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
+        st.markdown('Data exploration with *Mapper*')
+        st.header('')
 
 
-def _update_fig(dim, seed, color_feat, agg, cmap, title):
-    st.session_state[S_RESULTS].set_mapper_fig(dim, seed, color_feat, agg, cmap, title)
-    st.toast('Successfully Rendered Graph', icon='🖌️')
+@st.cache_data(max_entries=1)
+def load_data(source=None, name=None, csv=None):
+    X, y = pd.DataFrame(), pd.DataFrame()
+    if source == 'Example':
+        if name == 'Digits':
+            X, y = load_digits(return_X_y=True, as_frame=True)
+        elif name == 'Iris':
+            X, y = load_iris(return_X_y=True, as_frame=True)
+    elif source == 'OpenML':
+        X, y = fetch_openml(
+            name,
+            return_X_y=True,
+            as_frame=True,
+            parser='auto',
+        )
+    elif source == 'CSV':
+        if csv is None:
+            raise ValueError('No csv file uploaded')
+        else:
+            X, y = pd.read_csv(csv), pd.DataFrame()
+    df_X, df_y = fix_data(X), fix_data(y)
+    return df_X, df_y
 
 
-def _update_mapper_fig_outdated():
-    st.session_state[S_RESULTS].mapper_fig_outdated = True
+def data_input_section():
+    source = None
+    name = None
+    csv = None
+    st.subheader('📦 Data')
+    source = st.selectbox(
+        'Source',
+        options=['Example', 'OpenML', 'CSV'],
+    )
+    if source == 'Example':
+        name = st.selectbox('Name', options=['Digits', 'Iris'])
+    elif source == 'OpenML':
+        name = st.text_input(
+            'Name',
+            placeholder='Name',
+            help=f'Search on [OpenML]({OPENML_URL})',
+        )
+    elif source == 'CSV':
+        csv = st.file_uploader('Upload')
+    return load_data(source, name, csv)
 
 
-def _lens_tuning(lens_type):
-    X = st.session_state[S_RESULTS].X
+def mapper_lens_input_section(X):
+    st.subheader('🔎 Lens')
+    lens_type = st.selectbox(
+        'Type',
+        options=[
+            V_LENS_IDENTITY,
+            V_LENS_PCA,
+            V_LENS_UMAP,
+        ],
+        index=1,
+    )
     lens = None
     if lens_type == V_LENS_IDENTITY:
         lens = X
     elif lens_type == V_LENS_PCA:
         pca_n = st.number_input(
-            '🔎 PCA Components',
+            'PCA Components',
             value=2,
-            min_value=1)
+            min_value=1,
+        )
         _, n_feats = X.shape
         if pca_n > n_feats:
             lens = X
         else:
             lens = PCA(n_components=pca_n).fit_transform(X)
+    elif lens_type == V_LENS_UMAP:
+        umap_n = st.number_input(
+            'UMAP Components',
+            value=2,
+            min_value=1,
+        )
+        _, n_feats = X.shape
+        if umap_n > n_feats:
+            lens = X
+        else:
+            lens = UMAP(n_components=umap_n).fit_transform(X)
     return lens
 
 
-def _cover_tuning(cover_type):
+def mapper_cover_input_section():
+    st.subheader('🌐 Cover')
+    cover_type = st.selectbox(
+        'Type',
+        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        index=2,
+    )
     cover = None
     if cover_type == V_COVER_TRIVIAL:
         cover = None
     elif cover_type == V_COVER_BALL:
         ball_r = st.number_input(
-            '🌐 Radius',
+            'Radius',
             value=100.0,
-            min_value=0.0)
+            min_value=0.0,
+        )
         ball_metric_p = st.number_input(
-            '🌐 Lp Metric',
+            '$L_p$ metric',
             value=2,
-            min_value=1)
-        cover = BallCover(radius=ball_r, metric=lp_metric(ball_metric_p))
+            min_value=1,
+        )
+        cover = BallCover(radius=ball_r, metric=minkowski(ball_metric_p))
     elif cover_type == V_COVER_CUBICAL:
         cubical_n = st.number_input(
-            '🌐 Intervals',
+            'Intervals',
             value=10,
             min_value=0)
         cubical_p = st.number_input(
-            '🌐 Overlap Fraction',
+            'Overlap',
             value=0.25,
             min_value=0.0,
             max_value=1.0)
@@ -362,75 +285,144 @@ def _cover_tuning(cover_type):
     return cover
 
 
-def _clustering_tuning(clustering_type):
+def mapper_clustering_input_section():
+    st.subheader('🧮 Clustering')
+    clustering_type = st.selectbox(
+        'Type',
+        options=[
+            V_CLUSTERING_TRIVIAL,
+            V_CLUSTERING_KMEANS,
+            V_CLUSTERING_AGGLOMERATIVE,
+            V_CLUSTERING_DBSCAN,
+            V_CLUSTERING_HDBSCAN,
+            V_CLUSTERING_AFFINITY_PROPAGATION,
+        ],
+        index=1,
+    )
     clustering = None
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = None
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
         clust_num = st.number_input(
-            '🧮 Clusters',
+            'Clusters',
             value=2,
-            min_value=1)
+            min_value=1,
+        )
+        linkage = st.selectbox(
+            'Linkage',
+            options=[
+                'ward',
+                'complete',
+                'average',
+                'single',
+            ],
+            index=3,
+        )
         n_clusters = int(clust_num)
-        clustering = AgglomerativeClustering(n_clusters=n_clusters)
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
+        clustering = AgglomerativeClustering(
+            n_clusters=n_clusters,
+            linkage=linkage,
+            metric=metric,
+        )
+    elif clustering_type == V_CLUSTERING_KMEANS:
+        clust_num = st.number_input(
+            'Clusters',
+            value=2,
+            min_value=1,
+        )
+        n_clusters = int(clust_num)
+        clustering = KMeans(n_clusters=n_clusters, n_init='auto')
+    elif clustering_type == V_CLUSTERING_DBSCAN:
+        eps = st.number_input(
+            'Eps',
+            value=0.5,
+            min_value=0.0,
+        )
+        min_samples = st.number_input(
+            'Min Samples',
+            value=5,
+            min_value=1,
+        )
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
+        clustering = DBSCAN(eps=eps, min_samples=min_samples, metric=metric)
+    elif clustering_type == V_CLUSTERING_HDBSCAN:
+        min_cluster_size = st.number_input(
+            'Min Cluster Size',
+            value=5,
+            min_value=1,
+        )
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
+        clustering = HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+    elif clustering_type == V_CLUSTERING_AFFINITY_PROPAGATION:
+        damping = st.number_input(
+            'Damping',
+            value=0.5,
+            min_value=0.0,
+        )
+        max_iter = st.number_input(
+            'Max Iter',
+            value=200,
+            min_value=50,
+        )
+        clustering = AffinityPropagation(damping=damping, max_iter=max_iter)
+
     return clustering
 
 
-def _data_caption():
-    df_X = st.session_state[S_RESULTS].df_X
-    df_y = st.session_state[S_RESULTS].df_y
-    if df_X.empty:
-        cap = 'Empty dataset'
-    else:
-        inst = len(df_X)
-        feats = len(df_X.columns) + len(df_y.columns)
-        cap = f'{inst} instances, {feats} features'
-    st.caption(cap)
+def mapper_input_section(X):
+    lens = mapper_lens_input_section(X)
+    st.divider()
+    cover = mapper_cover_input_section()
+    st.divider()
+    clustering = mapper_clustering_input_section()
+    mapper_algo = MapperAlgorithm(
+        cover=cover,
+        clustering=clustering,
+        verbose=False,
+        n_jobs=1,
+    )
+    mapper_graph = mapper_algo.fit_transform(X, lens)
+    return mapper_graph
 
 
-def _data_preview():
-    df_all_sample = st.session_state[S_RESULTS].df_all_sample
-    st.dataframe(
-        df_all_sample.head(50),
-        use_container_width=True,
-        height=200)
-
-
-def _data_download():
-    df_all = st.session_state[S_RESULTS].df_all
-    df_all_data = df_to_csv(df_all)
-    st.download_button(
-        '📥 Download Data',
-        disabled=df_all.empty,
-        use_container_width=True,
-        data=df_all_data,
-        file_name='dataset.csv',
-        mime='text/csv')
-
-
-def _data_summary():
-    df_summary = st.session_state[S_RESULTS].df_summary
-    st.dataframe(df_summary,
-        hide_index=True,
-        height=250,
-        column_config={
-            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='large'),
-            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
-                width='small',
-                disabled=True)
-        },
-        use_container_width=True)
-
-
-def _mapper_aggregation():
+def plot_agg_input_section():
     agg_type = st.selectbox(
-        '🍲 Aggregation',
+        'Aggregation',
         options=[
             V_AGGREGATION_MEAN,
             V_AGGREGATION_STD,
-            V_AGGREGATION_QUANTILE],
-        on_change=_update_mapper_fig_outdated)
+            V_AGGREGATION_MODE,
+            V_AGGREGATION_QUANTILE,
+        ],
+    )
     agg = None
     agg_name = None
     if agg_type == V_AGGREGATION_MEAN:
@@ -439,271 +431,229 @@ def _mapper_aggregation():
     elif agg_type == V_AGGREGATION_STD:
         agg = np.nanstd
         agg_name = 'Std'
+    elif agg_type == V_AGGREGATION_MODE:
+        agg = mode
+        agg_name = 'Mode'
     elif agg_type == V_AGGREGATION_QUANTILE:
         q = st.slider(
             'Rank',
             value=0.5,
             min_value=0.0,
             max_value=1.0,
-            on_change=_update_mapper_fig_outdated)
-        agg = lambda x: np.nanquantile(x, q=q)
+        )
+        agg = quantile(q)
         agg_name = f'Quantile {round(q, 2)}'
     return agg, agg_name
 
 
-def _mapper_dim():
-    toggle_3d = st.toggle(
-        '3D Rendering',
-        value=True,
-        on_change=_update_mapper_fig_outdated)
-    dim = 3 if toggle_3d else 2
-    return dim
-
-
-def _mapper_seed():
-    seed = st.number_input(
-        '🎲 Seed',
-        value=VD_SEED,
-        help='Changing this value alters the shape',
-        on_change=_update_mapper_fig_outdated)
-    return seed
-
-
-def _mapper_cmap():
+def plot_cmap_input_section():
     cmap_type = st.selectbox(
-        '🌈 Colormap',
+        'Colormap',
         options=[
-            V_CMAP_CONTINUOUS_JET,
-            V_CMAP_CONTINUOUS_VIRIDIS,
-            V_CMAP_CYCLIC_HSV,
-            V_CMAP_CYCLIC_TWILIGHT],
-        on_change=_update_mapper_fig_outdated)
+            V_CMAP_JET,
+            V_CMAP_VIRIDIS,
+            V_CMAP_CIVIDIS,
+            V_CMAP_PORTLAND,
+            V_CMAP_SPECTRAL,
+            V_CMAP_HSV,
+            V_CMAP_TWILIGHT,
+        ],
+    )
     cmap = None
-    if cmap_type == V_CMAP_CONTINUOUS_JET:
+    if cmap_type == V_CMAP_JET:
         cmap = 'Jet'
-    if cmap_type == V_CMAP_CONTINUOUS_VIRIDIS:
+    elif cmap_type == V_CMAP_VIRIDIS:
         cmap = 'Viridis'
-    elif cmap_type == V_CMAP_CYCLIC_HSV:
+    elif cmap_type == V_CMAP_CIVIDIS:
+        cmap = 'Cividis'
+    elif cmap_type == V_CMAP_PORTLAND:
+        cmap = 'Portland'
+    elif cmap_type == V_CMAP_SPECTRAL:
+        cmap = 'Spectral'
+    elif cmap_type == V_CMAP_HSV:
         cmap = 'HSV'
-    elif cmap_type == V_CMAP_CYCLIC_TWILIGHT:
+    elif cmap_type == V_CMAP_TWILIGHT:
         cmap = 'Twilight'
     return cmap
 
 
-def _mapper_caption():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    nodes_num = 0
-    edges_num = 0
-    if mapper_graph is not None:
-        nodes_num = mapper_graph.number_of_nodes()
-        edges_num = mapper_graph.number_of_edges()
-    cap = f'{nodes_num} nodes, {edges_num} edges'
-    st.caption(cap)
+def plot_color_input_section(df_X, df_y):
+    X_cols = list(df_X.columns)
+    y_cols = list(df_y.columns)
+    col_feat = st.selectbox(
+        'Color',
+        options=y_cols + X_cols,
+    )
+    if col_feat in X_cols:
+        return df_X[col_feat].to_numpy(), col_feat
+    elif col_feat in y_cols:
+        return df_y[col_feat].to_numpy(), col_feat
 
 
-def _mapper_histogram():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    node_size_feat = 'node size (rel.)'
-    cc_size_feat = 'conn. comp. size (rel.)'
-    df = pd.DataFrame(dict(
-        series=[node_size_feat, cc_size_feat],
-        data=[0.0, 0.0]))
-    if mapper_graph:
-        ccs = nx.connected_components(mapper_graph)
-        size = nx.get_node_attributes(mapper_graph, ATTR_SIZE)
-        node_cc, node_size = {}, {}
-        node_cc_max, node_size_max = 1, 1
-        for cc in ccs:
-            cc_len = len(cc)
-            for u in cc:
-                u_size = size[u]
-                node_cc[u] = cc_len
-                node_size[u] = u_size
-                if u_size > node_size_max:
-                    node_size_max = u_size
-            if cc_len > node_cc_max:
-                node_cc_max = cc_len
-        arr_size = np.array([node_size[u]/node_size_max for u in mapper_graph.nodes()])
-        arr_cc = np.array([node_cc[u]/node_cc_max for u in mapper_graph.nodes()])
-        df = pd.DataFrame(dict(
-            series=np.concatenate((
-                [node_size_feat] * len(arr_size),
-                [cc_size_feat] * len(arr_cc))),
-            data=np.concatenate((
-                arr_size,
-                arr_cc))))
-    fig = px.histogram(
-        df,
-        nbins=20,
-        color='series',
-        histnorm='probability density',
-        opacity=0.75,
-        barmode='overlay')
-    fig.update_layout(
-        height=200,
-        margin=dict(l=0, r=0, t=0, b=0, pad=0),
-        xaxis_visible=True,
-        xaxis_title_standoff=10,
-        xaxis_title=None,
-        yaxis_title_standoff=10,
-        yaxis_visible=True,
-        yaxis_title=None,
-        legend=dict(
-            title_text=None,
-            yanchor='top',
-            orientation='v',
-            y=0.99,
-            xanchor='left',
-            x=0.01,
-            bordercolor='#d5d6d8',
-            borderwidth=1))
-    with st.container(border=False):
-        st.plotly_chart(
-            fig,
-            use_container_width=True,
-            config = {'displayModeBar': False})
+def plot_seed_input_section():
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED,
+        help='Changing this value alters the shape',
+    )
+    return seed
 
 
-def _mapper_download():
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
+def plot_dim_input_section():
+    toggle_3d = st.toggle(
+        '3D',
+        value=True,
+    )
+    dim = 3 if toggle_3d else 2
+    return dim
+
+
+def plot_input_section(df_X, df_y, mapper_graph):
+    st.subheader('🎨 Drawing')
+    dim = plot_dim_input_section()
+    seed = plot_seed_input_section()
+    agg, agg_name = plot_agg_input_section()
+    cmap = plot_cmap_input_section()
+    colors, colors_feat = plot_color_input_section(df_X, df_y)
+    mapper_plot = MapperPlot(mapper_graph, dim, seed=seed)
+    mapper_fig = mapper_plot.plot_plotly(
+        colors,
+        agg=agg,
+        title=f'{agg_name} of {colors_feat}',
+        cmap=cmap,
+        width=600,
+        height=600,
+    )
+    mapper_fig.update_layout(
+        dragmode='pan' if dim == 2 else 'orbit',
+        uirevision='constant',
+        margin=dict(b=0, l=0, r=0, t=0),
+    )
+    mapper_fig.update_xaxes(
+        showline=False,
+    )
+    mapper_fig.update_yaxes(
+        showline=False,
+        scaleanchor='x',
+        scaleratio=1,
+    )
+    return mapper_plot, mapper_fig
+
+
+def mapper_rendering_section(mapper_graph, mapper_fig):
+    config = {
+        'scrollZoom': True,
+        'displaylogo': False,
+        'modeBarButtonsToRemove': ['zoom', 'pan'],
+    }
+    st.plotly_chart(mapper_fig, use_container_width=True, config=config)
+
+
+def data_summary_section(df_X, df_y, mapper_graph):
+    df_data = pd.DataFrame({
+        'samples': [len(df_X)],
+        'input features': [len(df_X.columns)],
+        'target features': [len(df_y.columns)],
+    })
+    df_graph = pd.DataFrame({
+        'nodes': [mapper_graph.number_of_nodes()],
+        'edges': [mapper_graph.number_of_edges()],
+        'connected components': [nx.number_connected_components(mapper_graph)],
+    })
+    st.dataframe(df_graph, hide_index=True, use_container_width=True)
+    st.dataframe(df_data, hide_index=True, use_container_width=True)
+    df_summary = _get_data_summary(df_X, df_y)
+    st.dataframe(
+        df_summary,
+        hide_index=True,
+        height=400,
+        column_config={
+            V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
+                width='large',
+            ),
+            V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
+                width='small',
+                disabled=True,
+            )
+        },
+        use_container_width=True,
+    )
+
+
+def get_gzip_bytes(string, encoding='utf-8'):
+    fileobj = io.BytesIO()
+    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
+    gzf.write(string.encode(encoding))
+    gzf.close()
+    return fileobj.getvalue()
+
+
+def data_download_button(df_X, df_y):
+    df_all = pd.concat([df_X, df_y])
+    buffer = io.BytesIO()
+    df_all.to_csv(
+        buffer,
+        index=False,
+        compression={
+            'method': 'gzip',
+            'compresslevel': 6,
+        },
+    )
+    buffer.seek(0)
+    timestamp = int(time.time())
+    dt = datetime.fromtimestamp(timestamp)
+    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
+    st.download_button(
+        '📥 Download Data',
+        disabled=df_all.empty,
+        use_container_width=True,
+        data=buffer,
+        file_name=f'data_{human_readable}.gzip',
+        mime='text/csv',
+    )
+
+
+def mapper_download_button(mapper_graph):
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
+    buffer = io.BytesIO()
     mapper_json = json.dumps(mapper_adj, default=int)
-    return st.download_button(
-        '📥 Download Mapper',
+    buffer.write(mapper_json.encode('utf-8'))
+    buffer.seek(0)
+    timestamp = int(time.time())
+    dt = datetime.fromtimestamp(timestamp)
+    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
+    download_button = st.download_button(
+        '📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
         use_container_width=True,
-        file_name=f'mapper_graph_{int(time.time())}.json.gzip')
-
-
-def initialize():
-    _initialize_state()
-    _initialize_page()
-    _initialize_sidebar()
-
-
-def data_input_section():
-    data_source = None
-    data_source_type = st.selectbox(
-        'Source',
-        options=['Example', 'OpenML', 'CSV'])
-    if data_source_type == 'Example':
-        data_source = st.selectbox('Name', options=['Digits', 'Iris'])
-    elif data_source_type == 'OpenML':
-        data_source = st.text_input('Name', placeholder='Name', help=f'Search on [OpenML]({OPENML_URL})')
-    elif data_source_type == 'CSV':
-        data_source = st.file_uploader('Upload')
-    load_button = st.button(
-        '📦 Load',
-        use_container_width=True)
-    if load_button:
-        _update_data(data_source)
-
-
-def mapper_settings_section():
-    lens_type = st.selectbox(
-        '🔎 Lens',
-        options=[V_LENS_IDENTITY, V_LENS_PCA],
-        index=1)
-    cover_type = st.selectbox(
-        '🌐 Cover',
-        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
-        index=2)
-    clustering_type = st.selectbox(
-        '🧮 Clustering',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
-        index=1)
-    return lens_type, cover_type, clustering_type
-
-
-def mapper_run_section(lens_type, cover_type, clustering_type):
-    X = st.session_state[S_RESULTS].X
-    lens = _lens_tuning(lens_type)
-    cover = _cover_tuning(cover_type)
-    clustering = _clustering_tuning(clustering_type)
-    run_button = st.button(
-        '🚀 Run',
-        use_container_width=True,
-        disabled=X.size == 0)
-    if run_button:
-        _update_mapper(X, lens, cover, clustering)
-
-
-def mapper_color_section():
-    df_all = st.session_state[S_RESULTS].df_all
-    col_feat = st.selectbox(
-        '🎨 Color',
-        options=list(df_all.columns),
-        on_change=_update_mapper_fig_outdated)
-    return col_feat
-
-
-def mapper_draw_section(color_feat):
-    dim = _mapper_dim()
-    seed = _mapper_seed()
-    cmap = _mapper_cmap()
-    agg, agg_name = _mapper_aggregation()
-    mapper_graph = st.session_state[S_RESULTS].mapper_graph
-    update_button = st.button(
-        '🖌️ Draw',
-        use_container_width=True,
-        disabled=mapper_graph is None)
-    auto_rendering = st.session_state[S_RESULTS].auto_rendering
-    title = f'{agg_name} of {color_feat}'
-    if auto_rendering or update_button:
-        _update_fig(dim, seed, color_feat, agg, cmap, title)
-
-
-def data_summary_section():
-    _data_caption()
-    _data_summary()
-    #_data_download()
-
-
-def data_output_section():
-    _data_caption()
-    _data_preview()
-    _data_download()
-
-
-def mapper_output_section():
-    _mapper_caption()
-    _mapper_histogram()
-    _mapper_download()
-
-
-def mapper_rendering_section():
-    mapper_fig = st.session_state[S_RESULTS].mapper_fig
-    if mapper_fig is not None:
-        with st.container(border=False):
-            st.plotly_chart(
-                mapper_fig,
-                height=350,
-                use_container_width=True)
+        file_name=f'mapper_graph_{human_readable}.gzip',
+    )
+    return download_button
 
 
 def main():
     initialize()
     with st.sidebar:
-        data_input_section()
-    col_0, col_1 = st.columns([1, 4])
+        try:
+            df_X, df_y = data_input_section()
+        except ValueError as err:
+            st.error(f'{err}')
+            return
+        st.divider()
+        mapper_graph = mapper_input_section(df_X.to_numpy())
+        st.divider()
+        mapper_plot, mapper_fig = plot_input_section(df_X, df_y, mapper_graph)
+    col_0, col_1 = st.columns([1, 3])
     with col_0:
-        lens_type, cover_type, clustering_type = mapper_settings_section()
-        with st.popover('🚀 Run', use_container_width=True):
-            mapper_run_section(lens_type, cover_type, clustering_type)
-        color_feat = mapper_color_section()
-        with st.popover('🖌️ Draw', use_container_width=True):
-            mapper_draw_section(color_feat)
-        with st.popover('ℹ️ More', use_container_width=True):
-            tab_0, tab_1, tab_2 = st.tabs(['📈 Features', '🗒️ Data', '📊 Mapper'])
-            with tab_0:
-                data_summary_section()
-            with tab_1:
-                data_output_section()
-            with tab_2:
-                mapper_output_section()
+        data_summary_section(df_X, df_y, mapper_graph)
     with col_1:
-        mapper_rendering_section()
+        mapper_rendering_section(mapper_graph, mapper_fig)
+    col_2, col_3 = st.columns([1, 3])
+    with col_2:
+        data_download_button(df_X, df_y)
+    with col_3:
+        mapper_download_button(mapper_graph)
     st.divider()
     st.markdown(FOOTER)
 
