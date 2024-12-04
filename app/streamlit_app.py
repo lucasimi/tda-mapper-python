@@ -63,11 +63,11 @@ V_CLUSTERING_AGGLOMERATIVE = 'Agglomerative'
 
 V_CLUSTERING_DBSCAN = 'DBSCAN'
 
-V_CLUSTERING_HDBSCAN = 'HDDBSCAN'
+V_CLUSTERING_HDBSCAN = 'HDBSCAN'
 
-V_CLUSTERING_KMEANS = 'KMEANS'
+V_CLUSTERING_KMEANS = 'KMeans'
 
-V_CLUSTERING_AFFINITY_PROPAGATION = 'KMEANS'
+V_CLUSTERING_AFFINITY_PROPAGATION = 'Affinity Propagation'
 
 VD_SEED = 42
 
@@ -158,7 +158,10 @@ def initialize():
             'About': ABOUT,
         },
     )
-    st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
+    with st.sidebar:
+        st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
+        st.markdown('Data exploration with *Mapper*')
+        st.header('')
 
 
 @st.cache_data(max_entries=1)
@@ -170,9 +173,16 @@ def load_data(source=None, name=None, csv=None):
         elif name == 'Iris':
             X, y = load_iris(return_X_y=True, as_frame=True)
     elif source == 'OpenML':
-        X, y = fetch_openml(name, return_X_y=True, as_frame=True, parser='auto')
+        X, y = fetch_openml(
+            name,
+            return_X_y=True,
+            as_frame=True,
+            parser='auto',
+        )
     elif source == 'CSV':
-        if csv is not None:
+        if csv is None:
+            raise ValueError('No csv file uploaded')
+        else:
             X, y = pd.read_csv(csv), pd.DataFrame()
     df_X, df_y = fix_data(X), fix_data(y)
     return df_X, df_y
@@ -182,15 +192,16 @@ def data_input_section():
     source = None
     name = None
     csv = None
+    st.subheader('📦 Data')
     source = st.selectbox(
-        '📦 Data Source',
+        'Source',
         options=['Example', 'OpenML', 'CSV'],
     )
     if source == 'Example':
-        name = st.selectbox('📦 Name', options=['Digits', 'Iris'])
+        name = st.selectbox('Name', options=['Digits', 'Iris'])
     elif source == 'OpenML':
         name = st.text_input(
-            '📦 Name',
+            'Name',
             placeholder='Name',
             help=f'Search on [OpenML]({OPENML_URL})',
         )
@@ -278,7 +289,14 @@ def mapper_clustering_input_section():
     st.subheader('🧮 Clustering')
     clustering_type = st.selectbox(
         'Type',
-        options=[V_CLUSTERING_TRIVIAL, V_CLUSTERING_AGGLOMERATIVE],
+        options=[
+            V_CLUSTERING_TRIVIAL,
+            V_CLUSTERING_KMEANS,
+            V_CLUSTERING_AGGLOMERATIVE,
+            V_CLUSTERING_DBSCAN,
+            V_CLUSTERING_HDBSCAN,
+            V_CLUSTERING_AFFINITY_PROPAGATION,
+        ],
         index=1,
     )
     clustering = None
@@ -298,11 +316,23 @@ def mapper_clustering_input_section():
                 'average',
                 'single',
             ],
+            index=3,
         )
         n_clusters = int(clust_num)
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
         clustering = AgglomerativeClustering(
             n_clusters=n_clusters,
             linkage=linkage,
+            metric=metric,
         )
     elif clustering_type == V_CLUSTERING_KMEANS:
         clust_num = st.number_input(
@@ -310,7 +340,59 @@ def mapper_clustering_input_section():
             value=2,
             min_value=1,
         )
+        n_clusters = int(clust_num)
         clustering = KMeans(n_clusters=n_clusters, n_init='auto')
+    elif clustering_type == V_CLUSTERING_DBSCAN:
+        eps = st.number_input(
+            'Eps',
+            value=0.5,
+            min_value=0.0,
+        )
+        min_samples = st.number_input(
+            'Min Samples',
+            value=5,
+            min_value=1,
+        )
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
+        clustering = DBSCAN(eps=eps, min_samples=min_samples, metric=metric)
+    elif clustering_type == V_CLUSTERING_HDBSCAN:
+        min_cluster_size = st.number_input(
+            'Min Cluster Size',
+            value=5,
+            min_value=1,
+        )
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'l1',
+                'l2',
+                'manhattan',
+                'cosine',
+            ]
+        )
+        clustering = HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+    elif clustering_type == V_CLUSTERING_AFFINITY_PROPAGATION:
+        damping = st.number_input(
+            'Damping',
+            value=0.5,
+            min_value=0.0,
+        )
+        max_iter = st.number_input(
+            'Max Iter',
+            value=200,
+            min_value=50,
+        )
+        clustering = AffinityPropagation(damping=damping, max_iter=max_iter)
 
     return clustering
 
@@ -325,7 +407,7 @@ def mapper_input_section(X):
         cover=cover,
         clustering=clustering,
         verbose=False,
-        n_jobs=-1,
+        n_jobs=1,
     )
     mapper_graph = mapper_algo.fit_transform(X, lens)
     return mapper_graph
@@ -458,17 +540,33 @@ def plot_input_section(df_X, df_y, mapper_graph):
     return mapper_plot, mapper_fig
 
 
-def mapper_rendering_section(mapper_fig):
-    config = {'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToRemove': ['zoom', 'pan']}
+def mapper_rendering_section(mapper_graph, mapper_fig):
+    config = {
+        'scrollZoom': True,
+        'displaylogo': False,
+        'modeBarButtonsToRemove': ['zoom', 'pan'],
+    }
     st.plotly_chart(mapper_fig, use_container_width=True, config=config)
 
 
-def data_summary_section(df_X, df_y):
+def data_summary_section(df_X, df_y, mapper_graph):
+    df_data = pd.DataFrame({
+        'samples': [len(df_X)],
+        'input features': [len(df_X.columns)],
+        'target features': [len(df_y.columns)],
+    })
+    df_graph = pd.DataFrame({
+        'nodes': [mapper_graph.number_of_nodes()],
+        'edges': [mapper_graph.number_of_edges()],
+        'connected components': [nx.number_connected_components(mapper_graph)],
+    })
+    st.dataframe(df_graph, hide_index=True, use_container_width=True)
+    st.dataframe(df_data, hide_index=True, use_container_width=True)
     df_summary = _get_data_summary(df_X, df_y)
     st.dataframe(
         df_summary,
         hide_index=True,
-        height=600,
+        height=400,
         column_config={
             V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
                 width='large',
@@ -493,10 +591,18 @@ def get_gzip_bytes(string, encoding='utf-8'):
 def data_download_button(df_X, df_y):
     df_all = pd.concat([df_X, df_y])
     buffer = io.BytesIO()
-    df_all.to_csv(buffer, index=False, compression={'method': 'gzip', 'compresslevel': 6})
+    df_all.to_csv(
+        buffer,
+        index=False,
+        compression={
+            'method': 'gzip',
+            'compresslevel': 6,
+        },
+    )
     buffer.seek(0)
     timestamp = int(time.time())
-    human_readable = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+    dt = datetime.fromtimestamp(timestamp)
+    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
     st.download_button(
         '📥 Download Data',
         disabled=df_all.empty,
@@ -514,7 +620,8 @@ def mapper_download_button(mapper_graph):
     buffer.write(mapper_json.encode('utf-8'))
     buffer.seek(0)
     timestamp = int(time.time())
-    human_readable = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d_%H-%M-%S')
+    dt = datetime.fromtimestamp(timestamp)
+    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
     download_button = st.download_button(
         '📥 Download Mapper Graph',
         data=get_gzip_bytes(mapper_json),
@@ -530,19 +637,18 @@ def main():
     with st.sidebar:
         try:
             df_X, df_y = data_input_section()
-            st.toast('Successfully Loaded Data', icon='📦')
         except ValueError as err:
-            st.toast(f'# {err}', icon='🚨')
-            df_X, df_y = pd.DataFrame(), pd.DataFrame() 
+            st.error(f'{err}')
+            return
         st.divider()
         mapper_graph = mapper_input_section(df_X.to_numpy())
         st.divider()
         mapper_plot, mapper_fig = plot_input_section(df_X, df_y, mapper_graph)
     col_0, col_1 = st.columns([1, 3])
     with col_0:
-        data_summary_section(df_X, df_y)
+        data_summary_section(df_X, df_y, mapper_graph)
     with col_1:
-        mapper_rendering_section(mapper_fig)
+        mapper_rendering_section(mapper_graph, mapper_fig)
     col_2, col_3 = st.columns([1, 3])
     with col_2:
         data_download_button(df_X, df_y)
