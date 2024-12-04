@@ -92,12 +92,13 @@ def mapper_labels(X, y, cover, clustering, n_jobs=-1):
     :return: A list of node labels for each point in the dataset.
     :rtype: list[list[int]]
     """
-    def _run_clustering(local_ids):
-        clust = clone(clustering)
-        local_lbls = clust.fit([X[j] for j in local_ids]).labels_
+    def _run_clustering(local_ids, X_local, clust):
+        local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
-    _lbls = Parallel(n_jobs)(
-        delayed(_run_clustering)(local_ids) for local_ids in cover.apply(y)
+
+    _lbls = Parallel(n_jobs, prefer='threads')(
+        delayed(_run_clustering)(local_ids, [X[j] for j in local_ids], clone(clustering))
+        for local_ids in cover.apply(y)
     )
     itm_lbls = [[] for _ in X]
     max_lbl = 0
