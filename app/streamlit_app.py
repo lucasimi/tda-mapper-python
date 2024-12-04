@@ -8,17 +8,17 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-import networkx as nx 
+import networkx as nx
 from networkx.readwrite.json_graph import adjacency_data
 
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 
-from tdamapper.core import MapperAlgorithm, ATTR_SIZE
-from tdamapper.cover import CubicalCover, BallCover, TrivialCover
-from tdamapper.clustering import TrivialClustering, FailSafeClustering
-from tdamapper.plot import MapperLayoutInteractive
+from tdamapper.core import ATTR_SIZE
+from tdamapper.learn import MapperAlgorithm
+from tdamapper.cover import CubicalCover, BallCover
+from tdamapper.plot import MapperPlot
 from tdamapper.utils.metrics import minkowski
 
 
@@ -108,9 +108,9 @@ class Results:
         self.df_summary = pd.DataFrame()
         self.mapper_graph = None
         self.mapper_plot = None
+        self.mapper_seed = None
         self.mapper_dim = None
         self.mapper_fig = None
-        self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
     def _auto_rendering(self):
@@ -125,22 +125,29 @@ class Results:
         self.df_X_sample = get_sample(self.df_X)
         self.df_y_sample = get_sample(self.df_y)
         self.df_all = pd.concat([self.df_y, self.df_X], axis=1)
-        self.df_all_sample = pd.concat([self.df_y_sample, self.df_X_sample], axis=1)
+        self.df_all_sample = pd.concat(
+            [self.df_y_sample, self.df_X_sample],
+            axis=1
+        )
         self.X = self.df_X.to_numpy()
         self.df_summary = _get_data_summary(self.df_X, self.df_y)
         self.mapper_graph = None
         self.mapper_plot = None
+        self.mapper_seed = None
         self.mapper_dim = None
         self.mapper_fig = None
-        self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
-    def set_mapper(self, mapper_graph):
+    def set_mapper(self, mapper_graph, dim, seed):
         self.mapper_graph = mapper_graph
-        self.mapper_plot = None
-        self.mapper_dim = None
+        self.mapper_plot = MapperPlot(
+            self.mapper_graph,
+            dim=dim,
+            seed=seed,
+        )
+        self.mapper_seed = seed
+        self.mapper_dim = dim
         self.mapper_fig = None
-        self.mapper_fig_outdated = True
         self.auto_rendering = self._auto_rendering()
 
     def set_mapper_fig(self, dim, seed, color_feat, agg, cmap, title):
@@ -149,37 +156,35 @@ class Results:
         if color_feat in df_all.columns:
             df_col = df_all[color_feat]
             colors = df_col.to_numpy()
-        if (self.mapper_plot is None) or (dim != self.mapper_dim):
-            self.mapper_plot = MapperLayoutInteractive(
-                self.mapper_graph,
-                dim=dim,
-                seed=seed,
+        if self.mapper_fig is None:
+            self.mapper_fig = self.mapper_plot.plot_plotly(
                 colors=colors,
                 agg=agg,
                 cmap=cmap,
                 title=title,
                 height=500,
-                width=500)
-            self.mapper_dim = dim
+                width=500,
+            )
         else:
-            self.mapper_plot.update(
-                seed=seed,
+            self.mapper_plot.plot_plotly_update(
+                self.mapper_fig,
                 colors=colors,
                 agg=agg,
                 cmap=cmap,
-                title=title)
-        self.mapper_fig = self.mapper_plot.plot()
+                title=title,
+            )
         self.mapper_fig.update_layout(
             uirevision='constant',
-            margin=dict(b=0, l=0, r=0, t=0))
+            margin=dict(b=0, l=0, r=0, t=0),
+        )
         self.mapper_fig.update_xaxes(
-            #constrain='domain',
-            showline=False)
+            showline=False,
+        )
         self.mapper_fig.update_yaxes(
             showline=False,
             scaleanchor='x',
-            scaleratio = 1)
-        self.mapper_fig_outdated = False
+            scaleratio=1,
+        )
 
 
 def lp_metric(p):
@@ -231,7 +236,10 @@ def df_to_csv(df):
 
 def _get_data_summary(df_X, df_y):
     df = pd.concat([get_sample(df_y), get_sample(df_X)], axis=1)
-    df_hist = pd.DataFrame({x: df[x].value_counts(bins=V_DATA_SUMMARY_BINS, sort=False).values for x in df.columns}).T
+    df_hist = pd.DataFrame({
+        x: df[x].value_counts(bins=V_DATA_SUMMARY_BINS, sort=False).values
+        for x in df.columns
+    }).T
     df_summary = pd.DataFrame({
         V_DATA_SUMMARY_FEAT: df.columns,
         V_DATA_SUMMARY_HIST: df_hist.values.tolist()})
@@ -284,13 +292,13 @@ def _update_data(data_source):
 
 
 def _update_mapper(X, lens, cover, clustering):
-    if (X is None) or (lens is None) or (cover is None) or (clustering is None):
+    if (X is None) or (lens is None):
         st.warning('Make sure you selected the right options')
     mapper_algo = MapperAlgorithm(
         cover=cover,
-        clustering=FailSafeClustering(
-            clustering=clustering,
-            verbose=False))
+        clustering=clustering,
+        verbose=False,
+    )
     mapper_graph = mapper_algo.fit_transform(X, lens)
     st.session_state[S_RESULTS].set_mapper(mapper_graph)
     st.toast('Successfully Computed Mapper', icon='🚀')
@@ -329,7 +337,7 @@ def _lens_tuning(lens_type):
 def _cover_tuning(cover_type):
     cover = None
     if cover_type == V_COVER_TRIVIAL:
-        cover = TrivialCover()
+        cover = None
     elif cover_type == V_COVER_BALL:
         ball_r = st.number_input(
             '🌐 Radius',
@@ -357,7 +365,7 @@ def _cover_tuning(cover_type):
 def _clustering_tuning(clustering_type):
     clustering = None
     if clustering_type == V_CLUSTERING_TRIVIAL:
-        clustering = TrivialClustering()
+        clustering = None
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
         clust_num = st.number_input(
             '🧮 Clusters',
@@ -640,12 +648,9 @@ def mapper_draw_section(color_feat):
         '🖌️ Draw',
         use_container_width=True,
         disabled=mapper_graph is None)
-    mapper_fig_outdated = st.session_state[S_RESULTS].mapper_fig_outdated
     auto_rendering = st.session_state[S_RESULTS].auto_rendering
     title = f'{agg_name} of {color_feat}'
-    if auto_rendering and mapper_fig_outdated:
-        _update_fig(dim, seed, color_feat, agg, cmap, title)
-    elif update_button:
+    if auto_rendering or update_button:
         _update_fig(dim, seed, color_feat, agg, cmap, title)
 
 
