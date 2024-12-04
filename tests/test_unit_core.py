@@ -10,7 +10,12 @@ from tdamapper.core import (
     mapper_labels,
     TrivialCover,
 )
-from tdamapper.cover import BallCover, CubicalCover, ProximityCubicalCover, StandardCubicalCover
+from tdamapper.cover import (
+    BallCover,
+    CubicalCover,
+    ProximityCubicalCover,
+    StandardCubicalCover,
+)
 from tdamapper.clustering import TrivialClustering
 
 
@@ -31,7 +36,12 @@ class TestMapper(unittest.TestCase):
         self.assertEqual([], list(g.neighbors(0)))
         ccs = list(nx.connected_components(g))
         self.assertEqual(1, len(ccs))
-        ccs2 = mapper_connected_components(data, data, TrivialCover(), TrivialClustering())
+        ccs2 = mapper_connected_components(
+            data,
+            data,
+            TrivialCover(),
+            TrivialClustering(),
+        )
         self.assertEqual(len(data), len(ccs2))
 
     def test_ball_small_radius(self):
@@ -100,8 +110,11 @@ class TestMapper(unittest.TestCase):
 
     def test_ball_two_connected_clusters(self):
         data = [
-            np.array([0.0, 1.0]), np.array([1.0, 0.0]),
-            np.array([0.0, 0.0]), np.array([1.0, 1.0])]
+            np.array([0.0, 1.0]),
+            np.array([1.0, 0.0]),
+            np.array([0.0, 0.0]),
+            np.array([1.0, 1.0]),
+        ]
         cover = BallCover(1.1, metric=dist)
         clustering = TrivialClustering()
         mp = MapperAlgorithm(
@@ -118,8 +131,11 @@ class TestMapper(unittest.TestCase):
 
     def test_ball_two_connected_clusters_parallel(self):
         data = [
-            np.array([0.0, 1.0]), np.array([1.0, 0.0]),
-            np.array([0.0, 0.0]), np.array([1.0, 1.0])]
+            np.array([0.0, 1.0]),
+            np.array([1.0, 0.0]),
+            np.array([0.0, 0.0]),
+            np.array([1.0, 1.0]),
+        ]
         cover = BallCover(1.1, metric=dist)
         clustering = TrivialClustering()
         mp = MapperAlgorithm(
