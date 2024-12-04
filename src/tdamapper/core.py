@@ -58,7 +58,7 @@ logging.basicConfig(
 )
 
 
-def mapper_labels(X, y, cover, clustering, n_jobs=-1):
+def mapper_labels(X, y, cover, clustering, n_jobs=1):
     """
     Identify the nodes of the Mapper graph.
 
@@ -87,7 +87,7 @@ def mapper_labels(X, y, cover, clustering, n_jobs=-1):
         interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to -1.
+        Defaults to 1.
     :type n_jobs: int
     :return: A list of node labels for each point in the dataset.
     :rtype: list[list[int]]
@@ -112,7 +112,7 @@ def mapper_labels(X, y, cover, clustering, n_jobs=-1):
     return itm_lbls
 
 
-def mapper_connected_components(X, y, cover, clustering, n_jobs=-1):
+def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     """
     Identify the connected components of the Mapper graph.
 
@@ -139,7 +139,7 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=-1):
         interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to -1.
+        Defaults to 1.
     :type n_jobs: int
     :return: A list of labels. The label at position i identifies the connected
         component of the point at position i in the dataset.
@@ -162,7 +162,7 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=-1):
     return labels
 
 
-def mapper_graph(X, y, cover, clustering, n_jobs=-1):
+def mapper_graph(X, y, cover, clustering, n_jobs=1):
     """
     Create the Mapper graph.
 
@@ -189,7 +189,7 @@ def mapper_graph(X, y, cover, clustering, n_jobs=-1):
         interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to -1.
+        Defaults to 1.
     :type n_jobs: int
     :return: The Mapper graph.
     :rtype: :class:`networkx.Graph`
@@ -378,7 +378,7 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
         clustering=None,
         failsafe=True,
         verbose=True,
-        n_jobs=-1,
+        n_jobs=1,
     ):
         self.cover = cover
         self.clustering = clustering

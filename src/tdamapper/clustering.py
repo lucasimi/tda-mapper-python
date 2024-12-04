@@ -42,7 +42,7 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
 
 class _MapperClustering(EstimatorMixin, ParamsMixin):
 
-    def __init__(self, cover=None, clustering=None, n_jobs=-1):
+    def __init__(self, cover=None, clustering=None, n_jobs=1):
         self.cover = cover
         self.clustering = clustering
         self.n_jobs = n_jobs
