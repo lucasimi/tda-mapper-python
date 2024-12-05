@@ -158,9 +158,9 @@ def initialize():
             'About': ABOUT,
         },
     )
+    st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
     with st.sidebar:
-        st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
-        st.markdown('Data exploration with *Mapper*')
+        st.markdown('*Explore data with Mapper*')
         st.header('')
 
 
@@ -192,7 +192,7 @@ def data_input_section():
     source = None
     name = None
     csv = None
-    st.subheader('📦 Data')
+    st.header('📊 Data')
     source = st.selectbox(
         'Source',
         options=['Example', 'OpenML', 'CSV'],
@@ -211,7 +211,7 @@ def data_input_section():
 
 
 def mapper_lens_input_section(X):
-    st.subheader('🔎 Lens')
+    st.header('🔎 Lens')
     lens_type = st.selectbox(
         'Type',
         options=[
@@ -250,7 +250,7 @@ def mapper_lens_input_section(X):
 
 
 def mapper_cover_input_section():
-    st.subheader('🌐 Cover')
+    st.header('🌐 Cover')
     cover_type = st.selectbox(
         'Type',
         options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
@@ -265,12 +265,17 @@ def mapper_cover_input_section():
             value=100.0,
             min_value=0.0,
         )
-        ball_metric_p = st.number_input(
-            '$L_p$ metric',
-            value=2,
-            min_value=1,
+        metric = st.selectbox(
+            'Metric',
+            options=[
+                'euclidean',
+                'chebyshev',
+                'manhattan',
+                'cosine',
+            ],
+            key='cover_metric',
         )
-        cover = BallCover(radius=ball_r, metric=minkowski(ball_metric_p))
+        cover = BallCover(radius=ball_r, metric=metric)
     elif cover_type == V_COVER_CUBICAL:
         cubical_n = st.number_input(
             'Intervals',
@@ -285,8 +290,105 @@ def mapper_cover_input_section():
     return cover
 
 
+def mapper_clustering_kmeans():
+    clust_num = st.number_input(
+        'Clusters',
+        value=2,
+        min_value=1,
+    )
+    n_clusters = int(clust_num)
+    return KMeans(n_clusters=n_clusters, n_init='auto')
+
+
+def mapper_clustering_dbscan():
+    eps = st.number_input(
+        'Eps',
+        value=0.5,
+        min_value=0.0,
+    )
+    min_samples = st.number_input(
+        'Min Samples',
+        value=5,
+        min_value=1,
+    )
+    metric = st.selectbox(
+        'Metric',
+        options=[
+            'euclidean',
+            'chebyshev',
+            'manhattan',
+            'cosine',
+        ]
+    )
+    return DBSCAN(eps=eps, min_samples=min_samples, metric=metric)
+
+
+def mapper_clustering_hdbscan():
+    min_cluster_size = st.number_input(
+        'Min Cluster Size',
+        value=5,
+        min_value=1,
+    )
+    metric = st.selectbox(
+        'Metric',
+        options=[
+            'euclidean',
+            'chebyshev',
+            'manhattan',
+        ]
+    )
+    return HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+
+
+def mapper_clustering_agglomerative():
+    clust_num = st.number_input(
+        'Clusters',
+        value=2,
+        min_value=1,
+    )
+    linkage = st.selectbox(
+        'Linkage',
+        options=[
+            'ward',
+            'complete',
+            'average',
+            'single',
+        ],
+        index=3,
+    )
+    n_clusters = int(clust_num)
+    metric = st.selectbox(
+        'Metric',
+        options=[
+            'euclidean',
+            'chebyshev',
+            'manhattan',
+            'cosine',
+        ]
+    )
+    return AgglomerativeClustering(
+        n_clusters=n_clusters,
+        linkage=linkage,
+        metric=metric,
+    )
+
+
+def mapper_clustering_affinityprop():
+    damping = st.number_input(
+        'Damping',
+        value=0.5,
+        min_value=0.0,
+    )
+    max_iter = st.number_input(
+        'Max Iter',
+        value=200,
+        min_value=50,
+    )
+    return AffinityPropagation(damping=damping, max_iter=max_iter)
+
+
 def mapper_clustering_input_section():
-    st.subheader('🧮 Clustering')
+    st.header('🧮 Clustering')
     clustering_type = st.selectbox(
         'Type',
         options=[
@@ -303,97 +405,15 @@ def mapper_clustering_input_section():
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = None
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
-        clust_num = st.number_input(
-            'Clusters',
-            value=2,
-            min_value=1,
-        )
-        linkage = st.selectbox(
-            'Linkage',
-            options=[
-                'ward',
-                'complete',
-                'average',
-                'single',
-            ],
-            index=3,
-        )
-        n_clusters = int(clust_num)
-        metric = st.selectbox(
-            'Metric',
-            options=[
-                'euclidean',
-                'l1',
-                'l2',
-                'manhattan',
-                'cosine',
-            ]
-        )
-        clustering = AgglomerativeClustering(
-            n_clusters=n_clusters,
-            linkage=linkage,
-            metric=metric,
-        )
+        clustering = mapper_clustering_agglomerative()
     elif clustering_type == V_CLUSTERING_KMEANS:
-        clust_num = st.number_input(
-            'Clusters',
-            value=2,
-            min_value=1,
-        )
-        n_clusters = int(clust_num)
-        clustering = KMeans(n_clusters=n_clusters, n_init='auto')
+        clustering = mapper_clustering_kmeans()
     elif clustering_type == V_CLUSTERING_DBSCAN:
-        eps = st.number_input(
-            'Eps',
-            value=0.5,
-            min_value=0.0,
-        )
-        min_samples = st.number_input(
-            'Min Samples',
-            value=5,
-            min_value=1,
-        )
-        metric = st.selectbox(
-            'Metric',
-            options=[
-                'euclidean',
-                'l1',
-                'l2',
-                'manhattan',
-                'cosine',
-            ]
-        )
-        clustering = DBSCAN(eps=eps, min_samples=min_samples, metric=metric)
+        clustering = mapper_clustering_dbscan()
     elif clustering_type == V_CLUSTERING_HDBSCAN:
-        min_cluster_size = st.number_input(
-            'Min Cluster Size',
-            value=5,
-            min_value=1,
-        )
-        metric = st.selectbox(
-            'Metric',
-            options=[
-                'euclidean',
-                'l1',
-                'l2',
-                'manhattan',
-                'cosine',
-            ]
-        )
-        clustering = HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+        clustering = mapper_clustering_hdbscan()
     elif clustering_type == V_CLUSTERING_AFFINITY_PROPAGATION:
-        damping = st.number_input(
-            'Damping',
-            value=0.5,
-            min_value=0.0,
-        )
-        max_iter = st.number_input(
-            'Max Iter',
-            value=200,
-            min_value=50,
-        )
-        clustering = AffinityPropagation(damping=damping, max_iter=max_iter)
-
+        clustering = mapper_clustering_affinityprop()
     return clustering
 
 
@@ -406,7 +426,7 @@ def mapper_input_section(X):
     mapper_algo = MapperAlgorithm(
         cover=cover,
         clustering=clustering,
-        verbose=False,
+        verbose=True,
         n_jobs=1,
     )
     mapper_graph = mapper_algo.fit_transform(X, lens)
@@ -509,7 +529,7 @@ def plot_dim_input_section():
 
 
 def plot_input_section(df_X, df_y, mapper_graph):
-    st.subheader('🎨 Drawing')
+    st.header('🎨 Plot')
     dim = plot_dim_input_section()
     seed = plot_seed_input_section()
     agg, agg_name = plot_agg_input_section()
