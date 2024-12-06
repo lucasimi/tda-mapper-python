@@ -39,9 +39,9 @@ MAX_SAMPLES = 1000
 
 SAMPLE_FRAC = 0.1
 
-V_DATA_SUMMARY_FEAT = 'feature'
+V_DATA_SUMMARY_FEAT = 'Feat'
 
-V_DATA_SUMMARY_HIST = 'histogram'
+V_DATA_SUMMARY_HIST = 'Hist'
 
 V_DATA_SUMMARY_BINS = 15
 
@@ -134,6 +134,27 @@ def fix_data(data):
     df.dropna(axis=1, how='all', inplace=True)
     df.fillna(df.mean(), inplace=True)
     return df
+
+
+def _get_dim(fig):
+    dim = 2
+    for trace in fig.data:
+        if '3d' in trace.type:
+            dim = 3
+    return dim
+
+
+def _get_graph_no_attribs(graph):
+    graph_no_attribs = nx.Graph()
+    graph_no_attribs.add_nodes_from(graph.nodes())
+    graph_no_attribs.add_edges_from(graph.edges())
+    return graph_no_attribs
+
+
+def _encode_graph(graph):
+    nodes = tuple(sorted([int(v) for v in graph.nodes()]))
+    edges = tuple(sorted(tuple(sorted(e)) for e in graph.edges()))
+    return (nodes, edges)
 
 
 def _get_data_summary(df_X, df_y):
@@ -417,6 +438,15 @@ def mapper_clustering_input_section():
     return clustering
 
 
+@st.cache_data(
+    hash_funcs={'tdamapper.learn.MapperAlgorithm': MapperAlgorithm.__repr__},
+    show_spinner='Compuring Mapper',
+)
+def compute_mapper(mapper, X, y):
+    mapper_graph = mapper.fit_transform(X, y)
+    return mapper_graph
+
+
 def mapper_input_section(X):
     lens = mapper_lens_input_section(X)
     st.divider()
@@ -429,7 +459,7 @@ def mapper_input_section(X):
         verbose=True,
         n_jobs=1,
     )
-    mapper_graph = mapper_algo.fit_transform(X, lens)
+    mapper_graph = compute_mapper(mapper_algo, X, lens)
     return mapper_graph
 
 
@@ -528,14 +558,28 @@ def plot_dim_input_section():
     return dim
 
 
-def plot_input_section(df_X, df_y, mapper_graph):
-    st.header('🎨 Plot')
+@st.cache_data(
+    hash_funcs={'networkx.classes.graph.Graph': lambda g: _encode_graph(_get_graph_no_attribs(g))},
+    show_spinner='Generating Mapper Embedding',
+)
+def compute_mapper_plot(mapper_graph, dim, seed):
+    mapper_plot = MapperPlot(mapper_graph, dim, seed=seed)
+    return mapper_plot
+
+
+def mapper_plot_section(mapper_graph):
+    st.header('🗺️ Layout')
     dim = plot_dim_input_section()
     seed = plot_seed_input_section()
-    agg, agg_name = plot_agg_input_section()
-    cmap = plot_cmap_input_section()
-    colors, colors_feat = plot_color_input_section(df_X, df_y)
-    mapper_plot = MapperPlot(mapper_graph, dim, seed=seed)
+    mapper_plot = compute_mapper_plot(mapper_graph, dim, seed)
+    return mapper_plot
+
+
+@st.cache_data(
+    hash_funcs={'tdamapper.plot.MapperPlot': lambda mp: mp.positions},
+    show_spinner='Rendering Mapper',
+)
+def compute_mapper_fig(mapper_plot, colors, cmap, agg, agg_name, colors_feat):
     mapper_fig = mapper_plot.plot_plotly(
         colors,
         agg=agg,
@@ -544,8 +588,25 @@ def plot_input_section(df_X, df_y, mapper_graph):
         width=600,
         height=600,
     )
+    return mapper_fig
+
+
+def mapper_figure_section(df_X, df_y, mapper_plot):
+    st.header('🎨 Plot')
+    agg, agg_name = plot_agg_input_section()
+    cmap = plot_cmap_input_section()
+    colors, colors_feat = plot_color_input_section(df_X, df_y)
+    mapper_fig = compute_mapper_fig(
+        mapper_plot,
+        colors=colors,
+        agg=agg,
+        cmap=cmap,
+        agg_name=agg_name,
+        colors_feat=colors_feat,
+    )
+    dim = _get_dim(mapper_fig)
     mapper_fig.update_layout(
-        dragmode='pan' if dim == 2 else 'orbit',
+        dragmode='orbit' if dim == 3 else 'pan',
         uirevision='constant',
         margin=dict(b=0, l=0, r=0, t=0),
     )
@@ -557,7 +618,7 @@ def plot_input_section(df_X, df_y, mapper_graph):
         scaleanchor='x',
         scaleratio=1,
     )
-    return mapper_plot, mapper_fig
+    return mapper_fig
 
 
 def mapper_rendering_section(mapper_graph, mapper_fig):
@@ -570,26 +631,38 @@ def mapper_rendering_section(mapper_graph, mapper_fig):
 
 
 def data_summary_section(df_X, df_y, mapper_graph):
-    df_data = pd.DataFrame({
-        'samples': [len(df_X)],
-        'input features': [len(df_X.columns)],
-        'target features': [len(df_y.columns)],
+    df_stats = pd.DataFrame({
+        'Stat': [
+            'Samples',
+            'Input Feats',
+            'Target Feats',
+            'Nodes',
+            'Edges',
+            'Conn. Comp.'
+        ],
+        'Value': [
+            len(df_X),
+            len(df_X.columns),
+            len(df_y.columns),
+            mapper_graph.number_of_nodes(),
+            mapper_graph.number_of_edges(),
+            nx.number_connected_components(mapper_graph),
+        ]
     })
-    df_graph = pd.DataFrame({
-        'nodes': [mapper_graph.number_of_nodes()],
-        'edges': [mapper_graph.number_of_edges()],
-        'connected components': [nx.number_connected_components(mapper_graph)],
-    })
-    st.dataframe(df_graph, hide_index=True, use_container_width=True)
-    st.dataframe(df_data, hide_index=True, use_container_width=True)
+    st.dataframe(
+        df_stats,
+        hide_index=True,
+        use_container_width=True,
+        height=250,
+    )
     df_summary = _get_data_summary(df_X, df_y)
     st.dataframe(
         df_summary,
         hide_index=True,
-        height=400,
+        height=330,
         column_config={
             V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='large',
+                width='small',
             ),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
                 width='small',
@@ -663,7 +736,9 @@ def main():
         st.divider()
         mapper_graph = mapper_input_section(df_X.to_numpy())
         st.divider()
-        mapper_plot, mapper_fig = plot_input_section(df_X, df_y, mapper_graph)
+        mapper_plot = mapper_plot_section(mapper_graph)
+        st.divider()
+        mapper_fig = mapper_figure_section(df_X, df_y, mapper_plot)
     col_0, col_1 = st.columns([1, 3])
     with col_0:
         data_summary_section(df_X, df_y, mapper_graph)
