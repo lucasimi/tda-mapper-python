@@ -71,6 +71,8 @@ V_CLUSTERING_AFFINITY_PROPAGATION = 'Affinity Propagation'
 
 VD_SEED = 42
 
+VD_ITERATIONS = 50
+
 V_AGGREGATION_MEAN = 'Mean'
 
 V_AGGREGATION_STD = 'Std'
@@ -440,7 +442,7 @@ def mapper_clustering_input_section():
 
 @st.cache_data(
     hash_funcs={'tdamapper.learn.MapperAlgorithm': MapperAlgorithm.__repr__},
-    show_spinner='Compuring Mapper',
+    show_spinner='Computing Mapper',
 )
 def compute_mapper(mapper, X, y):
     mapper_graph = mapper.fit_transform(X, y)
@@ -540,38 +542,42 @@ def plot_color_input_section(df_X, df_y):
         return df_y[col_feat].to_numpy(), col_feat
 
 
-def plot_seed_input_section():
-    seed = st.number_input(
-        'Seed',
-        value=VD_SEED,
-        help='Changing this value alters the shape',
-    )
-    return seed
-
-
-def plot_dim_input_section():
-    toggle_3d = st.toggle(
-        '3D',
-        value=True,
-    )
-    dim = 3 if toggle_3d else 2
-    return dim
-
-
 @st.cache_data(
     hash_funcs={'networkx.classes.graph.Graph': lambda g: _encode_graph(_get_graph_no_attribs(g))},
-    show_spinner='Generating Mapper Embedding',
+    show_spinner='Generating Mapper Layout',
 )
-def compute_mapper_plot(mapper_graph, dim, seed):
-    mapper_plot = MapperPlot(mapper_graph, dim, seed=seed)
+def compute_mapper_plot(mapper_graph, dim, seed, iterations):
+    mapper_plot = MapperPlot(
+        mapper_graph,
+        dim,
+        seed=seed,
+        iterations=iterations,
+    )
     return mapper_plot
 
 
 def mapper_plot_section(mapper_graph):
     st.header('🗺️ Layout')
-    dim = plot_dim_input_section()
-    seed = plot_seed_input_section()
-    mapper_plot = compute_mapper_plot(mapper_graph, dim, seed)
+    toggle_3d = st.toggle(
+        '3D',
+        value=True,
+    )
+    dim = 3 if toggle_3d else 2
+    seed = st.number_input(
+        'Seed',
+        value=VD_SEED,
+    )
+    iterations = st.number_input(
+        'Iterations',
+        value=VD_ITERATIONS,
+        min_value=1,
+    )
+    mapper_plot = compute_mapper_plot(
+        mapper_graph,
+        dim,
+        seed=seed,
+        iterations=iterations,
+    )
     return mapper_plot
 
 
