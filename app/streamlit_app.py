@@ -1,13 +1,14 @@
+import os
 import json
 import time
 import io
 import gzip
+import logging
 from datetime import datetime
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 
 import networkx as nx
 from networkx.readwrite.json_graph import adjacency_data
@@ -24,12 +25,20 @@ from sklearn.decomposition import PCA
 
 from umap import UMAP
 
-from tdamapper.core import ATTR_SIZE
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.cover import CubicalCover, BallCover
 from tdamapper.plot import MapperPlot
-from tdamapper.utils.metrics import minkowski
 
+
+LIMITS_ENABLED = bool(os.environ.get('LIMITS_ENABLED', False))
+
+LIMITS_NUM_SAMPLES = int(os.environ.get('LIMITS_NUM_SAMPLES', 10000))
+
+LIMITS_NUM_FEATURES = int(os.environ.get('LIMITS_NUM_FEATURES', 1000))
+
+LIMITS_NUM_NODES = int(os.environ.get('LIMITS_NUM_NODES', 2000))
+
+LIMITS_NUM_EDGES = int(os.environ.get('LIMITS_NUM_EDGES', 3000))
 
 OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
 
@@ -113,24 +122,43 @@ FOOTER = (
 )
 
 
-def mode(arr):
-    unique, counts = np.unique(arr, return_counts=True)
-    max_count_index = np.argmax(counts)
-    return unique[max_count_index]
+def _check_limits_mapper_graph(mapper_graph):
+    if LIMITS_ENABLED:
+        num_nodes = mapper_graph.number_of_nodes()
+        if num_nodes > LIMITS_NUM_NODES:
+            logging.warn('Too many nodes.')
+            raise ValueError(
+                'Too many nodes: select different parameters or run the app '
+                'locally on your machine.'
+            )
+        num_edges = mapper_graph.number_of_edges()
+        if num_edges > LIMITS_NUM_EDGES:
+            logging.warn('Too many edges.')
+            raise ValueError(
+                'Too many edges: select different parameters or run the app '
+                'locally on your machine.'
+            )
 
 
-def quantile(q):
-    return lambda agg: np.nanquantile(agg, q=q)
+def _check_limits_dataset(df_X, df_y):
+    if LIMITS_ENABLED:
+        num_samples = len(df_X)
+        if num_samples > LIMITS_NUM_SAMPLES:
+            logging.warn('Dataset too big.')
+            raise ValueError(
+                'Dataset too big: select a different dataset or run the app '
+                'locally on your machine.'
+            )
+        num_features = len(df_X.columns) + len(df_y.columns)
+        if num_features > LIMITS_NUM_FEATURES:
+            logging.warn('Too many features.')
+            raise ValueError(
+                'Too many features: select a different dataset or run the app '
+                'locally on your machine.'
+            )
 
 
-@st.cache_data
-def get_sample(df: pd.DataFrame, frac=SAMPLE_FRAC, max_n=MAX_SAMPLES, rand=42):
-    if frac * len(df) > max_n:
-        return df.sample(n=max_n, random_state=rand)
-    return df.sample(frac=frac, random_state=rand)
-
-
-def fix_data(data):
+def _fix_data(data):
     df = pd.DataFrame(data)
     df = df.select_dtypes(include='number')
     df.dropna(axis=1, how='all', inplace=True)
@@ -171,6 +199,23 @@ def _get_data_summary(df_X, df_y):
     return df_summary
 
 
+def mode(arr):
+    unique, counts = np.unique(arr, return_counts=True)
+    max_count_index = np.argmax(counts)
+    return unique[max_count_index]
+
+
+def quantile(q):
+    return lambda agg: np.nanquantile(agg, q=q)
+
+
+@st.cache_data
+def get_sample(df: pd.DataFrame, frac=SAMPLE_FRAC, max_n=MAX_SAMPLES, rand=42):
+    if frac * len(df) > max_n:
+        return df.sample(n=max_n, random_state=rand)
+    return df.sample(frac=frac, random_state=rand)
+
+
 def initialize():
     st.set_page_config(
         layout='wide',
@@ -196,6 +241,7 @@ def load_data(source=None, name=None, csv=None):
         elif name == 'Iris':
             X, y = load_iris(return_X_y=True, as_frame=True)
     elif source == 'OpenML':
+        logging.info(f'Fetching dataset {name} from OpenML')
         X, y = fetch_openml(
             name,
             return_X_y=True,
@@ -207,7 +253,8 @@ def load_data(source=None, name=None, csv=None):
             raise ValueError('No csv file uploaded')
         else:
             X, y = pd.read_csv(csv), pd.DataFrame()
-    df_X, df_y = fix_data(X), fix_data(y)
+    df_X, df_y = _fix_data(X), _fix_data(y)
+    _check_limits_dataset(df_X, df_y)
     return df_X, df_y
 
 
@@ -304,11 +351,18 @@ def mapper_cover_input_section():
             'Intervals',
             value=10,
             min_value=0)
-        cubical_p = st.number_input(
-            'Overlap',
-            value=0.25,
-            min_value=0.0,
-            max_value=1.0)
+        cubical_overlap = st.checkbox(
+            'Set overlap',
+            value=False,
+            help='Uses a dimension-dependant default overlap when unchecked',
+        )
+        cubical_p = None
+        if cubical_overlap:
+            cubical_p = st.number_input(
+                'Overlap',
+                value=0.25,
+                min_value=0.0,
+                max_value=1.0)
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
     return cover
 
@@ -547,6 +601,7 @@ def plot_color_input_section(df_X, df_y):
     show_spinner='Generating Mapper Layout',
 )
 def compute_mapper_plot(mapper_graph, dim, seed, iterations):
+    _check_limits_mapper_graph(mapper_graph)
     mapper_plot = MapperPlot(
         mapper_graph,
         dim,
