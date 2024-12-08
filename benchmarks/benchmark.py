@@ -7,9 +7,11 @@ from sklearn.decomposition import PCA
 from sklearn.datasets import fetch_openml, load_digits
 from sklearn.base import ClusterMixin
 
-from tdamapper.clustering import TrivialClustering
+from tdamapper.core import TrivialClustering
+from tdamapper.utils.metrics import chebyshev
+from tdamapper.cover import BallCover, ProximityCubicalCover
+from tdamapper.learn import MapperAlgorithm
 
-import tdamapper as tm
 import gtda.mapper as gm
 import kmapper as km
 
@@ -25,7 +27,7 @@ def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
     return points + noise
 
 
-def _load_openml(name):
+def _fetch_openml(name):
     XX, _ = fetch_openml(name=name, return_X_y=True)
     return XX.to_numpy()
 
@@ -34,23 +36,23 @@ def line(k):
     return _segment(100000, k, 0.01)
 
 
-def digits(k):
+def load_pen_digits(k):
     X_digits, _ = load_digits(return_X_y=True)
     return PCA(k).fit_transform(X_digits)
 
 
-def mnist(k):
-    X = _load_openml('mnist_784')
+def fetch_mnist(k):
+    X = _fetch_openml('mnist_784')
     return PCA(k).fit_transform(X)
 
 
-def cifar10(k):
-    X = _load_openml('CIFAR_10')
+def fetch_cifar10(k):
+    X = _fetch_openml('CIFAR_10')
     return PCA(k).fit_transform(X)
 
 
-def fashion_mnist(k):
-    X = _load_openml('Fashion-MNIST')
+def fetch_fmnist(k):
+    X = _fetch_openml('Fashion-MNIST')
     return PCA(k).fit_transform(X)
 
 
@@ -83,18 +85,40 @@ def run_gm(X, n, p):
     return t1 - t0
 
 
-def run_tm(X, n, p):
+def run_tm_prox(X, n, p):
     t0 = time.time()
-    mapper_graph = tm.core.MapperAlgorithm(
-        cover=tm.cover.CubicalCover(
+    mapper_graph = MapperAlgorithm(
+        cover=ProximityCubicalCover(
             n_intervals=n,
             overlap_frac=p,
-            #leaf_capacity=1000,
-            #leaf_radius=1.0 / (2.0 - 2.0 * p),
-            #kind='hierarchical',
-            #pivoting='random',
         ),
         clustering=TrivialEstimator(),
+        verbose=False,
+    ).fit_transform(X, X)
+    t1 = time.time()
+    return t1 - t0
+
+
+def run_tm_eps(X, n, p):
+    r = 1.0 / (2.0 - 2.0 * p)
+    X_min = np.min(X, axis=0)
+    X_max = np.max(X, axis=0)
+    X_range = X_max - X_min
+    cheby = chebyshev()
+
+    def _scale(x):
+        return n * (x - X_min) / X_range
+
+    def _scaled_chebyshev(x, y):
+        return cheby(_scale(x), _scale(y))
+    t0 = time.time()
+    mapper_graph = MapperAlgorithm(
+        cover=BallCover(
+            radius=r,
+            metric=_scaled_chebyshev,
+        ),
+        clustering=TrivialEstimator(),
+        verbose=False,
     ).fit_transform(X, X)
     t1 = time.time()
     return t1 - t0
@@ -126,12 +150,12 @@ def run_bench(benches, datasets, dimensions, overlaps, intervals):
         'time': [],
     })
     launch_time = int(time.time())
-    for bench_name, bench in benches:
-        for dataset_name, dataset in datasets:
-            for k in dimensions:
-                X = dataset(k)
-                for p in overlaps:
-                    for n in intervals:
+    for dataset_name, dataset in datasets:
+        for p in overlaps:
+            for n in intervals:
+                for k in dimensions:
+                    X = dataset(k)
+                    for bench_name, bench in benches:
                         t = bench(X, n, p)
                         df_delta = pd.DataFrame({
                             'bench': bench_name,
@@ -147,9 +171,11 @@ def run_bench(benches, datasets, dimensions, overlaps, intervals):
 
 
 if __name__ == '__main__':
-    run_tm(line(1), 1, 0.5) # fist run to jit-compile numba decorated functions
+    # fist run to jit-compile numba decorated functions
+    run_tm_prox(line(1), 1, 0.5)
+    run_tm_eps(line(1), 1, 0.5)
 
-    run_bench(
+    bench_params = dict(
         overlaps=[
             0.125,
             0.25,
@@ -157,10 +183,10 @@ if __name__ == '__main__':
         ],
         datasets=[
             ('line', line),
-            ('digits', digits),
-            ('mnist', mnist),
-            ('cifar10', cifar10),
-            ('fashion_mnist', fashion_mnist),
+            ('digits', load_pen_digits),
+            ('mnist', fetch_mnist),
+            ('cifar10', fetch_cifar10),
+            ('fashion_mnist', fetch_fmnist),
         ],
         intervals=[
             10,
@@ -172,9 +198,12 @@ if __name__ == '__main__':
             4,
             5,
         ],
-        benches = [
-            ('tda-mapper', run_tm),
+        benches=[
+            ('tda-mapper-prox', run_tm_prox),
+            ('tda-mapper-eps', run_tm_eps),
             ('kepler-mapper', run_km),
             ('giotto-tda', run_gm),
         ],
     )
+
+    run_bench(**bench_params_alt)
