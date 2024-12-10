@@ -3,6 +3,8 @@ import time
 import pandas as pd
 import numpy as np
 
+from umap import UMAP
+
 from sklearn.decomposition import PCA
 from sklearn.datasets import fetch_openml, load_digits
 from sklearn.base import ClusterMixin
@@ -14,6 +16,9 @@ from tdamapper.learn import MapperAlgorithm
 
 import gtda.mapper as gm
 import kmapper as km
+
+
+random_state = 42
 
 
 def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
@@ -28,7 +33,7 @@ def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
 
 
 def _fetch_openml(name):
-    XX, _ = fetch_openml(name=name, return_X_y=True)
+    XX, _ = fetch_openml(name=name, return_X_y=True, parser='auto')
     return XX.to_numpy()
 
 
@@ -36,24 +41,52 @@ def line(k):
     return _segment(100000, k, 0.01)
 
 
-def load_pen_digits(k):
+def load_digits_pca(k):
     X_digits, _ = load_digits(return_X_y=True)
-    return PCA(k).fit_transform(X_digits)
+    pca = PCA(n_components=k, random_state=random_state)
+    return pca.fit_transform(X_digits)
 
 
-def fetch_mnist(k):
+def load_digits_umap(k):
+    X_digits, _ = load_digits(return_X_y=True)
+    um = UMAP(n_components=k, random_state=random_state)
+    return um.fit_transform(X_digits)
+
+
+def load_mnist_pca(k):
     X = _fetch_openml('mnist_784')
-    return PCA(k).fit_transform(X)
+    pca = PCA(n_components=k, random_state=random_state)
+    return pca.fit_transform(X)
 
 
-def fetch_cifar10(k):
+def load_mnist_umap(k):
+    X = _fetch_openml('mnist_784')
+    um = UMAP(n_components=k, random_state=random_state)
+    return um.fit_transform(X)
+
+
+def load_cifar10_pca(k):
     X = _fetch_openml('CIFAR_10')
-    return PCA(k).fit_transform(X)
+    pca = PCA(n_components=k, random_state=random_state)
+    return pca.fit_transform(X)
 
 
-def fetch_fmnist(k):
+def load_cifar10_umap(k):
+    X = _fetch_openml('CIFAR_10')
+    um = UMAP(n_components=k, random_state=random_state)
+    return um.fit_transform(X)
+
+
+def load_fmnist_pca(k):
     X = _fetch_openml('Fashion-MNIST')
-    return PCA(k).fit_transform(X)
+    pca = PCA(n_components=k, random_state=random_state)
+    return pca.fit_transform(X)
+
+
+def load_fmnist_umap(k):
+    X = _fetch_openml('Fashion-MNIST')
+    um = UMAP(n_components=k, random_state=random_state)
+    return um.fit_transform(X)
 
 
 # wrapper class to supply trivial clustering to giotto-tda
@@ -183,10 +216,14 @@ if __name__ == '__main__':
         ],
         datasets=[
             ('line', line),
-            ('digits', load_pen_digits),
-            ('mnist', fetch_mnist),
-            ('cifar10', fetch_cifar10),
-            ('fashion_mnist', fetch_fmnist),
+            ('digits_pca', load_digits_pca),
+            ('mnist_pca', load_mnist_pca),
+            ('cifar10_pca', load_cifar10_pca),
+            ('fashion_mnist_pca', load_fmnist_pca),
+            ('digits_umap', load_digits_umap),
+            ('mnist_umap', load_mnist_umap),
+            ('cifar10_umap', load_cifar10_umap),
+            ('fashion_mnist_umap', load_fmnist_umap),
         ],
         intervals=[
             10,

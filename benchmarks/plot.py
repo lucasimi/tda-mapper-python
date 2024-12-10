@@ -105,6 +105,14 @@ df_titles = pd.DataFrame({
         'mnist',
         'cifar10',
         'fashion_mnist',
+        'digits_pca',
+        'mnist_pca',
+        'cifar10_pca',
+        'fashion_mnist_pca',
+        'digits_umap',
+        'mnist_umap',
+        'cifar10_umap',
+        'fashion_mnist_umap',
     ],
     'title': [
         'Line',
@@ -112,6 +120,14 @@ df_titles = pd.DataFrame({
         'MNIST',
         'Cifar-10',
         'Fashion-MNIST',
+        'Digits (PCA)',
+        'MNIST (PCA)',
+        'Cifar-10 (PCA)',
+        'Fashion-MNIST (PCA)',
+        'Digits (UMAP)',
+        'MNIST (UMAP)',
+        'Cifar-10 (UMAP)',
+        'Fashion-MNIST (UMAP)',
     ],
 })
 
@@ -186,7 +202,7 @@ def plot_library(df_bench, ax, ax_log):
     assert len(df_bench['style'].unique()) == 1
     assert len(df_bench.marker.unique()) == 1
     assert len(df_bench.zorder.unique()) == 1
-    bench = df_bench.bench.values[0]
+    #bench = df_bench.bench.values[0]
     name = df_bench.name.values[0]
     color = df_bench.color.values[0]
     style = df_bench['style'].values[0]
@@ -235,7 +251,9 @@ def plot_benchmark(df_p, ax, ax_log):
     max_time_log = math.ceil(math.log10(max_time))
     min_time_log = math.floor(math.log10(min_time))
     if ax_log is not None:
-        ax_log.set_yticks([10**i for i in range(min_time_log, max_time_log + 1)])
+        ax_log.set_yticks([
+            10**i for i in range(min_time_log, max_time_log + 1)
+        ])
     ax.set_title(f'p = {p}')
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.yaxis.set_label_position('left')
