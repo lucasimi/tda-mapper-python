@@ -85,7 +85,7 @@ def run_gm(X, n, p):
     return t1 - t0
 
 
-def run_tm_prox(X, n, p):
+def run_tm_cubical(X, n, p):
     t0 = time.time()
     mapper_graph = MapperAlgorithm(
         cover=ProximityCubicalCover(
@@ -99,7 +99,7 @@ def run_tm_prox(X, n, p):
     return t1 - t0
 
 
-def run_tm_eps(X, n, p):
+def run_tm_ball(X, n, p):
     r = 1.0 / (2.0 - 2.0 * p)
     X_min = np.min(X, axis=0)
     X_max = np.max(X, axis=0)
@@ -172,8 +172,8 @@ def run_bench(benches, datasets, dimensions, overlaps, intervals):
 
 if __name__ == '__main__':
     # fist run to jit-compile numba decorated functions
-    run_tm_prox(line(1), 1, 0.5)
-    run_tm_eps(line(1), 1, 0.5)
+    run_tm_cubical(line(1), 1, 0.5)
+    run_tm_ball(line(1), 1, 0.5)
 
     bench_params = dict(
         overlaps=[
@@ -199,11 +199,11 @@ if __name__ == '__main__':
             5,
         ],
         benches=[
-            ('tda-mapper-prox', run_tm_prox),
-            ('tda-mapper-eps', run_tm_eps),
+            ('tda-mapper-cubical', run_tm_cubical),
+            ('tda-mapper-ball', run_tm_ball),
             ('kepler-mapper', run_km),
             ('giotto-tda', run_gm),
         ],
     )
 
-    run_bench(**bench_params_alt)
+    run_bench(**bench_params)
