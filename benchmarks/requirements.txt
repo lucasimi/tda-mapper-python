@@ -2,3 +2,4 @@ tda-mapper==0.9.0
 giotto-tda==0.6.2
 kmapper==2.1.0
 scikit-learn==1.3.2
+umap==0.5.7
