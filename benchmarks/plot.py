@@ -248,9 +248,9 @@ def plot_benchmark(df_p, ax, ax_log):
     p = df_p.p.values[0]
     max_time = df_p.time.max()
     min_time = df_p.time.min()
-    max_time_log = math.ceil(math.log10(max_time))
-    min_time_log = math.floor(math.log10(min_time))
     if ax_log is not None:
+        max_time_log = math.ceil(math.log10(max_time))
+        min_time_log = math.floor(math.log10(min_time))
         ax_log.set_yticks([
             10**i for i in range(min_time_log, max_time_log + 1)
         ])
@@ -418,11 +418,19 @@ if __name__ == '__main__':
     plt.rcParams.update({'font.size': 11, 'font.family': 'sans-serif'})
     df_sel_2 = df_benchmark[
         (df_benchmark['bench'].isin(['giotto-tda', 'kepler-mapper'])) &
-        (df_benchmark['dataset'].isin(['mnist', 'cifar10', 'fashion_mnist']))
+        (df_benchmark['dataset'].isin([
+            'mnist', 'cifar10', 'fashion_mnist',
+            'mnist_pca', 'cifar10_pca', 'fashion_mnist_pca',
+            'mnist_umap', 'cifar10_umap', 'fashion_mnist_umap',
+        ]))
     ]
     plot_full(df_sel_2)
 
     df_sel_3 = df_benchmark[
-        df_benchmark['dataset'].isin(['mnist', 'cifar10', 'fashion_mnist'])
+        df_benchmark['dataset'].isin([
+            'mnist', 'cifar10', 'fashion_mnist',
+            'mnist_pca', 'cifar10_pca', 'fashion_mnist_pca',
+            'mnist_umap', 'cifar10_umap', 'fashion_mnist_umap',
+        ])
     ]
     plot_full(df_sel_3)

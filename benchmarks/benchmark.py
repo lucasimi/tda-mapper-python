@@ -110,7 +110,8 @@ def run_gm(X, n, p):
         filter_func=lambda x: x,
         cover=gm.CubicalCover(
             n_intervals=n,
-            overlap_frac=p),
+            overlap_frac=p,
+        ),
         clusterer=TrivialEstimator(),
     )
     mapper_graph = pipe.fit_transform(X)
