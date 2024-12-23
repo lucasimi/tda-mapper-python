@@ -1,4 +1,5 @@
 import time
+from itertools import product
 
 import pandas as pd
 import numpy as np
@@ -19,6 +20,20 @@ import kmapper as km
 
 
 random_state = 42
+np.random.seed(random_state)
+
+
+def sample(*arr, perc):
+    n = len(arr[0])
+    for X in arr:
+        assert len(X) == n
+    idx = list(range(0, n))
+    choice = np.random.choice(idx, size=(int(perc * n), ))
+    res = []
+    for X in arr:
+        X_choice = X[choice]
+        res.append(X_choice)
+    return tuple(res)
 
 
 def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
@@ -174,7 +189,7 @@ def run_km(X, n, p):
     return t1 - t0
 
 
-def run_bench(benches, datasets, dimensions, overlaps, intervals):
+def run_bench(intervals, overlaps, name, dataset, perc, dimensions, benches):
     df_bench = pd.DataFrame({
         'bench': [],
         'dataset': [],
@@ -184,24 +199,30 @@ def run_bench(benches, datasets, dimensions, overlaps, intervals):
         'time': [],
     })
     launch_time = int(time.time())
-    for dataset_name, dataset in datasets:
-        for p in overlaps:
-            for n in intervals:
-                for k in dimensions:
-                    X = dataset(k)
-                    for bench_name, bench in benches:
-                        t = bench(X, n, p)
-                        df_delta = pd.DataFrame({
-                            'bench': bench_name,
-                            'dataset': dataset_name,
-                            'p': p,
-                            'n': n,
-                            'k': k,
-                            'time': t,
-                          }, index=[0])
-                        print(df_delta)
-                        df_bench = pd.concat([df_bench, df_delta], ignore_index=True)
-                        df_bench.to_csv(f'./benchmark_{launch_time}.csv', index=False)
+    grid = product(
+        intervals,
+        overlaps,
+        dimensions,
+        benches,
+    )
+    for n, p, k, (bench_name, bench) in grid:
+        X = dataset(k)
+        X, = sample(X, perc=perc)
+        t = bench(X, n, p)
+        df_delta = pd.DataFrame(
+            {
+                'bench': bench_name,
+                'dataset': name,
+                'p': p,
+                'n': n,
+                'k': k,
+                'time': t,
+            },
+            index=[0],
+        )
+        print(df_delta)
+        df_bench = pd.concat([df_bench, df_delta], ignore_index=True)
+        df_bench.to_csv(f'./benchmark_{name}_{launch_time}.csv', index=False)
 
 
 if __name__ == '__main__':
@@ -209,33 +230,17 @@ if __name__ == '__main__':
     run_tm_cubical(line(1), 1, 0.5)
     run_tm_ball(line(1), 1, 0.5)
 
-    bench_params = dict(
+    digits_params = dict(
+        intervals=[5],
         overlaps=[
             0.125,
             0.25,
             0.5
         ],
-        datasets=[
-            ('line', line),
-            ('digits_pca', load_digits_pca),
-            ('mnist_pca', load_mnist_pca),
-            ('cifar10_pca', load_cifar10_pca),
-            ('fashion_mnist_pca', load_fmnist_pca),
-            ('digits_umap', load_digits_umap),
-            ('mnist_umap', load_mnist_umap),
-            ('cifar10_umap', load_cifar10_umap),
-            ('fashion_mnist_umap', load_fmnist_umap),
-        ],
-        intervals=[
-            10,
-        ],
-        dimensions=[
-            1,
-            2,
-            3,
-            4,
-            5,
-        ],
+        name='digits_pca',
+        dataset=load_digits_pca,
+        perc=1.0,
+        dimensions=list(range(1, 3)),
         benches=[
             ('tda-mapper-cubical', run_tm_cubical),
             ('tda-mapper-ball', run_tm_ball),
@@ -244,4 +249,64 @@ if __name__ == '__main__':
         ],
     )
 
-    run_bench(**bench_params)
+    mnist_params = dict(
+        intervals=[5],
+        overlaps=[
+            0.125,
+            0.25,
+            0.5
+        ],
+        name='mnist_pca',
+        dataset=load_mnist_pca,
+        perc=0.25,
+        dimensions=list(range(1, 3)),
+        benches=[
+            ('tda-mapper-cubical', run_tm_cubical),
+            ('tda-mapper-ball', run_tm_ball),
+            ('kepler-mapper', run_km),
+            ('giotto-tda', run_gm),
+        ],
+    )
+
+    cifar10_params = dict(
+        intervals=[5],
+        overlaps=[
+            0.125,
+            0.25,
+            0.5
+        ],
+        name='cifar10_pca',
+        dataset=load_cifar10_pca,
+        perc=0.25,
+        dimensions=list(range(1, 3)),
+        benches=[
+            ('tda-mapper-cubical', run_tm_cubical),
+            ('tda-mapper-ball', run_tm_ball),
+            ('kepler-mapper', run_km),
+            ('giotto-tda', run_gm),
+        ],
+    )
+
+    fmnist_params = dict(
+        intervals=[5],
+        overlaps=[
+            0.125,
+            0.25,
+            0.5
+        ],
+        name='fashion_mnist_pca',
+        dataset=load_fmnist_pca,
+        perc=0.25,
+        dimensions=list(range(1, 3)),
+        benches=[
+            ('tda-mapper-cubical', run_tm_cubical),
+            ('tda-mapper-ball', run_tm_ball),
+            ('kepler-mapper', run_km),
+            ('giotto-tda', run_gm),
+        ],
+    )
+
+    run_bench(**digits_params)
+    run_bench(**mnist_params)
+    run_bench(**cifar10_params)
+    run_bench(**fmnist_params)

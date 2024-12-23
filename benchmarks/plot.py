@@ -275,7 +275,7 @@ def plot_experiment(df_dataset, fig, axes, axes_log):
         unique.keys(),
         loc='upper center',
         bbox_to_anchor=(0.5, 0.0),
-        ncol=3,
+        ncol=2,
     )
 
 
