@@ -408,29 +408,18 @@ def print_latex_tables(df):
 
 
 if __name__ == '__main__':
-    df_benchmark = load_benchmark('./benchmark.csv')
-    print(df_benchmark.head())
-    print_latex_tables(df_benchmark)
+    files = [
+        'benchmark_digits_pca.csv',
+        'benchmark_mnist_pca.csv',
+        'benchmark_cifar10_pca.csv',
+        'benchmark_fmnist_pca.csv',
+    ]
+
+    for file in files:
+        df_benchmark = load_benchmark(file)
+        print_latex_tables(df_benchmark)
 
     plt.rcParams.update({'font.size': 11, 'font.family': 'serif'})
-    plot_split(df_benchmark)
-
-    plt.rcParams.update({'font.size': 11, 'font.family': 'sans-serif'})
-    df_sel_2 = df_benchmark[
-        (df_benchmark['bench'].isin(['giotto-tda', 'kepler-mapper'])) &
-        (df_benchmark['dataset'].isin([
-            'mnist', 'cifar10', 'fashion_mnist',
-            'mnist_pca', 'cifar10_pca', 'fashion_mnist_pca',
-            'mnist_umap', 'cifar10_umap', 'fashion_mnist_umap',
-        ]))
-    ]
-    plot_full(df_sel_2)
-
-    df_sel_3 = df_benchmark[
-        df_benchmark['dataset'].isin([
-            'mnist', 'cifar10', 'fashion_mnist',
-            'mnist_pca', 'cifar10_pca', 'fashion_mnist_pca',
-            'mnist_umap', 'cifar10_umap', 'fashion_mnist_umap',
-        ])
-    ]
-    plot_full(df_sel_3)
+    for file in files:
+        df_benchmark = load_benchmark(file)
+        plot_split(df_benchmark)
