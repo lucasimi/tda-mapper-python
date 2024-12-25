@@ -2,7 +2,7 @@ import math
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator, LogLocator
+from matplotlib.ticker import MaxNLocator, LogLocator, NullLocator
 
 
 alpha = 0.75
@@ -170,14 +170,18 @@ def load_benchmark(path):
 
 
 def get_inset(ax):
-    inset_ax = ax.inset_axes([0.2, 0.55, 0.4, 0.4])
+    inset_ax = ax.inset_axes([0.0, 0.63, 0.37, 0.37])
     inset_ax.set_yscale('log')
-    inset_ax.yaxis.set_label_position('left')
-    inset_ax.tick_params(axis='y', direction='out')
-    inset_ax.tick_params(axis='x', direction='out')
-    inset_ax.yaxis.tick_left()
-    inset_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    inset_ax.yaxis.set_major_locator(LogLocator(base=10.0))
+    #inset_ax.yaxis.set_label_position('left')
+    #inset_ax.tick_params(axis='y', direction='out')
+    #inset_ax.tick_params(axis='x', direction='out')
+    #inset_ax.yaxis.tick_left()
+    #inset_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    inset_ax.xaxis.set_major_locator(NullLocator())
+    inset_ax.xaxis.set_minor_locator(NullLocator())
+    #inset_ax.yaxis.set_major_locator(LogLocator(base=10.0))
+    inset_ax.yaxis.set_major_locator(NullLocator())
+    inset_ax.yaxis.set_minor_locator(NullLocator())
     for _, spine in inset_ax.spines.items():
         spine.set_alpha(alpha)
     inset_ax.xaxis.label.set_alpha(alpha)
@@ -248,12 +252,6 @@ def plot_benchmark(df_p, ax, ax_log):
     p = df_p.p.values[0]
     max_time = df_p.time.max()
     min_time = df_p.time.min()
-    if ax_log is not None:
-        max_time_log = math.ceil(math.log10(max_time))
-        min_time_log = math.floor(math.log10(min_time))
-        ax_log.set_yticks([
-            10**i for i in range(min_time_log, max_time_log + 1)
-        ])
     ax.set_title(f'p = {p}')
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.yaxis.set_label_position('left')
@@ -296,8 +294,8 @@ def plot_split(df):
         for ax in axes:
             ax.set_xlabel('k')
             ax.set_ylabel('time (s)')
-            #inset_ax = get_inset(ax)
-            inset_ax = None
+            inset_ax = get_inset(ax)
+            #inset_ax = None
             axes_log.append(inset_ax)
         plot_experiment(df_dataset, fig, axes, axes_log)
         title = df_dataset.title.values[0]
@@ -415,11 +413,9 @@ if __name__ == '__main__':
         'benchmark_fmnist_pca.csv',
     ]
 
-    for file in files:
-        df_benchmark = load_benchmark(file)
-        print_latex_tables(df_benchmark)
-
     plt.rcParams.update({'font.size': 11, 'font.family': 'serif'})
     for file in files:
         df_benchmark = load_benchmark(file)
+        print_latex_tables(df_benchmark)
         plot_split(df_benchmark)
+
