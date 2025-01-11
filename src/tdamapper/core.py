@@ -122,6 +122,11 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     label to each point in the dataset, based on the connected component of
     the Mapper graph that it belongs to.
 
+    Points that are classified as noise (label -1) by the clustering algorithm
+    will retain their noise label unless modified by a noise handling wrapper
+    (see :class:`tdamapper.core.NoiseHandlingClustering`). This allows for
+    flexible handling of noise points in different applications.
+
     This function uses a union-find data structure to efficiently keep track of
     the connected components as it scans the points of the dataset. This
     approach should be faster than computing the Mapper graph by first calling
@@ -135,7 +140,8 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     :param cover: A cover algorithm.
     :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
-        dataset.
+        dataset. Can be wrapped with :class:`tdamapper.core.NoiseHandlingClustering`
+        to control how noise points are handled.
     :type clustering: An estimator compatible with scikit-learn's clustering
         interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
@@ -143,7 +149,8 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
         Defaults to 1.
     :type n_jobs: int
     :return: A list of labels. The label at position i identifies the connected
-        component of the point at position i in the dataset.
+        component of the point at position i in the dataset. Points labeled as
+        -1 are considered noise points.
     :rtype: list[int]
     """
     itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
@@ -157,9 +164,10 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
                 uf.union(first, second)
     labels = [-1 for _ in X]
     for i, lbls in enumerate(itm_lbls):
-        # assign -1 to noise points
-        root = uf.find(lbls[0]) if lbls else -1
-        labels[i] = root
+        if lbls:  # if the point belongs to any cluster
+            root = uf.find(lbls[0])
+            labels[i] = root
+        # else: keep as -1 (noise point)
     return labels
 
 
@@ -432,6 +440,57 @@ class MapperAlgorithm(_MapperAlgorithm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+
+class NoiseHandlingClustering(ParamsMixin):
+    """
+    A clustering algorithm wrapper that provides control over noise point handling.
+
+    This class wraps a clustering algorithm and provides options for handling noise
+    points (points labeled as -1). By default, noise points are preserved as
+    singleton clusters, but they can also be dropped or grouped into a single noise
+    cluster.
+
+    :param clustering: A clustering algorithm to delegate to.
+    :type clustering: An estimator compatible with scikit-learn's clustering
+        interface, typically from :mod:`sklearn.cluster`.
+    :param noise_handling: How to handle noise points. Options are:
+        - 'singleton': Each noise point becomes its own cluster (default)
+        - 'drop': Noise points are kept as -1 and will be dropped
+        - 'group': All noise points are grouped into a single cluster
+    :type noise_handling: str, optional
+    """
+
+    def __init__(self, clustering=None, noise_handling='singleton'):
+        self.clustering = clustering
+        self.noise_handling = noise_handling
+
+    def fit(self, X, y=None):
+        self.__clustering = TrivialClustering() if self.clustering is None \
+            else self.clustering
+        self.__clustering.fit(X, y)
+        labels = self.__clustering.labels_
+        
+        if self.noise_handling == 'drop':
+            # Keep noise points as -1
+            self.labels_ = labels
+        elif self.noise_handling == 'group':
+            # Group all noise points into a single cluster
+            max_label = max(label for label in labels if label != -1)
+            noise_label = max_label + 1
+            self.labels_ = [noise_label if label == -1 else label for label in labels]
+        else:  # 'singleton' (default)
+            # Convert each noise point into its own cluster
+            max_label = max(label for label in labels if label != -1)
+            next_label = max_label + 1
+            self.labels_ = []
+            for i, label in enumerate(labels):
+                if label == -1:
+                    self.labels_.append(next_label)
+                    next_label += 1
+                else:
+                    self.labels_.append(label)
+        
+        return self
 
 class FailSafeClustering(ParamsMixin):
     """
