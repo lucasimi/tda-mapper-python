@@ -29,6 +29,7 @@ this module is a NetworkX graph object.
 """
 
 import logging
+import numpy as np
 import networkx as nx
 from joblib import Parallel, delayed
 
@@ -450,6 +451,14 @@ class NoiseHandlingClustering(ParamsMixin):
     singleton clusters, but they can also be dropped or grouped into a single noise
     cluster.
 
+    Performance implications of each noise handling mode:
+    - 'singleton': Creates individual clusters for noise points, which may increase
+      memory usage and processing time when there are many noise points.
+    - 'drop': Most memory efficient as noise points are simply ignored, but loses
+      information about noise points.
+    - 'group': Balances memory usage and information preservation by grouping all
+      noise points into a single cluster.
+
     :param clustering: A clustering algorithm to delegate to.
     :type clustering: An estimator compatible with scikit-learn's clustering
         interface, typically from :mod:`sklearn.cluster`.
@@ -462,33 +471,40 @@ class NoiseHandlingClustering(ParamsMixin):
 
     def __init__(self, clustering=None, noise_handling='singleton'):
         self.clustering = clustering
+        if noise_handling not in ['singleton', 'drop', 'group']:
+            raise ValueError(
+                "noise_handling must be one of 'singleton', 'drop', or 'group', "
+                f"got {noise_handling!r} instead"
+            )
         self.noise_handling = noise_handling
 
     def fit(self, X, y=None):
-        self.__clustering = TrivialClustering() if self.clustering is None \
-            else self.clustering
-        self.__clustering.fit(X, y)
-        labels = self.__clustering.labels_
+        # Initialize and fit the base clustering algorithm
+        clustering = TrivialClustering() if self.clustering is None else clone(self.clustering)
+        clustering.fit(X, y)
+        labels = np.array(clustering.labels_)  # Convert to numpy array for easier manipulation
+        
+        # Find the maximum non-noise label, defaulting to -1 if all points are noise
+        non_noise_labels = [label for label in labels if label != -1]
+        max_label = max(non_noise_labels) if non_noise_labels else -1
         
         if self.noise_handling == 'drop':
             # Keep noise points as -1
             self.labels_ = labels
         elif self.noise_handling == 'group':
             # Group all noise points into a single cluster
-            max_label = max(label for label in labels if label != -1)
             noise_label = max_label + 1
-            self.labels_ = [noise_label if label == -1 else label for label in labels]
+            noise_mask = (labels == -1)
+            self.labels_ = labels.copy()  # Preserve original cluster labels
+            self.labels_[noise_mask] = noise_label
         else:  # 'singleton' (default)
             # Convert each noise point into its own cluster
-            max_label = max(label for label in labels if label != -1)
             next_label = max_label + 1
-            self.labels_ = []
-            for i, label in enumerate(labels):
-                if label == -1:
-                    self.labels_.append(next_label)
-                    next_label += 1
-                else:
-                    self.labels_.append(label)
+            self.labels_ = labels.copy()  # Preserve original cluster labels
+            noise_indices = np.where(labels == -1)[0]
+            for idx in noise_indices:
+                self.labels_[idx] = next_label
+                next_label += 1
         
         return self
 

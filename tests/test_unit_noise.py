@@ -21,7 +21,17 @@ def test_noise_handling_clustering():
     ])
 
     # Base clustering with DBSCAN (eps=0.3 will make points far apart noise)
-    base_clustering = DBSCAN(eps=0.3)
+    base_clustering = DBSCAN(eps=0.3, min_samples=2)  # min_samples=2 to ensure small clusters are valid
+    # Debug: Print raw DBSCAN labels
+    debug_labels = base_clustering.fit(X).labels_
+    print(f"\nDebug - Raw DBSCAN labels: {debug_labels}")
+    
+    # Test invalid noise_handling parameter
+    try:
+        NoiseHandlingClustering(clustering=base_clustering, noise_handling='invalid')
+        assert False, "Should raise ValueError for invalid noise_handling"
+    except ValueError as e:
+        assert "noise_handling must be one of" in str(e)
     
     # Test 'drop' mode
     clustering_drop = NoiseHandlingClustering(
@@ -51,6 +61,8 @@ def test_noise_handling_clustering():
     # Each noise point should have its own unique label
     noise_labels = clustering_singleton.labels_[[2, 5]]  # labels for [5,5] and [10,10]
     assert len(set(noise_labels)) == 2, "Each noise point should have unique label"
+    # Verify exact number of clusters (2 original clusters + 2 singleton noise clusters)
+    assert len(set(clustering_singleton.labels_)) == 4, "Should have exactly 4 clusters (2 original + 2 noise)"
 
 
 def test_mapper_with_noise_handling():
