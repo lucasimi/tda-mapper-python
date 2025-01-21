@@ -29,7 +29,12 @@ dependencies = [
 requires-python = ">=3.6"
 
 [project.optional-dependencies]
-dev = ["coverage[toml]", "pandas", "scikit-learn", "flake8"]
+dev = [
+    "coverage[toml]",
+    "pandas",
+    "scikit-learn<1.6.0",
+    "flake8",
+]
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
