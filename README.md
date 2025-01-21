@@ -21,7 +21,7 @@ exploratory data analysis.
 Further details in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/)
 and in the
-[preprint](https://doi.org/10.5281/zenodo.10659651).
+[paper](https://openreview.net/pdf?id=lTX4bYREAZ).
 
 ### Main Features
 
@@ -51,10 +51,10 @@ its mathematical foundations and applications, read the
 
 If you use **tda-mapper** in your work, please consider citing both the
 [library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
-Zenodo record, and the [preprint](https://doi.org/10.5281/zenodo.10659651),
+Zenodo record, and the [paper](https://openreview.net/pdf?id=lTX4bYREAZ),
 which provides a broader methodological overview.
 We recommend citing the specific version of the library used in your research,
-as well as the latest version of the preprint.
+as well as the paper.
 For citation examples, refer to the
 [documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
 
