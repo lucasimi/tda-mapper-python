@@ -40,7 +40,7 @@ exploratory data analysis.
 Further details in the
 `documentation <https://tda-mapper.readthedocs.io/en/main/>`__
 and in the
-`preprint <https://doi.org/10.5281/zenodo.10659651>`__.
+`paper <https://openreview.net/pdf?id=lTX4bYREAZ>`__.
 
 Main features
 -------------
@@ -81,9 +81,9 @@ Citations
 If you use **tda-mapper** in your work, please consider citing both the 
 `library <https://doi.org/10.5281/zenodo.10642381>`__,
 archived in a permanent Zenodo record, and the 
-`preprint <https://doi.org/10.5281/zenodo.10659651>`__,
+`paper <https://openreview.net/pdf?id=lTX4bYREAZ>`__,
 which provides a broader methodological overview.
-We recommend citing the specific version of the library used in your research, as well as the latest version of the preprint.
+We recommend citing the specific version of the library used in your research, as well as the paper.
 
 - **tda-mapper**: For example to cite version 0.8.0 you can use:
 
@@ -100,18 +100,18 @@ We recommend citing the specific version of the library used in your research, a
          url          = {https://doi.org/10.5281/zenodo.14194667}
       }
 
-- **Methodology**: For the preprint, you can use:
+- **Methodology**: For the paper, you can use:
 
   .. code:: bibtex
 
-      @misc{simi_2024_14212962,
-         author       = {Simi, Luca},
-         title        = {{A Scalable Approach for Mapper via Efficient Spatial Search}},
-         month        = nov,
-         year         = 2024,
-         publisher    = {Zenodo},
-         doi          = {10.5281/zenodo.14212962},
-         url          = {https://doi.org/10.5281/zenodo.14212962}
+      @article{simi2025a,
+         title    = {A Scalable Approach for Mapper via Efficient Spatial Search},
+         author   = {Luca Simi},
+         journal  = {Transactions on Machine Learning Research},
+         issn     = {2835-8856},
+         year     = {2025},
+         url      = {https://openreview.net/forum?id=lTX4bYREAZ},
+         note     = {}
       }
 
 
