@@ -47,7 +47,7 @@ def _colorbar(height, cmap, cmin, cmax, title):
                 thickness=20,
                 thicknessmode='fraction',
                 xanchor='left',
-                titleside='right',
+                title_side='right',
                 tickwidth=1,
                 tickformat='.2g',
                 nticks=_TICKS_NUM,

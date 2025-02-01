@@ -300,7 +300,7 @@ def _colorbar(mapper_plot, title):
         thickness=0.025,
         thicknessmode='fraction',
         xanchor='left',
-        titleside='right',
+        title_side='right',
         ypad=0,
         xpad=0,
         tickwidth=1,
