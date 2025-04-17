@@ -7,13 +7,13 @@ Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
 import math
+
 import numpy as np
 
-from tdamapper.core import Cover, Proximity
-from tdamapper.utils.metrics import get_metric, chebyshev
-from tdamapper.utils.vptree import VPTree
-
 from tdamapper._common import warn_user
+from tdamapper.core import Cover, Proximity
+from tdamapper.utils.metrics import chebyshev, get_metric
+from tdamapper.utils.vptree import VPTree
 
 
 class _Pullback:
@@ -68,9 +68,9 @@ class BallCover(Proximity):
     def __init__(
         self,
         radius=1.0,
-        metric='euclidean',
+        metric="euclidean",
         metric_params=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=None,
         pivoting=None,
@@ -169,9 +169,9 @@ class KNNCover(Proximity):
     def __init__(
         self,
         neighbors=1,
-        metric='euclidean',
+        metric="euclidean",
         metric_params=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=None,
         leaf_radius=0.0,
         pivoting=None,
@@ -235,7 +235,7 @@ class BaseCubicalCover:
         self,
         n_intervals=1,
         overlap_frac=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=None,
         pivoting=None,
@@ -300,14 +300,9 @@ class BaseCubicalCover:
             self._overlap_frac = self.overlap_frac
         self._n_intervals = self.n_intervals
         if self._overlap_frac <= 0.0:
-            raise ValueError(
-                'The parameter overlap_frac is expected to be '
-                '> 0.0'
-            )
+            raise ValueError("The parameter overlap_frac is expected to be " "> 0.0")
         if self._overlap_frac > 0.5:
-            warn_user(
-                'The parameter overlap_frac is expected to be <= 0.5'
-            )
+            warn_user("The parameter overlap_frac is expected to be <= 0.5")
         self._min, self._max, self._delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
         self._cover = BallCover(
@@ -380,7 +375,7 @@ class ProximityCubicalCover(BaseCubicalCover, Proximity):
         self,
         n_intervals=1,
         overlap_frac=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=None,
         pivoting=None,
@@ -435,7 +430,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
         self,
         n_intervals=1,
         overlap_frac=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=None,
         pivoting=None,
@@ -528,8 +523,8 @@ class CubicalCover(Cover):
         self,
         n_intervals=1,
         overlap_frac=None,
-        algorithm='proximity',
-        kind='flat',
+        algorithm="proximity",
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=None,
         pivoting=None,
@@ -551,9 +546,9 @@ class CubicalCover(Cover):
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        if self.algorithm == 'proximity':
+        if self.algorithm == "proximity":
             return ProximityCubicalCover(**params)
-        elif self.algorithm == 'standard':
+        elif self.algorithm == "standard":
             return StandardCubicalCover(**params)
         else:
             raise ValueError(

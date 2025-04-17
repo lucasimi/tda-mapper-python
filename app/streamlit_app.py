@@ -1,124 +1,120 @@
-import os
-import json
-import time
-import io
 import gzip
+import io
+import json
 import logging
+import os
+import time
 from datetime import datetime
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-
 import networkx as nx
+import numpy as np
+import pandas as pd
+import streamlit as st
 from networkx.readwrite.json_graph import adjacency_data
-
-from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.cluster import (
-    AgglomerativeClustering,
     DBSCAN,
     HDBSCAN,
-    KMeans,
     AffinityPropagation,
+    AgglomerativeClustering,
+    KMeans,
 )
+from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
-
 from umap import UMAP
 
+from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm
-from tdamapper.cover import CubicalCover, BallCover
 from tdamapper.plot import MapperPlot
 
+LIMITS_ENABLED = bool(os.environ.get("LIMITS_ENABLED", False))
 
-LIMITS_ENABLED = bool(os.environ.get('LIMITS_ENABLED', False))
+LIMITS_NUM_SAMPLES = int(os.environ.get("LIMITS_NUM_SAMPLES", 10000))
 
-LIMITS_NUM_SAMPLES = int(os.environ.get('LIMITS_NUM_SAMPLES', 10000))
+LIMITS_NUM_FEATURES = int(os.environ.get("LIMITS_NUM_FEATURES", 1000))
 
-LIMITS_NUM_FEATURES = int(os.environ.get('LIMITS_NUM_FEATURES', 1000))
+LIMITS_NUM_NODES = int(os.environ.get("LIMITS_NUM_NODES", 2000))
 
-LIMITS_NUM_NODES = int(os.environ.get('LIMITS_NUM_NODES', 2000))
+LIMITS_NUM_EDGES = int(os.environ.get("LIMITS_NUM_EDGES", 3000))
 
-LIMITS_NUM_EDGES = int(os.environ.get('LIMITS_NUM_EDGES', 3000))
+OPENML_URL = "https://www.openml.org/search?type=data&sort=runs&status=active"
 
-OPENML_URL = 'https://www.openml.org/search?type=data&sort=runs&status=active'
-
-S_RESULTS = 'stored_results'
+S_RESULTS = "stored_results"
 
 MAX_SAMPLES = 1000
 
 SAMPLE_FRAC = 0.1
 
-V_DATA_SUMMARY_FEAT = 'Feat'
+V_DATA_SUMMARY_FEAT = "Feat"
 
-V_DATA_SUMMARY_HIST = 'Hist'
+V_DATA_SUMMARY_HIST = "Hist"
 
 V_DATA_SUMMARY_BINS = 15
 
-V_LENS_IDENTITY = 'Identity'
+V_LENS_IDENTITY = "Identity"
 
-V_LENS_PCA = 'PCA'
+V_LENS_PCA = "PCA"
 
-V_LENS_UMAP = 'UMAP'
+V_LENS_UMAP = "UMAP"
 
-V_COVER_TRIVIAL = 'Trivial'
+V_COVER_TRIVIAL = "Trivial"
 
-V_COVER_BALL = 'Ball'
+V_COVER_BALL = "Ball"
 
-V_COVER_CUBICAL = 'Cubical'
+V_COVER_CUBICAL = "Cubical"
 
-V_CLUSTERING_TRIVIAL = 'Trivial'
+V_CLUSTERING_TRIVIAL = "Trivial"
 
-V_CLUSTERING_AGGLOMERATIVE = 'Agglomerative'
+V_CLUSTERING_AGGLOMERATIVE = "Agglomerative"
 
-V_CLUSTERING_DBSCAN = 'DBSCAN'
+V_CLUSTERING_DBSCAN = "DBSCAN"
 
-V_CLUSTERING_HDBSCAN = 'HDBSCAN'
+V_CLUSTERING_HDBSCAN = "HDBSCAN"
 
-V_CLUSTERING_KMEANS = 'KMeans'
+V_CLUSTERING_KMEANS = "KMeans"
 
-V_CLUSTERING_AFFINITY_PROPAGATION = 'Affinity Propagation'
+V_CLUSTERING_AFFINITY_PROPAGATION = "Affinity Propagation"
 
 VD_SEED = 42
 
 VD_ITERATIONS = 50
 
-V_AGGREGATION_MEAN = 'Mean'
+V_AGGREGATION_MEAN = "Mean"
 
-V_AGGREGATION_STD = 'Std'
+V_AGGREGATION_STD = "Std"
 
-V_AGGREGATION_MODE = 'Mode'
+V_AGGREGATION_MODE = "Mode"
 
-V_AGGREGATION_QUANTILE = 'Quantile'
+V_AGGREGATION_QUANTILE = "Quantile"
 
-V_CMAP_JET = 'Jet (Sequential)'
+V_CMAP_JET = "Jet (Sequential)"
 
-V_CMAP_VIRIDIS = 'Viridis (Sequential)'
+V_CMAP_VIRIDIS = "Viridis (Sequential)"
 
-V_CMAP_CIVIDIS = 'Cividis (Sequential)'
+V_CMAP_CIVIDIS = "Cividis (Sequential)"
 
-V_CMAP_SPECTRAL = 'Spectral (Diverging)'
+V_CMAP_SPECTRAL = "Spectral (Diverging)"
 
-V_CMAP_PORTLAND = 'Portland (Diverging)'
+V_CMAP_PORTLAND = "Portland (Diverging)"
 
-V_CMAP_HSV = 'HSV (Cyclic)'
+V_CMAP_HSV = "HSV (Cyclic)"
 
-V_CMAP_TWILIGHT = 'Twilight (Cyclic)'
+V_CMAP_TWILIGHT = "Twilight (Cyclic)"
 
-GIT_REPO_URL = 'https://github.com/lucasimi/tda-mapper-python'
+GIT_REPO_URL = "https://github.com/lucasimi/tda-mapper-python"
 
-ICON_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png'
+ICON_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png"
 
-LOGO_URL = f'{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png'
+LOGO_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png"
 
-APP_TITLE = 'tda-mapper'
+APP_TITLE = "tda-mapper"
 
-REPORT_BUG = f'{GIT_REPO_URL}/issues'
+REPORT_BUG = f"{GIT_REPO_URL}/issues"
 
-ABOUT = f'{GIT_REPO_URL}/blob/main/README.md'
+ABOUT = f"{GIT_REPO_URL}/blob/main/README.md"
 
 FOOTER = (
-    'If you find this app useful, please consider leaving a '
-    f':star: on **[GitHub]({GIT_REPO_URL})**.'
+    "If you find this app useful, please consider leaving a "
+    f":star: on **[GitHub]({GIT_REPO_URL})**."
 )
 
 
@@ -126,17 +122,17 @@ def _check_limits_mapper_graph(mapper_graph):
     if LIMITS_ENABLED:
         num_nodes = mapper_graph.number_of_nodes()
         if num_nodes > LIMITS_NUM_NODES:
-            logging.warn('Too many nodes.')
+            logging.warn("Too many nodes.")
             raise ValueError(
-                'Too many nodes: select different parameters or run the app '
-                'locally on your machine.'
+                "Too many nodes: select different parameters or run the app "
+                "locally on your machine."
             )
         num_edges = mapper_graph.number_of_edges()
         if num_edges > LIMITS_NUM_EDGES:
-            logging.warn('Too many edges.')
+            logging.warn("Too many edges.")
             raise ValueError(
-                'Too many edges: select different parameters or run the app '
-                'locally on your machine.'
+                "Too many edges: select different parameters or run the app "
+                "locally on your machine."
             )
 
 
@@ -144,24 +140,24 @@ def _check_limits_dataset(df_X, df_y):
     if LIMITS_ENABLED:
         num_samples = len(df_X)
         if num_samples > LIMITS_NUM_SAMPLES:
-            logging.warn('Dataset too big.')
+            logging.warn("Dataset too big.")
             raise ValueError(
-                'Dataset too big: select a different dataset or run the app '
-                'locally on your machine.'
+                "Dataset too big: select a different dataset or run the app "
+                "locally on your machine."
             )
         num_features = len(df_X.columns) + len(df_y.columns)
         if num_features > LIMITS_NUM_FEATURES:
-            logging.warn('Too many features.')
+            logging.warn("Too many features.")
             raise ValueError(
-                'Too many features: select a different dataset or run the app '
-                'locally on your machine.'
+                "Too many features: select a different dataset or run the app "
+                "locally on your machine."
             )
 
 
 def _fix_data(data):
     df = pd.DataFrame(data)
-    df = df.select_dtypes(include='number')
-    df.dropna(axis=1, how='all', inplace=True)
+    df = df.select_dtypes(include="number")
+    df.dropna(axis=1, how="all", inplace=True)
     df.fillna(df.mean(), inplace=True)
     return df
 
@@ -169,7 +165,7 @@ def _fix_data(data):
 def _get_dim(fig):
     dim = 2
     for trace in fig.data:
-        if '3d' in trace.type:
+        if "3d" in trace.type:
             dim = 3
     return dim
 
@@ -189,13 +185,15 @@ def _encode_graph(graph):
 
 def _get_data_summary(df_X, df_y):
     df = pd.concat([get_sample(df_y), get_sample(df_X)], axis=1)
-    df_hist = pd.DataFrame({
-        x: df[x].value_counts(bins=V_DATA_SUMMARY_BINS, sort=False).values
-        for x in df.columns
-    }).T
-    df_summary = pd.DataFrame({
-        V_DATA_SUMMARY_FEAT: df.columns,
-        V_DATA_SUMMARY_HIST: df_hist.values.tolist()})
+    df_hist = pd.DataFrame(
+        {
+            x: df[x].value_counts(bins=V_DATA_SUMMARY_BINS, sort=False).values
+            for x in df.columns
+        }
+    ).T
+    df_summary = pd.DataFrame(
+        {V_DATA_SUMMARY_FEAT: df.columns, V_DATA_SUMMARY_HIST: df_hist.values.tolist()}
+    )
     return df_summary
 
 
@@ -218,39 +216,39 @@ def get_sample(df: pd.DataFrame, frac=SAMPLE_FRAC, max_n=MAX_SAMPLES, rand=42):
 
 def initialize():
     st.set_page_config(
-        layout='wide',
+        layout="wide",
         page_icon=ICON_URL,
         page_title=APP_TITLE,
         menu_items={
-            'Report a bug': REPORT_BUG,
-            'About': ABOUT,
+            "Report a bug": REPORT_BUG,
+            "About": ABOUT,
         },
     )
-    st.logo(LOGO_URL, size='large', link=GIT_REPO_URL)
+    st.logo(LOGO_URL, size="large", link=GIT_REPO_URL)
     with st.sidebar:
-        st.markdown('*Explore data with Mapper*')
-        st.header('')
+        st.markdown("*Explore data with Mapper*")
+        st.header("")
 
 
 @st.cache_data(max_entries=1)
 def load_data(source=None, name=None, csv=None):
     X, y = pd.DataFrame(), pd.DataFrame()
-    if source == 'Example':
-        if name == 'Digits':
+    if source == "Example":
+        if name == "Digits":
             X, y = load_digits(return_X_y=True, as_frame=True)
-        elif name == 'Iris':
+        elif name == "Iris":
             X, y = load_iris(return_X_y=True, as_frame=True)
-    elif source == 'OpenML':
-        logging.info(f'Fetching dataset {name} from OpenML')
+    elif source == "OpenML":
+        logging.info(f"Fetching dataset {name} from OpenML")
         X, y = fetch_openml(
             name,
             return_X_y=True,
             as_frame=True,
-            parser='auto',
+            parser="auto",
         )
-    elif source == 'CSV':
+    elif source == "CSV":
         if csv is None:
-            raise ValueError('No csv file uploaded')
+            raise ValueError("No csv file uploaded")
         else:
             X, y = pd.read_csv(csv), pd.DataFrame()
     df_X, df_y = _fix_data(X), _fix_data(y)
@@ -262,28 +260,28 @@ def data_input_section():
     source = None
     name = None
     csv = None
-    st.header('📊 Data')
+    st.header("📊 Data")
     source = st.selectbox(
-        'Source',
-        options=['Example', 'OpenML', 'CSV'],
+        "Source",
+        options=["Example", "OpenML", "CSV"],
     )
-    if source == 'Example':
-        name = st.selectbox('Name', options=['Digits', 'Iris'])
-    elif source == 'OpenML':
+    if source == "Example":
+        name = st.selectbox("Name", options=["Digits", "Iris"])
+    elif source == "OpenML":
         name = st.text_input(
-            'Name',
-            placeholder='Name',
-            help=f'Search on [OpenML]({OPENML_URL})',
+            "Name",
+            placeholder="Name",
+            help=f"Search on [OpenML]({OPENML_URL})",
         )
-    elif source == 'CSV':
-        csv = st.file_uploader('Upload')
+    elif source == "CSV":
+        csv = st.file_uploader("Upload")
     return load_data(source, name, csv)
 
 
 def mapper_lens_input_section(X):
-    st.header('🔎 Lens')
+    st.header("🔎 Lens")
     lens_type = st.selectbox(
-        'Type',
+        "Type",
         options=[
             V_LENS_IDENTITY,
             V_LENS_PCA,
@@ -296,7 +294,7 @@ def mapper_lens_input_section(X):
         lens = X
     elif lens_type == V_LENS_PCA:
         pca_n = st.number_input(
-            'PCA Components',
+            "PCA Components",
             value=2,
             min_value=1,
         )
@@ -307,7 +305,7 @@ def mapper_lens_input_section(X):
             lens = PCA(n_components=pca_n).fit_transform(X)
     elif lens_type == V_LENS_UMAP:
         umap_n = st.number_input(
-            'UMAP Components',
+            "UMAP Components",
             value=2,
             min_value=1,
         )
@@ -320,9 +318,9 @@ def mapper_lens_input_section(X):
 
 
 def mapper_cover_input_section():
-    st.header('🌐 Cover')
+    st.header("🌐 Cover")
     cover_type = st.selectbox(
-        'Type',
+        "Type",
         options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
         index=2,
     )
@@ -331,117 +329,112 @@ def mapper_cover_input_section():
         cover = None
     elif cover_type == V_COVER_BALL:
         ball_r = st.number_input(
-            'Radius',
+            "Radius",
             value=100.0,
             min_value=0.0,
         )
         metric = st.selectbox(
-            'Metric',
+            "Metric",
             options=[
-                'euclidean',
-                'chebyshev',
-                'manhattan',
-                'cosine',
+                "euclidean",
+                "chebyshev",
+                "manhattan",
+                "cosine",
             ],
-            key='cover_metric',
+            key="cover_metric",
         )
         cover = BallCover(radius=ball_r, metric=metric)
     elif cover_type == V_COVER_CUBICAL:
-        cubical_n = st.number_input(
-            'Intervals',
-            value=10,
-            min_value=0)
+        cubical_n = st.number_input("Intervals", value=10, min_value=0)
         cubical_overlap = st.checkbox(
-            'Set overlap',
+            "Set overlap",
             value=False,
-            help='Uses a dimension-dependant default overlap when unchecked',
+            help="Uses a dimension-dependant default overlap when unchecked",
         )
         cubical_p = None
         if cubical_overlap:
             cubical_p = st.number_input(
-                'Overlap',
-                value=0.25,
-                min_value=0.0,
-                max_value=1.0)
+                "Overlap", value=0.25, min_value=0.0, max_value=1.0
+            )
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
     return cover
 
 
 def mapper_clustering_kmeans():
     clust_num = st.number_input(
-        'Clusters',
+        "Clusters",
         value=2,
         min_value=1,
     )
     n_clusters = int(clust_num)
-    return KMeans(n_clusters=n_clusters, n_init='auto')
+    return KMeans(n_clusters=n_clusters, n_init="auto")
 
 
 def mapper_clustering_dbscan():
     eps = st.number_input(
-        'Eps',
+        "Eps",
         value=0.5,
         min_value=0.0,
     )
     min_samples = st.number_input(
-        'Min Samples',
+        "Min Samples",
         value=5,
         min_value=1,
     )
     metric = st.selectbox(
-        'Metric',
+        "Metric",
         options=[
-            'euclidean',
-            'chebyshev',
-            'manhattan',
-            'cosine',
-        ]
+            "euclidean",
+            "chebyshev",
+            "manhattan",
+            "cosine",
+        ],
     )
     return DBSCAN(eps=eps, min_samples=min_samples, metric=metric)
 
 
 def mapper_clustering_hdbscan():
     min_cluster_size = st.number_input(
-        'Min Cluster Size',
+        "Min Cluster Size",
         value=5,
         min_value=1,
     )
     metric = st.selectbox(
-        'Metric',
+        "Metric",
         options=[
-            'euclidean',
-            'chebyshev',
-            'manhattan',
-        ]
+            "euclidean",
+            "chebyshev",
+            "manhattan",
+        ],
     )
     return HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
 
 
 def mapper_clustering_agglomerative():
     clust_num = st.number_input(
-        'Clusters',
+        "Clusters",
         value=2,
         min_value=1,
     )
     linkage = st.selectbox(
-        'Linkage',
+        "Linkage",
         options=[
-            'ward',
-            'complete',
-            'average',
-            'single',
+            "ward",
+            "complete",
+            "average",
+            "single",
         ],
         index=3,
     )
     n_clusters = int(clust_num)
     metric = st.selectbox(
-        'Metric',
+        "Metric",
         options=[
-            'euclidean',
-            'chebyshev',
-            'manhattan',
-            'cosine',
-        ]
+            "euclidean",
+            "chebyshev",
+            "manhattan",
+            "cosine",
+        ],
     )
     return AgglomerativeClustering(
         n_clusters=n_clusters,
@@ -452,12 +445,12 @@ def mapper_clustering_agglomerative():
 
 def mapper_clustering_affinityprop():
     damping = st.number_input(
-        'Damping',
+        "Damping",
         value=0.5,
         min_value=0.0,
     )
     max_iter = st.number_input(
-        'Max Iter',
+        "Max Iter",
         value=200,
         min_value=50,
     )
@@ -465,9 +458,9 @@ def mapper_clustering_affinityprop():
 
 
 def mapper_clustering_input_section():
-    st.header('🧮 Clustering')
+    st.header("🧮 Clustering")
     clustering_type = st.selectbox(
-        'Type',
+        "Type",
         options=[
             V_CLUSTERING_TRIVIAL,
             V_CLUSTERING_KMEANS,
@@ -495,8 +488,8 @@ def mapper_clustering_input_section():
 
 
 @st.cache_data(
-    hash_funcs={'tdamapper.learn.MapperAlgorithm': MapperAlgorithm.__repr__},
-    show_spinner='Computing Mapper',
+    hash_funcs={"tdamapper.learn.MapperAlgorithm": MapperAlgorithm.__repr__},
+    show_spinner="Computing Mapper",
 )
 def compute_mapper(mapper, X, y):
     mapper_graph = mapper.fit_transform(X, y)
@@ -521,7 +514,7 @@ def mapper_input_section(X):
 
 def plot_agg_input_section():
     agg_type = st.selectbox(
-        'Aggregation',
+        "Aggregation",
         options=[
             V_AGGREGATION_MEAN,
             V_AGGREGATION_STD,
@@ -533,28 +526,28 @@ def plot_agg_input_section():
     agg_name = None
     if agg_type == V_AGGREGATION_MEAN:
         agg = np.nanmean
-        agg_name = 'Mean'
+        agg_name = "Mean"
     elif agg_type == V_AGGREGATION_STD:
         agg = np.nanstd
-        agg_name = 'Std'
+        agg_name = "Std"
     elif agg_type == V_AGGREGATION_MODE:
         agg = mode
-        agg_name = 'Mode'
+        agg_name = "Mode"
     elif agg_type == V_AGGREGATION_QUANTILE:
         q = st.slider(
-            'Rank',
+            "Rank",
             value=0.5,
             min_value=0.0,
             max_value=1.0,
         )
         agg = quantile(q)
-        agg_name = f'Quantile {round(q, 2)}'
+        agg_name = f"Quantile {round(q, 2)}"
     return agg, agg_name
 
 
 def plot_cmap_input_section():
     cmap_type = st.selectbox(
-        'Colormap',
+        "Colormap",
         options=[
             V_CMAP_JET,
             V_CMAP_VIRIDIS,
@@ -567,19 +560,19 @@ def plot_cmap_input_section():
     )
     cmap = None
     if cmap_type == V_CMAP_JET:
-        cmap = 'Jet'
+        cmap = "Jet"
     elif cmap_type == V_CMAP_VIRIDIS:
-        cmap = 'Viridis'
+        cmap = "Viridis"
     elif cmap_type == V_CMAP_CIVIDIS:
-        cmap = 'Cividis'
+        cmap = "Cividis"
     elif cmap_type == V_CMAP_PORTLAND:
-        cmap = 'Portland'
+        cmap = "Portland"
     elif cmap_type == V_CMAP_SPECTRAL:
-        cmap = 'Spectral'
+        cmap = "Spectral"
     elif cmap_type == V_CMAP_HSV:
-        cmap = 'HSV'
+        cmap = "HSV"
     elif cmap_type == V_CMAP_TWILIGHT:
-        cmap = 'Twilight'
+        cmap = "Twilight"
     return cmap
 
 
@@ -587,7 +580,7 @@ def plot_color_input_section(df_X, df_y):
     X_cols = list(df_X.columns)
     y_cols = list(df_y.columns)
     col_feat = st.selectbox(
-        'Color',
+        "Color",
         options=y_cols + X_cols,
     )
     if col_feat in X_cols:
@@ -597,8 +590,12 @@ def plot_color_input_section(df_X, df_y):
 
 
 @st.cache_data(
-    hash_funcs={'networkx.classes.graph.Graph': lambda g: _encode_graph(_get_graph_no_attribs(g))},
-    show_spinner='Generating Mapper Layout',
+    hash_funcs={
+        "networkx.classes.graph.Graph": lambda g: _encode_graph(
+            _get_graph_no_attribs(g)
+        )
+    },
+    show_spinner="Generating Mapper Layout",
 )
 def compute_mapper_plot(mapper_graph, dim, seed, iterations):
     _check_limits_mapper_graph(mapper_graph)
@@ -612,18 +609,18 @@ def compute_mapper_plot(mapper_graph, dim, seed, iterations):
 
 
 def mapper_plot_section(mapper_graph):
-    st.header('🗺️ Layout')
+    st.header("🗺️ Layout")
     toggle_3d = st.toggle(
-        '3D',
+        "3D",
         value=True,
     )
     dim = 3 if toggle_3d else 2
     seed = st.number_input(
-        'Seed',
+        "Seed",
         value=VD_SEED,
     )
     iterations = st.number_input(
-        'Iterations',
+        "Iterations",
         value=VD_ITERATIONS,
         min_value=1,
     )
@@ -637,14 +634,17 @@ def mapper_plot_section(mapper_graph):
 
 
 @st.cache_data(
-    hash_funcs={'tdamapper.plot.MapperPlot': lambda mp: mp.positions},
-    show_spinner='Rendering Mapper',
+    hash_funcs={"tdamapper.plot.MapperPlot": lambda mp: mp.positions},
+    show_spinner="Rendering Mapper",
 )
-def compute_mapper_fig(mapper_plot, colors, cmap, agg, agg_name, colors_feat):
+def compute_mapper_fig(
+    mapper_plot, colors, node_size, cmap, _agg, agg_name, colors_feat
+):
     mapper_fig = mapper_plot.plot_plotly(
         colors,
-        agg=agg,
-        title=f'{agg_name} of {colors_feat}',
+        node_size=node_size,
+        agg=_agg,
+        title=f"{agg_name} of {colors_feat}",
         cmap=cmap,
         width=600,
         height=600,
@@ -653,22 +653,24 @@ def compute_mapper_fig(mapper_plot, colors, cmap, agg, agg_name, colors_feat):
 
 
 def mapper_figure_section(df_X, df_y, mapper_plot):
-    st.header('🎨 Plot')
+    st.header("🎨 Plot")
     agg, agg_name = plot_agg_input_section()
     cmap = plot_cmap_input_section()
     colors, colors_feat = plot_color_input_section(df_X, df_y)
+    node_size = st.slider("Node size", min_value=0.1, max_value=10.0, value=1.0)
     mapper_fig = compute_mapper_fig(
         mapper_plot,
         colors=colors,
-        agg=agg,
+        node_size=node_size,
+        _agg=agg,
         cmap=cmap,
         agg_name=agg_name,
         colors_feat=colors_feat,
     )
     dim = _get_dim(mapper_fig)
     mapper_fig.update_layout(
-        dragmode='orbit' if dim == 3 else 'pan',
-        uirevision='constant',
+        dragmode="orbit" if dim == 3 else "pan",
+        uirevision="constant",
         margin=dict(b=0, l=0, r=0, t=0),
     )
     mapper_fig.update_xaxes(
@@ -676,7 +678,7 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
     )
     mapper_fig.update_yaxes(
         showline=False,
-        scaleanchor='x',
+        scaleanchor="x",
         scaleratio=1,
     )
     return mapper_fig
@@ -684,32 +686,34 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
 
 def mapper_rendering_section(mapper_graph, mapper_fig):
     config = {
-        'scrollZoom': True,
-        'displaylogo': False,
-        'modeBarButtonsToRemove': ['zoom', 'pan'],
+        "scrollZoom": True,
+        "displaylogo": False,
+        "modeBarButtonsToRemove": ["zoom", "pan"],
     }
     st.plotly_chart(mapper_fig, use_container_width=True, config=config)
 
 
 def data_summary_section(df_X, df_y, mapper_graph):
-    df_stats = pd.DataFrame({
-        'Stat': [
-            'Samples',
-            'Input Feats',
-            'Target Feats',
-            'Nodes',
-            'Edges',
-            'Conn. Comp.'
-        ],
-        'Value': [
-            len(df_X),
-            len(df_X.columns),
-            len(df_y.columns),
-            mapper_graph.number_of_nodes(),
-            mapper_graph.number_of_edges(),
-            nx.number_connected_components(mapper_graph),
-        ]
-    })
+    df_stats = pd.DataFrame(
+        {
+            "Stat": [
+                "Samples",
+                "Input Feats",
+                "Target Feats",
+                "Nodes",
+                "Edges",
+                "Conn. Comp.",
+            ],
+            "Value": [
+                len(df_X),
+                len(df_X.columns),
+                len(df_y.columns),
+                mapper_graph.number_of_nodes(),
+                mapper_graph.number_of_edges(),
+                nx.number_connected_components(mapper_graph),
+            ],
+        }
+    )
     st.dataframe(
         df_stats,
         hide_index=True,
@@ -723,20 +727,20 @@ def data_summary_section(df_X, df_y, mapper_graph):
         height=330,
         column_config={
             V_DATA_SUMMARY_HIST: st.column_config.AreaChartColumn(
-                width='small',
+                width="small",
             ),
             V_DATA_SUMMARY_FEAT: st.column_config.TextColumn(
-                width='small',
+                width="small",
                 disabled=True,
-            )
+            ),
         },
         use_container_width=True,
     )
 
 
-def get_gzip_bytes(string, encoding='utf-8'):
+def get_gzip_bytes(string, encoding="utf-8"):
     fileobj = io.BytesIO()
-    gzf = gzip.GzipFile(fileobj=fileobj, mode='wb', compresslevel=6)
+    gzf = gzip.GzipFile(fileobj=fileobj, mode="wb", compresslevel=6)
     gzf.write(string.encode(encoding))
     gzf.close()
     return fileobj.getvalue()
@@ -749,21 +753,21 @@ def data_download_button(df_X, df_y):
         buffer,
         index=False,
         compression={
-            'method': 'gzip',
-            'compresslevel': 6,
+            "method": "gzip",
+            "compresslevel": 6,
         },
     )
     buffer.seek(0)
     timestamp = int(time.time())
     dt = datetime.fromtimestamp(timestamp)
-    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
+    human_readable = dt.strftime("%Y-%m-%d_%H-%M-%S")
     st.download_button(
-        '📥 Download Data',
+        "📥 Download Data",
         disabled=df_all.empty,
         use_container_width=True,
         data=buffer,
-        file_name=f'data_{human_readable}.gzip',
-        mime='text/csv',
+        file_name=f"data_{human_readable}.gzip",
+        mime="text/csv",
     )
 
 
@@ -771,17 +775,17 @@ def mapper_download_button(mapper_graph):
     mapper_adj = {} if mapper_graph is None else adjacency_data(mapper_graph)
     buffer = io.BytesIO()
     mapper_json = json.dumps(mapper_adj, default=int)
-    buffer.write(mapper_json.encode('utf-8'))
+    buffer.write(mapper_json.encode("utf-8"))
     buffer.seek(0)
     timestamp = int(time.time())
     dt = datetime.fromtimestamp(timestamp)
-    human_readable = dt.strftime('%Y-%m-%d_%H-%M-%S')
+    human_readable = dt.strftime("%Y-%m-%d_%H-%M-%S")
     download_button = st.download_button(
-        '📥 Download Mapper Graph',
+        "📥 Download Mapper Graph",
         data=get_gzip_bytes(mapper_json),
         disabled=mapper_graph is None,
         use_container_width=True,
-        file_name=f'mapper_graph_{human_readable}.gzip',
+        file_name=f"mapper_graph_{human_readable}.gzip",
     )
     return download_button
 
@@ -792,7 +796,7 @@ def main():
         try:
             df_X, df_y = data_input_section()
         except ValueError as err:
-            st.error(f'{err}')
+            st.error(f"{err}")
             return
         st.divider()
         mapper_graph = mapper_input_section(df_X.to_numpy())

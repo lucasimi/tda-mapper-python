@@ -1,2 +1,8 @@
 sphinx_rtd_theme
 nbsphinx
+jupyter
+pandoc
+jupytext
+pandas
+scikit-learn<1.6.0
+tda-mapper

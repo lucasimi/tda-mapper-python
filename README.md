@@ -23,7 +23,7 @@ Further details in the
 and in the
 [paper](https://openreview.net/pdf?id=lTX4bYREAZ).
 
-### Main Features
+## Main Features
 
 - **Fast Mapper graph construction**: Accelerates computations with efficient spatial search, enabling analysis of large, high-dimensional datasets.
 
@@ -33,7 +33,7 @@ and in the
 
 - **Interactive exploration**: Explore data interactively through a user-friendly app.
 
-### Background
+## Background
 
 The Mapper algorithm transforms complex datasets into graph representations
 that highlight clusters, transitions, and topological features. These insights
@@ -47,7 +47,7 @@ its mathematical foundations and applications, read the
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Choose lens | Cover image | Run clustering | Build graph |
 
-### Citations
+## Citations
 
 If you use **tda-mapper** in your work, please consider citing both the
 [library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
@@ -71,13 +71,18 @@ pip install tda-mapper
 
 ### How to Use
 
-Here's a minimal example using the **circles dataset** from `scikit-learn` to
-demonstrate how to use **tda-mapper**:
+Here's a minimal example using the **circles dataset** from `scikit-learn` to demonstrate how to use **tda-mapper**.
+We start by generating the data and visualizing it.
+The dataset consists of two concentric circles.
+The goal is to compute a Mapper graph that summarizes this structure while preserving topological features.
+We proceed as follows:
+
 
 ```python
-import numpy as np
-
+import matplotlib.pyplot as plt
 from sklearn.datasets import make_circles
+
+import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
@@ -85,27 +90,34 @@ from tdamapper.learn import MapperAlgorithm
 from tdamapper.cover import CubicalCover
 from tdamapper.plot import MapperPlot
 
-# load a labelled dataset
+# Generate toy dataset
 X, labels = make_circles(n_samples=5000, noise=0.05, factor=0.3, random_state=42)
+plt.scatter(X[:,0], X[:,1], c=labels, cmap='jet', s=0.25)
+plt.show()
+
+# Apply PCA as lens
 y = PCA(2, random_state=42).fit_transform(X)
 
+# Mapper pipeline
 cover = CubicalCover(n_intervals=10, overlap_frac=0.3)
 clust = DBSCAN()
 graph = MapperAlgorithm(cover, clust).fit_transform(X, y)
 
-# color according to labels
+# Visualize the Mapper graph
 fig = MapperPlot(graph, dim=2, seed=42, iterations=60).plot_plotly(colors=labels)
 fig.show(config={'scrollZoom': True})
 ```
 
 | Original Dataset | Mapper Graph |
 | ---------------- | ------------ |
-| ![Original Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png) | ![Mapper Graph](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png) |
+| ![Original Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset_v2.png) | ![Mapper Graph](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean_v2.png) |
+
+Left: the original dataset consisting of two concentric circles with noise, colored by class label. Right: the resulting Mapper graph, built from the PCA projection and clustered using DBSCAN. The two concentric circles are well identified by the connected components in the Mapper graph.
 
 More examples can be found in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
 
-### Interactive App
+## Interactive App
 
 Use our Streamlit app to visualize and explore your data without writing code.
 You can run a live demo directly on

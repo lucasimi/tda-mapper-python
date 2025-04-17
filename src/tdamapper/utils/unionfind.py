@@ -5,10 +5,15 @@ class UnionFind:
         self.__size = {x: 1 for x in X}
 
     def find(self, x):
-        y = x
-        while y != self.__parent[y]:
-            y = self.__parent[y]
-        return y
+        root = x
+        while root != self.__parent[root]:
+            root = self.__parent[root]
+        tmp = x
+        while tmp != root:
+            parent = self.__parent[tmp]
+            self.__parent[tmp] = root
+            tmp = parent
+        return root
 
     def union(self, x, y):
         x, y = self.find(x), self.find(y)
