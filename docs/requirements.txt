@@ -1,2 +1,5 @@
 sphinx_rtd_theme
 nbsphinx
+pandoc
+jupytext
+tda-mapper
