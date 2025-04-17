@@ -1,5 +1,7 @@
 sphinx_rtd_theme
 nbsphinx
+ipykernel
+jupyter
 pandoc
 jupytext
 tda-mapper
