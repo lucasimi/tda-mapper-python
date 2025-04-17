@@ -9,8 +9,8 @@ relationships, and uncover meaningful structures in a manner that aligns with
 scikit-learn's conventions for estimators.
 """
 
-from tdamapper.core import _MapperAlgorithm
 from tdamapper.clustering import _MapperClustering
+from tdamapper.core import _MapperAlgorithm
 
 
 class MapperClustering(_MapperClustering):
@@ -116,7 +116,7 @@ class MapperAlgorithm(_MapperAlgorithm):
             clustering=clustering,
             failsafe=failsafe,
             verbose=verbose,
-            n_jobs=n_jobs
+            n_jobs=n_jobs,
         )
 
     def fit(self, X, y=None):

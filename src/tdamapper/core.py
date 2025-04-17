@@ -29,32 +29,25 @@ this module is a NetworkX graph object.
 """
 
 import logging
+
 import networkx as nx
 from joblib import Parallel, delayed
 
+from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
 from tdamapper.utils.unionfind import UnionFind
-from tdamapper._common import (
-    clone,
-    deprecated,
-    ParamsMixin,
-    EstimatorMixin,
-)
 
+ATTR_IDS = "ids"
 
-ATTR_IDS = 'ids'
-
-ATTR_SIZE = 'size'
+ATTR_SIZE = "size"
 
 
 _logger = logging.getLogger(__name__)
 
 logging.basicConfig(
-    format='%(asctime)s %(module)s %(levelname)s: %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p',
+    format="%(asctime)s %(module)s %(levelname)s: %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S %p",
     level=logging.INFO,
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 
 
@@ -92,12 +85,15 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
     :return: A list of node labels for each point in the dataset.
     :rtype: list[list[int]]
     """
+
     def _run_clustering(local_ids, X_local, clust):
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
 
-    _lbls = Parallel(n_jobs, prefer='threads')(
-        delayed(_run_clustering)(local_ids, [X[j] for j in local_ids], clone(clustering))
+    _lbls = Parallel(n_jobs, prefer="threads")(
+        delayed(_run_clustering)(
+            local_ids, [X[j] for j in local_ids], clone(clustering)
+        )
         for local_ids in cover.apply(y)
     )
     itm_lbls = [[] for _ in X]
@@ -389,10 +385,10 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
 
     def fit(self, X, y=None):
         X, y = self._validate_X_y(X, y)
-        self.__cover = TrivialCover() if self.cover is None \
-            else self.cover
-        self.__clustering = TrivialClustering() if self.clustering is None \
-            else self.clustering
+        self.__cover = TrivialCover() if self.cover is None else self.cover
+        self.__clustering = (
+            TrivialClustering() if self.clustering is None else self.clustering
+        )
         self.__verbose = self.verbose
         self.__failsafe = self.failsafe
         if self.__failsafe:
@@ -426,8 +422,8 @@ class MapperAlgorithm(_MapperAlgorithm):
     """
 
     @deprecated(
-        'This class is deprecated and will be removed in a future release. '
-        'Use tdamapper.learn.MapperAlgorithm.'
+        "This class is deprecated and will be removed in a future release. "
+        "Use tdamapper.learn.MapperAlgorithm."
     )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -455,8 +451,9 @@ class FailSafeClustering(ParamsMixin):
         self.verbose = verbose
 
     def fit(self, X, y=None):
-        self.__clustering = TrivialClustering() if self.clustering is None \
-            else self.clustering
+        self.__clustering = (
+            TrivialClustering() if self.clustering is None else self.clustering
+        )
         self.__verbose = self.verbose
         self.labels_ = None
         try:
@@ -464,9 +461,7 @@ class FailSafeClustering(ParamsMixin):
             self.labels_ = self.__clustering.labels_
         except ValueError as err:
             if self.__verbose:
-                _logger.warning(
-                    'Unable to perform clustering on local chart: %s', err
-                )
+                _logger.warning("Unable to perform clustering on local chart: %s", err)
             self.labels_ = [0 for _ in X]
         return self
 
