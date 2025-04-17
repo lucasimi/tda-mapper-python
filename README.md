@@ -92,7 +92,7 @@ from tdamapper.plot import MapperPlot
 
 # Generate toy dataset
 X, labels = make_circles(n_samples=5000, noise=0.05, factor=0.3, random_state=42)
-plt.scatter(X[:,0], X[:,1], c=labels, cmap='jet', s=1)
+plt.scatter(X[:,0], X[:,1], c=labels, cmap='jet', s=0.25)
 plt.show()
 
 # Apply PCA as lens
@@ -108,17 +108,11 @@ fig = MapperPlot(graph, dim=2, seed=42, iterations=60).plot_plotly(colors=labels
 fig.show(config={'scrollZoom': True})
 ```
 
-#### Original dataset
+| Original Dataset | Mapper Graph |
+| ---------------- | ------------ |
+| ![Original Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset_v2.png) | ![Mapper Graph](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean_v2.png) |
 
-![Original Dataset: two concentric noisy circles](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset.png)
-
-We generate a toy dataset consisting of two concentric circles with noise, colored by class label.
-
-#### Mapper graph
-
-![Mapper Graph: topological summary of the circles](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean.png)
-
-This is the resulting Mapper graph, built from the PCA projection of the data and clustered using DBSCAN.
+Left: the original dataset consisting of two concentric circles with noise, colored by class label. Right: the resulting Mapper graph, built from the PCA projection and clustered using DBSCAN. The two concentric circles are well identified by the connected components in the Mapper graph.
 
 More examples can be found in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
