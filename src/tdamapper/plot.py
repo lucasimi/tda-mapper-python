@@ -1,16 +1,15 @@
 """
 This module provides functionalities to visualize the Mapper graph.
 """
-import networkx as nx
-import igraph as ig
 
+import igraph as ig
+import networkx as nx
 import numpy as np
 
+from tdamapper._common import deprecated
 from tdamapper._plot_matplotlib import plot_matplotlib
 from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper._plot_pyvis import plot_pyvis
-
-from tdamapper._common import deprecated
 
 
 class MapperPlot:
@@ -44,7 +43,7 @@ class MapperPlot:
         dim,
         iterations=50,
         seed=None,
-        layout_engine='igraph',
+        layout_engine="igraph",
     ):
         self.graph = graph
         self.dim = dim
@@ -54,13 +53,13 @@ class MapperPlot:
         self.positions = self._compute_pos()
 
     def _compute_pos(self):
-        if self.layout_engine == 'igraph':
+        if self.layout_engine == "igraph":
             return self._compute_pos_ig()
-        elif self.layout_engine == 'networkx':
+        elif self.layout_engine == "networkx":
             return self._compute_pos_nx()
         else:
             raise ValueError(
-                f'Unknown engine {self.layout_engine}. '
+                f"Unknown engine {self.layout_engine}. "
                 "Only possible values are 'igraph' and 'networkx'"
             )
 
@@ -83,15 +82,19 @@ class MapperPlot:
                 niter=self.iterations,
                 seed=random_pos,
             )
-            pos = {node: (layout[i][0], layout[i][1]) for i, node in
-                   enumerate(self.graph.nodes())}
+            pos = {
+                node: (layout[i][0], layout[i][1])
+                for i, node in enumerate(self.graph.nodes())
+            }
         elif self.dim == 3:
             layout = graph_ig.layout_fruchterman_reingold_3d(
                 niter=self.iterations,
                 seed=random_pos,
             )
-            pos = {node: (layout[i][0], layout[i][1], layout[i][2])
-                   for i, node in enumerate(self.graph.nodes())}
+            pos = {
+                node: (layout[i][0], layout[i][1], layout[i][2])
+                for i, node in enumerate(self.graph.nodes())
+            }
         return pos
 
     def plot_matplotlib(
@@ -101,7 +104,7 @@ class MapperPlot:
         title=None,
         width=512,
         height=512,
-        cmap='jet',
+        cmap="jet",
     ):
         """
         Draw a static plot using Matplotlib.
@@ -146,11 +149,12 @@ class MapperPlot:
     def plot_plotly(
         self,
         colors,
+        node_size=1,
         agg=np.nanmean,
         title=None,
         width=512,
         height=512,
-        cmap='jet',
+        cmap="jet",
     ):
         """
         Draw an interactive plot using Plotly.
@@ -159,6 +163,8 @@ class MapperPlot:
             node in the graph, useful for highlighting different features of
             the data.
         :type colors: array-like of shape (n,) or list-like of size n
+        :param node_size: A scaling factor for node size. Defaults to 1.
+        :type node_size: float, optional
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
@@ -184,6 +190,7 @@ class MapperPlot:
         return plot_plotly(
             self,
             colors=colors,
+            node_size=node_size,
             agg=agg,
             title=title,
             width=width,
@@ -256,7 +263,7 @@ class MapperPlot:
         title=None,
         width=512,
         height=512,
-        cmap='jet',
+        cmap="jet",
     ):
         """
         Draw an interactive HTML plot using PyVis.
@@ -339,8 +346,8 @@ class MapperLayoutInteractive:
     """
 
     @deprecated(
-        'This class is deprecated and will be removed in a future release. '
-        'Use tdamapper.plot.MapperPlot.'
+        "This class is deprecated and will be removed in a future release. "
+        "Use tdamapper.plot.MapperPlot."
     )
     def __init__(
         self,
@@ -353,7 +360,7 @@ class MapperLayoutInteractive:
         title=None,
         width=512,
         height=512,
-        cmap='jet',
+        cmap="jet",
     ):
         self.__graph = graph
         self.__dim = dim
@@ -500,8 +507,8 @@ class MapperLayoutStatic:
     """
 
     @deprecated(
-        'This class is deprecated and will be removed in a future release. '
-        'Use tdamapper.plot.MapperPlot.'
+        "This class is deprecated and will be removed in a future release. "
+        "Use tdamapper.plot.MapperPlot."
     )
     def __init__(
         self,
@@ -514,7 +521,7 @@ class MapperLayoutStatic:
         title=None,
         width=512,
         height=512,
-        cmap='jet',
+        cmap="jet",
     ):
         self.__colors = colors
         self.__agg = agg
