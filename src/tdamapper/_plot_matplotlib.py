@@ -26,6 +26,7 @@ def plot_matplotlib(
     height,
     title,
     colors,
+    node_size,
     agg,
     cmap,
 ):
@@ -34,11 +35,11 @@ def plot_matplotlib(
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     _plot_edges(mapper_plot, ax)
-    _plot_nodes(mapper_plot, title, colors, agg, cmap, ax)
+    _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax)
     return fig, ax
 
 
-def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
+def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
     nodes_arr = _node_pos_array(
         mapper_plot.graph, mapper_plot.dim, mapper_plot.positions
     )
@@ -47,7 +48,8 @@ def _plot_nodes(mapper_plot, title, colors, agg, cmap, ax):
     colors_agg = aggregate_graph(colors, mapper_plot.graph, agg)
     marker_color = [colors_agg[n] for n in mapper_plot.graph.nodes()]
     marker_size = [
-        200.0 * math.sqrt(attr_size[n] / max_size) for n in mapper_plot.graph.nodes()
+        node_size * 200.0 * math.sqrt(attr_size[n] / max_size)
+        for n in mapper_plot.graph.nodes()
     ]
     verts = ax.scatter(
         x=nodes_arr[0],

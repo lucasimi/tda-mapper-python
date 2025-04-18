@@ -132,6 +132,7 @@ def plot_pyvis(
     mapper_plot,
     output_file,
     colors,
+    node_size,
     agg,
     title,
     width,
@@ -143,6 +144,7 @@ def plot_pyvis(
         width=width,
         height=height,
         colors=colors,
+        node_size=node_size,
         agg=agg,
         cmap=cmap,
     )
@@ -155,6 +157,7 @@ def plot_pyvis(
 def _compute_net(
     mapper_plot,
     colors,
+    node_size,
     agg,
     width,
     height,
@@ -177,11 +180,11 @@ def _compute_net(
     min_node_size = float("inf")
     max_node_size = -float("inf")
     for node in nodes:
-        node_size = nodes[node]["size"]
-        if node_size > max_node_size:
-            max_node_size = node_size
-        if node_size < min_node_size:
-            min_node_size = node_size
+        n_size = nodes[node]["size"]
+        if n_size > max_node_size:
+            max_node_size = n_size
+        if n_size < min_node_size:
+            min_node_size = n_size
 
     node_colors = aggregate_graph(colors, graph, agg)
 
@@ -199,8 +202,8 @@ def _compute_net(
         if max_node_size == min_node_size:
             node_size_norm = 25.0
         else:
-            node_size = int(nodes[node]["size"])
-            node_size_norm = 25.0 * math.sqrt(node_size / max_node_size)
+            n_size = int(nodes[node]["size"])
+            node_size_norm = node_size * 25.0 * math.sqrt(n_size / max_node_size)
         return int(round(node_size_norm))
 
     def _color(node):
@@ -215,15 +218,15 @@ def _compute_net(
 
     for node in nodes:
         node_id = int(node)
-        node_size = _size(node)
+        n_size = _size(node)
         node_color = _color(node)
         node_stats = __fmt(node_colors[node])
-        node_label = f"color: {node_stats}\nnode: {node_id}\nsize: {node_size}"
+        node_label = f"color: {node_stats}\nnode: {node_id}\nsize: {n_size}"
         node_pos = mapper_plot.positions[node]
         net.add_node(
             node_id,
             label=node_id,
-            size=node_size,
+            size=n_size,
             color=node_color,
             title=node_label,
             x=node_pos[0] * width,
