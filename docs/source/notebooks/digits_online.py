@@ -76,7 +76,7 @@ fig = plot.plot_plotly(
 
 fig.show(renderer="notebook_connected", config={"scrollZoom": True})
 
-# %% [Markdown]
+# %% [markdown]
 # ### Inspect interesting nodes
 
 # %%
