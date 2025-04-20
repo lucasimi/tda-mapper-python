@@ -1,8 +1,8 @@
 from random import randrange
 
+from tdamapper.utils.heap import MaxHeap
 from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.quickselect import quickselect
-from tdamapper.utils.heap import MaxHeap
 
 
 def _swap(arr, i, j):
@@ -18,11 +18,11 @@ class VPTree:
     def __init__(
         self,
         X,
-        metric='euclidean',
+        metric="euclidean",
         metric_params=None,
         leaf_capacity=1,
         leaf_radius=0.0,
-        pivoting=None
+        pivoting=None,
     ):
         self.__metric = metric
         self.__metric_params = metric_params
@@ -66,9 +66,9 @@ class VPTree:
             self.__leaf_radius = vpt.get_leaf_radius()
             pivoting = vpt.get_pivoting()
             self.__pivoting = self._pivoting_disabled
-            if pivoting == 'random':
+            if pivoting == "random":
                 self.__pivoting = self._pivoting_random
-            elif pivoting == 'furthest':
+            elif pivoting == "furthest":
                 self.__pivoting = self._pivoting_furthest
 
         def _pivoting_disabled(self, start, end):
@@ -120,9 +120,8 @@ class VPTree:
             quickselect(self.__dataset, start + 1, end, mid)
             v_radius, _ = self.__dataset[mid]
             self.__dataset[start] = (v_radius, v_point)
-            if (
-                (end - start <= 2 * self.__leaf_capacity) or
-                (v_radius <= self.__leaf_radius)
+            if (end - start <= 2 * self.__leaf_capacity) or (
+                v_radius <= self.__leaf_radius
             ):
                 left = _Leaf(start + 1, mid)
                 right = _Leaf(mid, end)
@@ -200,7 +199,7 @@ class VPTree:
 
         def _get_radius(self):
             if len(self.__items) < self.__neighbors:
-                return float('inf')
+                return float("inf")
             furthest_dist, _ = self.__items.top()
             return furthest_dist
 

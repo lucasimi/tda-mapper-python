@@ -1,11 +1,12 @@
-import unittest
 import random
+import unittest
 
 from tdamapper.utils.quickselect import (
     partition,
-    quickselect,
     partition_tuple,
-    quickselect_tuple)
+    quickselect,
+    quickselect_tuple,
+)
 
 
 class TestQuickSelect(unittest.TestCase):
@@ -37,7 +38,7 @@ class TestQuickSelect(unittest.TestCase):
                 self.assertTrue(arr[i][0] <= val)
             for i in range(choice, n):
                 self.assertTrue(arr[i][0] >= val)
-    
+
     def test_partition_tuple(self):
         n = 1000
         arr_data = [random.randint(0, n - 1) for i in range(n)]
@@ -60,4 +61,3 @@ class TestQuickSelect(unittest.TestCase):
                 self.assertTrue(arr_ord[i] <= val)
             for i in range(choice, n):
                 self.assertTrue(arr_ord[i] >= val)
-    

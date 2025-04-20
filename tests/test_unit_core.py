@@ -1,14 +1,15 @@
 import unittest
 
-import numpy as np
 import networkx as nx
+import numpy as np
 from sklearn.cluster import DBSCAN
 
+from tdamapper.clustering import TrivialClustering
 from tdamapper.core import (
     MapperAlgorithm,
+    TrivialCover,
     mapper_connected_components,
     mapper_labels,
-    TrivialCover,
 )
 from tdamapper.cover import (
     BallCover,
@@ -16,10 +17,8 @@ from tdamapper.cover import (
     ProximityCubicalCover,
     StandardCubicalCover,
 )
-from tdamapper.clustering import TrivialClustering
 
-
-dist = 'euclidean'
+dist = "euclidean"
 
 
 def dataset(dim=10, num=1000):
@@ -62,9 +61,7 @@ class TestMapper(unittest.TestCase):
         data = [np.array([float(i)]) for i in range(1000)]
         cover = BallCover(0.5, metric=dist)
         clustering = DBSCAN(eps=1.0, min_samples=1)
-        mp = MapperAlgorithm(
-            cover=cover,
-            clustering=clustering)
+        mp = MapperAlgorithm(cover=cover, clustering=clustering)
         g = mp.fit_transform(data, data)
         self.assertEqual(1000, len(g))
         for node in g.nodes():
@@ -78,9 +75,7 @@ class TestMapper(unittest.TestCase):
         data = np.array([[float(i)] for i in range(1000)])
         cover = BallCover(1000.0, metric=dist)
         clustering = TrivialClustering()
-        mp = MapperAlgorithm(
-            cover=cover,
-            clustering=clustering)
+        mp = MapperAlgorithm(cover=cover, clustering=clustering)
         g = mp.fit_transform(data, data)
         self.assertEqual(1, len(g))
         for node in g.nodes():
@@ -96,9 +91,7 @@ class TestMapper(unittest.TestCase):
         data = np.array(data)
         cover = BallCover(150.0, metric=dist)
         clustering = TrivialClustering()
-        mp = MapperAlgorithm(
-            cover=cover,
-            clustering=clustering)
+        mp = MapperAlgorithm(cover=cover, clustering=clustering)
         g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():
@@ -117,9 +110,7 @@ class TestMapper(unittest.TestCase):
         ]
         cover = BallCover(1.1, metric=dist)
         clustering = TrivialClustering()
-        mp = MapperAlgorithm(
-            cover=cover,
-            clustering=clustering)
+        mp = MapperAlgorithm(cover=cover, clustering=clustering)
         g = mp.fit_transform(data, data)
         self.assertEqual(2, len(g))
         for node in g.nodes():

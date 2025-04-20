@@ -6,7 +6,7 @@ class SkBallTree:
     def __init__(
         self,
         X,
-        metric='euclidean',
+        metric="euclidean",
         leaf_capacity=1,
         leaf_radius=0.0,
         pivoting=None,

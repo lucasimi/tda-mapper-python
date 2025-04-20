@@ -1,15 +1,14 @@
-import unittest
 import random
+import unittest
 
 import numpy as np
 
 from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 
-
-distance = 'euclidean'
+distance = "euclidean"
 
 
 def dataset(dim=10, num=1000):
@@ -45,8 +44,8 @@ class TestVPTree(unittest.TestCase):
             dist_neigh.sort()
             self.assertEqual(0.0, dist_data[0])
             self.assertEqual(0.0, dist_neigh[0])
-            self.assertEqual(dist_neigh, dist_data[:self.neighbors])
-            self.assertEqual(set(dist_neigh), set(dist_data[:self.neighbors]))
+            self.assertEqual(dist_neigh, dist_data[: self.neighbors])
+            self.assertEqual(set(dist_neigh), set(dist_data[: self.neighbors]))
 
     def _test_nn_search(self, data, dist, vpt):
         d = get_metric(dist)
@@ -55,15 +54,29 @@ class TestVPTree(unittest.TestCase):
             self.assertEqual(0.0, d(val, neigh[0]))
 
     def _test_vptree(self, builder, data, dist):
-        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors)
+        vpt = builder(
+            data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors
+        )
         self._test_ball_search(data, dist, vpt)
         self._test_knn_search(data, dist, vpt)
         self._test_nn_search(data, dist, vpt)
-        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='random')
+        vpt = builder(
+            data,
+            metric=dist,
+            leaf_radius=self.eps,
+            leaf_capacity=self.neighbors,
+            pivoting="random",
+        )
         self._test_ball_search(data, dist, vpt)
         self._test_knn_search(data, dist, vpt)
         self._test_nn_search(data, dist, vpt)
-        vpt = builder(data, metric=dist, leaf_radius=self.eps, leaf_capacity=self.neighbors, pivoting='furthest')
+        vpt = builder(
+            data,
+            metric=dist,
+            leaf_radius=self.eps,
+            leaf_capacity=self.neighbors,
+            pivoting="furthest",
+        )
         self._test_ball_search(data, dist, vpt)
         self._test_knn_search(data, dist, vpt)
         self._test_nn_search(data, dist, vpt)
@@ -75,6 +88,7 @@ class TestVPTree(unittest.TestCase):
 
         def dist_refs(i, j):
             return d(data[i], data[j])
+
         self._test_vptree(HVPT, data_refs, dist_refs)
 
     def test_vptree_hier_data(self):
@@ -88,6 +102,7 @@ class TestVPTree(unittest.TestCase):
 
         def dist_refs(i, j):
             return d(data[i], data[j])
+
         self._test_vptree(FVPT, data_refs, dist_refs)
 
     def test_vptree_flat_data(self):
