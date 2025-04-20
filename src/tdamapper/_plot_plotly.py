@@ -63,17 +63,17 @@ def plot_plotly_update(
     height=None,
     title=None,
     colors=None,
-    size=None,
+    node_size=None,
     agg=None,
     cmap=None,
 ):
     if (
         (colors is not None)
-        and (size is not None)
+        and (node_size is not None)
         and (agg is not None)
         and (cmap is not None)
     ):
-        _update_traces_col(mapper_plot, fig, colors, size, agg, cmap)
+        _update_traces_col(mapper_plot, fig, colors, node_size, agg, cmap)
     if cmap is not None:
         _update_traces_cmap(mapper_plot, fig, cmap)
     if title is not None:

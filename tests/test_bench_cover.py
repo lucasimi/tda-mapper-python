@@ -1,17 +1,15 @@
-import unittest
 import logging
 import time
+import unittest
 
 import numpy as np
 from sklearn.datasets import load_digits
 
 from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
-
+from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.setup_logging import setup_logging
-
 
 dist = euclidean()
 
@@ -45,38 +43,38 @@ class TestVpSettings(unittest.TestCase):
         vpt = vp(XX, metric=d, **kwargs)
         list(self.cover(vpt, XX, r))
         t1 = time.time()
-        self.logger.info(f'time: {t1 - t0}')
+        self.logger.info(f"time: {t1 - t0}")
 
     def test_cover_random(self):
         for r in [1.0, 10.0, 100.0]:
             for n in [100, 1000, 10000]:
-                self.logger.info(f'============ Cover Bench Random ==========')
-                self.logger.info(f'[n: {n}, r: {r}]')
+                self.logger.info(f"============ Cover Bench Random ==========")
+                self.logger.info(f"[n: {n}, r: {r}]")
                 X = dataset(num=n)
-                self.logger.info('>>>>>>> HVPT >>>>>>')
-                self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
-                self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
-                self.logger.info('>>>>>>> FVPT >>>>>>')
-                self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
-                self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
-                self.logger.info('>>>>>> SKBT >>>>>>')
+                self.logger.info(">>>>>>> HVPT >>>>>>")
+                self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="random")
+                self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="furthest")
+                self.logger.info(">>>>>>> FVPT >>>>>>")
+                self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="random")
+                self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="furthest")
+                self.logger.info(">>>>>> SKBT >>>>>>")
                 self.run_bench(X, r, dist, SkBallTree)
                 self.run_bench(X, r, dist, SkBallTree, leaf_radius=r)
-                self.logger.info('')
+                self.logger.info("")
 
     def test_cover_digits(self):
         X, _ = load_digits(return_X_y=True)
-        #X = PCA(n_components=3).fit_transform(X)
+        # X = PCA(n_components=3).fit_transform(X)
         for r in [1.0, 10.0, 100.0]:
-            self.logger.info(f'======= Cover Bench Digits =======')
-            self.logger.info(f'[r: {r}]')
-            self.logger.info('>>>>>>> HVPT >>>>>>')
-            self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting='random')
-            self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting='furthest')
-            self.logger.info('>>>>>>> FVPT >>>>>>')
-            self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting='random')
-            self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting='furthest')
-            self.logger.info('>>>>>> SKBT >>>>>>')
+            self.logger.info(f"======= Cover Bench Digits =======")
+            self.logger.info(f"[r: {r}]")
+            self.logger.info(">>>>>>> HVPT >>>>>>")
+            self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="random")
+            self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="furthest")
+            self.logger.info(">>>>>>> FVPT >>>>>>")
+            self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="random")
+            self.run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="furthest")
+            self.logger.info(">>>>>> SKBT >>>>>>")
             self.run_bench(X, r, dist, SkBallTree)
             self.run_bench(X, r, dist, SkBallTree, leaf_radius=r)
-            self.logger.info('')
+            self.logger.info("")

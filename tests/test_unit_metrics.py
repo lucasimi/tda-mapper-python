@@ -41,11 +41,13 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(bc, 0.0)
 
     def test_get_metric(self):
-        self.assertEqual(metrics.euclidean(), metrics.get_metric('euclidean'))
-        self.assertEqual(metrics.euclidean(), metrics.get_metric('minkowski'))
-        self.assertEqual(metrics.chebyshev(), metrics.get_metric('chebyshev'))
-        self.assertEqual(metrics.chebyshev(), metrics.get_metric('minkowski', p=np.inf))
-        self.assertEqual(metrics.chebyshev(), metrics.get_metric('minkowski', p=float('inf')))
-        self.assertEqual(metrics.manhattan(), metrics.get_metric('manhattan'))
-        self.assertEqual(metrics.manhattan(), metrics.get_metric('minkowski', p=1))
-        self.assertEqual(metrics.cosine(), metrics.get_metric('cosine'))
+        self.assertEqual(metrics.euclidean(), metrics.get_metric("euclidean"))
+        self.assertEqual(metrics.euclidean(), metrics.get_metric("minkowski"))
+        self.assertEqual(metrics.chebyshev(), metrics.get_metric("chebyshev"))
+        self.assertEqual(metrics.chebyshev(), metrics.get_metric("minkowski", p=np.inf))
+        self.assertEqual(
+            metrics.chebyshev(), metrics.get_metric("minkowski", p=float("inf"))
+        )
+        self.assertEqual(metrics.manhattan(), metrics.get_metric("manhattan"))
+        self.assertEqual(metrics.manhattan(), metrics.get_metric("minkowski", p=1))
+        self.assertEqual(metrics.cosine(), metrics.get_metric("cosine"))

@@ -1,7 +1,7 @@
 from random import randrange
 
-from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.heap import MaxHeap
+from tdamapper.utils.metrics import get_metric
 
 
 def _swap(arr, i, j):
@@ -42,11 +42,11 @@ class VPTree:
     def __init__(
         self,
         X,
-        metric='euclidean',
+        metric="euclidean",
         metric_params=None,
         leaf_capacity=1,
         leaf_radius=0.0,
-        pivoting=None
+        pivoting=None,
     ):
         self.__metric = metric
         self.__metric_params = metric_params
@@ -86,9 +86,9 @@ class VPTree:
             self.__leaf_radius = vpt.get_leaf_radius()
             pivoting = vpt.get_pivoting()
             self.__pivoting = self._pivoting_disabled
-            if pivoting == 'random':
+            if pivoting == "random":
                 self.__pivoting = self._pivoting_random
-            elif pivoting == 'furthest':
+            elif pivoting == "furthest":
                 self.__pivoting = self._pivoting_furthest
 
         def _pivoting_disabled(self, start, end):
@@ -127,8 +127,7 @@ class VPTree:
             _, v_point, is_terminal = self.__dataset[start]
             for i in range(start + 1, end):
                 _, point, _ = self.__dataset[i]
-                self.__dataset[i] = \
-                    self.__distance(v_point, point), point, is_terminal
+                self.__dataset[i] = self.__distance(v_point, point), point, is_terminal
 
         def build(self):
             self._build_iter()
@@ -143,9 +142,8 @@ class VPTree:
                 _, v_point, _ = self.__dataset[start]
                 _quickselect(self.__dataset, start + 1, end, mid)
                 v_radius, _, _ = self.__dataset[mid]
-                if (
-                    (end - start > 2 * self.__leaf_capacity) and
-                    (v_radius > self.__leaf_radius)
+                if (end - start > 2 * self.__leaf_capacity) and (
+                    v_radius > self.__leaf_radius
                 ):
                     self.__dataset[start] = (v_radius, v_point, False)
                     stack.append((mid, end))
@@ -210,7 +208,7 @@ class VPTree:
             self.__distance = vpt._get_distance()
             self.__point = point
             self.__neighbors = neighbors
-            self.__radius = float('inf')
+            self.__radius = float("inf")
             self.__result = MaxHeap()
 
         def _get_items(self):
@@ -253,9 +251,7 @@ class VPTree:
                         else:
                             fst_start, fst_end = mid, end
                             snd_start, snd_end = start + 1, mid
-                        stack.append(
-                            (snd_start, snd_end, abs(v_radius - dist), POST)
-                        )
+                        stack.append((snd_start, snd_end, abs(v_radius - dist), POST))
                         stack.append((fst_start, fst_end, 0.0, PRE))
                     elif action == POST:
                         if self.__radius > thr:
