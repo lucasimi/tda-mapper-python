@@ -1,14 +1,12 @@
-import unittest
 import logging
 import timeit
-
-import pandas as pd
-import numpy as np
+import unittest
 
 import numba
+import numpy as np
+import pandas as pd
 
 import tdamapper.utils.metrics as metrics
-
 from tests.setup_logging import setup_logging
 
 
@@ -44,7 +42,7 @@ def chebyshev_numpy_linalg(a, b):
 
 def eval_dist(X, d):
     for i in range(X.shape[0] - 1):
-        d(X[i], X[i+1])
+        d(X[i], X[i + 1])
 
 
 def run_dist_bench(X, d):
@@ -57,10 +55,10 @@ def run_euclidean_bench(X):
     t_numpy_linalg = run_dist_bench(X, euclidean_numpy_linalg)
     t_tdamapper = run_dist_bench(X, metrics.euclidean())
     return {
-        'metric': 'euclidean',
-        'numpy': t_numpy,
-        'numpy_linalg': t_numpy_linalg,
-        'tdamapper': t_tdamapper,
+        "metric": "euclidean",
+        "numpy": t_numpy,
+        "numpy_linalg": t_numpy_linalg,
+        "tdamapper": t_tdamapper,
     }
 
 
@@ -69,10 +67,10 @@ def run_chebyshev_bench(X):
     t_numpy_linalg = run_dist_bench(X, chebyshev_numpy_linalg)
     t_tdamapper = run_dist_bench(X, metrics.chebyshev())
     return {
-        'metric': 'chebyshev',
-        'numpy': t_numpy,
-        'numpy_linalg': t_numpy_linalg,
-        'tdamapper': t_tdamapper,
+        "metric": "chebyshev",
+        "numpy": t_numpy,
+        "numpy_linalg": t_numpy_linalg,
+        "tdamapper": t_tdamapper,
     }
 
 
@@ -81,10 +79,10 @@ def run_manhattan_bench(X):
     t_numpy_linalg = run_dist_bench(X, manhattan_numpy_linalg)
     t_tdamapper = run_dist_bench(X, metrics.manhattan())
     return {
-        'metric': 'manhattan',
-        'numpy': t_numpy,
-        'numpy_linalg': t_numpy_linalg,
-        'tdamapper': t_tdamapper,
+        "metric": "manhattan",
+        "numpy": t_numpy,
+        "numpy_linalg": t_numpy_linalg,
+        "tdamapper": t_tdamapper,
     }
 
 
@@ -116,5 +114,5 @@ class TestBenchMetrics(unittest.TestCase):
         X = np.random.rand(1000, 1000)
         df_bench = run_bench(X)
         df_str = str(df_bench)
-        for line in df_str.split('\n'):
+        for line in df_str.split("\n"):
             self.logger.info(line)

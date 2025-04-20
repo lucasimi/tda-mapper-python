@@ -100,6 +100,7 @@ class MapperPlot:
     def plot_matplotlib(
         self,
         colors,
+        node_size=1,
         agg=np.nanmean,
         title=None,
         width=512,
@@ -113,6 +114,8 @@ class MapperPlot:
             node in the graph, useful for highlighting different features of
             the data.
         :type colors: array-like of shape (n,) or list-like of size n
+        :param node_size: A scaling factor for node size. Defaults to 1.
+        :type node_size: float, optional
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
@@ -139,6 +142,7 @@ class MapperPlot:
         return plot_matplotlib(
             self,
             colors=colors,
+            node_size=node_size,
             agg=agg,
             title=title,
             width=width,
@@ -202,6 +206,7 @@ class MapperPlot:
         self,
         fig,
         colors=None,
+        node_size=None,
         agg=None,
         title=None,
         width=None,
@@ -221,6 +226,8 @@ class MapperPlot:
             node in the graph, useful for highlighting different features of
             the data. Defaults to None.
         :type colors: array-like of shape (n,) or list-like of size n, optional
+        :param node_size: A scaling factor for node size. Defaults to None.
+        :type node_size: float, optional
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
@@ -248,6 +255,7 @@ class MapperPlot:
             self,
             fig,
             colors=colors,
+            node_size=node_size,
             agg=agg,
             title=title,
             width=width,
@@ -259,6 +267,7 @@ class MapperPlot:
         self,
         output_file,
         colors,
+        node_size=1,
         agg=np.nanmean,
         title=None,
         width=512,
@@ -275,6 +284,8 @@ class MapperPlot:
             node in the graph, useful for highlighting different features of
             the data.
         :type colors: array-like of shape (n,) or list-like of size n
+        :param node_size: A scaling factor for node size. Defaults to 1.
+        :type node_size: float, optional
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
@@ -297,6 +308,7 @@ class MapperPlot:
             self,
             output_file=output_file,
             colors=colors,
+            node_size=node_size,
             agg=agg,
             title=title,
             width=width,

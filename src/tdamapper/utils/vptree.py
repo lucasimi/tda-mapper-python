@@ -2,8 +2,8 @@
 A module for fast knn and range searches, depending only on a given metric
 """
 
-from tdamapper.utils.vptree_hier import VPTree as HVPT
 from tdamapper.utils.vptree_flat import VPTree as FVPT
+from tdamapper.utils.vptree_hier import VPTree as HVPT
 
 
 class VPTree:
@@ -37,27 +37,27 @@ class VPTree:
     def __init__(
         self,
         X,
-        metric='euclidean',
+        metric="euclidean",
         metric_params=None,
-        kind='flat',
+        kind="flat",
         leaf_capacity=1,
         leaf_radius=0.0,
-        pivoting=None
+        pivoting=None,
     ):
         builder = FVPT
-        if kind == 'flat':
+        if kind == "flat":
             builder = FVPT
-        elif kind == 'hierarchical':
+        elif kind == "hierarchical":
             builder = HVPT
         else:
-            raise ValueError(f'Unknown kind of vptree: {kind}')
+            raise ValueError(f"Unknown kind of vptree: {kind}")
         self.__vpt = builder(
             X,
             metric=metric,
             metric_params=metric_params,
             leaf_capacity=leaf_capacity,
             leaf_radius=leaf_radius,
-            pivoting=pivoting
+            pivoting=pivoting,
         )
 
     def ball_search(self, point, eps, inclusive=True):

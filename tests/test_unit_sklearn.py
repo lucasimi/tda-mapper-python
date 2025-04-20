@@ -1,18 +1,12 @@
-import unittest
 import logging
+import unittest
 
 import numpy as np
-
 from sklearn.utils.estimator_checks import check_estimator
 
-from tdamapper.core import MapperAlgorithm
-from tdamapper.cover import (
-    BallCover,
-    KNNCover,
-    CubicalCover
-)
 from tdamapper.clustering import MapperClustering
-
+from tdamapper.core import MapperAlgorithm
+from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tests.setup_logging import setup_logging
 
 

@@ -27,15 +27,15 @@ parameterized by an order `p`.
 """
 
 import numpy as np
+
 import tdamapper.utils._metrics as _metrics
 
-
-_EUCLIDEAN = 'euclidean'
-_MANHATTAN = 'manhattan'
-_MINKOWSKI = 'minkowski'
-_MINKOWSKI_P = 'p'
-_CHEBYSHEV = 'chebyshev'
-_COSINE = 'cosine'
+_EUCLIDEAN = "euclidean"
+_MANHATTAN = "manhattan"
+_MINKOWSKI = "minkowski"
+_MINKOWSKI_P = "p"
+_CHEBYSHEV = "chebyshev"
+_COSINE = "cosine"
 
 
 def get_supported_metrics():
@@ -171,4 +171,4 @@ def get_metric(metric, **kwargs):
     elif metric == _COSINE:
         return cosine()
     else:
-        raise ValueError('metric must be a string or callable')
+        raise ValueError("metric must be a string or callable")

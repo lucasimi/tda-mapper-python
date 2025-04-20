@@ -11,20 +11,27 @@ authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 maintainers = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 license = { file = "LICENSE" } 
 classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Software Development :: Libraries",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3"
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
 ]
 keywords = ["tda", "mapper", "topology", "topological data analysis"]
 dependencies = [
-    "matplotlib>=3.3.4",
-    "networkx>=2.5",
-    "igraph>=0.11.8",
-    "numba>=0.54",
-    "numpy>=1.20.1, <2.0.0",
-    "plotly>=6.0.0, <7.0.0",
-    "pyvis>=0.3.2",
-    "joblib>=1.4.2",
+    "numpy>=1.20.1,<2.0.0",
+    "matplotlib>=3.3.4,<4.0.0",
+    "networkx>=2.5,<3.0.0",
+    "igraph>=0.11.8,<0.12.0",
+    "numba>=0.54,<0.60",
+    "pyvis>=0.3.2,<0.4.0",
+    "plotly>=6.0.1,<7.0.0",
+    "joblib>=1.4.2,<2.0.0",
 ]
 requires-python = ">=3.6"
 
@@ -34,6 +41,8 @@ dev = [
     "pandas",
     "scikit-learn<1.6.0",
     "flake8",
+    "black[jupyter]",
+    "isort"
 ]
 
 [project.urls]
@@ -46,3 +55,29 @@ omit = [
     "**/_*.py",
     "benchmarks/*.py",
 ]
+
+[tool.black]
+line-length = 88
+target-version = ['py36']  
+skip-string-normalization = false
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+combine_as_imports = true
+skip = ["venv", ".venv", "build", "dist"]
+
