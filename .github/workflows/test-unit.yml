@@ -31,29 +31,26 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-        continue-on-error: | 
-          ${{ 
+        continue-on-error: ${{ 
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
-            matrix.python-version == '3.8' 
+            matrix.python-version == '3.8'
           }}
 
       - name: Install dependencies
         run: | 
           python -m pip install -e .[dev]
-        continue-on-error: | 
-          ${{ 
+        continue-on-error: ${{ 
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
-            matrix.python-version == '3.8' 
+            matrix.python-version == '3.8'
           }}
 
       - name: Run tests and code coverage
         run: | 
           coverage run --source=src -m unittest discover -s tests -p 'test_unit_*.py'
           coverage report -m
-        continue-on-error: |
-          ${{ 
+        continue-on-error: ${{ 
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
