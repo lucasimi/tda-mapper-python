@@ -130,3 +130,4 @@ or locally on your machine using the following:
 pip install -r app/requirements.txt
 streamlit run app/streamlit_app.py
 ```
+![tda-mapper-app](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png)
