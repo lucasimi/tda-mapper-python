@@ -9,7 +9,7 @@ on:
       - '**'
 
 jobs:
-  test-unit-job:
+  test-unit-matrix-job:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -60,3 +60,10 @@ jobs:
         uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test-unit-job:
+    needs: test-unit-matrix-job
+    runs-on: ubuntu-latest
+    steps:
+      - name: test-unit-job
+        run: echo "All unit tests passed."

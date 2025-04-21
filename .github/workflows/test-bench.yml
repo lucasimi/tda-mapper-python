@@ -9,7 +9,7 @@ on:
       - main 
 
 jobs:
-  test-bench-job:
+  test-bench-matrix-job:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -54,3 +54,10 @@ jobs:
       - name: Run benchmarks
         run: | 
           python -m unittest discover -s tests -p 'test_bench_*.py'
+
+  test-bench-job:
+    needs: test-bench-matrix-job
+    runs-on: ubuntu-latest
+    steps:
+      - name: test-bench-job
+        run: echo "All bench tests passed."
