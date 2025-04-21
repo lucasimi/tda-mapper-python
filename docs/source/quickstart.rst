@@ -94,6 +94,8 @@ or locally on your machine using the following:
    pip install -r app/requirements.txt
    streamlit run app/streamlit_app.py
 
+|Interactive App|
 
 .. |Original Dataset| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset_v2.png
 .. |Mapper Graph| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean_v2.png
+.. |Interactive App| image :: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png
