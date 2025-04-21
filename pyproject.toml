@@ -40,9 +40,9 @@ dev = [
     "coverage[toml]",
     "pandas",
     "scikit-learn<1.6.0",
-    "flake8",
     "black[jupyter]",
-    "isort"
+    "isort",
+    "flake8",
 ]
 
 [project.urls]
@@ -80,4 +80,3 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 skip = ["venv", ".venv", "build", "dist"]
-

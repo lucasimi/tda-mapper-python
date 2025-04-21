@@ -44,7 +44,6 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.datasets import load_digits
 from sklearn.decomposition import PCA
 
-from tdamapper.clustering import FailSafeClustering
 from tdamapper.cover import CubicalCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot

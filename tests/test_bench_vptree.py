@@ -77,14 +77,14 @@ class TestBenchmark(unittest.TestCase):
         d(np.array([0.0]), np.array([0.0]))  # jit-compile numba
         t0 = time()
         for val in data:
-            neigh = [x for x in data if d(val, x) <= self.eps]
+            [x for x in data if d(val, x) <= self.eps]
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")
 
     def _test_ball_search(self, data, name, vpt):
         t0 = time()
         for val in data:
-            neigh = vpt.ball_search(val, self.eps)
+            vpt.ball_search(val, self.eps)
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")
 
@@ -94,13 +94,13 @@ class TestBenchmark(unittest.TestCase):
         t0 = time()
         for val in data:
             data.sort(key=lambda x: d(x, val))
-            neigh = [x for x in data[: self.k]]
+            [x for x in data[: self.k]]
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")
 
     def _test_knn_search(self, data, name, vpt):
         t0 = time()
         for val in data:
-            neigh = vpt.knn_search(val, self.k)
+            vpt.knn_search(val, self.k)
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")

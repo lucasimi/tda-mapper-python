@@ -112,7 +112,11 @@ removed whenever required by a new jump in major version.
 
 We follow [PEP 8](https://peps.python.org/pep-0008/) for Python code style.
 You can run a linter to check your code. The dev dependencies of **tda-mapper**
-include `black` and `isort` to help you manage that.
+include `flake8`, `black` and `isort` to help you manage code style.
+
+```bash
+flake8
+```
 
 ```bash
 black .

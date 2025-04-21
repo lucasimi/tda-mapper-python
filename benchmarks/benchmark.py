@@ -74,14 +74,14 @@ def run_gm(X, n, p):
         cover=gm.CubicalCover(n_intervals=n, overlap_frac=p),
         clusterer=TrivialEstimator(),
     )
-    mapper_graph = pipe.fit_transform(X)
+    pipe.fit_transform(X)
     t1 = time.time()
     return t1 - t0
 
 
 def run_tm(X, n, p):
     t0 = time.time()
-    mapper_graph = tm.core.MapperAlgorithm(
+    tm.core.MapperAlgorithm(
         cover=tm.cover.CubicalCover(
             n_intervals=n,
             overlap_frac=p,
@@ -99,7 +99,7 @@ def run_tm(X, n, p):
 def run_km(X, n, p):
     t0 = time.time()
     mapper = km.KeplerMapper(verbose=0)
-    graph = mapper.map(
+    mapper.map(
         lens=X,
         X=X,
         cover=km.Cover(n_cubes=n, perc_overlap=p),

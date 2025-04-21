@@ -38,9 +38,8 @@ class TestVpSettings(unittest.TestCase):
 
     def run_bench(self, X, r, dist, vp, **kwargs):
         XX = np.array([[i] + [xi for xi in x] for i, x in enumerate(X)])
-        d = lambda x, y: dist(x[1:], y[1:])
         t0 = time.time()
-        vpt = vp(XX, metric=d, **kwargs)
+        vpt = vp(XX, metric=lambda x, y: dist(x[1:], y[1:]), **kwargs)
         list(self.cover(vpt, XX, r))
         t1 = time.time()
         self.logger.info(f"time: {t1 - t0}")
@@ -48,7 +47,7 @@ class TestVpSettings(unittest.TestCase):
     def test_cover_random(self):
         for r in [1.0, 10.0, 100.0]:
             for n in [100, 1000, 10000]:
-                self.logger.info(f"============ Cover Bench Random ==========")
+                self.logger.info("============ Cover Bench Random ==========")
                 self.logger.info(f"[n: {n}, r: {r}]")
                 X = dataset(num=n)
                 self.logger.info(">>>>>>> HVPT >>>>>>")
@@ -66,7 +65,7 @@ class TestVpSettings(unittest.TestCase):
         X, _ = load_digits(return_X_y=True)
         # X = PCA(n_components=3).fit_transform(X)
         for r in [1.0, 10.0, 100.0]:
-            self.logger.info(f"======= Cover Bench Digits =======")
+            self.logger.info("======= Cover Bench Digits =======")
             self.logger.info(f"[r: {r}]")
             self.logger.info(">>>>>>> HVPT >>>>>>")
             self.run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="random")
