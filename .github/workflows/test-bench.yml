@@ -37,7 +37,6 @@ jobs:
             matrix.python-version == '3.8' 
           }} # EOL python versions are allowed to fail
 
-
       - name: Install dependencies
         run: | 
           python -m pip install -e .[dev]
