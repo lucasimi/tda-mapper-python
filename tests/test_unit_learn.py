@@ -2,15 +2,11 @@ import unittest
 
 import networkx as nx
 import numpy as np
-from sklearn.cluster import DBSCAN
 from sklearn.utils.estimator_checks import check_estimator
 
 from tdamapper.core import TrivialClustering, TrivialCover
 from tdamapper.cover import BallCover
-from tdamapper.learn import (
-    MapperAlgorithm,
-    MapperClustering,
-)
+from tdamapper.learn import MapperAlgorithm, MapperClustering
 
 
 def euclidean(x, y):

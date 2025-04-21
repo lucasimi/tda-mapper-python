@@ -23,7 +23,7 @@ class TestMapperPlot(unittest.TestCase):
         )
         g = mp.fit_transform(data, data)
         mp_plot1 = MapperPlot(g, dim=2, seed=123, iterations=10)
-        fig1 = mp_plot1.plot_plotly(
+        mp_plot1.plot_plotly(
             colors=data,
             agg=np.nanmax,
             width=200,
@@ -40,7 +40,7 @@ class TestMapperPlot(unittest.TestCase):
             title="example",
             cmap="jet",
         )
-        fig3 = mp_plot2.plot_plotly_update(
+        mp_plot2.plot_plotly_update(
             fig2,
             colors=data,
             agg=np.nanmin,
@@ -50,7 +50,7 @@ class TestMapperPlot(unittest.TestCase):
             cmap="viridis",
         )
         mp_plot3 = MapperPlot(g, dim=2)
-        fig4 = mp_plot3.plot_matplotlib(width=300, height=300, colors=data)
+        mp_plot3.plot_matplotlib(width=300, height=300, colors=data)
         mp_plot3.plot_pyvis(
             width=512,
             height=512,

@@ -30,6 +30,9 @@ structures are welcome but must first be discussed in an issue, especially when
 it comes to performance critical parts. Please include supporting theoretical
 or experimental evidence for such contributions.
 
+NB: Contributions from bots or fully automated AI agents are discouraged and
+will be discarded.
+
 Follow these steps to contribute:
 
 1. **Fork the Repository**.
@@ -108,10 +111,19 @@ removed whenever required by a new jump in major version.
 ### Code Style
 
 We follow [PEP 8](https://peps.python.org/pep-0008/) for Python code style.
-You can run a linter to check your code:
+You can run a linter to check your code. The dev dependencies of **tda-mapper**
+include `flake8`, `black` and `isort` to help you manage code style.
 
 ```bash
 flake8
+```
+
+```bash
+black .
+```
+
+```bash
+isort .
 ```
 
 ### Documentation
@@ -123,6 +135,7 @@ To build the documentation locally:
 
 ```bash
 cd docs
+make clean
 make html
 ```
 
