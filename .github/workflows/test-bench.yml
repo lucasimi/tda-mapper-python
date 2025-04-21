@@ -35,7 +35,7 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}
 
       - name: Install dependencies
         run: | 
@@ -45,7 +45,7 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}
 
       - name: Run benchmarks
         run: | 
@@ -55,4 +55,4 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}

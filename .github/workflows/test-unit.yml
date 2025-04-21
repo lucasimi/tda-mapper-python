@@ -35,7 +35,7 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}
 
       - name: Install dependencies
         run: | 
@@ -45,7 +45,7 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}
 
       - name: Run tests and code coverage
         run: | 
@@ -56,7 +56,7 @@ jobs:
             matrix.python-version == '3.6' || 
             matrix.python-version == '3.7' || 
             matrix.python-version == '3.8' 
-          }} # EOL python versions are allowed to fail
+          }}
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
