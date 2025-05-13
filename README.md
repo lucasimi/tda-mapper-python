@@ -10,7 +10,13 @@
 
 # tda-mapper
 
-**tda-mapper** is a Python library built around the Mapper algorithm, a core technique in Topological Data Analysis (TDA) for extracting topological structure from complex data. Designed for computational efficiency and scalability, it leverages optimized spatial search methods to support high-dimensional datasets. The library is well-suited for integration into machine learning pipelines, unsupervised learning tasks, and exploratory data analysis.
+**tda-mapper** is a Python library built around the Mapper algorithm, a core
+technique in Topological Data Analysis (TDA) for extracting topological
+structure from complex data. Designed for computational efficiency and
+scalability, it leverages optimized spatial search methods to support
+high-dimensional datasets. The library is well-suited for integration into
+machine learning pipelines, unsupervised learning tasks, and exploratory data
+analysis.
 
 Further details in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/)
@@ -21,23 +27,37 @@ and in the
 
 - **Efficient construction**
     
-    Leverages optimized spatial search techniques and parallelization to accelerate the construction of Mapper graphs, supporting the analysis of high-dimensional datasets.
+    Leverages optimized spatial search techniques and parallelization to
+    accelerate the construction of Mapper graphs, supporting the analysis of
+    high-dimensional datasets.
 
 - **Scikit-learn integration**
 
-    Provides custom estimators that are fully compatible with scikit-learn's API, enabling seamless integration into scikit-learn pipelines for tasks such as dimensionality reduction, clustering, and feature extraction.
+    Provides custom estimators that are fully compatible with scikit-learn's
+    API, enabling seamless integration into scikit-learn pipelines for tasks
+    such as dimensionality reduction, clustering, and feature extraction.
 
 - **Flexible visualization**
 
-    Multiple visualization backends supported (e.g., Plotly, Matplotlib) for generating high-quality Mapper graph representations with adjustable layouts and styling.
+    Multiple visualization backends supported (e.g., Plotly, Matplotlib) for
+    generating high-quality Mapper graph representations with adjustable 
+    layouts and styling.
 
 - **Interactive app**
 
-    Provides an interactive web-based interface (via Streamlit) for dynamic exploration of Mapper graph structures, offering real-time adjustments to parameters and visualizations.
+    Provides an interactive web-based interface (via Streamlit) for dynamic
+    exploration of Mapper graph structures, offering real-time adjustments to
+    parameters and visualizations.
 
 ## Background
 
-The Mapper algorithm extracts topological features from complex datasets, representing them as graphs that highlight clusters, transitions, and key structural patterns. These insights reveal hidden data relationships and are applicable across diverse fields, including social sciences, biology, and machine learning. For an in-depth overview of Mapper, including its mathematical foundations and practical applications, read [the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
+The Mapper algorithm extracts topological features from complex datasets,
+representing them as graphs that highlight clusters, transitions, and key
+structural patterns. These insights reveal hidden data relationships and are
+applicable across diverse fields, including social sciences, biology, and
+machine learning. For an in-depth overview of Mapper, including its
+mathematical foundations and practical applications, read 
+[the original paper](https://research.math.osu.edu/tgda/mapperPBG.pdf).
 
 | Step 1 | Step 2 | Step 3 | Step 4 |
 | ------ | ------ | ------ | ------ |
@@ -46,7 +66,13 @@ The Mapper algorithm extracts topological features from complex datasets, repres
 
 ## Citations
 
-If you use **tda-mapper** in your work, please consider citing both the [library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent Zenodo record, and the [paper](https://openreview.net/pdf?id=lTX4bYREAZ), which provides a broader methodological overview. We recommend citing the specific version of the library used in your research, along with the paper. For citation examples, please refer to the [documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
+If you use **tda-mapper** in your work, please consider citing both the
+[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
+Zenodo record, and the [paper](https://openreview.net/pdf?id=lTX4bYREAZ),
+which provides a broader methodological overview. We recommend citing the
+specific version of the library used in your research, along with the paper.
+For citation examples, please refer to the
+[documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
 
 ## Quick Start
 
@@ -60,7 +86,11 @@ pip install tda-mapper
 
 ### How to Use
 
-Here's a minimal example using the **circles dataset** from `scikit-learn` to demonstrate how to use **tda-mapper**. This example demonstrates how to apply the Mapper algorithm on a synthetic dataset (concentric circles). The goal is to extract a topological graph representation using `PCA` as a lens and `DBSCAN` for clustering. We proceed as follows:
+Here's a minimal example using the **circles dataset** from `scikit-learn` to
+demonstrate how to use **tda-mapper**. This example demonstrates how to apply
+the Mapper algorithm on a synthetic dataset (concentric circles). The goal is
+to extract a topological graph representation using `PCA` as a lens and
+`DBSCAN` for clustering. We proceed as follows:
 
 ```python
 import matplotlib.pyplot as plt
@@ -98,7 +128,10 @@ fig.show(config={"scrollZoom": True})
 | ---------------- | ------------ |
 | ![Original Dataset](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset_v2.png) | ![Mapper Graph](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean_v2.png) |
 
-Left: the original dataset consisting of two concentric circles with noise, colored by class label. Right: the resulting Mapper graph, built from the PCA projection and clustered using DBSCAN. The two concentric circles are well identified by the connected components in the Mapper graph.
+Left: the original dataset consisting of two concentric circles with noise,
+colored by class label. Right: the resulting Mapper graph, built from the PCA
+projection and clustered using DBSCAN. The two concentric circles are well
+identified by the connected components in the Mapper graph.
 
 More examples can be found in the
 [documentation](https://tda-mapper.readthedocs.io/en/main/examples.html).
@@ -108,7 +141,9 @@ More examples can be found in the
 Use our Streamlit app to visualize and explore your data without writing code.
 You can run a live demo directly on
 [Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
-or locally on your machine. The first time you run the app locally, you may need to install the required dependencies from the `requirements.txt` file by running 
+or locally on your machine. The first time you run the app locally, you may
+need to install the required dependencies from the `requirements.txt` file by
+running 
 
 ```bash
 pip install -r app/requirements.txt
