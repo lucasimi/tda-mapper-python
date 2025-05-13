@@ -37,8 +37,11 @@ Development
 How To Use
 ----------
 
-Here's a minimal example using the **circles dataset** from
-``scikit-learn`` to demonstrate how to use **tda-mapper**:
+Here's a minimal example using the **circles dataset** from `scikit-learn` to
+demonstrate how to use **tda-mapper**. This example demonstrates how to apply
+the Mapper algorithm on a synthetic dataset (concentric circles). The goal is
+to extract a topological graph representation using `PCA` as a lens and
+`DBSCAN` for clustering. We proceed as follows:
 
 .. code:: python
 
@@ -78,6 +81,11 @@ Here's a minimal example using the **circles dataset** from
 | |Original Dataset|                     | |Mapper Graph|              |
 +----------------------------------------+-----------------------------+
 
+Left: the original dataset consisting of two concentric circles with noise,
+colored by class label. Right: the resulting Mapper graph, built from the `PCA`
+projection and clustered using `DBSCAN`. The two concentric circles are well
+identified by the connected components in the Mapper graph.
+
 More examples can be found in the
 `documentation <https://tda-mapper.readthedocs.io/en/main/>`__.
 
@@ -89,13 +97,25 @@ You can run a live demo directly on
 `Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
 or locally on your machine using the following:
 
+Use our Streamlit app to visualize and explore your data without writing code.
+You can run a live demo directly on
+`Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
+or locally on your machine. The first time you run the app locally, you may
+need to install the required dependencies from the `requirements.txt` file by
+running
+
 .. code:: bash
 
    pip install -r app/requirements.txt
+
+then run the app locally with 
+
+.. code:: bash
+
    streamlit run app/streamlit_app.py
 
 |Interactive App|
 
 .. |Original Dataset| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_dataset_v2.png
 .. |Mapper Graph| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/circles_mean_v2.png
-.. |Interactive App| image :: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png
+.. |Interactive App| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png
