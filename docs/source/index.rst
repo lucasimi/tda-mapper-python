@@ -25,47 +25,56 @@
    https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png
    :alt: Logo
 
-|Source Code| |PyPI version| |downloads| |test| |publish| |docs| |codecov| |DOI|
-|Streamlit App|
+|PyPI version| |downloads| |codecov| |test| |publish| |docs|  |DOI|
+
+|Source Code|
 
 tda-mapper
 ==========
 
-**tda-mapper** is a Python library based on the Mapper algorithm, a key tool in
-Topological Data Analysis (TDA). Designed for efficient computations and backed
-by advanced spatial search techniques, it scales seamlessly to high dimensional
-data, making it suitable for applications in machine learning, data mining, and
-exploratory data analysis.
+**tda-mapper** is a Python library built around the Mapper algorithm, a core
+technique in Topological Data Analysis (TDA) for extracting topological 
+structure from complex data. Designed for computational efficiency and
+scalability, it leverages optimized spatial search methods to support 
+high-dimensional datasets. The library is well-suited for integration into
+machine learning pipelines, unsupervised learning tasks, and exploratory data
+analysis.
 
 Further details in the
 `documentation <https://tda-mapper.readthedocs.io/en/main/>`__
 and in the
 `paper <https://openreview.net/pdf?id=lTX4bYREAZ>`__.
 
-Main features
+Core features
 -------------
 
-- **Fast Mapper graph construction**: Accelerates computations with efficient
-  spatial search, enabling analysis of large, high-dimensional datasets.
+- **Efficient construction**
+    
+    Leverages optimized spatial search techniques and parallelization to accelerate the construction of Mapper graphs, supporting the analysis of high-dimensional datasets.
 
-- **Scikit-learn compatibility**: Easily integrate Mapper as a part of your
-  machine learning workflows.
+- **Scikit-learn integration**
 
-- **Flexible visualization options**: Visualize Mapper graphs with multiple
-  supported backends, tailored to your needs.
+    Provides custom estimators that are fully compatible with scikit-learn's API, enabling seamless integration into scikit-learn pipelines for tasks such as dimensionality reduction, clustering, and feature extraction.
 
-- **Interactive exploration**: Explore data interactively through a
-  user-friendly app.
+- **Flexible visualization**
+
+    Multiple visualization backends supported (e.g., Plotly, Matplotlib) for generating high-quality Mapper graph representations with adjustable layouts and styling.
+
+- **Interactive app**
+
+    Provides an interactive web-based interface (via Streamlit) for dynamic exploration of Mapper graph structures, offering real-time adjustments to parameters and visualizations.
+
 
 Background
 ----------
 
-The Mapper algorithm transforms complex datasets into graph representations
-that highlight clusters, transitions, and topological features. These insights
-reveal hidden patterns in data, applicable across fields like social sciences,
-biology, and machine learning. For an in-depth coverage of Mapper, including
-its mathematical foundations and applications, read the 
-`original paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
+The Mapper algorithm extracts topological features from complex datasets,
+representing them as graphs that highlight clusters, transitions, and key
+structural patterns. These insights reveal hidden data relationships and are
+applicable across diverse fields, including social sciences, biology, and
+machine learning. For an in-depth overview of Mapper, including its
+mathematical foundations and practical applications, read 
+`the original paper <https://research.math.osu.edu/tgda/mapperPBG.pdf>`__.
 
 +-----------------+-----------------+-----------------+-----------------+
 | Step 1          | Step 2          | Step 3          | Step 4          |
@@ -78,12 +87,12 @@ its mathematical foundations and applications, read the
 Citations
 ---------
 
-If you use **tda-mapper** in your work, please consider citing both the 
+If you use **tda-mapper** in your work, please consider citing both the
 `library <https://doi.org/10.5281/zenodo.10642381>`__,
-archived in a permanent Zenodo record, and the 
+archived in a permanent Zenodo record, and the
 `paper <https://openreview.net/pdf?id=lTX4bYREAZ>`__,
-which provides a broader methodological overview.
-We recommend citing the specific version of the library used in your research, as well as the paper.
+which provides a broader methodological overview. We recommend citing the
+specific version of the library used in your research, along with the paper.
 
 - **tda-mapper**: For example to cite version 0.8.0 you can use:
 
