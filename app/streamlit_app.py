@@ -22,6 +22,7 @@ from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
+from tdamapper._plot_plotly import _marker_size
 from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -99,6 +100,16 @@ V_CMAP_PORTLAND = "Portland (Diverging)"
 V_CMAP_HSV = "HSV (Cyclic)"
 
 V_CMAP_TWILIGHT = "Twilight (Cyclic)"
+
+V_CMAPS = {
+    V_CMAP_JET: "Jet",
+    V_CMAP_VIRIDIS: "Viridis",
+    V_CMAP_CIVIDIS: "Cividis",
+    V_CMAP_SPECTRAL: "Spectral",
+    V_CMAP_PORTLAND: "Portland",
+    V_CMAP_HSV: "HSV",
+    V_CMAP_TWILIGHT: "Twilight",
+}
 
 GIT_REPO_URL = "https://github.com/lucasimi/tda-mapper-python"
 
@@ -574,21 +585,7 @@ def plot_cmap_input_section():
             V_CMAP_TWILIGHT,
         ],
     )
-    cmap = None
-    if cmap_type == V_CMAP_JET:
-        cmap = "Jet"
-    elif cmap_type == V_CMAP_VIRIDIS:
-        cmap = "Viridis"
-    elif cmap_type == V_CMAP_CIVIDIS:
-        cmap = "Cividis"
-    elif cmap_type == V_CMAP_PORTLAND:
-        cmap = "Portland"
-    elif cmap_type == V_CMAP_SPECTRAL:
-        cmap = "Spectral"
-    elif cmap_type == V_CMAP_HSV:
-        cmap = "HSV"
-    elif cmap_type == V_CMAP_TWILIGHT:
-        cmap = "Twilight"
+    cmap = V_CMAPS.get(cmap_type, "Jet")
     return cmap
 
 
@@ -667,21 +664,20 @@ def compute_mapper_fig(
         width=600,
         height=600,
     )
+    mapper_fig.update_layout(uirevision="constant")
     return mapper_fig
 
 
 def mapper_figure_section(df_X, df_y, mapper_plot):
     st.header("🎨 Plot")
     agg, agg_name = plot_agg_input_section()
-    cmap = plot_cmap_input_section()
     colors, colors_feat = plot_color_input_section(df_X, df_y)
-    node_size = st.slider("Node size", min_value=0.1, max_value=10.0, value=1.0)
     mapper_fig = compute_mapper_fig(
         mapper_plot,
         colors=colors,
-        node_size=node_size,
+        node_size=1.0,
         _agg=agg,
-        cmap=cmap,
+        cmap="Viridis",
         agg_name=agg_name,
         colors_feat=colors_feat,
     )
@@ -699,7 +695,106 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         scaleanchor="x",
         scaleratio=1,
     )
+
+    if dim == 2:
+        _set_cmap_buttons_2d(mapper_fig)
+
+    elif dim == 3:
+        _set_cmap_buttons_3d(mapper_fig)
+
+    _set_node_size_slider(mapper_plot, mapper_fig)
+
     return mapper_fig
+
+
+def _set_cmap_buttons_2d(fig):
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                buttons=[
+                    dict(
+                        label=cmap_name,
+                        method="restyle",
+                        args=[
+                            {
+                                "marker.colorscale": [cmap],
+                                "marker.line.colorscale": [cmap],
+                            },
+                            [0, 1],  # Trace indices
+                        ],
+                    )
+                    for cmap_name, cmap in V_CMAPS.items()
+                ],
+                x=0,
+                xanchor="left",
+                y=0.75,
+                yanchor="bottom",
+                direction="down",
+            )
+        ],
+        uirevision="constant",
+    )
+
+
+def _set_cmap_buttons_3d(fig):
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                buttons=[
+                    dict(
+                        label=cmap_name,
+                        method="restyle",
+                        args=[
+                            {
+                                "marker.colorscale": [cmap, cmap],
+                                "marker.line.colorscale": [cmap, cmap],
+                                "line.colorscale": [cmap, cmap],
+                            },
+                            [0, 1],  # update both traces
+                        ],
+                    )
+                    for cmap_name, cmap in V_CMAPS.items()
+                ],
+                x=0,
+                xanchor="left",
+                y=0.75,
+                yanchor="bottom",
+                direction="down",
+            )
+        ],
+        uirevision="constant",
+    )
+
+
+def _set_node_size_slider(mapper_plot, fig):
+    steps = []
+    for node_size in [x / 10.0 for x in range(1, 20)]:  # Sizes from 5 to 30
+        steps.append(
+            dict(
+                method="restyle",
+                label=f"{node_size}",
+                args=[
+                    {"marker.size": [_marker_size(mapper_plot, node_size)]},
+                    [1],
+                ],  # Update marker size for trace 0
+            )
+        )
+
+    fig.update_layout(
+        sliders=[
+            dict(
+                active=len(steps) // 2,
+                currentvalue={"prefix": "Node size: "},
+                steps=steps,
+                x=0,
+                y=0.85,
+                xanchor="left",
+                len=0.15,
+                yanchor="bottom",
+            )
+        ],
+        uirevision="constant",
+    )
 
 
 def mapper_rendering_section(mapper_graph, mapper_fig):
@@ -708,7 +803,9 @@ def mapper_rendering_section(mapper_graph, mapper_fig):
         "displaylogo": False,
         "modeBarButtonsToRemove": ["zoom", "pan"],
     }
-    st.plotly_chart(mapper_fig, use_container_width=True, config=config)
+    st.plotly_chart(
+        mapper_fig, use_container_width=True, config=config, key="mapper_plot"
+    )
 
 
 def data_summary_section(df_X, df_y, mapper_graph):
