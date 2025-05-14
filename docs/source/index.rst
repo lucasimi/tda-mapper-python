@@ -50,19 +50,27 @@ Core features
 
 - **Efficient construction**
     
-    Leverages optimized spatial search techniques and parallelization to accelerate the construction of Mapper graphs, supporting the analysis of high-dimensional datasets.
+   Leverages optimized spatial search techniques and parallelization to 
+   accelerate the construction of Mapper graphs, supporting the analysis of
+   high-dimensional datasets.
 
 - **Scikit-learn integration**
 
-    Provides custom estimators that are fully compatible with scikit-learn's API, enabling seamless integration into scikit-learn pipelines for tasks such as dimensionality reduction, clustering, and feature extraction.
+   Provides custom estimators that are fully compatible with scikit-learn's
+   API, enabling seamless integration into scikit-learn pipelines for tasks
+   such as dimensionality reduction, clustering, and feature extraction.
 
 - **Flexible visualization**
 
-    Multiple visualization backends supported (e.g., Plotly, Matplotlib) for generating high-quality Mapper graph representations with adjustable layouts and styling.
+   Multiple visualization backends supported (Plotly, Matplotlib, PyVis) for
+   generating high-quality Mapper graph representations with adjustable 
+   layouts and styling.
 
 - **Interactive app**
 
-    Provides an interactive web-based interface (via Streamlit) for dynamic exploration of Mapper graph structures, offering real-time adjustments to parameters and visualizations.
+   Provides an interactive web-based interface (via Streamlit) for dynamic
+   exploration of Mapper graph structures, offering real-time adjustments to
+   parameters and visualizations.
 
 
 Background

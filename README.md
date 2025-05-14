@@ -39,7 +39,7 @@ and in the
 
 - **Flexible visualization**
 
-    Multiple visualization backends supported (e.g., Plotly, Matplotlib) for
+    Multiple visualization backends supported (Plotly, Matplotlib, PyVis) for
     generating high-quality Mapper graph representations with adjustable 
     layouts and styling.
 
