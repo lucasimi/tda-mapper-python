@@ -23,6 +23,7 @@ from sklearn.decomposition import PCA
 from umap import UMAP
 
 from tdamapper._plot_plotly import _marker_size
+from tdamapper.core import aggregate_graph
 from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -677,7 +678,7 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         colors=colors,
         node_size=1.0,
         _agg=agg,
-        cmap="Viridis",
+        cmap="Jet",
         agg_name=agg_name,
         colors_feat=colors_feat,
     )
@@ -696,73 +697,76 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         scaleratio=1,
     )
 
+    menu_cmap = {}
     if dim == 2:
-        _set_cmap_buttons_2d(mapper_fig)
+        menu_cmap = _set_cmap_buttons_2d(mapper_fig)
+        menu_feature = _set_feature_select_button_2d(
+            mapper_plot, mapper_fig, df_X, df_y, agg
+        )
 
     elif dim == 3:
-        _set_cmap_buttons_3d(mapper_fig)
+        menu_cmap = _set_cmap_buttons_3d(mapper_fig)
+        menu_feature = _set_feature_select_button_3d(
+            mapper_plot, mapper_fig, df_X, df_y, agg
+        )
 
-    _set_node_size_slider(mapper_plot, mapper_fig)
+    slider_size = _set_node_size_slider(mapper_plot, mapper_fig)
+
+    mapper_fig.update_layout(
+        updatemenus=[menu_cmap, menu_feature],
+        sliders=[slider_size],
+        uirevision="constant",
+    )
 
     return mapper_fig
 
 
 def _set_cmap_buttons_2d(fig):
-    fig.update_layout(
-        updatemenus=[
+    return dict(
+        buttons=[
             dict(
-                buttons=[
-                    dict(
-                        label=cmap_name,
-                        method="restyle",
-                        args=[
-                            {
-                                "marker.colorscale": [cmap],
-                                "marker.line.colorscale": [cmap],
-                            },
-                            [0, 1],  # Trace indices
-                        ],
-                    )
-                    for cmap_name, cmap in V_CMAPS.items()
+                label=cmap_name,
+                method="restyle",
+                args=[
+                    {
+                        "marker.colorscale": [cmap],
+                        "marker.line.colorscale": [cmap],
+                    },
+                    [0, 1],  # Trace indices
                 ],
-                x=0,
-                xanchor="left",
-                y=0.75,
-                yanchor="bottom",
-                direction="down",
             )
+            for cmap_name, cmap in V_CMAPS.items()
         ],
-        uirevision="constant",
+        x=0,
+        xanchor="left",
+        y=0.75,
+        yanchor="bottom",
+        direction="down",
     )
 
 
 def _set_cmap_buttons_3d(fig):
-    fig.update_layout(
-        updatemenus=[
+    return dict(
+        buttons=[
             dict(
-                buttons=[
-                    dict(
-                        label=cmap_name,
-                        method="restyle",
-                        args=[
-                            {
-                                "marker.colorscale": [cmap, cmap],
-                                "marker.line.colorscale": [cmap, cmap],
-                                "line.colorscale": [cmap, cmap],
-                            },
-                            [0, 1],  # update both traces
-                        ],
-                    )
-                    for cmap_name, cmap in V_CMAPS.items()
+                label=cmap_name,
+                method="restyle",
+                args=[
+                    {
+                        "marker.colorscale": [cmap, cmap],
+                        "marker.line.colorscale": [cmap, cmap],
+                        "line.colorscale": [cmap, cmap],
+                    },
+                    [0, 1],  # update both traces
                 ],
-                x=0,
-                xanchor="left",
-                y=0.75,
-                yanchor="bottom",
-                direction="down",
             )
+            for cmap_name, cmap in V_CMAPS.items()
         ],
-        uirevision="constant",
+        x=0,
+        xanchor="left",
+        y=0.75,
+        yanchor="bottom",
+        direction="down",
     )
 
 
@@ -780,20 +784,132 @@ def _set_node_size_slider(mapper_plot, fig):
             )
         )
 
-    fig.update_layout(
-        sliders=[
+    return dict(
+        active=len(steps) // 2,
+        currentvalue={"prefix": "Node size: "},
+        steps=steps,
+        x=0,
+        y=0.85,
+        xanchor="left",
+        len=0.15,
+        yanchor="bottom",
+    )
+
+
+def _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg):
+    X_cols = list(df_X.columns)
+    y_cols = list(df_y.columns)
+    if col_feat in X_cols:
+        colors = df_X[col_feat].to_numpy()
+    elif col_feat in y_cols:
+        colors = df_y[col_feat].to_numpy()
+    return aggregate_graph(colors, mapper_plot.graph, agg)
+
+
+def _compute_colors(mapper_plot, df_X, df_y, col_feat, agg):
+    nodes_col = _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg)
+    return list(nodes_col.values())
+
+
+def _set_feature_select_button_2d(mapper_plot, mapper_fig, df_X, df_y, agg):
+    col_feats = list(df_X.columns) + list(df_y.columns)
+    return dict(
+        buttons=[
             dict(
-                active=len(steps) // 2,
-                currentvalue={"prefix": "Node size: "},
-                steps=steps,
-                x=0,
-                y=0.85,
-                xanchor="left",
-                len=0.15,
-                yanchor="bottom",
+                label=f"Feature: {col_feat}",
+                method="restyle",
+                args=[
+                    {
+                        "marker.color": [
+                            _compute_colors(mapper_plot, df_X, df_y, col_feat, agg)
+                        ],
+                        "marker.cmax": [
+                            max(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                        "marker.cmin": [
+                            min(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                    },
+                    [1],  # Trace indices
+                ],
             )
+            for col_feat in col_feats
         ],
-        uirevision="constant",
+        x=0,
+        xanchor="left",
+        y=0.65,
+        yanchor="bottom",
+        direction="down",
+    )
+
+
+def _edge_colors(mapper_plot, df_X, df_y, col_feat, agg):
+    colors_avg = []
+    colors_agg = _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg)
+    for edge in mapper_plot.graph.edges():
+        c0, c1 = colors_agg[edge[0]], colors_agg[edge[1]]
+        colors_avg.append(c0)
+        colors_avg.append(c1)
+        colors_avg.append(c1)
+    return colors_avg
+
+
+def _set_feature_select_button_3d(mapper_plot, mapper_fig, df_X, df_y, agg):
+    col_feats = list(df_X.columns) + list(df_y.columns)
+    return dict(
+        buttons=[
+            dict(
+                label=f"Feature: {col_feat}",
+                method="restyle",
+                args=[
+                    {
+                        "marker.color": [
+                            _compute_colors(mapper_plot, df_X, df_y, col_feat, agg)
+                        ],
+                        "marker.cmax": [
+                            max(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                        "marker.cmin": [
+                            min(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                        "line.color": [
+                            _edge_colors(mapper_plot, df_X, df_y, col_feat, agg)
+                        ],
+                        "line.cmax": [
+                            max(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                        "line.cmin": [
+                            min(
+                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
+                                default=None,
+                            )
+                        ],
+                    },
+                    [1],  # Trace indices
+                ],
+            )
+            for col_feat in col_feats
+        ],
+        x=0,
+        xanchor="left",
+        y=0.65,
+        yanchor="bottom",
+        direction="down",
     )
 
 
