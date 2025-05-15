@@ -3,11 +3,7 @@ import unittest
 import numpy as np
 
 from tdamapper.core import TrivialCover
-from tdamapper.cover import (
-    BallCover,
-    CubicalCover,
-    KNNCover,
-)
+from tdamapper.cover import BallCover, CubicalCover, KNNCover
 
 
 def dataset(dim=1, num=10000):

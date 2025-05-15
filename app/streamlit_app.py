@@ -697,14 +697,20 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         scaleratio=1,
     )
 
+    _enhance_fig(mapper_plot, mapper_fig, df_X, df_y, agg)
+
+    return mapper_fig
+
+
+def _enhance_fig(mapper_plot, mapper_fig, df_X, df_y, agg):
     menu_cmap = {}
-    if dim == 2:
+    if mapper_plot.dim == 2:
         menu_cmap = _set_cmap_buttons_2d(mapper_fig)
         menu_feature = _set_feature_select_button_2d(
             mapper_plot, mapper_fig, df_X, df_y, agg
         )
 
-    elif dim == 3:
+    elif mapper_plot.dim == 3:
         menu_cmap = _set_cmap_buttons_3d(mapper_fig)
         menu_feature = _set_feature_select_button_3d(
             mapper_plot, mapper_fig, df_X, df_y, agg
@@ -717,8 +723,6 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         sliders=[slider_size],
         uirevision="constant",
     )
-
-    return mapper_fig
 
 
 def _set_cmap_buttons_2d(fig):
@@ -900,7 +904,7 @@ def _set_feature_select_button_3d(mapper_plot, mapper_fig, df_X, df_y, agg):
                             )
                         ],
                     },
-                    [1],  # Trace indices
+                    [0, 1],
                 ],
             )
             for col_feat in col_feats
