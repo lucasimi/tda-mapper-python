@@ -736,7 +736,7 @@ def _set_cmap_buttons_2d(fig):
                         "marker.colorscale": [cmap],
                         "marker.line.colorscale": [cmap],
                     },
-                    [0, 1],  # Trace indices
+                    [0, 1],
                 ],
             )
             for cmap_name, cmap in V_CMAPS.items()
@@ -761,7 +761,7 @@ def _set_cmap_buttons_3d(fig):
                         "marker.line.colorscale": [cmap, cmap],
                         "line.colorscale": [cmap, cmap],
                     },
-                    [0, 1],  # update both traces
+                    [0, 1],
                 ],
             )
             for cmap_name, cmap in V_CMAPS.items()
@@ -776,7 +776,7 @@ def _set_cmap_buttons_3d(fig):
 
 def _set_node_size_slider(mapper_plot, fig):
     steps = []
-    for node_size in [x / 10.0 for x in range(1, 20)]:  # Sizes from 5 to 30
+    for node_size in [x / 10.0 for x in range(1, 20)]:
         steps.append(
             dict(
                 method="restyle",
@@ -784,7 +784,7 @@ def _set_node_size_slider(mapper_plot, fig):
                 args=[
                     {"marker.size": [_marker_size(mapper_plot, node_size)]},
                     [1],
-                ],  # Update marker size for trace 0
+                ],
             )
         )
 
@@ -840,7 +840,7 @@ def _set_feature_select_button_2d(mapper_plot, mapper_fig, df_X, df_y, agg):
                             )
                         ],
                     },
-                    [1],  # Trace indices
+                    [1],
                 ],
             )
             for col_feat in col_feats
