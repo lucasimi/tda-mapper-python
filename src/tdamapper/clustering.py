@@ -46,7 +46,11 @@ class _MapperClustering(EstimatorMixin, ParamsMixin):
         X, y = self._validate_X_y(X, y)
         cover = TrivialCover() if self.cover is None else self.cover
         cover = clone(cover)
-        clustering = TrivialClustering() if self.clustering is None else self.clustering
+        clustering = (
+            tdamapper.core.TrivialClustering()
+            if self.clustering is None
+            else self.clustering
+        )
         clustering = clone(clustering)
         n_jobs = self.n_jobs
         y = X if y is None else y

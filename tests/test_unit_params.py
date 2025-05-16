@@ -3,9 +3,8 @@ import unittest
 from sklearn.cluster import DBSCAN
 
 from tdamapper._common import clone
-from tdamapper.clustering import MapperClustering
-from tdamapper.core import MapperAlgorithm
 from tdamapper.cover import BallCover, CubicalCover
+from tdamapper.learn import MapperAlgorithm, MapperClustering
 
 
 class TestParams(unittest.TestCase):

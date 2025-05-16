@@ -3,10 +3,10 @@ import unittest
 import networkx as nx
 import numpy as np
 
-from tdamapper.clustering import TrivialClustering
-from tdamapper.core import MapperAlgorithm
+from tdamapper.core import TrivialClustering
 from tdamapper.cover import BallCover
-from tdamapper.plot import MapperLayoutInteractive, MapperLayoutStatic, MapperPlot
+from tdamapper.learn import MapperAlgorithm
+from tdamapper.plot import MapperPlot
 
 
 class TestMapperPlot(unittest.TestCase):
@@ -72,46 +72,48 @@ class TestMapperPlot(unittest.TestCase):
             np.array([0.0, 0.0]),
             np.array([1.0, 1.0]),
         ]
-        mp = MapperAlgorithm(
+        mapper_algo = MapperAlgorithm(
             cover=BallCover(1.1, metric="euclidean"), clustering=TrivialClustering()
         )
-        g = mp.fit_transform(data, data)
-        mp_plot1 = MapperLayoutInteractive(
+        g = mapper_algo.fit_transform(data, data)
+        mapper_plot_1 = MapperPlot(
             g,
             dim=2,
-            colors=data,
             seed=123,
             iterations=10,
+        )
+        mapper_plot_1.plot_plotly(
+            colors=data,
             agg=np.nanmax,
             width=200,
             height=200,
             title="example",
             cmap="jet",
         )
-        mp_plot1.plot()
-        mp_plot2 = MapperLayoutInteractive(
+        mapper_plot_2 = MapperPlot(
             g,
             dim=3,
-            colors=data,
             seed=123,
             iterations=10,
+        )
+        fig = mapper_plot_2.plot_plotly(
+            colors=data,
             agg=np.nanmax,
             width=200,
             height=200,
             title="example",
             cmap="jet",
         )
-        mp_plot2.plot()
-        mp_plot2.update(
+        mapper_plot_2.plot_plotly_update(
+            fig,
             colors=data,
-            seed=124,
-            iterations=15,
             agg=np.nanmin,
             width=300,
             height=300,
             title="example-updated",
             cmap="viridis",
         )
-        mp_plot2.plot()
-        mp_plot3 = MapperLayoutStatic(g, colors=data, dim=2)
-        mp_plot3.plot()
+        mapper_plot_3 = MapperPlot(g, dim=2)
+        mapper_plot_3.plot_matplotlib(
+            colors=data,
+        )

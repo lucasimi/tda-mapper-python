@@ -25,4 +25,4 @@ graph = MapperAlgorithm(cover, clust).fit_transform(X, y)
 
 # Visualize the Mapper graph
 fig = MapperPlot(graph, dim=2, seed=42, iterations=60).plot_plotly(colors=labels)
-fig.show(config={"scrollZoom": True})
+# fig.show(config={"scrollZoom": True})

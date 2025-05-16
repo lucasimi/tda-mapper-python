@@ -4,9 +4,8 @@ import networkx as nx
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from tdamapper.clustering import TrivialClustering
 from tdamapper.core import (
-    MapperAlgorithm,
+    TrivialClustering,
     TrivialCover,
     mapper_connected_components,
     mapper_labels,
@@ -17,6 +16,7 @@ from tdamapper.cover import (
     ProximityCubicalCover,
     StandardCubicalCover,
 )
+from tdamapper.learn import MapperAlgorithm
 
 dist = "euclidean"
 
