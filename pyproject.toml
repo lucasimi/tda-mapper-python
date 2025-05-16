@@ -49,6 +49,7 @@ dev = [
     "black[jupyter]",
     "isort",
     "flake8",
+    "nbformat>=4.2.0",
 ]
 
 [project.urls]
