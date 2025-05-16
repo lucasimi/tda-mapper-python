@@ -10,10 +10,10 @@ from tdamapper.plot import MapperPlot
 
 # Generate toy dataset
 X, labels = make_circles(n_samples=5000, noise=0.05, factor=0.3, random_state=42)
-plt.figure(figsize=(5, 5))
-plt.scatter(X[:, 0], X[:, 1], c=labels, s=0.25, cmap="jet")
-plt.axis("off")
-plt.show()
+# plt.figure(figsize=(5, 5))
+# plt.scatter(X[:, 0], X[:, 1], c=labels, s=0.25, cmap="jet")
+# plt.axis("off")
+# plt.show()
 
 # Apply PCA as lens
 y = PCA(2, random_state=42).fit_transform(X)
