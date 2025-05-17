@@ -27,31 +27,16 @@ _EDGE_COLOR = "#777"
 _TICKS_NUM = 10
 
 
-def _node_pos_array(graph, dim, node_pos):
-    return tuple([node_pos[n][i] for n in graph.nodes()] for i in range(dim))
-
-
-def _edge_pos_array(graph, dim, node_pos):
-    edges_arr = tuple([] for i in range(dim))
-    for edge in graph.edges():
-        pos0, pos1 = node_pos[edge[0]], node_pos[edge[1]]
-        for i in range(dim):
-            edges_arr[i].append(pos0[i])
-            edges_arr[i].append(pos1[i])
-            edges_arr[i].append(None)
-    return edges_arr
-
-
 def plot_plotly(
     mapper_plot,
-    width,
-    height,
-    title,
+    width: int,
+    height: int,
+    title: str,
     colors,
-    node_size=1,
+    node_size: int = 1,
     agg=np.nanmean,
-    cmap="jet",
-):
+    cmap: str = "Jet",
+) -> go.Figure:
     node_col = aggregate_graph(colors, mapper_plot.graph, agg)
     fig = _figure(mapper_plot, node_col, node_size, width, height, title, cmap)
     _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmap)
@@ -60,15 +45,15 @@ def plot_plotly(
 
 def plot_plotly_update(
     mapper_plot,
-    fig,
-    width=None,
-    height=None,
-    title=None,
+    fig: go.Figure,
+    width: int | None = None,
+    height: int | None = None,
+    title: str | None = None,
     colors=None,
-    node_size=None,
+    node_size: int | None = None,
     agg=None,
-    cmap=None,
-):
+    cmap: str | None = None,
+) -> go.Figure:
     if (
         (colors is not None)
         and (node_size is not None)
@@ -84,6 +69,21 @@ def plot_plotly_update(
         _update_layout(fig, width, height)
     _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmap)
     return fig
+
+
+def _node_pos_array(graph, dim, node_pos):
+    return tuple([node_pos[n][i] for n in graph.nodes()] for i in range(dim))
+
+
+def _edge_pos_array(graph, dim, node_pos):
+    edges_arr = tuple([] for i in range(dim))
+    for edge in graph.edges():
+        pos0, pos1 = node_pos[edge[0]], node_pos[edge[1]]
+        for i in range(dim):
+            edges_arr[i].append(pos0[i])
+            edges_arr[i].append(pos1[i])
+            edges_arr[i].append(None)
+    return edges_arr
 
 
 def _update_traces_col(mapper_plot, fig, colors, node_size, agg, cmap):
@@ -270,6 +270,7 @@ def _layout(width, height):
         showticklabels=False,
         showgrid=False,
         zeroline=False,
+        automargin=False,
         title="",
     )
     scene_axis = dict(
@@ -291,7 +292,7 @@ def _layout(width, height):
         autosize=False,
         showlegend=False,
         hovermode="closest",
-        margin=dict(b=5, l=5, r=5, t=5),
+        margin=dict(b=10, l=10, r=10, t=10),
         xaxis=axis,
         yaxis=axis,
         width=width,
@@ -320,12 +321,8 @@ def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmap):
         "HSV",
         "Twilight",
     ]
-    if mapper_plot.dim == 2:
-        menu_cmap = _cmap_buttons_2d(cmaps)
-        menu_color = _color_button_2d(mapper_plot, mapper_fig, colors, agg)
-    elif mapper_plot.dim == 3:
-        menu_cmap = _cmap_buttons_3d(cmaps)
-        menu_color = _color_button_3d(mapper_plot, mapper_fig, colors, agg)
+    menu_color = _color_buttons(mapper_plot, colors, agg)
+    menu_cmap = _cmap_buttons(mapper_plot, cmaps)
     slider_size = _node_size_slider(mapper_plot, node_size)
     mapper_fig.update_layout(
         updatemenus=[menu_cmap, menu_color],
@@ -333,48 +330,32 @@ def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmap):
     )
 
 
-def _cmap_buttons_2d(cmaps):
+def _cmap_buttons(mapper_plot, cmaps):
+    target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
+
+    def _update_cmap(cmap):
+        if mapper_plot.dim == 2:
+            return {
+                "marker.colorscale": [cmap],
+                "marker.line.colorscale": [cmap],
+            }
+        elif mapper_plot.dim == 3:
+            return {
+                "marker.colorscale": [None, cmap],
+                "marker.line.colorscale": [None, cmap],
+                "line.colorscale": [cmap, None],
+            }
+
     return dict(
         buttons=[
             dict(
                 label=cmap,
                 method="restyle",
-                args=[
-                    {
-                        "marker.colorscale": [cmap],
-                        "marker.line.colorscale": [cmap],
-                    },
-                    [1],
-                ],
+                args=[_update_cmap(cmap), target_traces],
             )
             for cmap in cmaps
         ],
-        x=0.2,
-        xanchor="left",
-        y=1.0,
-        yanchor="top",
-        direction="down",
-    )
-
-
-def _cmap_buttons_3d(cmaps):
-    return dict(
-        buttons=[
-            dict(
-                label=cmap,
-                method="restyle",
-                args=[
-                    {
-                        "marker.colorscale": [None, cmap],
-                        "marker.line.colorscale": [None, cmap],
-                        "line.colorscale": [cmap, None],
-                    },
-                    [0, 1],
-                ],
-            )
-            for cmap in cmaps
-        ],
-        x=0.2,
+        x=0.25,
         xanchor="left",
         y=1.0,
         yanchor="top",
@@ -407,47 +388,14 @@ def _node_size_slider(mapper_plot, node_size):
     )
 
 
-def _color_button_2d(mapper_plot, mapper_fig, colors, agg):
-    colors_num = colors.shape[1] if colors.ndim == 2 else 1
-
-    def _colors(i):
-        arr = colors[:, i] if colors.ndim == 2 else colors
-        nodes_col = aggregate_graph(arr, mapper_plot.graph, agg)
-        return list(nodes_col.values())
-
-    def _update_colors(i):
-        arr = _colors(i)
-        return {
-            "marker.color": [arr],
-            "marker.cmax": [max(arr, default=None)],
-            "marker.cmin": [min(arr, default=None)],
-        }
-
-    return dict(
-        buttons=[
-            dict(
-                label=f"Color {i}",
-                method="restyle",
-                args=[
-                    _update_colors(i),
-                    [1],
-                ],
-            )
-            for i in range(colors_num)
-        ],
-        x=0.0,
-        xanchor="left",
-        y=1.0,
-        yanchor="top",
-        direction="down",
-    )
-
-
-def _color_button_3d(mapper_plot, mapper_fig, colors, agg):
+def _color_buttons(mapper_plot, colors, agg):
     colors_num = colors.shape[1] if colors.ndim == 2 else 1
 
     def _colors_agg(i):
-        arr = colors[:, i] if colors.ndim == 2 else colors
+        if i is None:
+            arr = colors
+        else:
+            arr = colors[:, i] if colors.ndim == 2 else colors
         return aggregate_graph(arr, mapper_plot.graph, agg)
 
     def _colors(i):
@@ -465,28 +413,47 @@ def _color_button_3d(mapper_plot, mapper_fig, colors, agg):
 
     def _update_colors(i):
         arr = _colors(i)
-        arr_edge = _edge_colors(i)
-        return {
-            "marker.color": [None, arr],
-            "marker.cmax": [None, max(arr, default=None)],
-            "marker.cmin": [None, min(arr, default=None)],
-            "line.color": [arr_edge, None],
-            "line.cmax": [max(arr_edge, default=None), None],
-            "line.cmin": [min(arr_edge, default=None), None],
-        }
+        if mapper_plot.dim == 2:
+            return {
+                "marker.color": [arr],
+                "marker.cmax": [max(arr, default=None)],
+                "marker.cmin": [min(arr, default=None)],
+            }
+        elif mapper_plot.dim == 3:
+            arr_edge = _edge_colors(i)
+            return {
+                "marker.color": [None, arr],
+                "marker.cmax": [None, max(arr, default=None)],
+                "marker.cmin": [None, min(arr, default=None)],
+                "line.color": [arr_edge, None],
+                "line.cmax": [max(arr_edge, default=None), None],
+                "line.cmin": [min(arr_edge, default=None), None],
+            }
+
+    target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
+
+    buttons = [
+        dict(
+            label="Feature: [All]",
+            method="restyle",
+            args=[_update_colors(None), target_traces],
+        )
+    ]
+
+    if colors_num > 1:
+        buttons.extend(
+            [
+                dict(
+                    label=f"Feature {i}",
+                    method="restyle",
+                    args=[_update_colors(i), target_traces],
+                )
+                for i in range(colors_num)
+            ]
+        )
 
     return dict(
-        buttons=[
-            dict(
-                label=f"Color {i}",
-                method="restyle",
-                args=[
-                    _update_colors(i),
-                    [0, 1],
-                ],
-            )
-            for i in range(colors_num)
-        ],
+        buttons=buttons,
         x=0.0,
         xanchor="left",
         y=1.0,
