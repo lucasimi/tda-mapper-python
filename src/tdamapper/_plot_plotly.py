@@ -27,24 +27,27 @@ _EDGE_COLOR = "#777"
 
 _TICKS_NUM = 10
 
-NODE_SIZE = 1
+_NODES_TRACE = "nodes_trace"
 
-CMAP = "Jet"
+_EDGES_TRACE = "edges_trace"
 
-TITLE = ""
+DEFAULT_NODE_SIZE = 1
+
+DEFAULT_CMAP = "Jet"
+
+DEFAULT_TITLE = ""
 
 
 def plot_plotly(
     mapper_plot,
     width: int,
     height: int,
-    title: str = TITLE,
-    node_size: int = NODE_SIZE,
+    title: str = DEFAULT_TITLE,
+    node_size: int = DEFAULT_NODE_SIZE,
     colors=None,
     agg=np.nanmean,
-    cmap: str = CMAP,
+    cmap: str = DEFAULT_CMAP,
 ) -> go.Figure:
-    # node_col = aggregate_graph(colors, mapper_plot.graph, agg)
     fig = _figure(mapper_plot, width, height, title, node_size, colors, agg, cmap)
     _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmap)
     return fig
@@ -107,13 +110,13 @@ def _set_cmap(mapper_plot, fig, cmap):
             marker_colorscale=cmap,
             marker_line_colorscale=cmap,
         ),
-        selector=dict(name="nodes_trace"),
+        selector=dict(name=_NODES_TRACE),
     )
 
     if mapper_plot.dim == 3:
         fig.update_traces(
             patch=dict(line_colorscale=cmap),
-            selector=dict(name="edges_trace"),
+            selector=dict(name=_EDGES_TRACE),
         )
     elif mapper_plot.dim == 2:
         fig.update_traces(
@@ -121,7 +124,7 @@ def _set_cmap(mapper_plot, fig, cmap):
                 marker_colorscale=cmap,
                 marker_line_colorscale=cmap,
             ),
-            selector=dict(name="edges_trace"),
+            selector=dict(name=_EDGES_TRACE),
         )
 
 
@@ -138,7 +141,7 @@ def _set_colors(mapper_plot, fig, colors, agg):
                 cmax=max(colors_arr, default=None),
             ),
         ),
-        selector=dict(name="nodes_trace"),
+        selector=dict(name=_NODES_TRACE),
     )
     if mapper_plot.dim == 3:
         colors_avg = []
@@ -157,7 +160,7 @@ def _set_colors(mapper_plot, fig, colors, agg):
                     line_cmax=max(colors_edges_arr, default=None),
                 ),
             ),
-            selector=dict(name="edges_trace"),
+            selector=dict(name=_EDGES_TRACE),
         )
 
 
@@ -166,7 +169,7 @@ def _set_title(mapper_plot, fig, title):
         patch=dict(
             marker_colorbar=_colorbar(mapper_plot, title),
         ),
-        selector=dict(name="nodes_trace"),
+        selector=dict(name=_NODES_TRACE),
     )
 
 
@@ -175,7 +178,7 @@ def _set_node_size(mapper_plot, fig, node_size):
         patch=dict(
             marker_size=_marker_size(mapper_plot, node_size),
         ),
-        selector=dict(name="nodes_trace"),
+        selector=dict(name=_NODES_TRACE),
     )
 
 
@@ -213,7 +216,7 @@ def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmap):
 
 def _nodes_trace(mapper_plot, node_pos_arr):
     scatter = dict(
-        name="nodes_trace",
+        name=_NODES_TRACE,
         x=node_pos_arr[0],
         y=node_pos_arr[1],
         mode="markers",
@@ -222,13 +225,13 @@ def _nodes_trace(mapper_plot, node_pos_arr):
         marker=dict(
             showscale=True,
             reversescale=False,
-            size=_marker_size(mapper_plot, NODE_SIZE),
+            size=_marker_size(mapper_plot, DEFAULT_NODE_SIZE),
             opacity=_NODE_OPACITY,
             line_width=_NODE_OUTER_WIDTH,
             line_color=_NODE_OUTER_COLOR,
-            line_colorscale=CMAP,
-            colorscale=CMAP,
-            colorbar=_colorbar(mapper_plot, TITLE),
+            line_colorscale=DEFAULT_CMAP,
+            colorscale=DEFAULT_CMAP,
+            colorbar=_colorbar(mapper_plot, DEFAULT_TITLE),
         ),
     )
     if mapper_plot.dim == 3:
@@ -240,7 +243,7 @@ def _nodes_trace(mapper_plot, node_pos_arr):
 
 def _edges_trace(mapper_plot, edge_pos_arr):
     scatter = dict(
-        name="edges_trace",
+        name=_EDGES_TRACE,
         x=edge_pos_arr[0],
         y=edge_pos_arr[1],
         mode="lines",
@@ -253,15 +256,15 @@ def _edges_trace(mapper_plot, edge_pos_arr):
         scatter.update(
             dict(
                 z=edge_pos_arr[2],
-                line_colorscale=CMAP,
+                line_colorscale=DEFAULT_CMAP,
             ),
         )
         return go.Scatter3d(scatter)
     elif mapper_plot.dim == 2:
         scatter.update(
             dict(
-                marker_colorscale=CMAP,
-                marker_line_colorscale=CMAP,
+                marker_colorscale=DEFAULT_CMAP,
+                marker_line_colorscale=DEFAULT_CMAP,
             ),
         )
         return go.Scatter(scatter)
