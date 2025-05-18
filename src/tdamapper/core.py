@@ -29,8 +29,10 @@ this module is a NetworkX graph object.
 """
 
 import logging
+from typing import Callable, Iterator, Protocol, Self
 
 import networkx as nx
+import numpy as np
 from joblib import Parallel, delayed
 
 from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
@@ -51,7 +53,70 @@ logging.basicConfig(
 )
 
 
-def mapper_labels(X, y, cover, clustering, n_jobs=1):
+Array = np.ndarray
+
+
+class ArrayLike(Protocol):
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index) -> float: ...
+
+    def __iter__(self) -> Iterator[float]: ...
+
+
+class Clustering(Protocol):
+    """
+    Abstract interface for clustering algorithms.
+
+    This is an empty implementation. Subclasses should override the methods of
+    this class to implement more meaningful clustering algorithms.
+    """
+
+    def fit(self, X: Array) -> Self:
+        """
+        This is an empty implementation. This method should be implemented by
+        classes to provide meaningful clustering algorithms.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: The class itself.
+        """
+
+    @property
+    def labels_(self) -> Array:
+        """
+        This is an empty implementation. This method should be implemented by
+        classes to provide meaningful clustering algorithms.
+
+        :return: A list of cluster labels, one for each point in the dataset.
+        :rtype: list[int]
+        """
+
+
+class Cover(Protocol):
+    """
+    Abstract interface for cover algorithms.
+
+    This is an empty implementation. Cover algorithms should implement the methods of
+    this class to provide more meaningful cover algorithms.
+    """
+
+    def apply(self, X: ArrayLike):
+        """
+        This is an empty implementation. This method should be implemented by
+        classes to provide meaningful cover algorithms.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator of lists of ids.
+        :rtype: generator of lists of ints
+        """
+
+
+def mapper_labels(
+    X: ArrayLike, y: ArrayLike, cover: Cover, clustering: Clustering, n_jobs: int = 1
+):
     """
     Identify the nodes of the Mapper graph.
 
@@ -65,9 +130,10 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
 
     The function returns a list of node labels for each point in the dataset.
     The list at position i contains the labels of the nodes that the point at
-    position i belongs to. The labels are sorted in ascending order, and there
-    are no duplicates. If i < j, the labels at position i are strictly less
-    than those at position j.
+    position i belongs to. The returned list is sorted in ascending order,
+    meaning that if i < j, every label in the i-th list is strictly less than
+    every label in the j-th list. Moreover each list contains no duplicate
+    element.
 
     :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
@@ -90,13 +156,19 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
 
-    _lbls = Parallel(n_jobs, prefer="threads")(
+    def _extract_local_data(X: ArrayLike, ids: list[int]):
+        if isinstance(X, np.ndarray):
+            return X[ids]
+        else:
+            return [X[i] for i in ids]
+
+    _lbls = Parallel(n_jobs, backend="loky", prefer="processes")(
         delayed(_run_clustering)(
-            local_ids, [X[j] for j in local_ids], clone(clustering)
+            local_ids, _extract_local_data(X, local_ids), clone(clustering)
         )
         for local_ids in cover.apply(y)
     )
-    itm_lbls = [[] for _ in X]
+    itm_lbls: list[list[int]] = [[] for _ in X]
     max_lbl = 0
     for local_ids, local_lbls in _lbls:
         max_local_lbl = 0
@@ -109,7 +181,9 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
     return itm_lbls
 
 
-def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
+def mapper_connected_components(
+    X: ArrayLike, y: ArrayLike, cover: Cover, clustering: Clustering, n_jobs: int = 1
+):
     """
     Identify the connected components of the Mapper graph.
 
@@ -159,7 +233,9 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     return labels
 
 
-def mapper_graph(X, y, cover, clustering, n_jobs=1):
+def mapper_graph(
+    X: ArrayLike, y: ArrayLike, cover: Cover, clustering: Clustering, n_jobs: int = 1
+) -> nx.Graph:
     """
     Create the Mapper graph.
 
@@ -211,7 +287,9 @@ def mapper_graph(X, y, cover, clustering, n_jobs=1):
     return graph
 
 
-def aggregate_graph(X, graph, agg):
+def aggregate_graph(
+    X: ArrayLike, graph: nx.Graph, agg: Callable[[ArrayLike], ArrayLike]
+):
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -243,32 +321,7 @@ def aggregate_graph(X, graph, agg):
     return agg_values
 
 
-class Cover(ParamsMixin):
-    """
-    Abstract interface for cover algorithms.
-
-    This is a naive implementation. Subclasses should override the methods of
-    this class to implement more meaningful cover algorithms.
-    """
-
-    def apply(self, X):
-        """
-        Covers the dataset with a single open set.
-
-        This is a naive implementation that returns a generator producing a
-        single list containing all the ids if the original dataset. This
-        method should be overridden by subclasses to implement more meaningful
-        cover algorithms.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
-        """
-        yield list(range(0, len(X)))
-
-
-class Proximity(Cover):
+class Proximity(ParamsMixin):
     """
     Abstract interface for proximity functions. A proximity function is a
     function that maps each point into a subset of the dataset that contains
@@ -346,7 +399,7 @@ class Proximity(Cover):
                     yield neigh_ids
 
 
-class TrivialCover(Cover):
+class TrivialCover(ParamsMixin):
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.

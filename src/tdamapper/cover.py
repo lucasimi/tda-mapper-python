@@ -10,8 +10,8 @@ import math
 
 import numpy as np
 
-from tdamapper._common import warn_user
-from tdamapper.core import Cover, Proximity
+from tdamapper._common import ParamsMixin, warn_user
+from tdamapper.core import Proximity
 from tdamapper.utils.metrics import chebyshev, get_metric
 from tdamapper.utils.vptree import VPTree
 
@@ -390,7 +390,7 @@ class ProximityCubicalCover(BaseCubicalCover, Proximity):
         )
 
 
-class StandardCubicalCover(BaseCubicalCover, Cover):
+class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
     """
     Cover algorithm based on the standard open cover, which covers data with
     open hypercubes of uniform size and overlap. The standard cover is
@@ -476,7 +476,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
                 yield neigh_ids
 
 
-class CubicalCover(Cover):
+class CubicalCover(ParamsMixin):
     """
     Wrapper class for cubical cover algorithms, which cover data with open
     hypercubes of uniform size and overlap. This class delegates its methods to
