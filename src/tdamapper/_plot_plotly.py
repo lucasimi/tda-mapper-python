@@ -104,25 +104,33 @@ def _marker_size(mapper_plot, node_size):
     return marker_size
 
 
+def _get_cmap_rgb(cmap):
+    """Return a colorscale in [[float, 'rgb(r,g,b)']] format."""
+    base_scale = pc.get_colorscale(cmap)
+    # If it's already in [float, color] format, we're good
+    return [[pos, color] for pos, color in base_scale]
+
+
 def _set_cmap(mapper_plot, fig, cmap):
+    cmap_rgb = _get_cmap_rgb(cmap)
     fig.update_traces(
         patch=dict(
-            marker_colorscale=cmap,
-            marker_line_colorscale=cmap,
+            marker_colorscale=cmap_rgb,
+            marker_line_colorscale=cmap_rgb,
         ),
         selector=dict(name=_NODES_TRACE),
     )
 
     if mapper_plot.dim == 3:
         fig.update_traces(
-            patch=dict(line_colorscale=cmap),
+            patch=dict(line_colorscale=cmap_rgb),
             selector=dict(name=_EDGES_TRACE),
         )
     elif mapper_plot.dim == 2:
         fig.update_traces(
             patch=dict(
-                marker_colorscale=cmap,
-                marker_line_colorscale=cmap,
+                marker_colorscale=cmap_rgb,
+                marker_line_colorscale=cmap_rgb,
             ),
             selector=dict(name=_EDGES_TRACE),
         )
@@ -150,14 +158,13 @@ def _set_colors(mapper_plot, fig, colors, agg):
             colors_avg.append(c0)
             colors_avg.append(c1)
             colors_avg.append(c1)
-        colors_edges_arr = list(node_col.values())
         fig.update_traces(
             patch=dict(
                 text=scatter_text,
                 marker=dict(
-                    line_color=colors_edges_arr,
-                    line_cmin=min(colors_edges_arr, default=None),
-                    line_cmax=max(colors_edges_arr, default=None),
+                    line_color=colors_avg,
+                    line_cmin=min(colors_arr, default=None),
+                    line_cmax=max(colors_arr, default=None),
                 ),
             ),
             selector=dict(name=_EDGES_TRACE),
@@ -380,19 +387,19 @@ def _sanitize_cmap(cmap):
 
 
 def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmap):
-    cmaps_raw = [
-        cmap,
-        "Jet",
+    cmaps = [
         "Viridis",
         "Cividis",
+        "Plasma",
+        "RdBu",
+        "PiYG",
         "Spectral",
-        "Portland",
-        "Blues",
-        "Greens",
-        "HSV",
-        "Twilight",
     ]
-    cmaps = [_sanitize_cmap(c) for c in cmaps_raw]
+    # TODO: compare cmap with _get_plotly_js_colorscales()
+    cmaps_dict = {c.lower(): c for c in cmaps}
+    cmap_sanitized = cmaps_dict.get(cmap.lower(), None)
+    if not cmap_sanitized:
+        cmaps.insert(0, cmap)
     menu_color = _ui_color(mapper_plot, colors, agg)
     menu_cmap = _ui_cmap(mapper_plot, cmaps)
     slider_size = _ui_node_size(mapper_plot, node_size)
@@ -406,16 +413,17 @@ def _ui_cmap(mapper_plot, cmaps):
     target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
 
     def _update_cmap(cmap):
+        cmap_rgb = _get_cmap_rgb(cmap)
         if mapper_plot.dim == 2:
             return {
-                "marker.colorscale": [cmap],
-                "marker.line.colorscale": [cmap],
+                "marker.colorscale": [cmap_rgb],
+                "marker.line.colorscale": [cmap_rgb],
             }
         elif mapper_plot.dim == 3:
             return {
-                "marker.colorscale": [None, cmap],
-                "marker.line.colorscale": [None, cmap],
-                "line.colorscale": [cmap, None],
+                "marker.colorscale": [None, cmap_rgb],
+                "marker.line.colorscale": [None, cmap_rgb],
+                "line.colorscale": [cmap_rgb, None],
             }
 
     return dict(
