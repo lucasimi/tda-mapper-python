@@ -92,7 +92,13 @@ graph = mapper.fit_transform(X, y)
 # %%
 plot = MapperPlot(graph, dim=2, iterations=60, seed=42)
 
-fig = plot.plot_plotly(colors=labels, cmap="jet", agg=np.nanmean, width=600, height=600)
+fig = plot.plot_plotly(
+    colors=labels,
+    cmap=["jet", "viridis", "cividis"],
+    agg=np.nanmean,
+    width=600,
+    height=600,
+)
 
 fig.show(config={"scrollZoom": True})
 # fig.write_image("circles_mean.png", width=500, height=500)
@@ -107,11 +113,13 @@ fig.show(config={"scrollZoom": True})
 # data where such ambiguity is common.
 
 # %%
-plot.plot_plotly_update(
-    fig,
+
+fig = plot.plot_plotly(
     colors=labels,
-    cmap="viridis",
+    cmap=["jet", "viridis", "cividis"],
     agg=np.nanstd,
+    width=600,
+    height=600,
 )
 
 fig.show(config={"scrollZoom": True})

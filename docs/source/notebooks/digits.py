@@ -100,7 +100,7 @@ plot = MapperPlot(graph, dim=3, iterations=400, seed=42)
 
 fig = plot.plot_plotly(
     colors=labels,
-    cmap="jet",
+    cmap=["jet", "viridis", "cividis"],
     agg=mode,
     title="mode of digits",
     width=600,
@@ -131,7 +131,7 @@ def entropy(arr):
 
 fig = plot.plot_plotly(
     colors=labels,
-    cmap="viridis",
+    cmap=["jet", "viridis", "cividis"],
     agg=entropy,
     title="entropy of digits",
     width=600,
