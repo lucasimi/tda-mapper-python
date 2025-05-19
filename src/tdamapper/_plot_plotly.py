@@ -4,7 +4,7 @@ plotly.
 """
 
 import math
-from typing import Optional
+from typing import Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -38,6 +38,21 @@ DEFAULT_CMAP = "Jet"
 DEFAULT_TITLE = ""
 
 
+def _get_plotly_colorscales():
+    modules = ["sequential", "diverging", "cyclical"]
+    all_scales = []
+    for mod in modules:
+        m = getattr(pc, mod)
+        # keep only public scale names (start with uppercase letter)
+        valid = [name for name in dir(m) if name[0].isupper()]
+        all_scales.extend(valid)
+    cmaps = sorted(set(all_scales))
+    return {c.lower(): c for c in cmaps}
+
+
+PLOTLY_CMAPS = _get_plotly_colorscales()
+
+
 def plot_plotly(
     mapper_plot,
     width: int,
@@ -46,10 +61,14 @@ def plot_plotly(
     node_size: int = DEFAULT_NODE_SIZE,
     colors=None,
     agg=np.nanmean,
-    cmap: str = DEFAULT_CMAP,
+    cmap: Union[str, list[str]] = DEFAULT_CMAP,
 ) -> go.Figure:
-    fig = _figure(mapper_plot, width, height, title, node_size, colors, agg, cmap)
-    _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmap)
+    cmaps = [cmap] if isinstance(cmap, str) else cmap
+    colors = np.array(colors)
+    if colors.ndim == 1:
+        colors = colors.reshape(-1, 1)
+    fig = _figure(mapper_plot, width, height, title, node_size, colors, agg, cmaps)
+    _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmaps)
     return fig
 
 
@@ -160,7 +179,6 @@ def _set_colors(mapper_plot, fig, colors, agg):
             colors_avg.append(c1)
         fig.update_traces(
             patch=dict(
-                text=scatter_text,
                 marker=dict(
                     line_color=colors_avg,
                     line_cmin=min(colors_arr, default=None),
@@ -196,7 +214,7 @@ def _update_layout(fig, width, height):
     )
 
 
-def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmap):
+def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmaps):
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
         mapper_plot.graph,
@@ -213,8 +231,8 @@ def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmap):
     _layout_ = _layout(width, height)
     fig = go.Figure(data=[_edges_tr, _nodes_tr], layout=_layout_)
 
-    _set_cmap(mapper_plot, fig, cmap)
-    _set_colors(mapper_plot, fig, colors, agg)
+    _set_cmap(mapper_plot, fig, cmaps[0])
+    _set_colors(mapper_plot, fig, colors[:, 0], agg)
     _set_node_size(mapper_plot, fig, node_size)
     _set_title(mapper_plot, fig, title)
 
@@ -363,45 +381,15 @@ def _layout(width, height):
     )
 
 
-def _get_plotly_js_colorscales():
-    """
-    Return a sorted list of all case-sensitive color-scale names
-    supported by Plotly.js (via the Python plotly.colors wrapper).
-    Includes sequential, diverging, and cyclical scales.
-    """
-    modules = ["sequential", "diverging", "cyclical"]
-    all_scales = []
-    for mod in modules:
-        m = getattr(pc, mod)
-        # keep only public scale names (start with uppercase letter)
-        valid = [name for name in dir(m) if name[0].isupper()]
-        all_scales.extend(valid)
-    # dedupe and sort
-    return sorted(set(all_scales))
-
-
-def _sanitize_cmap(cmap):
-    cmaps = _get_plotly_js_colorscales()
-    cmaps_dict = {c.lower(): c for c in cmaps}
-    return cmaps_dict.get(cmap.lower(), None)
-
-
-def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmap):
-    cmaps = [
-        "Viridis",
-        "Cividis",
-        "Plasma",
-        "RdBu",
-        "PiYG",
-        "Spectral",
-    ]
-    # TODO: compare cmap with _get_plotly_js_colorscales()
-    cmaps_dict = {c.lower(): c for c in cmaps}
-    cmap_sanitized = cmaps_dict.get(cmap.lower(), None)
-    if not cmap_sanitized:
-        cmaps.insert(0, cmap)
+def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmaps):
+    cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
     menu_color = _ui_color(mapper_plot, colors, agg)
-    menu_cmap = _ui_cmap(mapper_plot, cmaps)
+    if menu_color["buttons"]:
+        menu_color["x"] = 0.0
+    else:
+        menu_color["x"] = -0.25
+    menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
+    menu_cmap["x"] = menu_color["x"] + 0.25
     slider_size = _ui_node_size(mapper_plot, node_size)
     mapper_fig.update_layout(
         updatemenus=[menu_cmap, menu_color],
@@ -426,15 +414,19 @@ def _ui_cmap(mapper_plot, cmaps):
                 "line.colorscale": [cmap_rgb, None],
             }
 
-    return dict(
-        buttons=[
+    buttons = []
+    if len(cmaps) > 1:
+        buttons = [
             dict(
                 label=cmap,
                 method="restyle",
                 args=[_update_cmap(cmap), target_traces],
             )
             for cmap in cmaps
-        ],
+        ]
+
+    return dict(
+        buttons=buttons,
         x=0.25,
         xanchor="left",
         y=1.0,
@@ -493,9 +485,12 @@ def _ui_color(mapper_plot, colors, agg):
         return colors_avg
 
     def _update_colors(i):
-        arr = _colors(i)
+        arr_agg = _colors_agg(i)
+        arr = list(arr_agg.values())
+        scatter_text = _text(mapper_plot, arr_agg)
         if mapper_plot.dim == 2:
             return {
+                "text": [scatter_text],
                 "marker.color": [arr],
                 "marker.cmax": [max(arr, default=None)],
                 "marker.cmin": [min(arr, default=None)],
@@ -503,6 +498,7 @@ def _ui_color(mapper_plot, colors, agg):
         elif mapper_plot.dim == 3:
             arr_edge = _edge_colors(i)
             return {
+                "text": [None, scatter_text],
                 "marker.color": [None, arr],
                 "marker.cmax": [None, max(arr, default=None)],
                 "marker.cmin": [None, min(arr, default=None)],
@@ -513,25 +509,16 @@ def _ui_color(mapper_plot, colors, agg):
 
     target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
 
-    buttons = [
-        dict(
-            label="Feature: [All]",
-            method="restyle",
-            args=[_update_colors(None), target_traces],
-        )
-    ]
-
-    if colors_num > 1:
-        buttons.extend(
-            [
-                dict(
-                    label=f"Feature {i}",
-                    method="restyle",
-                    args=[_update_colors(i), target_traces],
-                )
-                for i in range(colors_num)
-            ]
-        )
+    buttons = []
+    if colors.shape[1] > 1:
+        buttons = [
+            dict(
+                label=f"Color {i}",
+                method="restyle",
+                args=[_update_colors(i), target_traces],
+            )
+            for i in range(colors_num)
+        ]
 
     return dict(
         buttons=buttons,
