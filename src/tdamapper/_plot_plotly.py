@@ -4,7 +4,7 @@ plotly.
 """
 
 import math
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -61,7 +61,7 @@ def plot_plotly(
     node_size: int = DEFAULT_NODE_SIZE,
     colors=None,
     agg=np.nanmean,
-    cmap: Union[str, list[str]] = DEFAULT_CMAP,
+    cmap: Union[str, List[str]] = DEFAULT_CMAP,
 ) -> go.Figure:
     cmaps = [cmap] if isinstance(cmap, str) else cmap
     colors = np.array(colors)
