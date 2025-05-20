@@ -177,14 +177,6 @@ def _fix_data(data):
     return df
 
 
-def _get_dim(fig):
-    dim = 2
-    for trace in fig.data:
-        if "3d" in trace.type:
-            dim = 3
-    return dim
-
-
 def _get_graph_no_attribs(graph):
     graph_no_attribs = nx.Graph()
     graph_no_attribs.add_nodes_from(graph.nodes())
@@ -573,36 +565,6 @@ def plot_agg_input_section():
     return agg, agg_name
 
 
-def plot_cmap_input_section():
-    cmap_type = st.selectbox(
-        "Colormap",
-        options=[
-            V_CMAP_JET,
-            V_CMAP_VIRIDIS,
-            V_CMAP_CIVIDIS,
-            V_CMAP_PORTLAND,
-            V_CMAP_SPECTRAL,
-            V_CMAP_HSV,
-            V_CMAP_TWILIGHT,
-        ],
-    )
-    cmap = V_CMAPS.get(cmap_type, "Jet")
-    return cmap
-
-
-def plot_color_input_section(df_X, df_y):
-    X_cols = list(df_X.columns)
-    y_cols = list(df_y.columns)
-    col_feat = st.selectbox(
-        "Color",
-        options=y_cols + X_cols,
-    )
-    if col_feat in X_cols:
-        return df_X[col_feat].to_numpy(), col_feat
-    elif col_feat in y_cols:
-        return df_y[col_feat].to_numpy(), col_feat
-
-
 @st.cache_data(
     hash_funcs={
         "networkx.classes.graph.Graph": lambda g: _encode_graph(
@@ -652,41 +614,35 @@ def mapper_plot_section(mapper_graph):
     hash_funcs={"tdamapper.plot.MapperPlot": lambda mp: mp.positions},
     show_spinner="Rendering Mapper",
 )
-def compute_mapper_fig(
-    mapper_plot, colors, node_size, cmap, _agg, agg_name, colors_feat
-):
+def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
     logger.info("Generating Mapper figure")
     mapper_fig = mapper_plot.plot_plotly(
         colors,
+        color_names=colors.columns,
         node_size=node_size,
         agg=_agg,
-        title=f"{agg_name} of {colors_feat}",
+        title=agg_name,
         cmap=cmap,
         width=600,
         height=600,
     )
-    mapper_fig.update_layout(uirevision="constant")
     return mapper_fig
 
 
 def mapper_figure_section(df_X, df_y, mapper_plot):
     st.header("🎨 Plot")
     agg, agg_name = plot_agg_input_section()
-    colors, colors_feat = plot_color_input_section(df_X, df_y)
+    colors = pd.concat([df_y, df_X], axis=1)
     mapper_fig = compute_mapper_fig(
         mapper_plot,
         colors=colors,
         node_size=1.0,
         _agg=agg,
-        cmap="Jet",
+        cmap=["Jet", "Viridis", "Cividis"],
         agg_name=agg_name,
-        colors_feat=colors_feat,
     )
-    dim = _get_dim(mapper_fig)
     mapper_fig.update_layout(
-        dragmode="orbit" if dim == 3 else "pan",
-        uirevision="constant",
-        margin=dict(b=0, l=0, r=0, t=0),
+        margin=dict(b=5, l=5, r=5, t=5),
     )
     mapper_fig.update_xaxes(
         showline=False,
@@ -697,160 +653,18 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         scaleratio=1,
     )
 
-    _enhance_fig(mapper_plot, mapper_fig, df_X, df_y, agg)
-
     return mapper_fig
-
-
-def _enhance_fig(mapper_plot, mapper_fig, df_X, df_y, agg):
-    menu_cmap = {}
-    if mapper_plot.dim == 2:
-        menu_cmap = _set_cmap_buttons_2d(mapper_fig)
-        menu_feature = _set_feature_select_button_2d(
-            mapper_plot, mapper_fig, df_X, df_y, agg
-        )
-
-    elif mapper_plot.dim == 3:
-        menu_cmap = _set_cmap_buttons_3d(mapper_fig)
-        menu_feature = _set_feature_select_button_3d(
-            mapper_plot, mapper_fig, df_X, df_y, agg
-        )
-
-    slider_size = _set_node_size_slider(mapper_plot, mapper_fig)
-
-    mapper_fig.update_layout(
-        updatemenus=[menu_cmap, menu_feature],
-        sliders=[slider_size],
-        uirevision="constant",
-    )
-
-
-def _set_cmap_buttons_2d(fig):
-    return dict(
-        buttons=[
-            dict(
-                label=cmap_name,
-                method="restyle",
-                args=[
-                    {
-                        "marker.colorscale": [cmap],
-                        "marker.line.colorscale": [cmap],
-                    },
-                    [0, 1],
-                ],
-            )
-            for cmap_name, cmap in V_CMAPS.items()
-        ],
-        x=0,
-        xanchor="left",
-        y=0.75,
-        yanchor="bottom",
-        direction="down",
-    )
-
-
-def _set_cmap_buttons_3d(fig):
-    return dict(
-        buttons=[
-            dict(
-                label=cmap_name,
-                method="restyle",
-                args=[
-                    {
-                        "marker.colorscale": [cmap, cmap],
-                        "marker.line.colorscale": [cmap, cmap],
-                        "line.colorscale": [cmap, cmap],
-                    },
-                    [0, 1],
-                ],
-            )
-            for cmap_name, cmap in V_CMAPS.items()
-        ],
-        x=0,
-        xanchor="left",
-        y=0.75,
-        yanchor="bottom",
-        direction="down",
-    )
-
-
-def _set_node_size_slider(mapper_plot, fig):
-    steps = []
-    for node_size in [x / 10.0 for x in range(1, 20)]:
-        steps.append(
-            dict(
-                method="restyle",
-                label=f"{node_size}",
-                args=[
-                    {"marker.size": [_marker_size(mapper_plot, node_size)]},
-                    [1],
-                ],
-            )
-        )
-
-    return dict(
-        active=len(steps) // 2,
-        currentvalue={"prefix": "Node size: "},
-        steps=steps,
-        x=0,
-        y=0.85,
-        xanchor="left",
-        len=0.15,
-        yanchor="bottom",
-    )
 
 
 def _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg):
     X_cols = list(df_X.columns)
     y_cols = list(df_y.columns)
+    colors = np.array([])
     if col_feat in X_cols:
         colors = df_X[col_feat].to_numpy()
     elif col_feat in y_cols:
         colors = df_y[col_feat].to_numpy()
     return aggregate_graph(colors, mapper_plot.graph, agg)
-
-
-def _compute_colors(mapper_plot, df_X, df_y, col_feat, agg):
-    nodes_col = _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg)
-    return list(nodes_col.values())
-
-
-def _set_feature_select_button_2d(mapper_plot, mapper_fig, df_X, df_y, agg):
-    col_feats = list(df_X.columns) + list(df_y.columns)
-    return dict(
-        buttons=[
-            dict(
-                label=f"Feature: {col_feat}",
-                method="restyle",
-                args=[
-                    {
-                        "marker.color": [
-                            _compute_colors(mapper_plot, df_X, df_y, col_feat, agg)
-                        ],
-                        "marker.cmax": [
-                            max(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                        "marker.cmin": [
-                            min(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                    },
-                    [1],
-                ],
-            )
-            for col_feat in col_feats
-        ],
-        x=0,
-        xanchor="left",
-        y=0.65,
-        yanchor="bottom",
-        direction="down",
-    )
 
 
 def _edge_colors(mapper_plot, df_X, df_y, col_feat, agg):
@@ -864,60 +678,7 @@ def _edge_colors(mapper_plot, df_X, df_y, col_feat, agg):
     return colors_avg
 
 
-def _set_feature_select_button_3d(mapper_plot, mapper_fig, df_X, df_y, agg):
-    col_feats = list(df_X.columns) + list(df_y.columns)
-    return dict(
-        buttons=[
-            dict(
-                label=f"Feature: {col_feat}",
-                method="restyle",
-                args=[
-                    {
-                        "marker.color": [
-                            _compute_colors(mapper_plot, df_X, df_y, col_feat, agg)
-                        ],
-                        "marker.cmax": [
-                            max(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                        "marker.cmin": [
-                            min(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                        "line.color": [
-                            _edge_colors(mapper_plot, df_X, df_y, col_feat, agg)
-                        ],
-                        "line.cmax": [
-                            max(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                        "line.cmin": [
-                            min(
-                                _compute_colors(mapper_plot, df_X, df_y, col_feat, agg),
-                                default=None,
-                            )
-                        ],
-                    },
-                    [0, 1],
-                ],
-            )
-            for col_feat in col_feats
-        ],
-        x=0,
-        xanchor="left",
-        y=0.65,
-        yanchor="bottom",
-        direction="down",
-    )
-
-
-def mapper_rendering_section(mapper_graph, mapper_fig):
+def mapper_rendering_section(mapper_fig):
     config = {
         "scrollZoom": True,
         "displaylogo": False,
@@ -1043,7 +804,7 @@ def main():
     with col_0:
         data_summary_section(df_X, df_y, mapper_graph)
     with col_1:
-        mapper_rendering_section(mapper_graph, mapper_fig)
+        mapper_rendering_section(mapper_fig)
     col_2, col_3 = st.columns([1, 3])
     with col_2:
         data_download_button(df_X, df_y)

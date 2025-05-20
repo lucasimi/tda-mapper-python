@@ -60,6 +60,7 @@ def plot_plotly(
     title: str = DEFAULT_TITLE,
     node_size: int = DEFAULT_NODE_SIZE,
     colors=None,
+    color_names=None,
     agg=np.nanmean,
     cmap: Union[str, List[str]] = DEFAULT_CMAP,
 ) -> go.Figure:
@@ -67,8 +68,12 @@ def plot_plotly(
     colors = np.array(colors)
     if colors.ndim == 1:
         colors = colors.reshape(-1, 1)
-    fig = _figure(mapper_plot, width, height, title, node_size, colors, agg, cmaps)
-    _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmaps)
+    if color_names is None:
+        color_names = [f"Color {i}" for i in range(colors.shape[1])]
+    fig = _figure(
+        mapper_plot, width, height, title, node_size, colors, color_names, agg, cmaps
+    )
+    _add_ui_to_layout(mapper_plot, fig, colors, color_names, node_size, agg, cmaps)
     return fig
 
 
@@ -189,10 +194,10 @@ def _set_colors(mapper_plot, fig, colors, agg):
         )
 
 
-def _set_title(mapper_plot, fig, title):
+def _set_title(mapper_plot, fig, color_name):
     fig.update_traces(
         patch=dict(
-            marker_colorbar=_colorbar(mapper_plot, title),
+            marker_colorbar=_colorbar(mapper_plot, color_name),
         ),
         selector=dict(name=_NODES_TRACE),
     )
@@ -214,7 +219,9 @@ def _update_layout(fig, width, height):
     )
 
 
-def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmaps):
+def _figure(
+    mapper_plot, width, height, title, node_size, colors, color_names, agg, cmaps
+):
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
         mapper_plot.graph,
@@ -234,7 +241,7 @@ def _figure(mapper_plot, width, height, title, node_size, colors, agg, cmaps):
     _set_cmap(mapper_plot, fig, cmaps[0])
     _set_colors(mapper_plot, fig, colors[:, 0], agg)
     _set_node_size(mapper_plot, fig, node_size)
-    _set_title(mapper_plot, fig, title)
+    _set_title(mapper_plot, fig, color_names[0])
 
     return fig
 
@@ -381,9 +388,11 @@ def _layout(width, height):
     )
 
 
-def _add_ui_to_layout(mapper_plot, mapper_fig, colors, node_size, agg, cmaps):
+def _add_ui_to_layout(
+    mapper_plot, mapper_fig, colors, color_names, node_size, agg, cmaps
+):
     cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-    menu_color = _ui_color(mapper_plot, colors, agg)
+    menu_color = _ui_color(mapper_plot, colors, color_names, agg)
     if menu_color["buttons"]:
         menu_color["x"] = 0.0
     else:
@@ -460,7 +469,7 @@ def _ui_node_size(mapper_plot, node_size):
     )
 
 
-def _ui_color(mapper_plot, colors, agg):
+def _ui_color(mapper_plot, colors, color_names, agg):
     colors_arr = np.array(colors)
     colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
@@ -488,9 +497,11 @@ def _ui_color(mapper_plot, colors, agg):
         arr_agg = _colors_agg(i)
         arr = list(arr_agg.values())
         scatter_text = _text(mapper_plot, arr_agg)
+        cbar = _colorbar(mapper_plot, color_names[i])
         if mapper_plot.dim == 2:
             return {
                 "text": [scatter_text],
+                "marker.colorbar": [cbar],
                 "marker.color": [arr],
                 "marker.cmax": [max(arr, default=None)],
                 "marker.cmin": [min(arr, default=None)],
@@ -499,6 +510,7 @@ def _ui_color(mapper_plot, colors, agg):
             arr_edge = _edge_colors(i)
             return {
                 "text": [None, scatter_text],
+                "marker.colorbar": [None, cbar],
                 "marker.color": [None, arr],
                 "marker.cmax": [None, max(arr, default=None)],
                 "marker.cmin": [None, min(arr, default=None)],
@@ -513,7 +525,7 @@ def _ui_color(mapper_plot, colors, agg):
     if colors.shape[1] > 1:
         buttons = [
             dict(
-                label=f"Color {i}",
+                label=f"{color_names[i]}",
                 method="restyle",
                 args=[_update_colors(i), target_traces],
             )
