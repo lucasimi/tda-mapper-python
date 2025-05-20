@@ -618,10 +618,9 @@ def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
     logger.info("Generating Mapper figure")
     mapper_fig = mapper_plot.plot_plotly(
         colors,
-        color_names=colors.columns,
         node_size=node_size,
         agg=_agg,
-        title=agg_name,
+        title=[f"{agg_name} of {c}" for c in colors.columns],
         cmap=cmap,
         width=600,
         height=600,
