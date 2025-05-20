@@ -9,7 +9,7 @@ from sklearn.datasets import fetch_openml, load_digits
 from sklearn.decomposition import PCA
 
 import tdamapper as tm
-from tdamapper.clustering import TrivialClustering
+from tdamapper.core import TrivialClustering
 
 
 def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
@@ -81,7 +81,7 @@ def run_gm(X, n, p):
 
 def run_tm(X, n, p):
     t0 = time.time()
-    tm.core.MapperAlgorithm(
+    tm.learn.MapperAlgorithm(
         cover=tm.cover.CubicalCover(
             n_intervals=n,
             overlap_frac=p,

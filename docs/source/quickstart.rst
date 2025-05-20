@@ -27,11 +27,11 @@ Development
 
    pip install git+https://github.com/lucasimi/tda-mapper-python
 
-- To install from the latest commit of develop branch
+- To install from the latest commit of a branch
 
 .. code:: bash
 
-   pip install git+https://github.com/lucasimi/tda-mapper-python@develop
+   pip install git+https://github.com/lucasimi/tda-mapper-python@[name-of-the-branch]
 
 
 How To Use

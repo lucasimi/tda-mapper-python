@@ -174,8 +174,10 @@ class MapperPlot:
             obtained by mapping the aggregated value with the colormap `cmap`.
             Defaults to `numpy.nanmean`.
         :type agg: Callable, optional
-        :param title: The title to be displayed alongside the figure.
-        :type title: str, optional
+        :param title: The title for the colormap. When colors has shape (n, m)
+            and title is a list of string, each item will be used as title for
+            its corresponding colormap.
+        :type title: str, list[str], optional
         :param width: The desired width of the figure in pixels. Defaults to
             512.
         :type width: int, optional
@@ -202,6 +204,10 @@ class MapperPlot:
             cmap=cmap,
         )
 
+    @deprecated(
+        "This method is deprecated and will be removed in a future release. "
+        "Use a new instance of tdamapper.plot.MapperPlot."
+    )
     def plot_plotly_update(
         self,
         fig,

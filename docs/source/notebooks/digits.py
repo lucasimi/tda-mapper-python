@@ -72,6 +72,7 @@ mapper = MapperAlgorithm(
 )
 
 graph = mapper.fit_transform(X, y)
+print(f"nodes: {len(graph.nodes())}, edges: {len(graph.edges())}")
 
 # %% [markdown]
 # ### Visualization
@@ -100,7 +101,7 @@ plot = MapperPlot(graph, dim=3, iterations=400, seed=42)
 
 fig = plot.plot_plotly(
     colors=labels,
-    cmap="jet",
+    cmap=["jet", "viridis", "cividis"],
     agg=mode,
     title="mode of digits",
     width=600,
@@ -108,7 +109,7 @@ fig = plot.plot_plotly(
     node_size=0.5,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 
 # %% [markdown]
 # We also color the nodes by the **entropy** of their digit labels, which
@@ -131,7 +132,7 @@ def entropy(arr):
 
 fig = plot.plot_plotly(
     colors=labels,
-    cmap="viridis",
+    cmap=["jet", "viridis", "cividis"],
     agg=entropy,
     title="entropy of digits",
     width=600,
@@ -139,7 +140,7 @@ fig = plot.plot_plotly(
     node_size=0.5,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 
 # %% [markdown]
 # ### Identifying high-entropy

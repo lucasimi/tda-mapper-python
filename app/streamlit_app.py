@@ -22,6 +22,8 @@ from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
+from tdamapper._plot_plotly import _marker_size
+from tdamapper.core import aggregate_graph
 from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -100,6 +102,16 @@ V_CMAP_HSV = "HSV (Cyclic)"
 
 V_CMAP_TWILIGHT = "Twilight (Cyclic)"
 
+V_CMAPS = {
+    V_CMAP_JET: "Jet",
+    V_CMAP_VIRIDIS: "Viridis",
+    V_CMAP_CIVIDIS: "Cividis",
+    V_CMAP_SPECTRAL: "Spectral",
+    V_CMAP_PORTLAND: "Portland",
+    V_CMAP_HSV: "HSV",
+    V_CMAP_TWILIGHT: "Twilight",
+}
+
 GIT_REPO_URL = "https://github.com/lucasimi/tda-mapper-python"
 
 ICON_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png"
@@ -163,14 +175,6 @@ def _fix_data(data):
     df.dropna(axis=1, how="all", inplace=True)
     df.fillna(df.mean(), inplace=True)
     return df
-
-
-def _get_dim(fig):
-    dim = 2
-    for trace in fig.data:
-        if "3d" in trace.type:
-            dim = 3
-    return dim
 
 
 def _get_graph_no_attribs(graph):
@@ -561,50 +565,6 @@ def plot_agg_input_section():
     return agg, agg_name
 
 
-def plot_cmap_input_section():
-    cmap_type = st.selectbox(
-        "Colormap",
-        options=[
-            V_CMAP_JET,
-            V_CMAP_VIRIDIS,
-            V_CMAP_CIVIDIS,
-            V_CMAP_PORTLAND,
-            V_CMAP_SPECTRAL,
-            V_CMAP_HSV,
-            V_CMAP_TWILIGHT,
-        ],
-    )
-    cmap = None
-    if cmap_type == V_CMAP_JET:
-        cmap = "Jet"
-    elif cmap_type == V_CMAP_VIRIDIS:
-        cmap = "Viridis"
-    elif cmap_type == V_CMAP_CIVIDIS:
-        cmap = "Cividis"
-    elif cmap_type == V_CMAP_PORTLAND:
-        cmap = "Portland"
-    elif cmap_type == V_CMAP_SPECTRAL:
-        cmap = "Spectral"
-    elif cmap_type == V_CMAP_HSV:
-        cmap = "HSV"
-    elif cmap_type == V_CMAP_TWILIGHT:
-        cmap = "Twilight"
-    return cmap
-
-
-def plot_color_input_section(df_X, df_y):
-    X_cols = list(df_X.columns)
-    y_cols = list(df_y.columns)
-    col_feat = st.selectbox(
-        "Color",
-        options=y_cols + X_cols,
-    )
-    if col_feat in X_cols:
-        return df_X[col_feat].to_numpy(), col_feat
-    elif col_feat in y_cols:
-        return df_y[col_feat].to_numpy(), col_feat
-
-
 @st.cache_data(
     hash_funcs={
         "networkx.classes.graph.Graph": lambda g: _encode_graph(
@@ -654,15 +614,13 @@ def mapper_plot_section(mapper_graph):
     hash_funcs={"tdamapper.plot.MapperPlot": lambda mp: mp.positions},
     show_spinner="Rendering Mapper",
 )
-def compute_mapper_fig(
-    mapper_plot, colors, node_size, cmap, _agg, agg_name, colors_feat
-):
+def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
     logger.info("Generating Mapper figure")
     mapper_fig = mapper_plot.plot_plotly(
         colors,
         node_size=node_size,
         agg=_agg,
-        title=f"{agg_name} of {colors_feat}",
+        title=[f"{agg_name} of {c}" for c in colors.columns],
         cmap=cmap,
         width=600,
         height=600,
@@ -673,23 +631,17 @@ def compute_mapper_fig(
 def mapper_figure_section(df_X, df_y, mapper_plot):
     st.header("🎨 Plot")
     agg, agg_name = plot_agg_input_section()
-    cmap = plot_cmap_input_section()
-    colors, colors_feat = plot_color_input_section(df_X, df_y)
-    node_size = st.slider("Node size", min_value=0.1, max_value=10.0, value=1.0)
+    colors = pd.concat([df_y, df_X], axis=1)
     mapper_fig = compute_mapper_fig(
         mapper_plot,
         colors=colors,
-        node_size=node_size,
+        node_size=1.0,
         _agg=agg,
-        cmap=cmap,
+        cmap=["Jet", "Viridis", "Cividis"],
         agg_name=agg_name,
-        colors_feat=colors_feat,
     )
-    dim = _get_dim(mapper_fig)
     mapper_fig.update_layout(
-        dragmode="orbit" if dim == 3 else "pan",
-        uirevision="constant",
-        margin=dict(b=0, l=0, r=0, t=0),
+        margin=dict(b=5, l=5, r=5, t=5),
     )
     mapper_fig.update_xaxes(
         showline=False,
@@ -699,16 +651,41 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
         scaleanchor="x",
         scaleratio=1,
     )
+
     return mapper_fig
 
 
-def mapper_rendering_section(mapper_graph, mapper_fig):
+def _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg):
+    X_cols = list(df_X.columns)
+    y_cols = list(df_y.columns)
+    colors = np.array([])
+    if col_feat in X_cols:
+        colors = df_X[col_feat].to_numpy()
+    elif col_feat in y_cols:
+        colors = df_y[col_feat].to_numpy()
+    return aggregate_graph(colors, mapper_plot.graph, agg)
+
+
+def _edge_colors(mapper_plot, df_X, df_y, col_feat, agg):
+    colors_avg = []
+    colors_agg = _compute_colors_agg(mapper_plot, df_X, df_y, col_feat, agg)
+    for edge in mapper_plot.graph.edges():
+        c0, c1 = colors_agg[edge[0]], colors_agg[edge[1]]
+        colors_avg.append(c0)
+        colors_avg.append(c1)
+        colors_avg.append(c1)
+    return colors_avg
+
+
+def mapper_rendering_section(mapper_fig):
     config = {
         "scrollZoom": True,
         "displaylogo": False,
         "modeBarButtonsToRemove": ["zoom", "pan"],
     }
-    st.plotly_chart(mapper_fig, use_container_width=True, config=config)
+    st.plotly_chart(
+        mapper_fig, use_container_width=True, config=config, key="mapper_plot"
+    )
 
 
 def data_summary_section(df_X, df_y, mapper_graph):
@@ -826,7 +803,7 @@ def main():
     with col_0:
         data_summary_section(df_X, df_y, mapper_graph)
     with col_1:
-        mapper_rendering_section(mapper_graph, mapper_fig)
+        mapper_rendering_section(mapper_fig)
     col_2, col_3 = st.columns([1, 3])
     with col_2:
         data_download_button(df_X, df_y)
