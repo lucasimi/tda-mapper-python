@@ -620,7 +620,7 @@ def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
         colors,
         node_size=node_size,
         agg=_agg,
-        title=[f"{agg_name} of {c}" for c in colors.columns],
+        # title=[f"{agg_name} of {c}" for c in colors.columns],
         cmap=cmap,
         width=600,
         height=600,
@@ -634,10 +634,12 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
     colors = pd.concat([df_y, df_X], axis=1)
     mapper_fig = compute_mapper_fig(
         mapper_plot,
-        colors=colors,
+        # colors=colors,
+        colors=colors.to_numpy(),
         node_size=1.0,
         _agg=agg,
-        cmap=["Jet", "Viridis", "Cividis"],
+        # cmap=["Jet", "Viridis", "Cividis"],
+        cmap="Jet",
         agg_name=agg_name,
     )
     mapper_fig.update_layout(
