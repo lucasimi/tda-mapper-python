@@ -77,6 +77,7 @@ mapper = MapperAlgorithm(
     cover=CubicalCover(n_intervals=10, overlap_frac=0.3), clustering=DBSCAN()
 )
 graph = mapper.fit_transform(X, y)
+print(f"nodes: {len(graph.nodes())}, edges: {len(graph.edges())}")
 
 # %% [markdown]
 # ### Visualization

@@ -2,7 +2,9 @@ import unittest
 
 import networkx as nx
 import numpy as np
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
+from sklearn.datasets import load_digits
+from sklearn.decomposition import PCA
 
 from tdamapper.core import (
     TrivialClustering,
@@ -214,3 +216,15 @@ class TestMapper(unittest.TestCase):
         self.assertEqual([1, 2, 3], labels[1])
         self.assertEqual([2], labels[2])
         self.assertEqual([0, 1, 3], labels[3])
+
+    def test_full(self):
+        X, _ = load_digits(return_X_y=True)
+        y = PCA(2, random_state=42).fit_transform(X)
+        mapper = MapperAlgorithm(
+            cover=CubicalCover(n_intervals=10, overlap_frac=0.5),
+            clustering=AgglomerativeClustering(10),
+            verbose=False,
+        )
+        graph = mapper.fit_transform(X, y)
+        self.assertEqual(381, len(graph.nodes()))
+        self.assertEqual(736, len(graph.edges()))

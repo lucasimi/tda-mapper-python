@@ -72,6 +72,7 @@ mapper = MapperAlgorithm(
 )
 
 graph = mapper.fit_transform(X, y)
+print(f"nodes: {len(graph.nodes())}, edges: {len(graph.edges())}")
 
 # %% [markdown]
 # ### Visualization
