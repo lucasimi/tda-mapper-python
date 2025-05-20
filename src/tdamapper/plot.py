@@ -153,7 +153,7 @@ class MapperPlot:
     def plot_plotly(
         self,
         colors,
-        color_names,
+        color_names=None,
         node_size=1,
         agg=np.nanmean,
         title=None,
@@ -170,7 +170,7 @@ class MapperPlot:
         :type colors: array-like of shape (n,) or list-like of size n
         :param color_names: A list of color names that will be used in the UI
             buttons to represent and chose the rendered color.
-        :type color_names: list[str] of size n
+        :type color_names: list[str] of size n, optional
         :param node_size: A scaling factor for node size. Defaults to 1.
         :type node_size: float, optional
         :param agg: A function used to aggregate the `colors` array over the
