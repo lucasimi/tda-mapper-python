@@ -100,7 +100,7 @@ fig = plot.plot_plotly(
     height=600,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 # fig.write_image("circles_mean.png", width=500, height=500)
 
 # %% [markdown]
@@ -122,7 +122,7 @@ fig = plot.plot_plotly(
     height=600,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 # fig.write_image("circles_std.png", width=500, height=500)
 
 # %% [markdown]

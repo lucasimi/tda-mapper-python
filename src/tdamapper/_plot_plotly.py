@@ -57,10 +57,9 @@ def plot_plotly(
     mapper_plot,
     width: int,
     height: int,
-    title: str = DEFAULT_TITLE,
     node_size: int = DEFAULT_NODE_SIZE,
     colors=None,
-    color_names=None,
+    title: Optional[Union[str, List[str]]] = None,
     agg=np.nanmean,
     cmap: Union[str, List[str]] = DEFAULT_CMAP,
 ) -> go.Figure:
@@ -68,12 +67,14 @@ def plot_plotly(
     colors = np.array(colors)
     if colors.ndim == 1:
         colors = colors.reshape(-1, 1)
-    if color_names is None:
-        color_names = [f"Color {i}" for i in range(colors.shape[1])]
-    fig = _figure(
-        mapper_plot, width, height, title, node_size, colors, color_names, agg, cmaps
-    )
-    _add_ui_to_layout(mapper_plot, fig, colors, color_names, node_size, agg, cmaps)
+    colors_num = colors.shape[1]
+    titles = [f"Color {i}" for i in range(colors_num)]
+    if isinstance(title, str):
+        titles = [title for _ in range(colors_num)]
+    elif isinstance(title, list) and len(title) == colors_num:
+        titles = title
+    fig = _figure(mapper_plot, width, height, node_size, colors, titles, agg, cmaps)
+    _add_ui_to_layout(mapper_plot, fig, colors, titles, node_size, agg, cmaps)
     return fig
 
 
@@ -219,9 +220,7 @@ def _update_layout(fig, width, height):
     )
 
 
-def _figure(
-    mapper_plot, width, height, title, node_size, colors, color_names, agg, cmaps
-):
+def _figure(mapper_plot, width, height, node_size, colors, titles, agg, cmaps):
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
         mapper_plot.graph,
@@ -241,7 +240,7 @@ def _figure(
     _set_cmap(mapper_plot, fig, cmaps[0])
     _set_colors(mapper_plot, fig, colors[:, 0], agg)
     _set_node_size(mapper_plot, fig, node_size)
-    _set_title(mapper_plot, fig, color_names[0])
+    _set_title(mapper_plot, fig, titles[0])
 
     return fig
 
@@ -346,10 +345,10 @@ def _fmt(x, max_len=3):
 def _layout(width, height):
     line_col = "rgba(230, 230, 230, 1.0)"
     axis = dict(
-        showline=True,
+        showline=False,
         linewidth=1,
         mirror=True,
-        visible=True,
+        visible=False,
         showticklabels=False,
         showgrid=False,
         zeroline=False,
@@ -357,11 +356,11 @@ def _layout(width, height):
         title="",
     )
     scene_axis = dict(
-        showgrid=True,
-        visible=True,
+        showgrid=False,
+        visible=False,
         backgroundcolor="rgba(0, 0, 0, 0)",
         showaxeslabels=False,
-        showline=True,
+        showline=False,
         linecolor=line_col,
         zerolinecolor=line_col,
         gridcolor=line_col,
@@ -388,11 +387,9 @@ def _layout(width, height):
     )
 
 
-def _add_ui_to_layout(
-    mapper_plot, mapper_fig, colors, color_names, node_size, agg, cmaps
-):
+def _add_ui_to_layout(mapper_plot, mapper_fig, colors, titles, node_size, agg, cmaps):
     cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-    menu_color = _ui_color(mapper_plot, colors, color_names, agg)
+    menu_color = _ui_color(mapper_plot, colors, titles, agg)
     if menu_color["buttons"]:
         menu_color["x"] = 0.0
     else:
@@ -469,7 +466,7 @@ def _ui_node_size(mapper_plot, node_size):
     )
 
 
-def _ui_color(mapper_plot, colors, color_names, agg):
+def _ui_color(mapper_plot, colors, titles, agg):
     colors_arr = np.array(colors)
     colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
@@ -497,7 +494,7 @@ def _ui_color(mapper_plot, colors, color_names, agg):
         arr_agg = _colors_agg(i)
         arr = list(arr_agg.values())
         scatter_text = _text(mapper_plot, arr_agg)
-        cbar = _colorbar(mapper_plot, color_names[i])
+        cbar = _colorbar(mapper_plot, titles[i])
         if mapper_plot.dim == 2:
             return {
                 "text": [scatter_text],
@@ -525,7 +522,7 @@ def _ui_color(mapper_plot, colors, color_names, agg):
     if colors.shape[1] > 1:
         buttons = [
             dict(
-                label=f"{color_names[i]}",
+                label=f"{titles[i]}",
                 method="restyle",
                 args=[_update_colors(i), target_traces],
             )

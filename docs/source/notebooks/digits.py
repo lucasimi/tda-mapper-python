@@ -108,7 +108,7 @@ fig = plot.plot_plotly(
     node_size=0.5,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 
 # %% [markdown]
 # We also color the nodes by the **entropy** of their digit labels, which
@@ -139,7 +139,7 @@ fig = plot.plot_plotly(
     node_size=0.5,
 )
 
-fig.show(config={"scrollZoom": True})
+fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 
 # %% [markdown]
 # ### Identifying high-entropy
