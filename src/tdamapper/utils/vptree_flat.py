@@ -1,9 +1,13 @@
 from random import randrange
 
+import numpy as np
+from numba import njit
+
 from tdamapper.utils.heap import MaxHeap
 from tdamapper.utils.metrics import get_metric
 
 
+@njit
 def _swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
 
@@ -12,25 +16,39 @@ def _mid(start, end):
     return (start + end) // 2
 
 
-def _partition(data, start, end, p_ord):
+@njit
+def _partition(distances, indices, is_terminal, start, end, p_ord):
     higher = start
     for j in range(start, end):
-        j_ord, _, _ = data[j]
+        j_ord = distances[j]
         if j_ord < p_ord:
-            _swap(data, higher, j)
+            _swap(distances, higher, j)
+            _swap(indices, higher, j)
+            _swap(is_terminal, higher, j)
             higher += 1
     return higher
 
 
-def _quickselect(data, start, end, k):
+def _quickselect(distances, indices, is_terminal, start, end, k):
     if (k < start) or (k >= end):
         return
     start_, end_, higher = start, end, None
     while higher != k + 1:
-        p, _, _ = data[k]
-        _swap(data, start_, k)
-        higher = _partition(data, start_ + 1, end_, p)
-        _swap(data, start_, higher - 1)
+        # TODO: pivot_index = randrange(start_, end_)
+        pivot_index = k
+
+        p = distances[pivot_index]
+
+        _swap(distances, start_, pivot_index)
+        _swap(indices, start_, pivot_index)
+        _swap(is_terminal, start_, pivot_index)
+
+        higher = _partition(distances, indices, is_terminal, start_ + 1, end_, p)
+
+        _swap(distances, start_, higher - 1)
+        _swap(indices, start_, higher - 1)
+        _swap(is_terminal, start_, higher - 1)
+
         if k <= higher - 1:
             end_ = higher
         else:
@@ -53,7 +71,9 @@ class VPTree:
         self.__leaf_capacity = leaf_capacity
         self.__leaf_radius = leaf_radius
         self.__pivoting = pivoting
-        self.__dataset = self._Build(self, X).build()
+        self.__dataset, self.__distances, self.__indices, self.__is_terminal = (
+            self._Build(self, X).build()
+        )
 
     def get_metric(self):
         return self.__metric
@@ -77,11 +97,25 @@ class VPTree:
         metric_params = self.__metric_params or {}
         return get_metric(self.__metric, **metric_params)
 
+    def _get_distances(self):
+        return self.__distances
+
+    def _get_indices(self):
+        return self.__indices
+
+    def _get_is_terminal(self):
+        return self.__is_terminal
+
     class _Build:
 
         def __init__(self, vpt, X):
             self.__distance = vpt._get_distance()
-            self.__dataset = [(0.0, x, False) for x in X]
+
+            self.__dataset = [x for x in X]
+            self.__indices = np.array([i for i in range(len(self.__dataset))])
+            self.__distances = np.array([0.0 for _ in X])
+            self.__is_terminal = np.array([False for _ in X])
+
             self.__leaf_capacity = vpt.get_leaf_capacity()
             self.__leaf_radius = vpt.get_leaf_radius()
             pivoting = vpt.get_pivoting()
@@ -99,14 +133,21 @@ class VPTree:
                 return
             pivot = randrange(start, end)
             if pivot > start:
-                _swap(self.__dataset, start, pivot)
+                _swap(self.__distances, start, pivot)
+                _swap(self.__indices, start, pivot)
+                _swap(self.__is_terminal, start, pivot)
 
         def _furthest(self, start, end, i):
             furthest_dist = 0.0
             furthest = start
-            _, i_point, _ = self.__dataset[i]
+
+            i_point_index = self.__indices[i]
+            i_point = self.__dataset[i_point_index]
+
             for j in range(start, end):
-                _, j_point, _ = self.__dataset[j]
+                j_point_index = self.__indices[j]
+                j_point = self.__dataset[j_point_index]
+
                 j_dist = self.__distance(i_point, j_point)
                 if j_dist > furthest_dist:
                     furthest = j
@@ -120,18 +161,27 @@ class VPTree:
             furthest_rnd = self._furthest(start, end, rnd)
             furthest = self._furthest(start, end, furthest_rnd)
             if furthest > start:
-                _swap(self.__dataset, start, furthest)
+                _swap(self.__distances, start, furthest)
+                _swap(self.__indices, start, furthest)
+                _swap(self.__is_terminal, start, furthest)
 
         def _update(self, start, end):
             self.__pivoting(start, end)
-            _, v_point, is_terminal = self.__dataset[start]
+
+            v_point_index = self.__indices[start]
+            v_point = self.__dataset[v_point_index]
+            is_terminal = self.__is_terminal[start]
+
             for i in range(start + 1, end):
-                _, point, _ = self.__dataset[i]
-                self.__dataset[i] = self.__distance(v_point, point), point, is_terminal
+                point_index = self.__indices[i]
+                point = self.__dataset[point_index]
+
+                self.__distances[i] = self.__distance(v_point, point)
+                self.__is_terminal[i] = is_terminal
 
         def build(self):
             self._build_iter()
-            return self.__dataset
+            return self.__dataset, self.__distances, self.__indices, self.__is_terminal
 
         def _build_iter(self):
             stack = [(0, len(self.__dataset))]
@@ -139,17 +189,33 @@ class VPTree:
                 start, end = stack.pop()
                 mid = _mid(start, end)
                 self._update(start, end)
-                _, v_point, _ = self.__dataset[start]
-                _quickselect(self.__dataset, start + 1, end, mid)
-                v_radius, _, _ = self.__dataset[mid]
+
+                v_point_index = self.__indices[start]
+
+                _quickselect(
+                    self.__distances,
+                    self.__indices,
+                    self.__is_terminal,
+                    start + 1,
+                    end,
+                    mid,
+                )
+
+                v_radius = self.__distances[mid]
+
                 if (end - start > 2 * self.__leaf_capacity) and (
                     v_radius > self.__leaf_radius
                 ):
-                    self.__dataset[start] = (v_radius, v_point, False)
+                    self.__distances[start] = v_radius
+                    self.__indices[start] = v_point_index
+                    self.__is_terminal[start] = False
+
                     stack.append((mid, end))
                     stack.append((start + 1, mid))
                 else:
-                    self.__dataset[start] = (v_radius, v_point, True)
+                    self.__distances[start] = v_radius
+                    self.__indices[start] = v_point_index
+                    self.__is_terminal[start] = True
 
     def ball_search(self, point, eps, inclusive=True):
         return self._BallSearch(self, point, eps, inclusive).search()
@@ -158,6 +224,9 @@ class VPTree:
 
         def __init__(self, vpt, point, eps, inclusive=True):
             self.__dataset = vpt._get_dataset()
+            self.__distances = vpt._get_distances()
+            self.__indices = vpt._get_indices()
+            self.__is_terminal = vpt._get_is_terminal()
             self.__distance = vpt._get_distance()
             self.__point = point
             self.__eps = eps
@@ -176,9 +245,15 @@ class VPTree:
             result = []
             while stack:
                 start, end = stack.pop()
-                v_radius, v_point, is_terminal = self.__dataset[start]
+
+                v_radius = self.__distances[start]
+                v_point_index = self.__indices[start]
+                v_point = self.__dataset[v_point_index]
+                is_terminal = self.__is_terminal[start]
+
                 if is_terminal:
-                    for _, x, _ in self.__dataset[start:end]:
+                    for x_index in self.__indices[start:end]:
+                        x = self.__dataset[x_index]
                         dist = self.__distance(self.__point, x)
                         if self._inside(dist):
                             result.append(x)
@@ -205,6 +280,9 @@ class VPTree:
 
         def __init__(self, vpt, point, neighbors):
             self.__dataset = vpt._get_dataset()
+            self.__distances = vpt._get_distances()
+            self.__indices = vpt._get_indices()
+            self.__is_terminal = vpt._get_is_terminal()
             self.__distance = vpt._get_distance()
             self.__point = point
             self.__neighbors = neighbors
@@ -237,9 +315,15 @@ class VPTree:
             stack = [(0, len(self.__dataset), 0.0, PRE)]
             while stack:
                 start, end, thr, action = stack.pop()
-                v_radius, v_point, is_terminal = self.__dataset[start]
+
+                v_radius = self.__distances[start]
+                v_point_index = self.__indices[start]
+                v_point = self.__dataset[v_point_index]
+                is_terminal = self.__is_terminal[start]
+
                 if is_terminal:
-                    for _, x, _ in self.__dataset[start:end]:
+                    for x_index in self.__indices[start:end]:
+                        x = self.__dataset[x_index]
                         self._process(x)
                 else:
                     if action == PRE:
