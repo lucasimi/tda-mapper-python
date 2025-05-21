@@ -10,11 +10,15 @@ def dataset(dim=1, num=10000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
+def absdist(x, y):
+    return abs(x - y)
+
+
 class TestProximity(unittest.TestCase):
 
     def test_ball_proximity(self):
         data = list(range(100))
-        cover = BallCover(radius=10, metric=lambda x, y: abs(x - y))
+        cover = BallCover(radius=10, metric=absdist)
         cover.fit(data)
         for x in data:
             result = cover.search(x)
@@ -23,7 +27,7 @@ class TestProximity(unittest.TestCase):
 
     def test_knn_proximity(self):
         data = list(range(100))
-        cover = KNNCover(neighbors=11, metric=lambda x, y: abs(x - y))
+        cover = KNNCover(neighbors=11, metric=absdist)
         cover.fit(data)
         for x in range(5, 94):
             result = cover.search(x)

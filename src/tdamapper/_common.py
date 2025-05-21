@@ -2,6 +2,9 @@
 This module provides common functionalities for internal use.
 """
 
+import cProfile
+import io
+import pstats
 import warnings
 
 import numpy as np
@@ -147,3 +150,22 @@ def clone(obj):
     obj_noargs = type(obj)()
     obj_noargs.set_params(**params)
     return obj_noargs
+
+
+def profile(n_lines=10):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            profiler = cProfile.Profile()
+            profiler.enable()
+            result = func(*args, **kwargs)
+            profiler.disable()
+
+            s = io.StringIO()
+            ps = pstats.Stats(profiler, stream=s).sort_stats("cumulative")
+            ps.print_stats(n_lines)
+            print(s.getvalue())
+            return result
+
+        return wrapper
+
+    return decorator

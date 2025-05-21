@@ -93,7 +93,11 @@ class TestBenchmark(unittest.TestCase):
         d(np.array([0.0]), np.array([0.0]))  # jit-compile numba
         t0 = time()
         for val in data:
-            data.sort(key=lambda x: d(x, val))
+
+            def _dist_key(x):
+                return d(x, val)
+
+            data.sort(key=_dist_key)
             [x for x in data[: self.k]]
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")

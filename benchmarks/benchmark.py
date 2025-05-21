@@ -12,6 +12,10 @@ import tdamapper as tm
 from tdamapper.core import TrivialClustering
 
 
+def _identity(x):
+    return x
+
+
 def _segment(cardinality, dimension, noise=0.1, start=None, end=None):
     if start is None:
         start = np.zeros(dimension)
@@ -70,7 +74,7 @@ class TrivialEstimator(ClusterMixin):
 def run_gm(X, n, p):
     t0 = time.time()
     pipe = gm.make_mapper_pipeline(
-        filter_func=lambda x: x,
+        filter_func=_identity,
         cover=gm.CubicalCover(n_intervals=n, overlap_frac=p),
         clusterer=TrivialEstimator(),
     )
