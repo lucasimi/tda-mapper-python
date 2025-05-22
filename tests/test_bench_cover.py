@@ -7,8 +7,8 @@ from sklearn.datasets import load_digits
 
 from tdamapper._common import profile
 from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
+from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.setup_logging import setup_logging
 

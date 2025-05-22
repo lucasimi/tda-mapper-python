@@ -4,7 +4,7 @@ import numpy as np
 
 from tdamapper.cover import KNNCover
 from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_flat import VPTree
+from tdamapper.utils.vptree_flat.vptree import VPTree
 
 X = np.array(
     [
@@ -126,9 +126,10 @@ class TestKNN(unittest.TestCase):
         self.assertTrue(0.0 in dists)
 
     def check_vptree(self, vpt):
-        data = vpt._get_dataset()
-        distances = vpt._get_distances()
-        indices = vpt._get_indices()
+        arr = vpt._get_arr()
+        data = arr._dataset
+        distances = arr._distances
+        indices = arr._indices
 
         dist = vpt._get_distance()
         leaf_capacity = vpt.get_leaf_capacity()
