@@ -47,7 +47,11 @@ def eval_dist(X, d):
 
 def run_dist_bench(X, d):
     eval_dist(X, d)
-    return timeit.timeit(lambda: eval_dist(X, d), number=200)
+
+    def _eval():
+        eval_dist(X, d)
+
+    return timeit.timeit(_eval, number=200)
 
 
 def run_euclidean_bench(X):
