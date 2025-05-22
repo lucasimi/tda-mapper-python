@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.datasets import load_breast_cancer, load_digits, load_iris
 
 from tdamapper.utils.metrics import euclidean, get_metric
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
+from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.setup_logging import setup_logging
 
@@ -93,7 +93,11 @@ class TestBenchmark(unittest.TestCase):
         d(np.array([0.0]), np.array([0.0]))  # jit-compile numba
         t0 = time()
         for val in data:
-            data.sort(key=lambda x: d(x, val))
+
+            def _dist_key(x):
+                return d(x, val)
+
+            data.sort(key=_dist_key)
             [x for x in data[: self.k]]
         t1 = time()
         self.logger.info(f"{name}: {t1 - t0}")

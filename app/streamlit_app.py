@@ -211,7 +211,11 @@ def mode(arr):
 
 
 def quantile(q):
-    return lambda agg: np.nanquantile(agg, q=q)
+
+    def _quantile_q(agg):
+        return np.nanquantile(agg, q=q)
+
+    return _quantile_q
 
 
 @st.cache_data
@@ -565,12 +569,12 @@ def plot_agg_input_section():
     return agg, agg_name
 
 
+def _hash_networkx_graph(graph):
+    return _encode_graph(_get_graph_no_attribs(graph))
+
+
 @st.cache_data(
-    hash_funcs={
-        "networkx.classes.graph.Graph": lambda g: _encode_graph(
-            _get_graph_no_attribs(g)
-        )
-    },
+    hash_funcs={"networkx.classes.graph.Graph": _hash_networkx_graph},
     show_spinner="Generating Mapper Layout",
 )
 def compute_mapper_plot(mapper_graph, dim, seed, iterations):
@@ -610,8 +614,12 @@ def mapper_plot_section(mapper_graph):
     return mapper_plot
 
 
+def _hash_mapper_plot(mapper_plot):
+    return mapper_plot.positions
+
+
 @st.cache_data(
-    hash_funcs={"tdamapper.plot.MapperPlot": lambda mp: mp.positions},
+    hash_funcs={"tdamapper.plot.MapperPlot": _hash_mapper_plot},
     show_spinner="Rendering Mapper",
 )
 def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):

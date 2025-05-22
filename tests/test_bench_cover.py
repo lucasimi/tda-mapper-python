@@ -5,9 +5,10 @@ import unittest
 import numpy as np
 from sklearn.datasets import load_digits
 
+from tdamapper._common import profile
 from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_flat import VPTree as FVPT
-from tdamapper.utils.vptree_hier import VPTree as HVPT
+from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
+from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.setup_logging import setup_logging
 
@@ -19,6 +20,10 @@ dist(np.array([0.0]), np.array([0.0]))  # jit-compile numba
 
 def dataset(dim=10, num=1000):
     return [np.random.rand(dim) for _ in range(num)]
+
+
+def dist_proj(x, y):
+    return dist(x[1:], x[1:])
 
 
 class TestVpSettings(unittest.TestCase):
@@ -39,11 +44,12 @@ class TestVpSettings(unittest.TestCase):
     def run_bench(self, X, r, dist, vp, **kwargs):
         XX = np.array([[i] + [xi for xi in x] for i, x in enumerate(X)])
         t0 = time.time()
-        vpt = vp(XX, metric=lambda x, y: dist(x[1:], y[1:]), **kwargs)
+        vpt = vp(XX, metric=dist_proj, **kwargs)
         list(self.cover(vpt, XX, r))
         t1 = time.time()
         self.logger.info(f"time: {t1 - t0}")
 
+    @profile(n_lines=20)
     def test_cover_random(self):
         for r in [1.0, 10.0, 100.0]:
             for n in [100, 1000, 10000]:
@@ -61,6 +67,7 @@ class TestVpSettings(unittest.TestCase):
                 self.run_bench(X, r, dist, SkBallTree, leaf_radius=r)
                 self.logger.info("")
 
+    @profile(n_lines=20)
     def test_cover_digits(self):
         X, _ = load_digits(return_X_y=True)
         # X = PCA(n_components=3).fit_transform(X)

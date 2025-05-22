@@ -114,7 +114,11 @@ def minkowski(p):
         return euclidean()
     elif np.isinf(p):
         return chebyshev()
-    return lambda x, y: _metrics.minkowski(p, x, y)
+
+    def dist(x, y):
+        return _metrics.minkowski(p, x, y)
+
+    return dist
 
 
 def cosine():
