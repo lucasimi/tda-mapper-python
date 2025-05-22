@@ -4,12 +4,12 @@ from numba import njit
 _ARR = np.zeros(1)
 
 
-@njit
+@njit  # pragma: no cover
 def swap(arr, i, j):
     arr[i], arr[j] = arr[j], arr[i]
 
 
-@njit
+@njit  # pragma: no cover
 def _swap_all(arr, i, j, extra1, use_extra1, extra2, use_extra2):
     swap(arr, i, j)
     if use_extra1:
@@ -18,7 +18,7 @@ def _swap_all(arr, i, j, extra1, use_extra1, extra2, use_extra2):
         swap(extra2, i, j)
 
 
-@njit
+@njit  # pragma: no cover
 def _partition(data, start, end, p_ord, extra1, use_extra1, extra2, use_extra2):
     higher = start
     for j in range(start, end):
@@ -29,7 +29,7 @@ def _partition(data, start, end, p_ord, extra1, use_extra1, extra2, use_extra2):
     return higher
 
 
-@njit
+@njit  # pragma: no cover
 def _quickselect(data, start, end, k, extra1, use_extra1, extra2, use_extra2):
     if (k < start) or (k >= end):
         return
