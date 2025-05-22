@@ -33,7 +33,7 @@ def _partition(data, start, end, p_ord, extra1, use_extra1, extra2, use_extra2):
 def _quickselect(data, start, end, k, extra1, use_extra1, extra2, use_extra2):
     if (k < start) or (k >= end):
         return
-    start_, end_, higher = start, end, None
+    start_, end_, higher = start, end, -1
     while higher != k + 1:
         p = data[k]
         _swap_all(data, start_, k, extra1, use_extra1, extra2, use_extra2)
