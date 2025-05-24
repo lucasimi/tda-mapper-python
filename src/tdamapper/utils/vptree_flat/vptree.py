@@ -15,34 +15,34 @@ class VPTree:
         leaf_radius=0.0,
         pivoting=None,
     ):
-        self.__metric = metric
-        self.__metric_params = metric_params
-        self.__leaf_capacity = leaf_capacity
-        self.__leaf_radius = leaf_radius
-        self.__pivoting = pivoting
+        self._metric = metric
+        self._metric_params = metric_params
+        self._leaf_capacity = leaf_capacity
+        self._leaf_radius = leaf_radius
+        self._pivoting = pivoting
         self._arr = Builder(self, X).build()
 
     def get_metric(self):
-        return self.__metric
+        return self._metric
 
     def get_metric_params(self):
-        return self.__metric_params
+        return self._metric_params
 
     def get_leaf_capacity(self):
-        return self.__leaf_capacity
+        return self._leaf_capacity
 
     def get_leaf_radius(self):
-        return self.__leaf_radius
+        return self._leaf_radius
 
     def get_pivoting(self):
-        return self.__pivoting
+        return self._pivoting
 
     def _get_arr(self):
         return self._arr
 
     def _get_distance(self):
-        metric_params = self.__metric_params or {}
-        return get_metric(self.__metric, **metric_params)
+        metric_params = self._metric_params or {}
+        return get_metric(self._metric, **metric_params)
 
     def ball_search(self, point, eps, inclusive=True):
         return BallSearch(self, point, eps, inclusive).search()

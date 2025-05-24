@@ -1,5 +1,4 @@
 import logging
-import unittest
 
 import numpy as np
 from sklearn.utils.estimator_checks import check_estimator
@@ -13,36 +12,41 @@ def euclidean(x, y):
     return np.linalg.norm(x - y)
 
 
-class TestSklearn(unittest.TestCase):
+setup_logging()
+logger = logging.getLogger(__name__)
 
-    setup_logging()
-    logger = logging.getLogger(__name__)
 
-    def run_tests(self, estimator):
-        for est, check in check_estimator(estimator, generate_only=True):
-            # self.logger.info(f'{check}')
-            check(est)
+def run_tests(estimator):
+    for est, check in check_estimator(estimator, generate_only=True):
+        # logger.info(f'{check}')
+        check(est)
 
-    def test_trivial(self):
-        est = MapperAlgorithm()
-        self.run_tests(est)
 
-    def test_ball(self):
-        est = MapperAlgorithm(cover=BallCover(metric=euclidean))
-        self.run_tests(est)
+def test_trivial():
+    est = MapperAlgorithm()
+    run_tests(est)
 
-    def test_knn(self):
-        est = MapperAlgorithm(cover=KNNCover(metric=euclidean))
-        self.run_tests(est)
 
-    def test_cubical(self):
-        est = MapperAlgorithm(cover=CubicalCover())
-        self.run_tests(est)
+def test_ball():
+    est = MapperAlgorithm(cover=BallCover(metric=euclidean))
+    run_tests(est)
 
-    def test_clustering_trivial(self):
-        est = MapperClustering()
-        self.run_tests(est)
 
-    def test_clustering_ball(self):
-        est = MapperClustering(cover=BallCover(metric=euclidean))
-        self.run_tests(est)
+def test_knn():
+    est = MapperAlgorithm(cover=KNNCover(metric=euclidean))
+    run_tests(est)
+
+
+def test_cubical():
+    est = MapperAlgorithm(cover=CubicalCover())
+    run_tests(est)
+
+
+def test_clustering_trivial():
+    est = MapperClustering()
+    run_tests(est)
+
+
+def test_clustering_ball():
+    est = MapperClustering(cover=BallCover(metric=euclidean))
+    run_tests(est)

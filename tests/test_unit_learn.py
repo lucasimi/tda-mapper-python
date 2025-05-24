@@ -1,5 +1,3 @@
-import unittest
-
 import networkx as nx
 import numpy as np
 from sklearn.utils.estimator_checks import check_estimator
@@ -17,29 +15,31 @@ def dataset(dim=10, num=1000):
     return [np.random.rand(dim) for _ in range(num)]
 
 
-class TestMapper(unittest.TestCase):
+def run_tests(estimator):
+    for est, check in check_estimator(estimator, generate_only=True):
+        check(est)
 
-    def run_tests(self, estimator):
-        for est, check in check_estimator(estimator, generate_only=True):
-            check(est)
 
-    def test_mapper_learn(self):
-        data = dataset()
-        mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
-        g = mp.fit_transform(data, data)
-        self.assertEqual(1, len(g))
-        self.assertEqual([], list(g.neighbors(0)))
-        ccs = list(nx.connected_components(g))
-        self.assertEqual(1, len(ccs))
+def test_mapper_learn():
+    data = dataset()
+    mp = MapperAlgorithm(TrivialCover(), TrivialClustering())
+    g = mp.fit_transform(data, data)
+    assert 1 == len(g)
+    assert [] == list(g.neighbors(0))
+    ccs = list(nx.connected_components(g))
+    assert 1 == len(ccs)
 
-    def test_mapper_learn_est(self):
-        est = MapperAlgorithm()
-        self.run_tests(est)
 
-    def test_mapper_clustering_trivial(self):
-        est = MapperClustering()
-        self.run_tests(est)
+def test_mapper_learn_est():
+    est = MapperAlgorithm()
+    run_tests(est)
 
-    def test_mapper_clustering_ball(self):
-        est = MapperClustering(cover=BallCover(metric=euclidean))
-        self.run_tests(est)
+
+def test_mapper_clustering_trivial():
+    est = MapperClustering()
+    run_tests(est)
+
+
+def test_mapper_clustering_ball():
+    est = MapperClustering(cover=BallCover(metric=euclidean))
+    run_tests(est)
