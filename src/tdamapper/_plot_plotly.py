@@ -57,7 +57,7 @@ def plot_plotly(
     mapper_plot,
     width: int,
     height: int,
-    node_size: int = DEFAULT_NODE_SIZE,
+    node_size: Optional[Union[int, List[int]]] = DEFAULT_NODE_SIZE,
     colors=None,
     title: Optional[Union[str, List[str]]] = None,
     agg=np.nanmean,
@@ -73,8 +73,9 @@ def plot_plotly(
         titles = [title for _ in range(colors_num)]
     elif isinstance(title, list) and len(title) == colors_num:
         titles = title
-    fig = _figure(mapper_plot, width, height, node_size, colors, titles, agg, cmaps)
-    _add_ui_to_layout(mapper_plot, fig, colors, titles, node_size, agg, cmaps)
+    node_sizes = [node_size] if isinstance(node_size, int) else node_size
+    fig = _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps)
+    _add_ui_to_layout(mapper_plot, fig, colors, titles, node_sizes, agg, cmaps)
     return fig
 
 
@@ -220,7 +221,7 @@ def _update_layout(fig, width, height):
     )
 
 
-def _figure(mapper_plot, width, height, node_size, colors, titles, agg, cmaps):
+def _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps):
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
         mapper_plot.graph,
@@ -239,7 +240,7 @@ def _figure(mapper_plot, width, height, node_size, colors, titles, agg, cmaps):
 
     _set_cmap(mapper_plot, fig, cmaps[0])
     _set_colors(mapper_plot, fig, colors[:, 0], agg)
-    _set_node_size(mapper_plot, fig, node_size)
+    _set_node_size(mapper_plot, fig, node_sizes[len(node_sizes) // 2])
     _set_title(mapper_plot, fig, titles[0])
 
     return fig
@@ -387,7 +388,7 @@ def _layout(width, height):
     )
 
 
-def _add_ui_to_layout(mapper_plot, mapper_fig, colors, titles, node_size, agg, cmaps):
+def _add_ui_to_layout(mapper_plot, mapper_fig, colors, titles, node_sizes, agg, cmaps):
     cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
     menu_color = _ui_color(mapper_plot, colors, titles, agg)
     if menu_color["buttons"]:
@@ -396,7 +397,7 @@ def _add_ui_to_layout(mapper_plot, mapper_fig, colors, titles, node_size, agg, c
         menu_color["x"] = -0.25
     menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
     menu_cmap["x"] = menu_color["x"] + 0.25
-    slider_size = _ui_node_size(mapper_plot, node_size)
+    slider_size = _ui_node_size(mapper_plot, node_sizes)
     mapper_fig.update_layout(
         updatemenus=[menu_cmap, menu_color],
         sliders=[slider_size],
@@ -441,7 +442,7 @@ def _ui_cmap(mapper_plot, cmaps):
     )
 
 
-def _ui_node_size(mapper_plot, node_size):
+def _ui_node_size(mapper_plot, node_sizes):
     steps = [
         dict(
             method="restyle",
@@ -451,7 +452,7 @@ def _ui_node_size(mapper_plot, node_size):
                 [1],
             ],
         )
-        for size in [node_size * x / 10.0 for x in range(1, 20)]
+        for size in node_sizes
     ]
 
     return dict(

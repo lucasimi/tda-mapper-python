@@ -22,7 +22,6 @@ from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
-from tdamapper._plot_plotly import _marker_size
 from tdamapper.core import aggregate_graph
 from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm
@@ -137,14 +136,14 @@ def _check_limits_mapper_graph(mapper_graph):
     if LIMITS_ENABLED:
         num_nodes = mapper_graph.number_of_nodes()
         if num_nodes > LIMITS_NUM_NODES:
-            logging.warn("Too many nodes.")
+            logging.warning("Too many nodes.")
             raise ValueError(
                 "Too many nodes: select different parameters or run the app "
                 "locally on your machine."
             )
         num_edges = mapper_graph.number_of_edges()
         if num_edges > LIMITS_NUM_EDGES:
-            logging.warn("Too many edges.")
+            logging.warning("Too many edges.")
             raise ValueError(
                 "Too many edges: select different parameters or run the app "
                 "locally on your machine."
@@ -155,14 +154,14 @@ def _check_limits_dataset(df_X, df_y):
     if LIMITS_ENABLED:
         num_samples = len(df_X)
         if num_samples > LIMITS_NUM_SAMPLES:
-            logging.warn("Dataset too big.")
+            logging.warning("Dataset too big.")
             raise ValueError(
                 "Dataset too big: select a different dataset or run the app "
                 "locally on your machine."
             )
         num_features = len(df_X.columns) + len(df_y.columns)
         if num_features > LIMITS_NUM_FEATURES:
-            logging.warn("Too many features.")
+            logging.warning("Too many features.")
             raise ValueError(
                 "Too many features: select a different dataset or run the app "
                 "locally on your machine."
@@ -529,8 +528,8 @@ def mapper_input_section(X):
     mapper_algo = MapperAlgorithm(
         cover=cover,
         clustering=clustering,
-        verbose=True,
-        n_jobs=1,
+        verbose=False,
+        n_jobs=-2,
     )
     mapper_graph = compute_mapper(mapper_algo, X, lens)
     return mapper_graph
@@ -628,11 +627,12 @@ def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
         colors,
         node_size=node_size,
         agg=_agg,
-        title=[f"{agg_name} of {c}" for c in colors.columns],
+        title=[f"{c}" for c in colors.columns],
         cmap=cmap,
         width=600,
         height=600,
     )
+    logger.info("Done")
     return mapper_fig
 
 

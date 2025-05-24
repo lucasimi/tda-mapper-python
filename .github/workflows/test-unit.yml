@@ -53,7 +53,7 @@ jobs:
 
       - name: Run tests and code coverage
         run: | 
-          coverage run --source=src -m unittest discover -s tests -p 'test_unit_*.py'
+          coverage run --source=src -m pytest tests/test_unit_*.py
           coverage report -m
 
       - name: Upload coverage reports to Codecov

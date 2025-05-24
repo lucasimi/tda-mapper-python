@@ -46,6 +46,7 @@ dev = [
     "coverage[toml]",
     "pandas",
     "scikit-learn<1.6.0",
+    "pytest",
     "black[jupyter]",
     "isort",
     "flake8",

@@ -67,17 +67,17 @@ Follow these steps to contribute:
     the naming convention `test_bench_*.py`.
 
 4. **Run Tests**.
-    Ensure your changes pass all tests before committing. We use `unittest` as
+    Ensure your changes pass all tests before committing. We use `pytest` as
     test framework:
 
     ```bash
-    python -m unittest discover -s tests -p 'test_*.py'
+    python -m pytest tests/test_*.py
     ```
 
     Before each commit make sure to check code coverage:
 
     ```bash
-    coverage run --source=src -m unittest discover -s tests -p 'test_*.py'
+    coverage run --source=src -m pytest tests/test_*.py
     ```
 
 5. **Commit and Push Your Changes**.

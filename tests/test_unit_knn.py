@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 
 from tdamapper.cover import KNNCover
@@ -95,67 +93,68 @@ X = np.array(
 x = np.array([99.73199663, 100.8024564])
 
 
-class TestKNN(unittest.TestCase):
+def test_knn_search():
+    knn_cover = KNNCover(neighbors=5, metric="euclidean")
+    knn_cover.fit(X)
+    neigh_ids = knn_cover.search(x)
+    d = euclidean()
+    dists = [d(x, X[j]) for j in neigh_ids]
+    x_dist = d(x, X[5])
+    assert x_dist in dists
 
-    def test_knn_search(self):
-        knn_cover = KNNCover(neighbors=5, metric="euclidean")
-        knn_cover.fit(X)
-        neigh_ids = knn_cover.search(x)
-        d = euclidean()
-        dists = [d(x, X[j]) for j in neigh_ids]
-        x_dist = d(x, X[5])
-        self.assertTrue(x_dist in dists)
 
-    def test_vptree(self):
-        vptree = VPTree(X[:80], metric="euclidean", leaf_capacity=5)
-        neigh = vptree.knn_search(x, 5)
-        d = euclidean()
-        dists = [d(x, y) for y in neigh]
-        x_dist = d(x, X[5])
-        self.check_vptree(vptree)
-        self.assertTrue(x_dist in dists)
+def test_vptree():
+    vptree = VPTree(X[:80], metric="euclidean", leaf_capacity=5)
+    neigh = vptree.knn_search(x, 5)
+    d = euclidean()
+    dists = [d(x, y) for y in neigh]
+    x_dist = d(x, X[5])
+    check_vptree(vptree)
+    assert x_dist in dists
 
-    def test_vptree_simple(self):
-        XX = np.array([np.array([x, x / 2]) for x in range(30)])
-        vptree = VPTree(XX, metric="euclidean", leaf_capacity=5, leaf_radius=0.0)
-        xx = np.array([3, 3 / 2])
-        neigh = vptree.knn_search(xx, 2)
-        d = euclidean()
-        dists = [d(xx, y) for y in neigh]
-        self.check_vptree(vptree)
-        self.assertTrue(0.0 in dists)
 
-    def check_vptree(self, vpt):
-        arr = vpt._get_arr()
-        data = arr._dataset
-        distances = arr._distances
-        indices = arr._indices
+def test_vptree_simple():
+    XX = np.array([np.array([x, x / 2]) for x in range(30)])
+    vptree = VPTree(XX, metric="euclidean", leaf_capacity=5, leaf_radius=0.0)
+    xx = np.array([3, 3 / 2])
+    neigh = vptree.knn_search(xx, 2)
+    d = euclidean()
+    dists = [d(xx, y) for y in neigh]
+    check_vptree(vptree)
+    assert 0.0 in dists
 
-        dist = vpt._get_distance()
-        leaf_capacity = vpt.get_leaf_capacity()
-        leaf_radius = vpt.get_leaf_radius()
 
-        def check_sub(start, end):
-            v_radius = distances[start]
-            v_point_index = indices[start]
-            v_point = data[v_point_index]
+def check_vptree(vpt):
+    arr = vpt._get_arr()
+    data = arr._dataset
+    distances = arr._distances
+    indices = arr._indices
 
+    dist = vpt._get_distance()
+    leaf_capacity = vpt.get_leaf_capacity()
+    leaf_radius = vpt.get_leaf_radius()
+
+    def check_sub(start, end):
+        v_radius = distances[start]
+        v_point_index = indices[start]
+        v_point = data[v_point_index]
+
+        mid = (start + end) // 2
+        for i in range(start + 1, mid):
+            y_index = indices[i]
+            y = data[y_index]
+            assert dist(v_point, y) <= v_radius
+        for i in range(mid, end):
+            y_index = indices[i]
+            y = data[y_index]
+            assert dist(v_point, y) >= v_radius
+
+    def check_rec(start, end):
+        v_radius = distances[start]
+        if (end - start > leaf_capacity) and (v_radius > leaf_radius):
+            check_sub(start, end)
             mid = (start + end) // 2
-            for i in range(start + 1, mid):
-                y_index = indices[i]
-                y = data[y_index]
-                self.assertTrue(dist(v_point, y) <= v_radius)
-            for i in range(mid, end):
-                y_index = indices[i]
-                y = data[y_index]
-                self.assertTrue(dist(v_point, y) >= v_radius)
+            check_rec(start + 1, mid)
+            check_rec(mid, end)
 
-        def check_rec(start, end):
-            v_radius = distances[start]
-            if (end - start > leaf_capacity) and (v_radius > leaf_radius):
-                check_sub(start, end)
-                mid = (start + end) // 2
-                check_rec(start + 1, mid)
-                check_rec(mid, end)
-
-        check_rec(0, len(data))
+    check_rec(0, len(data))

@@ -1,6 +1,5 @@
 import logging
 import timeit
-import unittest
 
 import numba
 import numpy as np
@@ -109,14 +108,13 @@ def run_bench(X):
     return pd.DataFrame(d)
 
 
-class TestBenchMetrics(unittest.TestCase):
+setup_logging()
+logger = logging.getLogger(__name__)
 
-    setup_logging()
-    logger = logging.getLogger(__name__)
 
-    def test_bench(self):
-        X = np.random.rand(1000, 1000)
-        df_bench = run_bench(X)
-        df_str = str(df_bench)
-        for line in df_str.split("\n"):
-            self.logger.info(line)
+def test_bench():
+    X = np.random.rand(1000, 1000)
+    df_bench = run_bench(X)
+    df_str = str(df_bench)
+    for line in df_str.split("\n"):
+        logger.info(line)

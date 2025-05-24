@@ -1,7 +1,2 @@
-import unittest
-
-
-class TestReadme(unittest.TestCase):
-
-    def test_run(self):
-        import tests.example
+def test_run():
+    import tests.example
