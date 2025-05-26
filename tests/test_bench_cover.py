@@ -42,6 +42,7 @@ def cover(vpt, X, r):
 
 def run_bench(X, r, dist, vp, **kwargs):
     XX = np.array([[i] + [xi for xi in x] for i, x in enumerate(X)])
+    vpt = vp(XX, metric=dist_proj, **kwargs)  # first run of jit-compiled functions
     t0 = time.time()
     vpt = vp(XX, metric=dist_proj, **kwargs)
     list(cover(vpt, XX, r))
@@ -57,9 +58,11 @@ def test_cover_random():
             logger.info(f"[n: {n}, r: {r}]")
             X = dataset(num=n)
             logger.info(">>>>>>> HVPT >>>>>>")
+            run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting=None)
             run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="random")
             run_bench(X, r, dist, HVPT, leaf_radius=r, pivoting="furthest")
             logger.info(">>>>>>> FVPT >>>>>>")
+            run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting=None)
             run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="random")
             run_bench(X, r, dist, FVPT, leaf_radius=r, pivoting="furthest")
             logger.info(">>>>>> SKBT >>>>>>")

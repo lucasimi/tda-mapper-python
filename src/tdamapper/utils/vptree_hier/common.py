@@ -38,32 +38,32 @@ class VPArray:
 class Node:
 
     def __init__(self, radius, center, left, right):
-        self.__radius = radius
-        self.__center = center
-        self.__left = left
-        self.__right = right
+        self._radius = radius
+        self._center = center
+        self._left = left
+        self._right = right
 
     def get_ball(self):
-        return self.__radius, self.__center
+        return self._radius, self._center
 
     def is_terminal(self):
         return False
 
     def get_left(self):
-        return self.__left
+        return self._left
 
     def get_right(self):
-        return self.__right
+        return self._right
 
 
 class Leaf:
 
     def __init__(self, start, end):
-        self.__start = start
-        self.__end = end
+        self._start = start
+        self._end = end
 
     def get_bounds(self):
-        return self.__start, self.__end
+        return self._start, self._end
 
     def is_terminal(self):
         return True
