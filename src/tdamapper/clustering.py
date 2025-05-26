@@ -43,6 +43,7 @@ class _MapperClustering(EstimatorMixin, ParamsMixin):
         self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
+        y = X if y is None else y
         X, y = self._validate_X_y(X, y)
         cover = TrivialCover() if self.cover is None else self.cover
         cover = clone(cover)
@@ -53,7 +54,6 @@ class _MapperClustering(EstimatorMixin, ParamsMixin):
         )
         clustering = clone(clustering)
         n_jobs = self.n_jobs
-        y = X if y is None else y
         itm_lbls = mapper_connected_components(
             X,
             y,

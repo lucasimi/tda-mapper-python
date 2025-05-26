@@ -73,7 +73,7 @@ def plot_plotly(
         titles = [title for _ in range(colors_num)]
     elif isinstance(title, list) and len(title) == colors_num:
         titles = title
-    node_sizes = [node_size] if isinstance(node_size, int) else node_size
+    node_sizes = [node_size] if isinstance(node_size, (int, float)) else node_size
     fig = _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps)
     _add_ui_to_layout(mapper_plot, fig, colors, titles, node_sizes, agg, cmaps)
     return fig

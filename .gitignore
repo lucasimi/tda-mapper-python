@@ -24,3 +24,4 @@
 .idea
 dist/
 build/
+coverage.xml

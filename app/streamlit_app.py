@@ -23,8 +23,8 @@ from sklearn.decomposition import PCA
 from umap import UMAP
 
 from tdamapper.core import aggregate_graph
-from tdamapper.cover import BallCover, CubicalCover
-from tdamapper.learn import MapperAlgorithm
+from tdamapper.cover import BallCover, CubicalCover, KNNCover
+from tdamapper.learn import MapperAlgorithm, MapperClustering
 from tdamapper.plot import MapperPlot
 
 LIMITS_ENABLED = bool(os.environ.get("LIMITS_ENABLED", False))
@@ -63,7 +63,11 @@ V_COVER_BALL = "Ball"
 
 V_COVER_CUBICAL = "Cubical"
 
+V_COVER_KNN = "KNN"
+
 V_CLUSTERING_TRIVIAL = "Trivial"
+
+V_CLUSTERING_COVER = "Cover"
 
 V_CLUSTERING_AGGLOMERATIVE = "Agglomerative"
 
@@ -198,7 +202,10 @@ def _get_data_summary(df_X, df_y):
         }
     ).T
     df_summary = pd.DataFrame(
-        {V_DATA_SUMMARY_FEAT: df.columns, V_DATA_SUMMARY_HIST: df_hist.values.tolist()}
+        {
+            V_DATA_SUMMARY_FEAT: df.columns,
+            V_DATA_SUMMARY_HIST: df_hist.values.tolist(),
+        }
     )
     return df_summary
 
@@ -316,9 +323,10 @@ def mapper_lens_input_section(X):
         if pca_n > n_feats:
             lens = X
         else:
-            lens = PCA(n_components=pca_n, random_state=pca_random_state).fit_transform(
-                X
-            )
+            lens = PCA(
+                n_components=pca_n,
+                random_state=pca_random_state,
+            ).fit_transform(X)
     elif lens_type == V_LENS_UMAP:
         umap_n = st.number_input(
             "UMAP Components",
@@ -343,7 +351,12 @@ def mapper_cover_input_section():
     st.header("🌐 Cover")
     cover_type = st.selectbox(
         "Type",
-        options=[V_COVER_TRIVIAL, V_COVER_BALL, V_COVER_CUBICAL],
+        options=[
+            V_COVER_TRIVIAL,
+            V_COVER_BALL,
+            V_COVER_CUBICAL,
+            V_COVER_KNN,
+        ],
         index=2,
     )
     cover = None
@@ -379,7 +392,77 @@ def mapper_cover_input_section():
                 "Overlap", value=0.25, min_value=0.0, max_value=1.0
             )
         cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    elif cover_type == V_COVER_KNN:
+        knn_k = st.number_input("Neighbors", value=10, min_value=1)
+        cover = KNNCover(neighbors=knn_k)
     return cover
+
+
+def mapper_clustering_cover():
+    cover_type = st.selectbox(
+        "Type",
+        options=[
+            V_COVER_TRIVIAL,
+            V_COVER_BALL,
+            V_COVER_CUBICAL,
+            V_COVER_KNN,
+        ],
+        index=2,
+        key="mapper_clustering_cover_type",
+    )
+    cover = None
+    if cover_type == V_COVER_TRIVIAL:
+        cover = None
+    elif cover_type == V_COVER_BALL:
+        ball_r = st.number_input(
+            "Radius",
+            value=100.0,
+            min_value=0.0,
+            key="mapper_clustering_radius",
+        )
+        metric = st.selectbox(
+            "Metric",
+            options=[
+                "euclidean",
+                "chebyshev",
+                "manhattan",
+                "cosine",
+            ],
+            key="mapper_clustering_cover_metric",
+        )
+        cover = BallCover(radius=ball_r, metric=metric)
+    elif cover_type == V_COVER_CUBICAL:
+        cubical_n = st.number_input(
+            "Intervals",
+            value=10,
+            min_value=0,
+            key="mapper_clustering_cover_intervals",
+        )
+        cubical_overlap = st.checkbox(
+            "Set overlap",
+            value=False,
+            help="Uses a dimension-dependant default overlap when unchecked",
+            key="mapper_clustering_cover_set_overlap",
+        )
+        cubical_p = None
+        if cubical_overlap:
+            cubical_p = st.number_input(
+                "Overlap",
+                value=0.25,
+                min_value=0.0,
+                max_value=1.0,
+                key="mapper_clustering_cover_overlap",
+            )
+        cover = CubicalCover(n_intervals=cubical_n, overlap_frac=cubical_p)
+    elif cover_type == V_COVER_KNN:
+        knn_k = st.number_input(
+            "Neighbors",
+            value=10,
+            min_value=1,
+            key="mapper_clustering_knn_k",
+        )
+        cover = KNNCover(neighbors=knn_k)
+    return MapperClustering(cover=cover, n_jobs=-2)
 
 
 def mapper_clustering_kmeans():
@@ -485,17 +568,20 @@ def mapper_clustering_input_section():
         "Type",
         options=[
             V_CLUSTERING_TRIVIAL,
+            V_CLUSTERING_COVER,
             V_CLUSTERING_KMEANS,
             V_CLUSTERING_AGGLOMERATIVE,
             V_CLUSTERING_DBSCAN,
             V_CLUSTERING_HDBSCAN,
             V_CLUSTERING_AFFINITY_PROPAGATION,
         ],
-        index=1,
+        index=0,
     )
     clustering = None
     if clustering_type == V_CLUSTERING_TRIVIAL:
         clustering = None
+    elif clustering_type == V_CLUSTERING_COVER:
+        clustering = mapper_clustering_cover()
     elif clustering_type == V_CLUSTERING_AGGLOMERATIVE:
         clustering = mapper_clustering_agglomerative()
     elif clustering_type == V_CLUSTERING_KMEANS:
@@ -625,7 +711,13 @@ def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
     logger.info("Generating Mapper figure")
     mapper_fig = mapper_plot.plot_plotly(
         colors,
-        node_size=node_size,
+        node_size=[
+            0.0,
+            node_size / 2.0,
+            node_size,
+            node_size * 1.5,
+            node_size * 2.0,
+        ],
         agg=_agg,
         title=[f"{c}" for c in colors.columns],
         cmap=cmap,
