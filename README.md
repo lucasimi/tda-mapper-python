@@ -9,7 +9,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.10642381-blue?logo=doi&logoColor=silver)](https://doi.org/10.5281/zenodo.10642381)
 
 # tda-mapper
-
+ 
 **tda-mapper** is a Python library built around the Mapper algorithm, a core
 technique in Topological Data Analysis (TDA) for extracting topological
 structure from complex data. Designed for computational efficiency and
