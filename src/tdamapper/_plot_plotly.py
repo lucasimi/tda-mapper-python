@@ -57,7 +57,7 @@ def plot_plotly(
     mapper_plot,
     width: int,
     height: int,
-    node_size: Optional[Union[int, List[int]]] = DEFAULT_NODE_SIZE,
+    node_size: Optional[Union[int, float, List[Union[int, float]]]] = DEFAULT_NODE_SIZE,
     colors=None,
     title: Optional[Union[str, List[str]]] = None,
     agg=np.nanmean,
