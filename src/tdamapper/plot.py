@@ -167,8 +167,10 @@ class MapperPlot:
             node in the graph, useful for highlighting different features of
             the data.
         :type colors: array-like of shape (n,) or list-like of size n
-        :param node_size: A scaling factor for node size. Defaults to 1.
-        :type node_size: float, optional
+        :param node_size: A scaling factor for node size. When node_size is a
+            list, the figure will display a slider with the specified values.
+            Defaults to 1.
+        :type node_size: int, float or list, optional
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
