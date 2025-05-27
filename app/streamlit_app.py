@@ -20,6 +20,7 @@ from sklearn.cluster import (
 )
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
 from tdamapper.core import aggregate_graph
@@ -349,6 +350,7 @@ def mapper_lens_input_section(X):
 
 def mapper_cover_input_section():
     st.header("🌐 Cover")
+    scale_cover = st.checkbox("Apply Scaling", value=False, key="scale_cover")
     cover_type = st.selectbox(
         "Type",
         options=[
@@ -395,7 +397,7 @@ def mapper_cover_input_section():
     elif cover_type == V_COVER_KNN:
         knn_k = st.number_input("Neighbors", value=10, min_value=1)
         cover = KNNCover(neighbors=knn_k)
-    return cover
+    return cover, scale_cover
 
 
 def mapper_clustering_cover():
@@ -564,6 +566,7 @@ def mapper_clustering_affinityprop():
 
 def mapper_clustering_input_section():
     st.header("🧮 Clustering")
+    scale_clustering = st.checkbox("Apply Scaling", value=False, key="scale_clustering")
     clustering_type = st.selectbox(
         "Type",
         options=[
@@ -592,15 +595,19 @@ def mapper_clustering_input_section():
         clustering = mapper_clustering_hdbscan()
     elif clustering_type == V_CLUSTERING_AFFINITY_PROPAGATION:
         clustering = mapper_clustering_affinityprop()
-    return clustering
+    return clustering, scale_clustering
 
 
 @st.cache_data(
     hash_funcs={"tdamapper.learn.MapperAlgorithm": MapperAlgorithm.__repr__},
     show_spinner="Computing Mapper",
 )
-def compute_mapper(mapper, X, y):
+def compute_mapper(mapper, X, y, scale_clustering, scale_cover):
     logger.info("Generating Mapper graph")
+    if scale_clustering:
+        X = StandardScaler().fit_transform(X)
+    if scale_cover:
+        y = StandardScaler().fit_transform(y)
     mapper_graph = mapper.fit_transform(X, y)
     return mapper_graph
 
@@ -608,16 +615,16 @@ def compute_mapper(mapper, X, y):
 def mapper_input_section(X):
     lens = mapper_lens_input_section(X)
     st.divider()
-    cover = mapper_cover_input_section()
+    cover, scale_cover = mapper_cover_input_section()
     st.divider()
-    clustering = mapper_clustering_input_section()
+    clustering, scale_clustering = mapper_clustering_input_section()
     mapper_algo = MapperAlgorithm(
         cover=cover,
         clustering=clustering,
         verbose=False,
         n_jobs=-2,
     )
-    mapper_graph = compute_mapper(mapper_algo, X, lens)
+    mapper_graph = compute_mapper(mapper_algo, X, lens, scale_clustering, scale_cover)
     return mapper_graph
 
 
@@ -707,20 +714,14 @@ def _hash_mapper_plot(mapper_plot):
     hash_funcs={"tdamapper.plot.MapperPlot": _hash_mapper_plot},
     show_spinner="Rendering Mapper",
 )
-def compute_mapper_fig(mapper_plot, colors, node_size, cmap, _agg, agg_name):
+def compute_mapper_fig(mapper_plot, colors, _agg, agg_name):
     logger.info("Generating Mapper figure")
     mapper_fig = mapper_plot.plot_plotly(
         colors,
-        node_size=[
-            0.0,
-            node_size / 2.0,
-            node_size,
-            node_size * 1.5,
-            node_size * 2.0,
-        ],
+        node_size=[0.25 * i for i in range(9)],
         agg=_agg,
         title=[f"{c}" for c in colors.columns],
-        cmap=cmap,
+        cmap=["Jet", "Viridis", "Cividis"],
         width=600,
         height=600,
     )
@@ -735,9 +736,7 @@ def mapper_figure_section(df_X, df_y, mapper_plot):
     mapper_fig = compute_mapper_fig(
         mapper_plot,
         colors=colors,
-        node_size=1.0,
         _agg=agg,
-        cmap=["Jet", "Viridis", "Cividis"],
         agg_name=agg_name,
     )
     mapper_fig.update_layout(
