@@ -10,6 +10,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
+from jinja2 import Template
 from networkx.readwrite.json_graph import adjacency_data
 from sklearn.cluster import (
     DBSCAN,
@@ -133,6 +135,36 @@ FOOTER = (
     f":star: on **[GitHub]({GIT_REPO_URL})**."
 )
 
+EMBEDDED_RENDERING = True
+
+PLOTLY_TEMPLATE = Template(
+    """
+    <!DOCTYPE html>
+    <html>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+            }
+            .plot-container {
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </head>
+        <body>
+            <div class="plot-container">
+            {{ fig | safe }}
+            <div>
+        </body>
+    </html>
+    """
+)
 
 logger = st.logger.get_logger(__name__)
 
@@ -777,14 +809,29 @@ def _edge_colors(mapper_plot, df_X, df_y, col_feat, agg):
 
 
 def mapper_rendering_section(mapper_fig):
-    config = {
-        "scrollZoom": True,
-        "displaylogo": False,
-        "modeBarButtonsToRemove": ["zoom", "pan"],
-    }
-    st.plotly_chart(
-        mapper_fig, use_container_width=True, config=config, key="mapper_plot"
-    )
+    if EMBEDDED_RENDERING:
+        mapper_fig.layout.width = None
+        mapper_fig.layout.autosize = True
+        fig_html = mapper_fig.to_html(
+            full_html=False,
+            include_plotlyjs="cdn",
+            config={"responsive": True},
+        )
+        rendered_html = PLOTLY_TEMPLATE.render(fig=fig_html)
+        height = mapper_fig.layout.height
+        components.html(rendered_html, height=height)
+    else:
+        config = {
+            "scrollZoom": True,
+            "displaylogo": False,
+            "modeBarButtonsToRemove": ["zoom", "pan"],
+        }
+        st.plotly_chart(
+            mapper_fig,
+            use_container_width=True,
+            config=config,
+            key="mapper_plot",
+        )
 
 
 def data_summary_section(df_X, df_y, mapper_graph):
