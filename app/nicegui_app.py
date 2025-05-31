@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objs as go
 from nicegui import run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
-from sklearn.datasets import load_digits
+from sklearn.datasets import load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
@@ -55,8 +55,62 @@ CLUSTERING_KMEANS = "KMeans"
 CLUSTERING_AGGLOMERATIVE = "Agglomerative"
 CLUSTERING_DBSCAN = "DBSCAN"
 
+DATA_SOURCE_EXAMPLE = "Example"
+DATA_SOURCE_CSV = "CSV"
+DATA_SOURCE_OPENML = "OpenML"
+
+DATA_SOURCE_EXAMPLE_DIGITS = "Digits"
+DATA_SOURCE_EXAMPLE_IRIS = "Iris"
+
+DRAW_3D = "3D"
+DRAW_2D = "2D"
+DRAW_ITERATIONS = 50
+
 
 class App:
+
+    def build_dataset(self):
+        self.data_source_type = ui.select(
+            label="Data Source",
+            options=[
+                DATA_SOURCE_EXAMPLE,
+                DATA_SOURCE_CSV,
+                DATA_SOURCE_OPENML,
+            ],
+            value=DATA_SOURCE_EXAMPLE,
+            on_change=self.update_dataset_handler,
+        ).classes("w-full")
+        self.data_source_example_file = ui.select(
+            label="File",
+            options=[
+                DATA_SOURCE_EXAMPLE_DIGITS,
+                DATA_SOURCE_EXAMPLE_IRIS,
+            ],
+            value=DATA_SOURCE_EXAMPLE_DIGITS,
+            on_change=self.update_dataset_handler,
+        ).classes("w-full")
+        self.data_source_example_file.bind_visibility_from(
+            target_object=self.data_source_type,
+            target_name="value",
+            value=DATA_SOURCE_EXAMPLE,
+        )
+        self.data_source_csv = ui.upload(
+            on_upload=self.update_dataset_handler,
+        ).classes("w-full")
+        self.data_source_csv.bind_visibility_from(
+            target_object=self.data_source_type,
+            target_name="value",
+            value=DATA_SOURCE_CSV,
+        )
+        self.data_source_openml = ui.input(
+            label="OpenML Code",
+            on_change=self.update_dataset_handler,
+        ).classes("w-full")
+        self.data_source_openml.bind_visibility_from(
+            target_object=self.data_source_type,
+            target_name="value",
+            value=DATA_SOURCE_OPENML,
+        )
 
     def build_lens(self):
         self.lens_type = ui.select(
@@ -67,14 +121,14 @@ class App:
                 LENS_UMAP,
             ],
             value=LENS_PCA,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.pca_n_components = ui.number(
             label="PCA Components",
             min=1,
             max=10,
             value=2,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.pca_n_components.bind_visibility_from(
             target_object=self.lens_type,
@@ -86,7 +140,7 @@ class App:
             min=1,
             max=10,
             value=2,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.umap_n_components.bind_visibility_from(
             target_object=self.lens_type,
@@ -95,7 +149,6 @@ class App:
         )
 
     def build_cover(self):
-
         self.cover_type = ui.select(
             label="Cover type",
             options=[
@@ -105,14 +158,14 @@ class App:
                 COVER_KNN,
             ],
             value=COVER_CUBICAL,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.cover_cubical_n_intervals = ui.number(
             label="Intervals",
             min=1,
             max=100,
             value=2,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.cover_cubical_n_intervals.bind_visibility_from(
             target_object=self.cover_type,
@@ -122,9 +175,9 @@ class App:
         self.cover_cubical_overlap_frac = ui.number(
             label="Overlap",
             min=0.0,
-            max=1.0,
-            value=0.5,
-            on_change=self.update_handler,
+            max=0.5,
+            value=0.25,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.cover_cubical_overlap_frac.bind_visibility_from(
             target_object=self.cover_type,
@@ -135,7 +188,7 @@ class App:
             label="Radius",
             min=0.0,
             value=100.0,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.cover_ball_radius.bind_visibility_from(
             target_object=self.cover_type,
@@ -146,7 +199,7 @@ class App:
             label="Neighbors",
             min=0,
             value=10,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.cover_knn_neighbors.bind_visibility_from(
             target_object=self.cover_type,
@@ -164,13 +217,13 @@ class App:
                 CLUSTERING_DBSCAN,
             ],
             value=CLUSTERING_TRIVIAL,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.clustering_kmeans_n_clusters = ui.number(
             label="Clusters",
             min=1,
             value=2,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.clustering_kmeans_n_clusters.bind_visibility_from(
             target_object=self.clustering_type,
@@ -181,7 +234,7 @@ class App:
             label="Eps",
             min=0.0,
             value=0.5,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.clustering_dbscan_eps.bind_visibility_from(
             target_object=self.clustering_type,
@@ -192,7 +245,7 @@ class App:
             label="Min Samples",
             min=1,
             value=5,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.clustering_dbscan_min_samples.bind_visibility_from(
             target_object=self.clustering_type,
@@ -203,12 +256,26 @@ class App:
             label="Clusters",
             min=1,
             value=2,
-            on_change=self.update_handler,
+            on_change=self.update_graph_handler,
         ).classes("w-full")
         self.clustering_agglomerative_n_clusters.bind_visibility_from(
             target_object=self.clustering_type,
             target_name="value",
             value=CLUSTERING_AGGLOMERATIVE,
+        )
+
+    def build_draw(self):
+        self.draw_3d = ui.toggle(
+            options=[DRAW_2D, DRAW_3D],
+            value=DRAW_3D,
+            on_change=self.update_plot_handler,
+        )
+        self.draw_iterations = ui.number(
+            label="Layout Iterations",
+            min=1,
+            max=1000,
+            value=DRAW_ITERATIONS,
+            on_change=self.update_plot_handler,
         )
 
     def build_plot(self):
@@ -218,6 +285,19 @@ class App:
         self.plot_container = ui.element("div").classes("w-full h-full")
         with self.plot_container:
             ui.plotly(go.Figure())
+
+    def render_dataset(self):
+        source_type = self.data_source_type.value
+        if source_type == DATA_SOURCE_EXAMPLE:
+            name = self.data_source_example_file.value
+            if name == DATA_SOURCE_EXAMPLE_DIGITS:
+                X, y = load_digits(return_X_y=True, as_frame=True)
+                return X, y
+            elif name == DATA_SOURCE_EXAMPLE_IRIS:
+                X, y = load_iris(return_X_y=True, as_frame=True)
+                return X, y
+        elif source_type == DATA_SOURCE_CSV:
+            pass
 
     def render_lens(self):
         if self.lens_type.value == LENS_IDENTITY:
@@ -257,36 +337,59 @@ class App:
             n_clusters = int(self.clustering_agglomerative_n_clusters.value)
             return AgglomerativeClustering(n_clusters=n_clusters)
 
-    async def update_handler(self, _=None):
-        await run.io_bound(self.update)
+    async def update_graph_handler(self, _=None):
+        await run.io_bound(self.update_graph)
 
-    def update(self, _=None):
-        X, labels = load_digits(return_X_y=True)
-        lens = self.render_lens()
-        if lens is None:
+    async def update_dataset_handler(self, _=None):
+        await run.io_bound(self.update_dataset)
+
+    def update_dataset(self, _=None):
+        self.X, self.labels = self.render_dataset()
+        self.update_graph()
+
+    def update_graph(self, _=None):
+        self.lens = self.render_lens()
+        if self.lens is None:
             return
-        y = lens(X)
-
+        if self.X is None:
+            return
+        self.y = self.lens(self.X)
         cover = self.render_cover()
         if cover is None:
             return
-
         clustering = self.render_clustering()
         if clustering is None:
             return
-
         mapper_algo = MapperAlgorithm(
             cover=cover,
             clustering=clustering,
             verbose=False,
         )
+        self.mapper_graph = mapper_algo.fit_transform(self.X, self.y)
+        self.update_plot()
 
-        mapper_graph = mapper_algo.fit_transform(X, y)
+    async def update_plot_handler(self, _=None):
+        await run.io_bound(self.update_plot)
 
-        mapper_plot = MapperPlot(mapper_graph, dim=3, iterations=400, seed=42)
+    def update_plot(self):
+        if self.mapper_graph is None:
+            return
 
+        dim = 3
+        if self.draw_3d.value == DRAW_3D:
+            dim = 3
+        elif self.draw_3d.value == DRAW_2D:
+            dim = 2
+
+        iterations = int(self.draw_iterations.value)
+        mapper_plot = MapperPlot(
+            self.mapper_graph,
+            dim=dim,
+            iterations=iterations,
+            seed=42,
+        )
         mapper_fig = mapper_plot.plot_plotly(
-            colors=labels,
+            colors=self.labels,
             cmap=["jet", "viridis", "cividis"],
             agg=mode,
             title="mode of digits",
@@ -294,30 +397,34 @@ class App:
             height=800,
             node_size=0.5,
         )
-        # if mapper_fig.layout.width is not None:
         mapper_fig.layout.width = None
-        # if not mapper_fig.layout.autosize:
         mapper_fig.layout.autosize = True
         self.plot_container.clear()
         with self.plot_container:
             ui.plotly(mapper_fig)
 
     def __init__(self):
-        with ui.row().classes("w-full h-full m-0 p-0 gap-0 overflow-hidden"):
-            with ui.column().classes("w-64 h-full overflow-y-auto m-0 p-3 gap-2"):
-                with ui.card().classes("w-full"):
-                    ui.markdown("#### 🔎 Lens")
-                    self.build_lens()
-                with ui.card().classes("w-full"):
-                    ui.markdown("#### 🌐 Cover")
-                    self.build_cover()
-                with ui.card().classes("w-full"):
-                    ui.markdown("#### 🧮 Clustering")
-                    self.build_clustering()
+        with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
+            with ui.column().classes("w-64 h-full m-0 p-0"):  # fixed-width sidebar
+                with ui.column().classes("w-64 h-full overflow-y-auto p-3 gap-2"):
+                    with ui.card().classes("w-full"):
+                        ui.markdown("#### 📊 Data")
+                        self.build_dataset()
+                    with ui.card().classes("w-full"):
+                        ui.markdown("#### 🔎 Lens")
+                        self.build_lens()
+                    with ui.card().classes("w-full"):
+                        ui.markdown("#### 🌐 Cover")
+                        self.build_cover()
+                    with ui.card().classes("w-full"):
+                        ui.markdown("#### 🧮 Clustering")
+                        self.build_clustering()
 
             with ui.column().classes("flex-1 h-full overflow-hidden m-0 p-0"):
+                with ui.row(align_items="baseline"):
+                    self.build_draw()
                 self.build_plot()
-        self.update()
+        self.update_dataset()
 
 
 app = App()
