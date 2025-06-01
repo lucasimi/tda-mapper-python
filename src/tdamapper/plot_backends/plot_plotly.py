@@ -60,7 +60,9 @@ class PlotlyUI:
         self.menu_color = None
         self.slider_size = None
 
-    def set_menu_cmap(self, mapper_plot, cmaps):
+    def set_menu_cmap(self, mapper_plot, cmaps: Optional[List[str]]) -> None:
+        if cmaps is None:
+            return
         cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
         self.menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
 
@@ -71,8 +73,10 @@ class PlotlyUI:
         self.slider_size = _ui_node_size(mapper_plot, node_sizes)
 
 
-def _to_cmaps(cmap: Union[str, List[str]]) -> List[str]:
+def _to_cmaps(cmap: Optional[Union[str, List[str]]]) -> List[str]:
     """Convert a single cmap or a list of cmaps to a list of cmaps."""
+    if cmap is None:
+        return [DEFAULT_CMAP]
     if isinstance(cmap, str):
         return [cmap]
     elif isinstance(cmap, list):
@@ -94,11 +98,11 @@ def _to_colors(colors: Union[np.ndarray, List[float]]) -> np.ndarray:
         )
 
 
-def _to_titles(title, colors_num):
+def _to_titles(title: Optional[Union[str, List[str]]], colors_num: int) -> List[str]:
     if title is None:
-        return [DEFAULT_TITLE for _ in range(colors_num)]
+        return [f"{i}" for i in range(colors_num)]
     elif isinstance(title, str):
-        return [title for _ in range(colors_num)]
+        return [f"{title} {i}" for i in range(colors_num)]
     elif isinstance(title, list) and len(title) == colors_num:
         return title
     else:
@@ -107,7 +111,9 @@ def _to_titles(title, colors_num):
         )
 
 
-def _to_node_sizes(node_size):
+def _to_node_sizes(
+    node_size: Optional[Union[int, float, List[Union[int, float]]]]
+) -> List[float]:
     if isinstance(node_size, (int, float)):
         return [node_size]
     elif isinstance(node_size, list):
@@ -123,11 +129,11 @@ def plot_plotly(
     mapper_plot,
     width: int,
     height: int,
-    node_size: Optional[Union[int, float, List[Union[int, float]]]] = DEFAULT_NODE_SIZE,
-    colors=None,
+    colors: Union[np.ndarray, List[float]],
+    node_size: Optional[Union[int, float, List[Union[int, float]]]] = None,
     title: Optional[Union[str, List[str]]] = None,
     agg=np.nanmean,
-    cmap: Union[str, List[str]] = DEFAULT_CMAP,
+    cmap: Optional[Union[str, List[str]]] = None,
 ) -> go.Figure:
     cmaps = _to_cmaps(cmap)
     colors = _to_colors(colors)
@@ -187,7 +193,7 @@ def plot_plotly_update(
     return fig
 
 
-def _node_pos_array(graph, dim, node_pos):
+def _node_pos_array(graph: nx.Graph, dim: int, node_pos):
     return tuple([node_pos[n][i] for n in graph.nodes()] for i in range(dim))
 
 
@@ -202,7 +208,7 @@ def _edge_pos_array(graph, dim, node_pos):
     return edges_arr
 
 
-def _marker_size(mapper_plot, node_size):
+def _marker_size(mapper_plot, node_size: float) -> List[float]:
     attr_size = nx.get_node_attributes(mapper_plot.graph, ATTR_SIZE)
     max_size = max(attr_size.values(), default=1.0)
     scale = node_size * (25.0 if mapper_plot.dim == 2 else 15.0)
@@ -212,14 +218,14 @@ def _marker_size(mapper_plot, node_size):
     return marker_size
 
 
-def _get_cmap_rgb(cmap):
+def _get_cmap_rgb(cmap: str):
     """Return a colorscale in [[float, 'rgb(r,g,b)']] format."""
     base_scale = pc.get_colorscale(cmap)
     # If it's already in [float, color] format, we're good
     return [[pos, color] for pos, color in base_scale]
 
 
-def _set_cmap(mapper_plot, fig, cmap):
+def _set_cmap(mapper_plot, fig: go.Figure, cmap: str) -> None:
     cmap_rgb = _get_cmap_rgb(cmap)
     fig.update_traces(
         patch=dict(
@@ -244,7 +250,7 @@ def _set_cmap(mapper_plot, fig, cmap):
         )
 
 
-def _set_colors(mapper_plot, fig, colors, agg):
+def _set_colors(mapper_plot, fig: go.Figure, colors, agg):
     node_col = aggregate_graph(colors, mapper_plot.graph, agg)
     scatter_text = _text(mapper_plot, node_col)
     colors_arr = list(node_col.values())
@@ -278,7 +284,7 @@ def _set_colors(mapper_plot, fig, colors, agg):
         )
 
 
-def _set_title(mapper_plot, fig, color_name):
+def _set_title(mapper_plot, fig: go.Figure, color_name: str):
     fig.update_traces(
         patch=dict(
             marker_colorbar=_colorbar(mapper_plot, color_name),
@@ -287,7 +293,7 @@ def _set_title(mapper_plot, fig, color_name):
     )
 
 
-def _set_node_size(mapper_plot, fig, node_size):
+def _set_node_size(mapper_plot, fig: go.Figure, node_size: float) -> None:
     fig.update_traces(
         patch=dict(
             marker_size=_marker_size(mapper_plot, node_size),
@@ -296,19 +302,28 @@ def _set_node_size(mapper_plot, fig, node_size):
     )
 
 
-def _set_width(fig, width):
+def _set_width(fig: go.Figure, width: int) -> None:
     fig.update_layout(
         width=width,
     )
 
 
-def _set_height(fig, height):
+def _set_height(fig: go.Figure, height: int) -> None:
     fig.update_layout(
         height=height,
     )
 
 
-def _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps):
+def _figure(
+    mapper_plot,
+    width: int,
+    height: int,
+    node_sizes: List[float],
+    colors: np.ndarray,
+    titles: List[str],
+    agg,
+    cmaps: List[str],
+) -> go.Figure:
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
         mapper_plot.graph,
@@ -346,7 +361,7 @@ def _update(
     width: Optional[int] = None,
     height: Optional[int] = None,
     titles: Optional[List[str]] = None,
-    node_sizes: Optional[List[int]] = None,
+    node_sizes: Optional[List[float]] = None,
     colors=None,
     agg=None,
     cmaps: Optional[List[str]] = None,
@@ -422,7 +437,9 @@ def _edges_trace(mapper_plot, edge_pos_arr):
         return go.Scatter(scatter)
 
 
-def _colorbar(mapper_plot, title):
+def _colorbar(
+    mapper_plot, title: str
+) -> Union[go.scatter3d.marker.ColorBar, go.scatter.marker.ColorBar]:
     cbar = dict(
         showticklabels=True,
         outlinewidth=1,
@@ -463,7 +480,7 @@ def _fmt(x, max_len=3):
     return f"{x:{fmt}}"
 
 
-def _layout():
+def _layout() -> go.Layout:
     line_col = "rgba(230, 230, 230, 1.0)"
     axis = dict(
         showline=False,
@@ -506,7 +523,7 @@ def _layout():
     )
 
 
-def _set_ui(mapper_fig, plotly_ui: PlotlyUI):
+def _set_ui(mapper_fig: go.Figure, plotly_ui: PlotlyUI) -> None:
     menus = []
     sliders = []
     x = 0.0
@@ -526,10 +543,10 @@ def _set_ui(mapper_fig, plotly_ui: PlotlyUI):
     )
 
 
-def _ui_cmap(mapper_plot, cmaps):
+def _ui_cmap(mapper_plot, cmaps: List[str]) -> dict:
     target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
 
-    def _update_cmap(cmap):
+    def _update_cmap(cmap: str) -> dict:
         cmap_rgb = _get_cmap_rgb(cmap)
         if mapper_plot.dim == 2:
             return {
@@ -542,6 +559,7 @@ def _ui_cmap(mapper_plot, cmaps):
                 "marker.line.colorscale": [None, cmap_rgb],
                 "line.colorscale": [cmap_rgb, None],
             }
+        return {}
 
     buttons = []
     if len(cmaps) > 1:
@@ -564,7 +582,7 @@ def _ui_cmap(mapper_plot, cmaps):
     )
 
 
-def _ui_node_size(mapper_plot, node_sizes):
+def _ui_node_size(mapper_plot, node_sizes: List[float]) -> dict:
     steps = [
         dict(
             method="restyle",
@@ -589,21 +607,21 @@ def _ui_node_size(mapper_plot, node_sizes):
     )
 
 
-def _ui_color(mapper_plot, colors, titles, agg):
+def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
     colors_arr = np.array(colors)
     colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
-    def _colors_agg(i):
+    def _colors_agg(i: int) -> dict:
         if i is None:
             arr = colors_arr
         else:
             arr = colors_arr[:, i] if colors_arr.ndim == 2 else colors_arr
         return aggregate_graph(arr, mapper_plot.graph, agg)
 
-    def _colors(i):
+    def _colors(i: int) -> List[float]:
         return list(_colors_agg(i).values())
 
-    def _edge_colors(i):
+    def _edge_colors(i: int) -> List[float]:
         colors_avg = []
         colors_agg = _colors_agg(i)
         for edge in mapper_plot.graph.edges():
@@ -613,7 +631,7 @@ def _ui_color(mapper_plot, colors, titles, agg):
             colors_avg.append(c1)
         return colors_avg
 
-    def _update_colors(i):
+    def _update_colors(i: int) -> dict:
         arr_agg = _colors_agg(i)
         arr = list(arr_agg.values())
         scatter_text = _text(mapper_plot, arr_agg)
