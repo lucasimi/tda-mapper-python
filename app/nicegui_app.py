@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import plotly.graph_objs as go
 from nicegui import run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
@@ -388,14 +389,17 @@ class App:
             iterations=iterations,
             seed=42,
         )
+        colors = pd.concat([self.labels, self.X], axis=1)
+        colors_arr = colors.to_numpy()
+        color_names = colors.columns.tolist()
         mapper_fig = mapper_plot.plot_plotly(
-            colors=self.labels,
+            colors=colors_arr,
             cmap=["jet", "viridis", "cividis"],
             agg=mode,
-            title="mode of digits",
+            title=color_names,
             width=800,
             height=800,
-            node_size=0.5,
+            node_size=list(0.125 * x for x in range(17)),
         )
         mapper_fig.layout.width = None
         mapper_fig.layout.autosize = True

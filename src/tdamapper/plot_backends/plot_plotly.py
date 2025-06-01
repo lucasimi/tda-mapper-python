@@ -284,10 +284,10 @@ def _set_colors(mapper_plot, fig: go.Figure, colors, agg):
         )
 
 
-def _set_title(mapper_plot, fig: go.Figure, color_name: str):
+def _set_title(fig: go.Figure, color_name: str):
     fig.update_traces(
         patch=dict(
-            marker_colorbar=_colorbar(mapper_plot, color_name),
+            marker_colorbar=_colorbar(color_name),
         ),
         selector=dict(name=_NODES_TRACE),
     )
@@ -371,7 +371,7 @@ def _update(
     if height is not None:
         _set_height(fig, height)
     if titles is not None:
-        _set_title(mapper_plot, fig, titles[0])
+        _set_title(fig, titles[0])
     if node_sizes is not None:
         _set_node_size(mapper_plot, fig, node_sizes[len(node_sizes) // 2])
     if (colors is not None) and (agg is not None):
@@ -398,7 +398,7 @@ def _nodes_trace(mapper_plot, node_pos_arr):
             line_color=_NODE_OUTER_COLOR,
             line_colorscale=DEFAULT_CMAP,
             colorscale=DEFAULT_CMAP,
-            colorbar=_colorbar(mapper_plot, DEFAULT_TITLE),
+            colorbar=_colorbar(DEFAULT_TITLE),
         ),
     )
     if mapper_plot.dim == 3:
@@ -437,9 +437,7 @@ def _edges_trace(mapper_plot, edge_pos_arr):
         return go.Scatter(scatter)
 
 
-def _colorbar(
-    mapper_plot, title: str
-) -> Union[go.scatter3d.marker.ColorBar, go.scatter.marker.ColorBar]:
+def _colorbar(title: str) -> dict:
     cbar = dict(
         showticklabels=True,
         outlinewidth=1,
@@ -458,10 +456,7 @@ def _colorbar(
     )
     if title is not None:
         cbar["title"] = title
-    if mapper_plot.dim == 3:
-        return go.scatter3d.marker.ColorBar(cbar)
-    elif mapper_plot.dim == 2:
-        return go.scatter.marker.ColorBar(cbar)
+    return cbar
 
 
 def _text(mapper_plot, colors):
@@ -635,7 +630,7 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
         arr_agg = _colors_agg(i)
         arr = list(arr_agg.values())
         scatter_text = _text(mapper_plot, arr_agg)
-        cbar = _colorbar(mapper_plot, titles[i])
+        cbar = _colorbar(titles[i])
         if mapper_plot.dim == 2:
             return {
                 "text": [scatter_text],
@@ -656,6 +651,7 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
                 "line.cmax": [max(arr_edge, default=None), None],
                 "line.cmin": [min(arr_edge, default=None), None],
             }
+        return {}
 
     target_traces = [1] if mapper_plot.dim == 2 else [0, 1]
 
