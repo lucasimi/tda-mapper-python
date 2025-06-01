@@ -297,7 +297,7 @@ class Proximity(Cover):
         :return: The object itself.
         :rtype: self
         """
-        self.__X = X
+        self._X = X
         return self
 
     def search(self, x):
@@ -314,7 +314,7 @@ class Proximity(Cover):
             dataset.
         :rtype: list[int]
         """
-        return list(range(0, len(self.__X)))
+        return list(range(0, len(self._X)))
 
     def apply(self, X):
         """
@@ -385,27 +385,27 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
 
     def fit(self, X, y=None):
         X, y = self._validate_X_y(X, y)
-        self.__cover = TrivialCover() if self.cover is None else self.cover
-        self.__clustering = (
+        self._cover = TrivialCover() if self.cover is None else self.cover
+        self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
-        self.__verbose = self.verbose
-        self.__failsafe = self.failsafe
-        if self.__failsafe:
-            self.__clustering = FailSafeClustering(
-                clustering=self.__clustering,
-                verbose=self.__verbose,
+        self._verbose = self.verbose
+        self._failsafe = self.failsafe
+        if self._failsafe:
+            self._clustering = FailSafeClustering(
+                clustering=self._clustering,
+                verbose=self._verbose,
             )
-        self.__cover = clone(self.__cover)
-        self.__clustering = clone(self.__clustering)
-        self.__n_jobs = self.n_jobs
+        self._cover = clone(self._cover)
+        self._clustering = clone(self._clustering)
+        self._n_jobs = self.n_jobs
         y = X if y is None else y
         self.graph_ = mapper_graph(
             X,
             y,
-            self.__cover,
-            self.__clustering,
-            n_jobs=self.__n_jobs,
+            self._cover,
+            self._clustering,
+            n_jobs=self._n_jobs,
         )
         self._set_n_features_in(X)
         return self
@@ -451,16 +451,16 @@ class FailSafeClustering(ParamsMixin):
         self.verbose = verbose
 
     def fit(self, X, y=None):
-        self.__clustering = (
+        self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
-        self.__verbose = self.verbose
+        self._verbose = self.verbose
         self.labels_ = None
         try:
-            self.__clustering.fit(X, y)
-            self.labels_ = self.__clustering.labels_
+            self._clustering.fit(X, y)
+            self.labels_ = self._clustering.labels_
         except ValueError as err:
-            if self.__verbose:
+            if self._verbose:
                 _logger.warning("Unable to perform clustering on local chart: %s", err)
             self.labels_ = [0 for _ in X]
         return self

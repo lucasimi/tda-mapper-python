@@ -53,6 +53,54 @@ def _get_plotly_colorscales():
 PLOTLY_CMAPS = _get_plotly_colorscales()
 
 
+def _to_cmaps(cmap: Union[str, List[str]]) -> List[str]:
+    """Convert a single cmap or a list of cmaps to a list of cmaps."""
+    if isinstance(cmap, str):
+        return [cmap]
+    elif isinstance(cmap, list):
+        return cmap
+    else:
+        raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
+
+
+def _to_colors(colors: Union[np.ndarray, List[float]]) -> np.ndarray:
+    """Convert colors to a numpy array."""
+    colors_arr = np.array(colors)
+    if colors_arr.ndim == 1:
+        return colors_arr.reshape(-1, 1)
+    elif colors_arr.ndim == 2:
+        return colors_arr
+    else:
+        raise ValueError(
+            f"Invalid colors shape: {colors_arr.shape}. Expected 1D or 2D array."
+        )
+
+
+def _to_titles(title, colors_num):
+    if title is None:
+        return [DEFAULT_TITLE for _ in range(colors_num)]
+    elif isinstance(title, str):
+        return [title for _ in range(colors_num)]
+    elif isinstance(title, list) and len(title) == colors_num:
+        return title
+    else:
+        raise ValueError(
+            f"Invalid title type: {type(title)}. Expected str or list[str]."
+        )
+
+
+def _to_node_sizes(node_size, colors_num):
+    if isinstance(node_size, (int, float)):
+        return [node_size] * colors_num
+    elif isinstance(node_size, list) and len(node_size) == colors_num:
+        return node_size
+    else:
+        raise ValueError(
+            f"Invalid node_size type: {type(node_size)}. "
+            "Expected int, float or list[int, float]."
+        )
+
+
 def plot_plotly(
     mapper_plot,
     width: int,
@@ -63,19 +111,17 @@ def plot_plotly(
     agg=np.nanmean,
     cmap: Union[str, List[str]] = DEFAULT_CMAP,
 ) -> go.Figure:
-    cmaps = [cmap] if isinstance(cmap, str) else cmap
-    colors = np.array(colors)
-    if colors.ndim == 1:
-        colors = colors.reshape(-1, 1)
+    cmaps = _to_cmaps(cmap)
+    colors = _to_colors(colors)
     colors_num = colors.shape[1]
-    titles = [f"Color {i}" for i in range(colors_num)]
-    if isinstance(title, str):
-        titles = [title for _ in range(colors_num)]
-    elif isinstance(title, list) and len(title) == colors_num:
-        titles = title
-    node_sizes = [node_size] if isinstance(node_size, (int, float)) else node_size
+    titles = _to_titles(title, colors_num)
+    node_sizes = _to_node_sizes(node_size, colors_num)
     fig = _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps)
-    _add_ui_to_layout(mapper_plot, fig, colors, titles, node_sizes, agg, cmaps)
+    ui = PlotlyUI()
+    ui.set_menu_cmap(mapper_plot, cmaps)
+    ui.set_menu_color(mapper_plot, colors, titles, agg)
+    ui.set_slider_size(mapper_plot, node_sizes)
+    _set_ui(fig, ui)
     return fig
 
 
@@ -84,24 +130,42 @@ def plot_plotly_update(
     fig: go.Figure,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    title: Optional[str] = None,
-    node_size: Optional[int] = None,
+    node_size: Optional[Union[int, float, List[Union[int, float]]]] = None,
     colors=None,
+    title: Optional[Union[str, List[str]]] = None,
     agg=None,
-    cmap: Optional[str] = None,
+    cmap: Optional[Union[str, List[str]]] = None,
 ) -> go.Figure:
-    if (width is not None) and (height is not None):
-        _update_layout(fig, width, height)
-    if title is not None:
-        _set_title(mapper_plot, fig, title)
-    if node_size is not None:
-        _set_node_size(mapper_plot, fig, node_size)
-    if (colors is not None) and (agg is not None):
-        _set_colors(mapper_plot, fig, colors, agg)
+    ui = PlotlyUI()
+    cmaps = None
     if cmap is not None:
-        _set_cmap(mapper_plot, fig, cmap)
-    # _add_ui_to_layout(mapper_plot, fig, colors, node_size, agg, cmap)
-    # TODO: understand how to update this
+        cmaps = _to_cmaps(cmap)
+        ui.set_menu_cmap(mapper_plot, cmaps)
+    colors_num = 0
+    if colors is not None:
+        colors = _to_colors(colors)
+        colors_num = colors.shape[1]
+    titles = None
+    if title is not None:
+        titles = _to_titles(title, colors_num)
+    if titles is not None and colors is not None and agg is not None:
+        ui.set_menu_color(mapper_plot, colors, titles, agg)
+    node_sizes = None
+    if node_size is not None:
+        node_sizes = _to_node_sizes(node_size, colors_num)
+        ui.set_slider_size(mapper_plot, node_sizes)
+    _update(
+        mapper_plot,
+        fig,
+        width=width,
+        height=height,
+        titles=titles,
+        node_sizes=node_sizes,
+        colors=colors,
+        agg=agg,
+        cmaps=cmaps,
+    )
+    _set_ui(fig, ui)
     return fig
 
 
@@ -214,9 +278,14 @@ def _set_node_size(mapper_plot, fig, node_size):
     )
 
 
-def _update_layout(fig, width, height):
+def _set_width(fig, width):
     fig.update_layout(
         width=width,
+    )
+
+
+def _set_height(fig, height):
+    fig.update_layout(
         height=height,
     )
 
@@ -235,14 +304,47 @@ def _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps):
     )
     _edges_tr = _edges_trace(mapper_plot, edge_pos_arr)
     _nodes_tr = _nodes_trace(mapper_plot, node_pos_arr)
-    _layout_ = _layout(width, height)
+    _layout_ = _layout()
     fig = go.Figure(data=[_edges_tr, _nodes_tr], layout=_layout_)
 
-    _set_cmap(mapper_plot, fig, cmaps[0])
-    _set_colors(mapper_plot, fig, colors[:, 0], agg)
-    _set_node_size(mapper_plot, fig, node_sizes[len(node_sizes) // 2])
-    _set_title(mapper_plot, fig, titles[0])
+    _update(
+        mapper_plot,
+        fig,
+        width=width,
+        height=height,
+        titles=titles,
+        node_sizes=node_sizes,
+        colors=colors,
+        agg=agg,
+        cmaps=cmaps,
+    )
 
+    return fig
+
+
+def _update(
+    mapper_plot,
+    fig: go.Figure,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    titles: Optional[List[str]] = None,
+    node_sizes: Optional[List[int]] = None,
+    colors=None,
+    agg=None,
+    cmaps: Optional[List[str]] = None,
+) -> go.Figure:
+    if width is not None:
+        _set_width(fig, width)
+    if height is not None:
+        _set_height(fig, height)
+    if titles is not None:
+        _set_title(mapper_plot, fig, titles[0])
+    if node_sizes is not None:
+        _set_node_size(mapper_plot, fig, node_sizes[len(node_sizes) // 2])
+    if (colors is not None) and (agg is not None):
+        _set_colors(mapper_plot, fig, colors[:, 0], agg)
+    if cmaps is not None:
+        _set_cmap(mapper_plot, fig, cmaps[0])
     return fig
 
 
@@ -343,7 +445,7 @@ def _fmt(x, max_len=3):
     return f"{x:{fmt}}"
 
 
-def _layout(width, height):
+def _layout():
     line_col = "rgba(230, 230, 230, 1.0)"
     axis = dict(
         showline=False,
@@ -378,8 +480,6 @@ def _layout(width, height):
         margin=dict(b=10, l=10, r=10, t=10),
         xaxis=axis,
         yaxis=axis,
-        width=width,
-        height=height,
         scene=dict(
             xaxis=scene_axis,
             yaxis=scene_axis,
@@ -388,19 +488,39 @@ def _layout(width, height):
     )
 
 
-def _add_ui_to_layout(mapper_plot, mapper_fig, colors, titles, node_sizes, agg, cmaps):
-    cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-    menu_color = _ui_color(mapper_plot, colors, titles, agg)
-    if menu_color["buttons"]:
-        menu_color["x"] = 0.0
-    else:
-        menu_color["x"] = -0.25
-    menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
-    menu_cmap["x"] = menu_color["x"] + 0.25
-    slider_size = _ui_node_size(mapper_plot, node_sizes)
+class PlotlyUI:
+
+    def __init__(self):
+        self.menu_cmap = None
+        self.menu_color = None
+        self.slider_size = None
+
+    def set_menu_cmap(self, mapper_plot, cmaps):
+        cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
+        self.menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
+
+    def set_menu_color(self, mapper_plot, colors, titles, agg):
+        self.menu_color = _ui_color(mapper_plot, colors, titles, agg)
+
+    def set_slider_size(self, mapper_plot, node_sizes):
+        self.slider_size = _ui_node_size(mapper_plot, node_sizes)
+
+
+def _set_ui(mapper_fig, plotly_ui: PlotlyUI):
+    menus = []
+    sliders = []
+    if plotly_ui.menu_cmap:
+        plotly_ui.menu_cmap["x"] = 0.25
+        menus.append(plotly_ui.menu_cmap)
+    if plotly_ui.menu_color:
+        plotly_ui.menu_color["x"] = 0.0
+        menus.append(plotly_ui.menu_color)
+    if plotly_ui.slider_size:
+        plotly_ui.slider_size["x"] = 0.0
+        sliders.append(plotly_ui.slider_size)
     mapper_fig.update_layout(
-        updatemenus=[menu_cmap, menu_color],
-        sliders=[slider_size],
+        updatemenus=menus,
+        sliders=sliders,
     )
 
 
