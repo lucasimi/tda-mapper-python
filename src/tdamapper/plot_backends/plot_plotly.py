@@ -107,10 +107,10 @@ def _to_titles(title, colors_num):
         )
 
 
-def _to_node_sizes(node_size, colors_num):
+def _to_node_sizes(node_size):
     if isinstance(node_size, (int, float)):
-        return [node_size] * colors_num
-    elif isinstance(node_size, list) and len(node_size) == colors_num:
+        return [node_size]
+    elif isinstance(node_size, list):
         return node_size
     else:
         raise ValueError(
@@ -133,7 +133,7 @@ def plot_plotly(
     colors = _to_colors(colors)
     colors_num = colors.shape[1]
     titles = _to_titles(title, colors_num)
-    node_sizes = _to_node_sizes(node_size, colors_num)
+    node_sizes = _to_node_sizes(node_size)
     fig = _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps)
     ui = PlotlyUI()
     ui.set_menu_cmap(mapper_plot, cmaps)
@@ -170,7 +170,7 @@ def plot_plotly_update(
         ui.set_menu_color(mapper_plot, colors, titles, agg)
     node_sizes = None
     if node_size is not None:
-        node_sizes = _to_node_sizes(node_size, colors_num)
+        node_sizes = _to_node_sizes(node_size)
         ui.set_slider_size(mapper_plot, node_sizes)
     _update(
         mapper_plot,
