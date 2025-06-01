@@ -53,6 +53,24 @@ def _get_plotly_colorscales():
 PLOTLY_CMAPS = _get_plotly_colorscales()
 
 
+class PlotlyUI:
+
+    def __init__(self):
+        self.menu_cmap = None
+        self.menu_color = None
+        self.slider_size = None
+
+    def set_menu_cmap(self, mapper_plot, cmaps):
+        cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
+        self.menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
+
+    def set_menu_color(self, mapper_plot, colors, titles, agg):
+        self.menu_color = _ui_color(mapper_plot, colors, titles, agg)
+
+    def set_slider_size(self, mapper_plot, node_sizes):
+        self.slider_size = _ui_node_size(mapper_plot, node_sizes)
+
+
 def _to_cmaps(cmap: Union[str, List[str]]) -> List[str]:
     """Convert a single cmap or a list of cmaps to a list of cmaps."""
     if isinstance(cmap, str):
@@ -488,32 +506,16 @@ def _layout():
     )
 
 
-class PlotlyUI:
-
-    def __init__(self):
-        self.menu_cmap = None
-        self.menu_color = None
-        self.slider_size = None
-
-    def set_menu_cmap(self, mapper_plot, cmaps):
-        cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-        self.menu_cmap = _ui_cmap(mapper_plot, cmaps_plotly)
-
-    def set_menu_color(self, mapper_plot, colors, titles, agg):
-        self.menu_color = _ui_color(mapper_plot, colors, titles, agg)
-
-    def set_slider_size(self, mapper_plot, node_sizes):
-        self.slider_size = _ui_node_size(mapper_plot, node_sizes)
-
-
 def _set_ui(mapper_fig, plotly_ui: PlotlyUI):
     menus = []
     sliders = []
+    x = 0.0
     if plotly_ui.menu_cmap:
-        plotly_ui.menu_cmap["x"] = 0.25
+        plotly_ui.menu_cmap["x"] = x
+        x += 0.25
         menus.append(plotly_ui.menu_cmap)
     if plotly_ui.menu_color:
-        plotly_ui.menu_color["x"] = 0.0
+        plotly_ui.menu_color["x"] = x
         menus.append(plotly_ui.menu_color)
     if plotly_ui.slider_size:
         plotly_ui.slider_size["x"] = 0.0
