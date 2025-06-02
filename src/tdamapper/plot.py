@@ -7,9 +7,9 @@ import networkx as nx
 import numpy as np
 
 from tdamapper._common import deprecated
-from tdamapper._plot_matplotlib import plot_matplotlib
-from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
-from tdamapper._plot_pyvis import plot_pyvis
+from tdamapper.plot_backends.plot_matplotlib import plot_matplotlib
+from tdamapper.plot_backends.plot_plotly import plot_plotly, plot_plotly_update
+from tdamapper.plot_backends.plot_pyvis import plot_pyvis
 
 
 class MapperPlot:
