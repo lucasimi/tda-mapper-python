@@ -1,9 +1,11 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 from nicegui import run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
-from sklearn.datasets import load_digits, load_iris
+from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
@@ -12,12 +14,23 @@ from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 def mode(arr):
     values, counts = np.unique(arr, return_counts=True)
     max_count = np.max(counts)
     mode_values = values[counts == max_count]
     return np.nanmean(mode_values)
+
+
+def _fix_data(data):
+    df = pd.DataFrame(data)
+    df = df.select_dtypes(include="number")
+    df.dropna(axis=1, how="all", inplace=True)
+    df.fillna(df.mean(), inplace=True)
+    return df
 
 
 def _identity(X):
@@ -66,6 +79,9 @@ DATA_SOURCE_EXAMPLE_IRIS = "Iris"
 DRAW_3D = "3D"
 DRAW_2D = "2D"
 DRAW_ITERATIONS = 50
+DRAW_MEAN = "Mean"
+DRAW_MEDIAN = "Median"
+DRAW_MODE = "Mode"
 
 
 class App:
@@ -96,7 +112,9 @@ class App:
             value=DATA_SOURCE_EXAMPLE,
         )
         self.data_source_csv = ui.upload(
-            on_upload=self.update_dataset_handler,
+            on_upload=self.update_csv_handler,
+            auto_upload=True,
+            label="Upload CSV",
         ).classes("w-full")
         self.data_source_csv.bind_visibility_from(
             target_object=self.data_source_type,
@@ -278,102 +296,166 @@ class App:
             value=DRAW_ITERATIONS,
             on_change=self.update_plot_handler,
         )
+        self.draw_aggregation = ui.select(
+            label="Aggregation",
+            options=[
+                DRAW_MEAN,
+                DRAW_MEDIAN,
+                DRAW_MODE,
+            ],
+            value=DRAW_MEAN,
+            on_change=self.update_plot_handler,
+        )
 
     def build_plot(self):
         fig = go.Figure()
         fig.layout.width = None
         fig.layout.autosize = True
         self.plot_container = ui.element("div").classes("w-full h-full")
-        with self.plot_container:
-            ui.plotly(go.Figure())
 
     def render_dataset(self):
         source_type = self.data_source_type.value
         if source_type == DATA_SOURCE_EXAMPLE:
             name = self.data_source_example_file.value
             if name == DATA_SOURCE_EXAMPLE_DIGITS:
-                X, y = load_digits(return_X_y=True, as_frame=True)
-                return X, y
+                df_X, df_y = load_digits(return_X_y=True, as_frame=True)
             elif name == DATA_SOURCE_EXAMPLE_IRIS:
-                X, y = load_iris(return_X_y=True, as_frame=True)
-                return X, y
+                df_X, df_y = load_iris(return_X_y=True, as_frame=True)
         elif source_type == DATA_SOURCE_CSV:
-            pass
+            csv_file = self.csv_file
+            if csv_file is None:
+                logger.warning("No CSV file uploaded")
+                df_X, df_y = pd.DataFrame(), pd.Series()
+            else:
+                df_X = pd.read_csv(csv_file.content)
+                df_y = pd.Series()
+        elif source_type == DATA_SOURCE_OPENML:
+            code = self.data_source_openml.value
+            if not code:
+                logger.warning("No OpenML code provided")
+                df_X, df_y = pd.DataFrame(), pd.Series()
+            else:
+                df_X, df_y = fetch_openml(code, return_X_y=True, as_frame=True)
+        df_X = _fix_data(df_X)
+        df_y = _fix_data(df_y)
+        return df_X, df_y
 
     def render_lens(self):
         if self.lens_type.value == LENS_IDENTITY:
             return _identity
         elif self.lens_type.value == LENS_PCA:
-            n = int(self.pca_n_components.value)
+            n = 2
+            if self.pca_n_components.value is not None:
+                n = int(self.pca_n_components.value)
             return _pca(n)
         elif self.lens_type.value == LENS_UMAP:
-            n = int(self.umap_n_components.value)
+            n = 2
+            if self.umap_n_components.value is not None:
+                n = int(self.umap_n_components.value)
             return _umap(n)
 
     def render_cover(self):
         if self.cover_type.value == COVER_TRIVIAL:
             return TrivialCover()
         elif self.cover_type.value == COVER_BALL:
-            radius = float(self.cover_ball_radius.value)
+            radius = 1.0
+            if self.cover_ball_radius.value is not None:
+                radius = float(self.cover_ball_radius.value)
             return BallCover(radius=radius)
         elif self.cover_type.value == COVER_CUBICAL:
-            n_intervals = int(self.cover_cubical_n_intervals.value)
-            overlap_frac = float(self.cover_cubical_overlap_frac.value)
+            n_intervals = 1
+            if self.cover_cubical_n_intervals.value is not None:
+                n_intervals = int(self.cover_cubical_n_intervals.value)
+            overlap_frac = None
+            if self.cover_cubical_overlap_frac.value is not None:
+                overlap_frac = float(self.cover_cubical_overlap_frac.value)
             return CubicalCover(n_intervals=n_intervals, overlap_frac=overlap_frac)
         elif self.cover_type.value == COVER_KNN:
-            neighbors = int(self.cover_knn_neighbors.value)
+            neighbors = 1
+            if self.cover_knn_neighbors.value is not None:
+                neighbors = int(self.cover_knn_neighbors.value)
             return KNNCover(neighbors=neighbors)
 
     def render_clustering(self):
+        clustering_type = self.clustering_type.value
         if self.clustering_type.value == CLUSTERING_TRIVIAL:
             return TrivialClustering()
-        elif self.clustering_type.value == CLUSTERING_KMEANS:
-            n_clusters = int(self.clustering_kmeans_n_clusters.value)
+        elif clustering_type == CLUSTERING_KMEANS:
+            n_clusters = 1
+            if self.clustering_kmeans_n_clusters.value is not None:
+                n_clusters = int(self.clustering_kmeans_n_clusters.value)
             return KMeans(n_clusters)
-        elif self.clustering_type.value == CLUSTERING_DBSCAN:
-            eps = float(self.clustering_dbscan_eps.value)
-            min_samples = int(self.clustering_dbscan_min_samples.value)
+        elif clustering_type == CLUSTERING_DBSCAN:
+            eps = 0.5
+            if self.clustering_dbscan_eps.value is not None:
+                eps = float(self.clustering_dbscan_eps.value)
+            min_samples = 5
+            if self.clustering_dbscan_min_samples.value is not None:
+                min_samples = int(self.clustering_dbscan_min_samples.value)
             return DBSCAN(eps=eps, min_samples=min_samples)
-        elif self.clustering_type == CLUSTERING_AGGLOMERATIVE:
-            n_clusters = int(self.clustering_agglomerative_n_clusters.value)
+        elif clustering_type == CLUSTERING_AGGLOMERATIVE:
+            n_clusters = 2
+            if self.clustering_agglomerative_n_clusters.value is not None:
+                n_clusters = int(self.clustering_agglomerative_n_clusters.value)
             return AgglomerativeClustering(n_clusters=n_clusters)
 
-    async def update_graph_handler(self, _=None):
-        await run.io_bound(self.update_graph)
+    async def update_csv_handler(self, file):
+        await run.io_bound(self.update_csv, file)
+        await self.update_dataset_handler()
 
     async def update_dataset_handler(self, _=None):
         await run.io_bound(self.update_dataset)
+        await self.update_graph_handler()
+
+    async def update_graph_handler(self, _=None):
+        await run.io_bound(self.update_graph)
+        await self.update_plot_handler()
+
+    async def update_plot_handler(self, _=None):
+        await run.io_bound(self.update_plot)
+
+    def update_csv(self, file):
+        if file is None:
+            logger.warning("No file uploaded")
+            return
+        self.csv_file = file
 
     def update_dataset(self, _=None):
-        self.X, self.labels = self.render_dataset()
-        self.update_graph()
+        self.df_X, self.labels = self.render_dataset()
 
     def update_graph(self, _=None):
         self.lens = self.render_lens()
         if self.lens is None:
+            logger.warning("No lens selected")
             return
-        if self.X is None:
+        if self.df_X is None or self.df_X.empty:
+            logger.warning("No dataset loaded for computation")
             return
+        logger.info(f"Uploaded dataset with shape {self.df_X.shape}")
+        self.X = self.df_X.to_numpy()
         self.y = self.lens(self.X)
         cover = self.render_cover()
         if cover is None:
+            logger.warning("No cover selected")
             return
         clustering = self.render_clustering()
         if clustering is None:
+            logger.warning("No clustering selected")
             return
         mapper_algo = MapperAlgorithm(
             cover=cover,
             clustering=clustering,
             verbose=False,
         )
+        logger.info(f"Configuration: {mapper_algo}")
         self.mapper_graph = mapper_algo.fit_transform(self.X, self.y)
-        self.update_plot()
-
-    async def update_plot_handler(self, _=None):
-        await run.io_bound(self.update_plot)
 
     def update_plot(self):
+        if self.df_X is None or self.df_X.empty:
+            logger.warning("No dataset loaded for plotting")
+            return
         if self.mapper_graph is None:
+            logger.warning("No graph computed")
             return
 
         dim = 3
@@ -389,13 +471,23 @@ class App:
             iterations=iterations,
             seed=42,
         )
-        colors = pd.concat([self.labels, self.X], axis=1)
+
+        colors = pd.concat([self.labels, self.df_X], axis=1)
         colors_arr = colors.to_numpy()
         color_names = colors.columns.tolist()
+
+        agg = np.nanmean
+        if self.draw_aggregation.value == DRAW_MEAN:
+            agg = np.nanmean
+        elif self.draw_aggregation.value == DRAW_MEDIAN:
+            agg = np.nanmedian
+        elif self.draw_aggregation.value == DRAW_MODE:
+            agg = mode
+
         mapper_fig = mapper_plot.plot_plotly(
             colors=colors_arr,
             cmap=["jet", "viridis", "cividis"],
-            agg=mode,
+            agg=agg,
             title=color_names,
             width=800,
             height=800,
@@ -408,8 +500,10 @@ class App:
             ui.plotly(mapper_fig)
 
     def __init__(self):
+        self.csv_file = None
+        self.df_X = None
         with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
-            with ui.column().classes("w-64 h-full m-0 p-0"):  # fixed-width sidebar
+            with ui.column().classes("w-64 h-full m-0 p-0"):
                 with ui.column().classes("w-64 h-full overflow-y-auto p-3 gap-2"):
                     with ui.card().classes("w-full"):
                         ui.markdown("#### 📊 Data")
@@ -429,7 +523,14 @@ class App:
                     self.build_draw()
                 self.build_plot()
         self.update_dataset()
+        self.update_graph()
+        self.update_plot()
 
 
-app = App()
-ui.run()
+def main():
+    App()
+    ui.run()
+
+
+if __name__ in {"__main__", "__mp_main__", "tdamapper.app"}:
+    main()
