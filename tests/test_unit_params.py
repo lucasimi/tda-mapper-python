@@ -5,23 +5,23 @@ from tdamapper.cover import BallCover, CubicalCover
 from tdamapper.learn import MapperAlgorithm, MapperClustering
 
 
-def __test_clone(obj):
+def _test_clone(obj):
     obj_repr = repr(obj)
     obj_cln = clone(obj)
     cln_repr = repr(obj_cln)
     assert obj_repr == cln_repr
 
 
-def __test_repr(obj):
+def _test_repr(obj):
     obj_repr = repr(obj)
     _obj = eval(obj_repr)
     _obj_repr = repr(_obj)
     assert obj_repr == _obj_repr
 
 
-def __test_clone_and_repr(obj):
-    __test_clone(obj)
-    __test_repr(obj)
+def _test_clone_and_repr(obj):
+    _test_clone(obj)
+    _test_repr(obj)
 
 
 def test_params_mapper_algorithm():
@@ -65,8 +65,8 @@ def test_params_mapper_clustering():
 
 
 def test_clone_and_repr_ball_cover():
-    __test_clone_and_repr(BallCover())
-    __test_clone_and_repr(
+    _test_clone_and_repr(BallCover())
+    _test_clone_and_repr(
         BallCover(
             radius=2.0,
             metric="test",
@@ -80,8 +80,8 @@ def test_clone_and_repr_ball_cover():
 
 
 def test_clone_and_repr_cubical_cover():
-    __test_clone_and_repr(CubicalCover())
-    __test_clone_and_repr(
+    _test_clone_and_repr(CubicalCover())
+    _test_clone_and_repr(
         CubicalCover(
             n_intervals=4,
             overlap_frac=5,
@@ -95,8 +95,8 @@ def test_clone_and_repr_cubical_cover():
 
 
 def test_clone_repr_mapper_algorithm():
-    __test_clone_and_repr(MapperAlgorithm())
-    __test_clone_and_repr(
+    _test_clone_and_repr(MapperAlgorithm())
+    _test_clone_and_repr(
         MapperAlgorithm(
             cover=CubicalCover(
                 n_intervals=3,
@@ -114,8 +114,8 @@ def test_clone_repr_mapper_algorithm():
 
 
 def test_clone_repr_mapper_clustering():
-    __test_clone_and_repr(MapperClustering())
-    __test_clone_and_repr(
+    _test_clone_and_repr(MapperClustering())
+    _test_clone_and_repr(
         MapperClustering(
             cover=CubicalCover(
                 n_intervals=3,

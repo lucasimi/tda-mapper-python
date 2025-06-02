@@ -51,7 +51,7 @@ class VPTree:
             builder = HVPT
         else:
             raise ValueError(f"Unknown kind of vptree: {kind}")
-        self.__vpt = builder(
+        self._vpt = builder(
             X,
             metric=metric,
             metric_params=metric_params,
@@ -79,7 +79,7 @@ class VPTree:
             query point.
         :rtype: list
         """
-        return self.__vpt.ball_search(point, eps, inclusive=inclusive)
+        return self._vpt.ball_search(point, eps, inclusive=inclusive)
 
     def knn_search(self, point, k):
         """
@@ -96,4 +96,4 @@ class VPTree:
         :return: A list of the k-nearest neighbors to the given query point.
         :rtype: list
         """
-        return self.__vpt.knn_search(point, k)
+        return self._vpt.knn_search(point, k)

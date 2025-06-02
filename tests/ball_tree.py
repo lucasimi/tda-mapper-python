@@ -12,8 +12,8 @@ class SkBallTree:
         pivoting=None,
         **kwargs,
     ):
-        self.__dataset = X
-        self.__ball_tree = BallTree(
+        self._dataset = X
+        self._ball_tree = BallTree(
             X,
             leaf_size=leaf_capacity,
             metric=metric,
@@ -21,21 +21,21 @@ class SkBallTree:
         )
 
     def ball_search(self, point, eps, inclusive=True):
-        ids = self.__ball_tree.query_radius(
+        ids = self._ball_tree.query_radius(
             [point],
             eps,
             return_distance=False,
             count_only=False,
             sort_results=False,
         )
-        return [self.__dataset[i] for i in ids[0]]
+        return [self._dataset[i] for i in ids[0]]
 
     def knn_search(self, point, k):
-        ids = self.__ball_tree.query(
+        ids = self._ball_tree.query(
             [point],
             k=k,
             return_distance=False,
             dualtree=False,
             breadth_first=False,
         )
-        return [self.__dataset[i] for i in ids[0]]
+        return [self._dataset[i] for i in ids[0]]

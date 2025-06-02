@@ -19,7 +19,7 @@ _EDGE_COLOR = "#777"
 _TICKS_NUM = 10
 
 
-def __fmt(x, max_len=3):
+def _fmt(x, max_len=3):
     fmt = f".{max_len}g"
     return f"{x:{fmt}}"
 
@@ -220,7 +220,7 @@ def _compute_net(
         node_id = int(node)
         n_size = _size(node)
         node_color = _color(node)
-        node_stats = __fmt(node_colors[node])
+        node_stats = _fmt(node_colors[node])
         node_label = f"color: {node_stats}\nnode: {node_id}\nsize: {n_size}"
         node_pos = mapper_plot.positions[node]
         net.add_node(
