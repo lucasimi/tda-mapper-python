@@ -206,10 +206,6 @@ class MapperPlot:
             cmap=cmap,
         )
 
-    @deprecated(
-        "This method is deprecated and will be removed in a future release. "
-        "Use a new instance of tdamapper.plot.MapperPlot."
-    )
     def plot_plotly_update(
         self,
         fig,
