@@ -97,10 +97,10 @@ class BallCover(Proximity):
         :rtype: self
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
-        self.__radius = self.radius
-        self.__data = list(enumerate(X))
-        self.__vptree = VPTree(
-            self.__data,
+        self._radius = self.radius
+        self._data = list(enumerate(X))
+        self._vptree = VPTree(
+            self._data,
             metric=_Pullback(_snd, metric),
             metric_params=None,
             kind=self.kind,
@@ -121,11 +121,11 @@ class BallCover(Proximity):
         :return: The indices of the neighbors contained in the dataset.
         :rtype: list[int]
         """
-        if self.__vptree is None:
+        if self._vptree is None:
             return []
-        neighs = self.__vptree.ball_search(
+        neighs = self._vptree.ball_search(
             (-1, x),
-            self.__radius,
+            self._radius,
             inclusive=False,
         )
         return [x for (x, _) in neighs]
@@ -198,10 +198,10 @@ class KNNCover(Proximity):
         :rtype: self
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
-        self.__neighbors = self.neighbors
-        self.__data = list(enumerate(X))
-        self.__vptree = VPTree(
-            self.__data,
+        self._neighbors = self.neighbors
+        self._data = list(enumerate(X))
+        self._vptree = VPTree(
+            self._data,
             metric=_Pullback(_snd, metric),
             metric_params=None,
             kind=self.kind,
@@ -223,9 +223,9 @@ class KNNCover(Proximity):
         :return: The indices of the neighbors contained in the dataset.
         :rtype: list[int]
         """
-        if self.__vptree is None:
+        if self._vptree is None:
             return []
-        neighs = self.__vptree.knn_search((-1, x), self.__neighbors)
+        neighs = self._vptree.knn_search((-1, x), self._neighbors)
         return [x for (x, _) in neighs]
 
 

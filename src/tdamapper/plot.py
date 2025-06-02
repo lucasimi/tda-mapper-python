@@ -7,9 +7,9 @@ import networkx as nx
 import numpy as np
 
 from tdamapper._common import deprecated
-from tdamapper._plot_matplotlib import plot_matplotlib
-from tdamapper._plot_plotly import plot_plotly, plot_plotly_update
-from tdamapper._plot_pyvis import plot_pyvis
+from tdamapper.plot_backends.plot_matplotlib import plot_matplotlib
+from tdamapper.plot_backends.plot_plotly import plot_plotly, plot_plotly_update
+from tdamapper.plot_backends.plot_pyvis import plot_pyvis
 
 
 class MapperPlot:
@@ -206,10 +206,6 @@ class MapperPlot:
             cmap=cmap,
         )
 
-    @deprecated(
-        "This method is deprecated and will be removed in a future release. "
-        "Use a new instance of tdamapper.plot.MapperPlot."
-    )
     def plot_plotly_update(
         self,
         fig,
@@ -382,29 +378,29 @@ class MapperLayoutInteractive:
         height=512,
         cmap="jet",
     ):
-        self.__graph = graph
-        self.__dim = dim
-        self.__iterations = iterations
-        self.__seed = seed
-        self.__mapper_plot = MapperPlot(
-            graph=self.__graph,
-            dim=self.__dim,
-            iterations=self.__iterations,
-            seed=self.__seed,
+        self._graph = graph
+        self._dim = dim
+        self._iterations = iterations
+        self._seed = seed
+        self._mapper_plot = MapperPlot(
+            graph=self._graph,
+            dim=self._dim,
+            iterations=self._iterations,
+            seed=self._seed,
         )
-        self.__colors = colors
-        self.__agg = agg
-        self.__title = title
-        self.__width = width
-        self.__height = height
-        self.__cmap = cmap
-        self.__fig = self.__mapper_plot.plot_plotly(
-            colors=self.__colors,
-            agg=self.__agg,
-            title=self.__title,
-            width=self.__width,
-            height=self.__height,
-            cmap=self.__cmap,
+        self._colors = colors
+        self._agg = agg
+        self._title = title
+        self._width = width
+        self._height = height
+        self._cmap = cmap
+        self._fig = self._mapper_plot.plot_plotly(
+            colors=self._colors,
+            agg=self._agg,
+            title=self._title,
+            width=self._width,
+            height=self._height,
+            cmap=self._cmap,
         )
 
     def update(
@@ -451,20 +447,20 @@ class MapperLayoutInteractive:
         """
         _update_pos = False
         if seed is not None:
-            self.__seed = seed
+            self._seed = seed
             _update_pos = True
         if iterations is not None:
-            self.__iterations = iterations
+            self._iterations = iterations
             _update_pos = True
         if _update_pos:
-            self.__mapper_plot = MapperPlot(
-                graph=self.__graph,
-                dim=self.__dim,
-                iterations=self.__iterations,
-                seed=self.__seed,
+            self._mapper_plot = MapperPlot(
+                graph=self._graph,
+                dim=self._dim,
+                iterations=self._iterations,
+                seed=self._seed,
             )
-        self.__mapper_plot.plot_plotly_update(
-            self.__fig,
+        self._mapper_plot.plot_plotly_update(
+            self._fig,
             colors=colors,
             agg=agg,
             title=title,
@@ -482,7 +478,7 @@ class MapperLayoutInteractive:
             context to be shown.
         :rtype: :class:`plotly.graph_objects.Figure`
         """
-        return self.__fig
+        return self._fig
 
 
 class MapperLayoutStatic:
@@ -543,12 +539,12 @@ class MapperLayoutStatic:
         height=512,
         cmap="jet",
     ):
-        self.__colors = colors
-        self.__agg = agg
-        self.__title = title
-        self.__width = width
-        self.__height = height
-        self.__cmap = cmap
+        self._colors = colors
+        self._agg = agg
+        self._title = title
+        self._width = width
+        self._height = height
+        self._cmap = cmap
         self.mapper_plot = MapperPlot(
             graph=graph,
             dim=dim,
@@ -566,10 +562,10 @@ class MapperLayoutStatic:
             :class:`matplotlib.axes.Axes`
         """
         return self.mapper_plot.plot_matplotlib(
-            colors=self.__colors,
-            agg=self.__agg,
-            title=self.__title,
-            width=self.__width,
-            height=self.__height,
-            cmap=self.__cmap,
+            colors=self._colors,
+            agg=self._agg,
+            title=self._title,
+            width=self._width,
+            height=self._height,
+            cmap=self._cmap,
         )

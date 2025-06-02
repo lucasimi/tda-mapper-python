@@ -29,12 +29,12 @@ def warn_user(msg):
 
 class EstimatorMixin:
 
-    def __is_sparse(self, X):
+    def _is_sparse(self, X):
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
     def _validate_X_y(self, X, y):
-        if self.__is_sparse(X):
+        if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
         X = np.asarray(X)
@@ -80,10 +80,10 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def __is_param_public(self, k):
+    def _is_param_public(self, k):
         return (not k.startswith("_")) and (not k.endswith("_"))
 
-    def __split_param(self, k):
+    def _split_param(self, k):
         k_split = k.split("__")
         outer = k_split[0]
         inner = "__".join(k_split[1:])
@@ -98,7 +98,7 @@ class ParamsMixin:
         """
         params = {}
         for k, v in self.__dict__.items():
-            if self.__is_param_public(k):
+            if self._is_param_public(k):
                 params[k] = v
                 if hasattr(v, "get_params") and deep:
                     for _k, _v in v.get_params().items():
@@ -111,8 +111,8 @@ class ParamsMixin:
         """
         nested_params = []
         for k, v in params.items():
-            if self.__is_param_public(k):
-                k_outer, k_inner = self.__split_param(k)
+            if self._is_param_public(k):
+                k_outer, k_inner = self._split_param(k)
                 if not k_inner:
                     if hasattr(self, k_outer):
                         setattr(self, k_outer, v)
@@ -131,7 +131,7 @@ class ParamsMixin:
             v_default = getattr(obj_noargs, k)
             v_default_repr = repr(v_default)
             v_repr = repr(v)
-            if self.__is_param_public(k) and not v_repr == v_default_repr:
+            if self._is_param_public(k) and not v_repr == v_default_repr:
                 args_repr.append(f"{k}={v_repr}")
         return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
