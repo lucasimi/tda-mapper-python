@@ -5,30 +5,41 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
-from nicegui import run, ui
+from nicegui import app, run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import fetch_openml, load_digits, load_iris
 from sklearn.decomposition import PCA
 from umap import UMAP
 
-from tdamapper.core import TrivialClustering, TrivialCover
+from tdamapper.core import Cover, TrivialClustering, TrivialCover
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
 
+RANDOM_STATE = 42
 LENS_IDENTITY = "Identity"
 LENS_PCA = "PCA"
+LENS_PCA_N_COMPONENTS = 2
 LENS_UMAP = "UMAP"
+LENS_UMAP_N_COMPONENTS = 2
 
 COVER_TRIVIAL = "Trivial"
 COVER_CUBICAL = "Cubical"
+COVER_CUBICAL_N_INTERVALS = 2
+COVER_CUBICAL_OVERLAP_FRAC = 0.25
 COVER_BALL = "Ball"
+COVER_BALL_RADIUS = 100.0
 COVER_KNN = "KNN"
+COVER_KNN_NEIGHBORS = 10
 
 CLUSTERING_TRIVIAL = "Trivial"
 CLUSTERING_KMEANS = "KMeans"
+CLUSTERING_KMEANS_N_CLUSTERS = 2
 CLUSTERING_AGGLOMERATIVE = "Agglomerative"
+CLUSTERING_AGGLOMERATIVE_N_CLUSTERS = 2
 CLUSTERING_DBSCAN = "DBSCAN"
+CLUSTERING_DBSCAN_EPS = 0.5
+CLUSTERING_DBSCAN_MIN_SAMPLES = 5
 
 DATA_SOURCE_EXAMPLE = "Example"
 DATA_SOURCE_CSV = "CSV"
@@ -57,21 +68,21 @@ class State:
     source_csv: str = "tmp/data.csv"
     source_openml: str = SOURCE_OPENML
     lens_type: str = LENS_PCA
-    lens_pca_n_components: int = 2
-    lens_umap_n_components: int = 2
+    lens_pca_n_components: int = LENS_PCA_N_COMPONENTS
+    lens_umap_n_components: int = LENS_UMAP_N_COMPONENTS
     cover_type: str = COVER_CUBICAL
-    cover_cubical_n_intervals: int = 2
-    cover_cubical_overlap_frac: float = 0.25
-    cover_knn_neighbors: int = 10
-    cover_ball_radius: float = 100.0
+    cover_cubical_n_intervals: int = COVER_CUBICAL_N_INTERVALS
+    cover_cubical_overlap_frac: float = COVER_CUBICAL_OVERLAP_FRAC
+    cover_knn_neighbors: int = COVER_KNN_NEIGHBORS
+    cover_ball_radius: float = COVER_BALL_RADIUS
     clustering_type: str = CLUSTERING_TRIVIAL
-    clustering_kmeans_n_clusters: int = 2
-    clustering_dbscan_eps: float = 0.5
-    clustering_dbscan_min_samples: int = 5
-    clustering_agglomerative_n_clusters: int = 2
-    draw_dim: int = 3
+    clustering_kmeans_n_clusters: int = CLUSTERING_KMEANS_N_CLUSTERS
+    clustering_dbscan_eps: float = CLUSTERING_DBSCAN_EPS
+    clustering_dbscan_min_samples: int = CLUSTERING_DBSCAN_MIN_SAMPLES
+    clustering_agglomerative_n_clusters: int = CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
+    draw_dim: str = DRAW_3D
     draw_aggregation: str = DRAW_MEAN
-    draw_iterations: int = 50
+    draw_iterations: int = DRAW_ITERATIONS
 
 
 def _fix_data(data):
@@ -115,39 +126,47 @@ def get_dataset(state: State):
 
 
 def get_lens(state: State):
+    def _pca(n):
+        pca = PCA(n_components=n, random_state=RANDOM_STATE)
+        return lambda X: pca.fit_transform(X)
+
+    def _umap(n):
+        umap = UMAP(n_components=n, random_state=RANDOM_STATE)
+        return lambda X: umap.fit_transform(X)
+
+    def _identity():
+        return lambda X: X
+
+    lens = _pca(2)
     lens_type = state.lens_type
     if lens_type == LENS_IDENTITY:
-        return lambda X: X
+        lens = _identity()
     elif lens_type == LENS_PCA:
-        n_components = int(state.lens_pca_n_components)
-        pca = PCA(n_components=n_components, random_state=42)
-        return lambda X: pca.fit_transform(X)
+        lens = _pca(state.lens_pca_n_components)
     elif lens_type == LENS_UMAP:
-        n_components = int(state.lens_umap_n_components)
-        umap = UMAP(n_components=n_components, random_state=42)
-        return lambda X: umap.fit_transform(X)
+        lens = _umap(state.lens_umap_n_components)
     else:
-        logger.error(f"Unknown lens type: {lens_type}")
-        return None
+        logger.error("Defaulting to PCA lens")
+    return lens
 
 
-def get_cover(state: State):
+def get_cover(state: State) -> Cover:
     cover_type = state.cover_type
+    cover: Cover = CubicalCover(n_intervals=2, overlap_frac=0.25)
     if cover_type == COVER_TRIVIAL:
-        return TrivialCover()
+        cover = TrivialCover()
     elif cover_type == COVER_CUBICAL:
-        n_intervals = int(state.cover_cubical_n_intervals)
-        overlap_frac = float(state.cover_cubical_overlap_frac)
-        return CubicalCover(n_intervals=n_intervals, overlap_frac=overlap_frac)
+        cover = CubicalCover(
+            n_intervals=state.cover_cubical_n_intervals,
+            overlap_frac=state.cover_cubical_overlap_frac,
+        )
     elif cover_type == COVER_BALL:
-        radius = float(state.cover_ball_radius)
-        return BallCover(radius=radius)
+        cover = BallCover(radius=state.cover_ball_radius)
     elif cover_type == COVER_KNN:
-        neighbors = int(state.cover_knn_neighbors)
-        return KNNCover(neighbors=neighbors)
+        cover = KNNCover(neighbors=state.cover_knn_neighbors)
     else:
-        logger.error(f"Unknown cover type: {cover_type}")
-        return None
+        logger.error("Defaulting to CubicalCover")
+    return cover
 
 
 def get_clustering(state: State):
@@ -155,18 +174,21 @@ def get_clustering(state: State):
     if clustering_type == CLUSTERING_TRIVIAL:
         return TrivialClustering()
     elif clustering_type == CLUSTERING_KMEANS:
-        n_clusters = state.clustering_kmeans_n_clusters
-        return KMeans(n_clusters=n_clusters, random_state=42)
+        return KMeans(
+            n_clusters=state.clustering_kmeans_n_clusters, random_state=RANDOM_STATE
+        )
     elif clustering_type == CLUSTERING_DBSCAN:
-        eps = state.clustering_dbscan_eps
-        min_samples = state.clustering_dbscan_min_samples
-        return DBSCAN(eps=eps, min_samples=min_samples)
+        return DBSCAN(
+            eps=state.clustering_dbscan_eps,
+            min_samples=state.clustering_dbscan_min_samples,
+        )
     elif clustering_type == CLUSTERING_AGGLOMERATIVE:
-        n_clusters = state.clustering_agglomerative_n_clusters
-        return AgglomerativeClustering(n_clusters=n_clusters)
+        return AgglomerativeClustering(
+            n_clusters=state.clustering_agglomerative_n_clusters
+        )
     else:
-        logger.error(f"Unknown clustering type: {clustering_type}")
-        return None
+        logger.error("Defaulting to TrivialClustering")
+        return TrivialClustering()
 
 
 def compute_mapper(**kwargs):
@@ -203,9 +225,11 @@ def compute_mapper(**kwargs):
     logger.info(f"Mapper configuration: {mapper_algo}")
     mapper_graph = mapper_algo.fit_transform(X, y)
 
+    dim = 3 if state.draw_dim == DRAW_3D else 2
+
     mapper_plot = MapperPlot(
         mapper_graph,
-        dim=state.draw_dim,
+        dim=dim,
         iterations=state.draw_iterations,
         seed=42,
     )
@@ -497,7 +521,7 @@ class App:
         self.state.clustering_agglomerative_n_clusters = int(
             self.clustering_agglomerative_n_clusters.value
         )
-        self.state.draw_dim = 3 if self.draw_3d.value == DRAW_3D else 2
+        self.state.draw_dim = str(self.draw_3d.value)
         self.state.draw_iterations = int(self.draw_iterations.value)
         self.state.draw_aggregation = self.draw_aggregation.value
         await self.render()
@@ -508,6 +532,9 @@ class App:
             **asdict(self.state),
         )
 
+        self.storage["mapper_graph"] = mapper_graph
+        self.storage["mapper_fig"] = mapper_fig
+
         self.plot_container.clear()
         with self.plot_container:
             ui.plotly(mapper_fig)
@@ -517,7 +544,8 @@ class App:
         await self.update_dataset_handler()
         await self.update_plot_handler()
 
-    def __init__(self):
+    def __init__(self, storage):
+        self.storage = storage
         self.state = State()
         with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
             with ui.column().classes("w-64 h-full m-0 p-0"):
@@ -544,9 +572,14 @@ class App:
             ui.plotly(mapper_fig)
 
 
+@ui.page("/")
+def main_page():
+    storage = app.storage.client
+    App(storage=storage)
+
+
 def main():
-    App()
-    ui.run()
+    ui.run(storage_secret="tdamapper_secret", title="TDA Mapper App", port=8080)
 
 
 if __name__ in {"__main__", "__mp_main__", "tdamapper.app"}:
