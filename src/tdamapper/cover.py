@@ -447,7 +447,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
     def _landmarks(self, X):
         lmrks = {}
         for x in X:
-            lmrk, center = self._get_center(x)
+            lmrk, _ = self._get_center(x)
             if lmrk not in lmrks:
                 lmrks[lmrk] = x
         return lmrks

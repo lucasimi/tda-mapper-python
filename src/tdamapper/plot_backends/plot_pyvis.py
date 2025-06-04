@@ -150,7 +150,7 @@ def plot_pyvis(
     )
     colorbar = _colorbar(height=height, cmap=cmap, cmin=cmin, cmax=cmax, title=title)
     combined_html = _combine(net, colorbar)
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(combined_html)
 
 
