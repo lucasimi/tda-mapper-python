@@ -615,10 +615,12 @@ class App:
                 with ui.row(align_items="baseline"):
                     self.build_draw()
                 self.build_plot()
-        df_X, labels = self.get_dataset()
+
+        state = self.get_state()
+        df_X, labels = get_dataset(state, self.storage)
         self.storage["df_X"] = df_X
         self.storage["labels"] = labels
-        mapper_graph, mapper_fig = compute_mapper(df_X, labels, **asdict(self.state))
+        mapper_graph, mapper_fig = compute_mapper(df_X, labels, **asdict(state))
         with self.plot_container:
             ui.plotly(mapper_fig)
 
