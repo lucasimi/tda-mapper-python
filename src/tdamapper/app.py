@@ -1,5 +1,6 @@
 import logging
 from dataclasses import asdict, dataclass
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -92,6 +93,38 @@ def _fix_data(data):
     return df
 
 
+def get_dataset(state: State, storage: dict[str, Any]):
+    source_type = state.source_type
+    source_name = state.source_name
+    csv_file = storage.get("csv_file", None)
+    openml_code = state.source_openml
+    df_X, df_y = pd.DataFrame(), pd.Series()
+    if source_type == DATA_SOURCE_EXAMPLE:
+        if source_name == DATA_SOURCE_EXAMPLE_DIGITS:
+            df_X, df_y = load_digits(return_X_y=True, as_frame=True)
+        elif source_name == DATA_SOURCE_EXAMPLE_IRIS:
+            df_X, df_y = load_iris(return_X_y=True, as_frame=True)
+    elif source_type == DATA_SOURCE_CSV:
+        if csv_file is None:
+            logger.warning("No CSV file uploaded")
+            df_X, df_y = pd.DataFrame(), pd.Series()
+        else:
+            df_X = pd.read_csv(csv_file)
+            df_y = pd.Series()
+    elif source_type == DATA_SOURCE_OPENML:
+        if not openml_code:
+            logger.warning("No OpenML code provided")
+            df_X, df_y = pd.DataFrame(), pd.Series()
+        else:
+            df_X, df_y = fetch_openml(openml_code, return_X_y=True, as_frame=True)
+    else:
+        logger.error(f"Unknown data source type: {source_type}")
+        return pd.DataFrame(), pd.Series()
+    df_X = _fix_data(df_X)
+    df_y = _fix_data(df_y)
+    return df_X, df_y
+
+
 def get_lens(state: State):
     def _pca(n):
         pca = PCA(n_components=n, random_state=RANDOM_STATE)
@@ -161,7 +194,6 @@ def get_clustering(state: State):
 def compute_mapper(df_X, labels, **kwargs):
     state = State(**kwargs)
 
-    # df_X, labels = get_dataset(state)
     if df_X.empty:
         logger.warning("No dataset loaded")
         return None, None
@@ -456,38 +488,6 @@ class App:
         fig.layout.autosize = True
         self.plot_container = ui.element("div").classes("w-full h-full")
 
-    def get_dataset(self):
-        state = self.state
-        source_type = state.source_type
-        source_name = state.source_name
-        csv_file = self.storage.get("csv_file", None)
-        openml_code = state.source_openml
-        df_X, df_y = pd.DataFrame(), pd.Series()
-        if source_type == DATA_SOURCE_EXAMPLE:
-            if source_name == DATA_SOURCE_EXAMPLE_DIGITS:
-                df_X, df_y = load_digits(return_X_y=True, as_frame=True)
-            elif source_name == DATA_SOURCE_EXAMPLE_IRIS:
-                df_X, df_y = load_iris(return_X_y=True, as_frame=True)
-        elif source_type == DATA_SOURCE_CSV:
-            if csv_file is None:
-                logger.warning("No CSV file uploaded")
-                df_X, df_y = pd.DataFrame(), pd.Series()
-            else:
-                df_X = pd.read_csv(csv_file)
-                df_y = pd.Series()
-        elif source_type == DATA_SOURCE_OPENML:
-            if not openml_code:
-                logger.warning("No OpenML code provided")
-                df_X, df_y = pd.DataFrame(), pd.Series()
-            else:
-                df_X, df_y = fetch_openml(openml_code, return_X_y=True, as_frame=True)
-        else:
-            logger.error(f"Unknown data source type: {source_type}")
-            return pd.DataFrame(), pd.Series()
-        df_X = _fix_data(df_X)
-        df_y = _fix_data(df_y)
-        return df_X, df_y
-
     async def upload_csv(self, file):
         if file is None:
             logger.warning("No file uploaded")
@@ -496,10 +496,8 @@ class App:
             await self.load_dataset()
 
     async def load_dataset(self, _=None):
-        self.state.source_type = str(self.data_source_type.value)
-        self.state.source_name = str(self.data_source_example_file.value)
-        self.state.source_openml = str(self.data_source_openml.value)
-        df_X, labels = self.get_dataset()
+        state = self.get_state()
+        df_X, labels = get_dataset(state, self.storage)
         if df_X.empty:
             logger.warning("No dataset loaded")
             return None
@@ -507,106 +505,96 @@ class App:
         self.storage["labels"] = labels
         await self.update()
 
-    async def update(self, _=None):
-        self.state.lens_type = LENS_PCA
+    def get_state(self) -> State:
+        state = State(
+            source_type=DATA_SOURCE_EXAMPLE,
+            source_name=DATA_SOURCE_EXAMPLE_DIGITS,
+            source_openml=SOURCE_OPENML,
+            lens_type=LENS_PCA,
+            lens_pca_n_components=LENS_PCA_N_COMPONENTS,
+            lens_umap_n_components=LENS_UMAP_N_COMPONENTS,
+            cover_type=COVER_CUBICAL,
+            cover_cubical_n_intervals=COVER_CUBICAL_N_INTERVALS,
+            cover_cubical_overlap_frac=COVER_CUBICAL_OVERLAP_FRAC,
+            cover_ball_radius=COVER_BALL_RADIUS,
+            cover_knn_neighbors=COVER_KNN_NEIGHBORS,
+            clustering_type=CLUSTERING_TRIVIAL,
+            clustering_kmeans_n_clusters=CLUSTERING_KMEANS_N_CLUSTERS,
+            clustering_dbscan_eps=CLUSTERING_DBSCAN_EPS,
+            clustering_dbscan_min_samples=CLUSTERING_DBSCAN_MIN_SAMPLES,
+            clustering_agglomerative_n_clusters=CLUSTERING_AGGLOMERATIVE_N_CLUSTERS,
+            draw_dim=DRAW_3D,
+            draw_aggregation=DRAW_MEAN,
+            draw_iterations=DRAW_ITERATIONS,
+        )
+        if self.data_source_type.value is not None:
+            state.source_type = str(self.data_source_type.value)
+        if self.data_source_example_file.value is not None:
+            state.source_name = str(self.data_source_example_file.value)
+        if self.data_source_openml.value is not None:
+            state.source_openml = str(self.data_source_openml.value)
         if self.lens_type.value is not None:
-            self.state.lens_type = str(self.lens_type.value)
-
-        self.state.lens_pca_n_components = LENS_PCA_N_COMPONENTS
+            state.lens_type = str(self.lens_type.value)
         if self.pca_n_components.value is not None:
-            self.state.lens_pca_n_components = int(self.pca_n_components.value)
-
-        self.state.lens_umap_n_components = LENS_UMAP_N_COMPONENTS
+            state.lens_pca_n_components = int(self.pca_n_components.value)
         if self.umap_n_components.value is not None:
-            self.state.lens_umap_n_components = int(self.umap_n_components.value)
-
-        self.state.cover_type = COVER_CUBICAL
+            state.lens_umap_n_components = int(self.umap_n_components.value)
         if self.cover_type.value is not None:
-            self.state.cover_type = str(self.cover_type.value)
-
-        self.state.cover_cubical_n_intervals = COVER_CUBICAL_N_INTERVALS
+            state.cover_type = str(self.cover_type.value)
         if self.cover_cubical_n_intervals.value is not None:
-            self.state.cover_cubical_n_intervals = int(
-                self.cover_cubical_n_intervals.value
-            )
-
-        self.state.cover_cubical_overlap_frac = COVER_CUBICAL_OVERLAP_FRAC
+            state.cover_cubical_n_intervals = int(self.cover_cubical_n_intervals.value)
         if self.cover_cubical_overlap_frac.value is not None:
-            self.state.cover_cubical_overlap_frac = float(
+            state.cover_cubical_overlap_frac = float(
                 self.cover_cubical_overlap_frac.value
             )
-
-        self.state.cover_ball_radius = COVER_BALL_RADIUS
         if self.cover_ball_radius.value is not None:
-            self.state.cover_ball_radius = float(self.cover_ball_radius.value)
-
-        self.state.cover_knn_neighbors = COVER_KNN_NEIGHBORS
+            state.cover_ball_radius = float(self.cover_ball_radius.value)
         if self.cover_knn_neighbors.value is not None:
-            self.state.cover_knn_neighbors = int(self.cover_knn_neighbors.value)
-
-        self.state.clustering_type = CLUSTERING_TRIVIAL
+            state.cover_knn_neighbors = int(self.cover_knn_neighbors.value)
         if self.clustering_type.value is not None:
-            self.state.clustering_type = str(self.clustering_type.value)
-
-        self.state.clustering_kmeans_n_clusters = CLUSTERING_KMEANS_N_CLUSTERS
+            state.clustering_type = str(self.clustering_type.value)
         if self.clustering_kmeans_n_clusters.value is not None:
-            self.state.clustering_kmeans_n_clusters = int(
+            state.clustering_kmeans_n_clusters = int(
                 self.clustering_kmeans_n_clusters.value
             )
-
-        self.state.clustering_dbscan_eps = CLUSTERING_DBSCAN_EPS
         if self.clustering_dbscan_eps.value is not None:
-            self.state.clustering_dbscan_eps = float(self.clustering_dbscan_eps.value)
-
-        self.state.clustering_dbscan_min_samples = CLUSTERING_DBSCAN_MIN_SAMPLES
+            state.clustering_dbscan_eps = float(self.clustering_dbscan_eps.value)
         if self.clustering_dbscan_min_samples.value is not None:
-            self.state.clustering_dbscan_min_samples = int(
+            state.clustering_dbscan_min_samples = int(
                 self.clustering_dbscan_min_samples.value
             )
-
-        self.state.clustering_agglomerative_n_clusters = (
-            CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
-        )
         if self.clustering_agglomerative_n_clusters.value is not None:
-            self.state.clustering_agglomerative_n_clusters = int(
+            state.clustering_agglomerative_n_clusters = int(
                 self.clustering_agglomerative_n_clusters.value
             )
-
-        self.state.draw_dim = DRAW_3D
         if self.draw_3d.value is not None:
-            self.state.draw_dim = str(self.draw_3d.value)
-
-        self.state.draw_iterations = DRAW_ITERATIONS
+            state.draw_dim = str(self.draw_3d.value)
         if self.draw_iterations.value is not None:
-            self.state.draw_iterations = int(self.draw_iterations.value)
-
-        self.state.draw_aggregation = DRAW_MEAN
+            state.draw_iterations = int(self.draw_iterations.value)
         if self.draw_aggregation.value is not None:
-            self.state.draw_aggregation = str(self.draw_aggregation.value)
+            state.draw_aggregation = str(self.draw_aggregation.value)
 
-        await self.render()
+        return state
 
-    async def render(self):
+    async def update(self, _=None):
+        state = self.get_state()
         df_X = self.storage.get("df_X", pd.DataFrame())
         labels = self.storage.get("labels", pd.Series())
-
         mapper_graph, mapper_fig = await run.cpu_bound(
             compute_mapper,
             df_X,
             labels,
-            **asdict(self.state),
+            **asdict(state),
         )
-
         self.storage["mapper_graph"] = mapper_graph
         self.storage["mapper_fig"] = mapper_fig
-
         self.plot_container.clear()
-        with self.plot_container:
-            ui.plotly(mapper_fig)
+        if mapper_fig is not None:
+            with self.plot_container:
+                ui.plotly(mapper_fig)
 
     def __init__(self, storage):
         self.storage = storage
-        self.state = State()
         with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
             with ui.column().classes("w-64 h-full m-0 p-0"):
                 with ui.column().classes("w-64 h-full overflow-y-auto p-3 gap-2"):
