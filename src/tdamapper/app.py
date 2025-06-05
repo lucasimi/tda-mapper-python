@@ -155,236 +155,264 @@ def run_mapper(df, **kwargs):
     ).plot_plotly(
         colors=X,
         height=800,
-        node_size=[0.0, 0.5, 1.0],
+        node_size=[i * 0.125 for i in range(17)],
     )
     logger.info("Mapper run completed successfully.")
     return mapper_fig
 
 
-@ui.page("/")
-def index():
-    storage = app.storage.client
+class App:
 
-    def upload_file(file):
+    def __init__(self, storage):
+        self.storage = storage
+        ui.query("body").style("margin: 0; padding: 0; overflow: hidden;")
+        with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
+            with ui.column().classes("w-64 h-full m-0 p-0 overflow-y-auto"):
+                self._init_file_upload()
+                self._init_lens()
+                self._init_cover()
+                self._init_clustering()
+
+                ui.button(
+                    "Run Mapper",
+                    on_click=self.async_run_mapper,
+                    color="primary",
+                ).classes("w-full")
+
+            with ui.column().classes("flex-grow h-full overflow-hidden p-0 m-0"):
+                self._init_plot()
+
+    def _init_file_upload(self):
+        with ui.card().tight().classes("w-full p-3"):
+            ui.upload(
+                on_upload=self.upload_file,
+                auto_upload=True,
+                label="Upload CSV File",
+            ).classes("w-full")
+            with ui.card_section().classes("w-full"):
+                ui.button("Load", on_click=self.load_file).classes("w-full")
+
+    def _init_lens(self):
+        with ui.card().classes("w-full p-3"):
+            self.lens_type = ui.select(
+                options=[
+                    LENS_IDENTITY,
+                    LENS_PCA,
+                    LENS_UMAP,
+                ],
+                label="Lens",
+                value=LENS_PCA,
+            ).classes("w-full")
+
+            self.lens_pca_n_components = ui.number(
+                label="PCA Components",
+                value=LENS_PCA_N_COMPONENTS,
+            ).classes("w-full")
+            self.lens_pca_n_components.bind_visibility_from(
+                target_object=self.lens_type,
+                target_name="value",
+                value=LENS_PCA,
+            )
+
+            self.lens_umap_n_components = ui.number(
+                label="UMAP Components",
+                value=LENS_UMAP_N_COMPONENTS,
+            ).classes("w-full")
+            self.lens_umap_n_components.bind_visibility_from(
+                target_object=self.lens_type,
+                target_name="value",
+                value=LENS_UMAP,
+            )
+
+    def _init_cover(self):
+        with ui.card().classes("w-full p-3"):
+            self.cover_type = ui.select(
+                options=[
+                    COVER_CUBICAL,
+                    COVER_BALL,
+                    COVER_KNN,
+                ],
+                label="Cover",
+                value=COVER_CUBICAL,
+            ).classes("w-full")
+
+            self.cover_cubical_n_intervals = ui.number(
+                label="Number of Intervals",
+                value=COVER_CUBICAL_N_INTERVALS,
+            ).classes("w-full")
+            self.cover_cubical_n_intervals.bind_visibility_from(
+                target_object=self.cover_type,
+                target_name="value",
+                value=COVER_CUBICAL,
+            )
+
+            self.cover_cubical_overlap_frac = ui.number(
+                label="Ball Radius",
+                value=COVER_BALL_RADIUS,
+            ).classes("w-full")
+            self.cover_cubical_overlap_frac.bind_visibility_from(
+                target_object=self.cover_type,
+                target_name="value",
+                value=COVER_BALL,
+            )
+
+            self.cover_knn_neighbors = ui.number(
+                label="Number of Neighbors",
+                value=COVER_KNN_NEIGHBORS,
+            ).classes("w-full")
+            self.cover_knn_neighbors.bind_visibility_from(
+                target_object=self.cover_type,
+                target_name="value",
+                value=COVER_KNN,
+            )
+
+    def _init_clustering(self):
+        with ui.card().classes("w-full p-3"):
+            self.clustering_type = ui.select(
+                options=[
+                    CLUSTERING_TRIVIAL,
+                    CLUSTERING_KMEANS,
+                    CLUSTERING_DBSCAN,
+                    CLUSTERING_AGGLOMERATIVE,
+                ],
+                label="Clustering",
+                value=CLUSTERING_TRIVIAL,
+            ).classes("w-full")
+
+            self.clustering_kmeans_n_clusters = ui.number(
+                label="Number of Clusters",
+                value=CLUSTERING_KMEANS_N_CLUSTERS,
+            ).classes("w-full")
+            self.clustering_kmeans_n_clusters.bind_visibility_from(
+                target_object=self.clustering_type,
+                target_name="value",
+                value=CLUSTERING_KMEANS,
+            )
+
+            self.clustering_dbscan_eps = ui.number(
+                label="Epsilon",
+                value=CLUSTERING_DBSCAN_EPS,
+            ).classes("w-full")
+            self.clustering_dbscan_eps.bind_visibility_from(
+                target_object=self.clustering_type,
+                target_name="value",
+                value=CLUSTERING_DBSCAN,
+            )
+            self.clustering_dbscan_min_samples = ui.number(
+                label="Min Samples",
+                value=CLUSTERING_DBSCAN_MIN_SAMPLES,
+            ).classes("w-full")
+            self.clustering_dbscan_min_samples.bind_visibility_from(
+                target_object=self.clustering_type,
+                target_name="value",
+                value=CLUSTERING_DBSCAN,
+            )
+
+            self.clustering_agglomerative_n_clusters = ui.number(
+                label="Number of Clusters",
+                value=CLUSTERING_AGGLOMERATIVE_N_CLUSTERS,
+            ).classes("w-full")
+            self.clustering_agglomerative_n_clusters.bind_visibility_from(
+                target_object=self.clustering_type,
+                target_name="value",
+                value=CLUSTERING_AGGLOMERATIVE,
+            )
+
+    def _init_plot(self):
+        self.plot_container = ui.card().classes("w-full h-full m-0 p-0 overflow-hidden")
+
+    def get_mapper_config(self):
+        return MapperConfig(
+            lens_type=str(self.lens_type.value) if self.lens_type.value else LENS_PCA,
+            cover_type=(
+                str(self.cover_type.value) if self.cover_type.value else COVER_CUBICAL
+            ),
+            clustering_type=(
+                str(self.clustering_type.value)
+                if self.clustering_type.value
+                else CLUSTERING_TRIVIAL
+            ),
+            lens_pca_n_components=(
+                int(self.lens_pca_n_components.value)
+                if self.lens_pca_n_components.value
+                else LENS_PCA_N_COMPONENTS
+            ),
+            lens_umap_n_components=(
+                int(self.lens_umap_n_components.value)
+                if self.lens_umap_n_components.value
+                else LENS_UMAP_N_COMPONENTS
+            ),
+            cover_cubical_n_intervals=(
+                int(self.cover_cubical_n_intervals.value)
+                if self.cover_cubical_n_intervals.value
+                else COVER_CUBICAL_N_INTERVALS
+            ),
+            cover_cubical_overlap_frac=(
+                float(self.cover_cubical_overlap_frac.value)
+                if self.cover_cubical_overlap_frac.value
+                else COVER_CUBICAL_OVERLAP_FRAC
+            ),
+            cover_knn_neighbors=(
+                int(self.cover_knn_neighbors.value)
+                if self.cover_knn_neighbors.value
+                else COVER_KNN_NEIGHBORS
+            ),
+            clustering_kmeans_n_clusters=(
+                int(self.clustering_kmeans_n_clusters.value)
+                if self.clustering_kmeans_n_clusters.value
+                else CLUSTERING_KMEANS_N_CLUSTERS
+            ),
+            clustering_dbscan_eps=(
+                float(self.clustering_dbscan_eps.value)
+                if self.clustering_dbscan_eps.value
+                else CLUSTERING_DBSCAN_EPS
+            ),
+            clustering_dbscan_min_samples=(
+                int(self.clustering_dbscan_min_samples.value)
+                if self.clustering_dbscan_min_samples.value
+                else CLUSTERING_DBSCAN_MIN_SAMPLES
+            ),
+            clustering_agglomerative_n_clusters=(
+                int(self.clustering_agglomerative_n_clusters.value)
+                if self.clustering_agglomerative_n_clusters.value
+                else CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
+            ),
+        )
+
+    def upload_file(self, file):
         if file is not None:
             df = pd.read_csv(file.content)
-            storage["df"] = df
+            self.storage["df"] = df
 
             logger.info("File uploaded successfully.")
             logger.info(f"{df.head()}")
         else:
             logger.info("No file uploaded.")
 
-    def load_file():
-        df = storage.get("df")
+    def load_file(self):
+        df = self.storage.get("df")
         if df is not None:
             logger.info("Data loaded successfully.")
         else:
             logger.warning("No data found. Please upload a file first.")
 
-    def get_mapper_config():
-        return MapperConfig(
-            lens_type=str(lens.value) if lens.value else LENS_PCA,
-            cover_type=str(cover.value) if cover.value else COVER_CUBICAL,
-            clustering_type=(
-                str(clustering.value) if clustering.value else CLUSTERING_TRIVIAL
-            ),
-            lens_pca_n_components=(
-                int(pca_n_components.value)
-                if pca_n_components.value
-                else LENS_PCA_N_COMPONENTS
-            ),
-            lens_umap_n_components=(
-                int(umap_n_components.value)
-                if umap_n_components.value
-                else LENS_UMAP_N_COMPONENTS
-            ),
-            cover_cubical_n_intervals=(
-                int(n_intervals.value)
-                if n_intervals.value
-                else COVER_CUBICAL_N_INTERVALS
-            ),
-            cover_cubical_overlap_frac=(
-                float(overlap_frac.value)
-                if overlap_frac.value
-                else COVER_CUBICAL_OVERLAP_FRAC
-            ),
-            cover_knn_neighbors=(
-                int(neighbors.value) if neighbors.value else COVER_KNN_NEIGHBORS
-            ),
-            clustering_kmeans_n_clusters=(
-                int(kmeans_n_clusters.value)
-                if kmeans_n_clusters.value
-                else CLUSTERING_KMEANS_N_CLUSTERS
-            ),
-            clustering_dbscan_eps=(
-                float(dbscan_eps.value) if dbscan_eps.value else CLUSTERING_DBSCAN_EPS
-            ),
-            clustering_dbscan_min_samples=(
-                int(dbscan_min_samples.value)
-                if dbscan_min_samples.value
-                else CLUSTERING_DBSCAN_MIN_SAMPLES
-            ),
-            clustering_agglomerative_n_clusters=(
-                int(agglomerative_n_clusters.value)
-                if agglomerative_n_clusters.value
-                else CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
-            ),
-        )
-
-    async def async_run_mapper():
-        df = storage.get("df")
-        mapper_config = get_mapper_config()
+    async def async_run_mapper(self):
+        df = self.storage.get("df")
+        mapper_config = self.get_mapper_config()
         mapper_fig = await run.cpu_bound(run_mapper, df, **asdict(mapper_config))
         mapper_fig.layout.width = None
+        mapper_fig.layout.height = None
         mapper_fig.layout.autosize = True
-        plot_container.clear()
-        with plot_container:
+        self.plot_container.clear()
+        with self.plot_container:
             logger.info("Displaying Mapper plot.")
-            ui.plotly(mapper_fig)
+            ui.plotly(mapper_fig).classes("w-full h-full")
 
-    with ui.row().classes("w-full h-screen m-0 p-0 gap-0 overflow-hidden"):
 
-        with ui.column().classes("w-64 h-full m-0 p-0"):
-            with ui.card().tight().classes("w-full"):
-                ui.upload(
-                    on_upload=upload_file,
-                    auto_upload=True,
-                    label="Upload CSV File",
-                ).classes("w-full")
-                with ui.card_section().classes("w-full"):
-                    ui.button("Load", on_click=load_file).classes("w-full")
-
-            with ui.card().classes("w-full"):
-                lens = ui.select(
-                    options=[
-                        LENS_IDENTITY,
-                        LENS_PCA,
-                        LENS_UMAP,
-                    ],
-                    label="Lens",
-                    value=LENS_PCA,
-                ).classes("w-full")
-
-                pca_n_components = ui.number(
-                    label="PCA Components",
-                    value=LENS_PCA_N_COMPONENTS,
-                ).classes("w-full")
-                pca_n_components.bind_visibility_from(
-                    target_object=lens,
-                    target_name="value",
-                    value=LENS_PCA,
-                )
-
-                umap_n_components = ui.number(
-                    label="UMAP Components",
-                    value=LENS_UMAP_N_COMPONENTS,
-                ).classes("w-full")
-                umap_n_components.bind_visibility_from(
-                    target_object=lens,
-                    target_name="value",
-                    value=LENS_UMAP,
-                )
-
-            with ui.card().classes("w-full"):
-                cover = ui.select(
-                    options=[
-                        COVER_CUBICAL,
-                        COVER_BALL,
-                        COVER_KNN,
-                    ],
-                    label="Cover",
-                    value=COVER_CUBICAL,
-                ).classes("w-full")
-
-                n_intervals = ui.number(
-                    label="Number of Intervals",
-                    value=COVER_CUBICAL_N_INTERVALS,
-                ).classes("w-full")
-                n_intervals.bind_visibility_from(
-                    target_object=cover,
-                    target_name="value",
-                    value=COVER_CUBICAL,
-                )
-
-                overlap_frac = ui.number(
-                    label="Ball Radius",
-                    value=COVER_BALL_RADIUS,
-                ).classes("w-full")
-                overlap_frac.bind_visibility_from(
-                    target_object=cover,
-                    target_name="value",
-                    value=COVER_BALL,
-                )
-
-                neighbors = ui.number(
-                    label="Number of Neighbors",
-                    value=COVER_KNN_NEIGHBORS,
-                ).classes("w-full")
-                neighbors.bind_visibility_from(
-                    target_object=cover,
-                    target_name="value",
-                    value=COVER_KNN,
-                )
-
-            with ui.card().classes("w-full"):
-                clustering = ui.select(
-                    options=[
-                        CLUSTERING_TRIVIAL,
-                        CLUSTERING_KMEANS,
-                        CLUSTERING_DBSCAN,
-                        CLUSTERING_AGGLOMERATIVE,
-                    ],
-                    label="Clustering",
-                    value=CLUSTERING_TRIVIAL,
-                ).classes("w-full")
-
-                kmeans_n_clusters = ui.number(
-                    label="Number of Clusters",
-                    value=CLUSTERING_KMEANS_N_CLUSTERS,
-                ).classes("w-full")
-                kmeans_n_clusters.bind_visibility_from(
-                    target_object=clustering,
-                    target_name="value",
-                    value=CLUSTERING_KMEANS,
-                )
-
-                dbscan_eps = ui.number(
-                    label="Epsilon",
-                    value=CLUSTERING_DBSCAN_EPS,
-                ).classes("w-full")
-                dbscan_eps.bind_visibility_from(
-                    target_object=clustering,
-                    target_name="value",
-                    value=CLUSTERING_DBSCAN,
-                )
-                dbscan_min_samples = ui.number(
-                    label="Min Samples",
-                    value=CLUSTERING_DBSCAN_MIN_SAMPLES,
-                ).classes("w-full")
-                dbscan_min_samples.bind_visibility_from(
-                    target_object=clustering,
-                    target_name="value",
-                    value=CLUSTERING_DBSCAN,
-                )
-
-                agglomerative_n_clusters = ui.number(
-                    label="Number of Clusters",
-                    value=CLUSTERING_AGGLOMERATIVE_N_CLUSTERS,
-                ).classes("w-full")
-                agglomerative_n_clusters.bind_visibility_from(
-                    target_object=clustering,
-                    target_name="value",
-                    value=CLUSTERING_AGGLOMERATIVE,
-                )
-
-            ui.button(
-                "Run Mapper",
-                on_click=async_run_mapper,
-            ).classes("w-full")
-
-        with ui.column().classes("flex-1 h-full overflow-hidden m-0 p-0"):
-            plot_container = ui.element("div").classes("w-full h-full")
+@ui.page("/")
+def main():
+    storage = app.storage.client
+    App(storage=storage)
 
 
 ui.run(storage_secret="secret")
