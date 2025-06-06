@@ -200,17 +200,15 @@ class App:
         self.storage = storage
         with ui.row().classes("w-full h-screen overflow-hidden p-0 m-0"):
             with ui.column().classes("w-96 h-full p-1 m-0"):
-                with ui.link(target=GIT_REPO_URL, new_tab=True).classes("w-full"):
+                with ui.link(target=GIT_REPO_URL, new_tab=True).classes(
+                    "w-full p-1 m-0"
+                ):
                     ui.image(LOGO_URL)
-                with ui.column().classes("w-96 h-full overflow-y-auto p-1 m-0"):
-                    with ui.card().classes("w-full"):
-                        self._init_file_upload()
-                    with ui.card().classes("w-full"):
-                        self._init_lens()
-                    with ui.card().classes("w-full"):
-                        self._init_cover()
-                    with ui.card().classes("w-full"):
-                        self._init_clustering()
+                with ui.column().classes("w-full h-full overflow-y-auto p-1 m-0"):
+                    self._init_file_upload()
+                    self._init_lens()
+                    self._init_cover()
+                    self._init_clustering()
 
                     ui.button(
                         "Run Mapper",
@@ -221,17 +219,22 @@ class App:
                 self._init_plot()
 
     def _init_file_upload(self):
-        ui.upload(
-            on_upload=self.upload_file,
-            auto_upload=True,
-            label="Upload CSV File",
-        ).classes("w-full")
-        with ui.card_section().classes("w-full"):
-            ui.button("Load", on_click=self.load_file).classes("w-full")
+        with ui.card().tight().classes("w-full"):
+            ui.upload(
+                on_upload=self.upload_file,
+                auto_upload=True,
+                label="Upload CSV File",
+            ).classes("w-full")
+            with ui.card_section().classes("w-full"):
+                ui.button("Load", on_click=self.load_file).classes("w-full")
 
     def _init_lens(self):
-        ui.markdown("#### Lens")
+        with ui.card().tight().classes("w-full"):
+            with ui.card_section().classes("w-full"):
+                ui.markdown("##### 🔎 Lens").classes("w-full")
+                self._init_lens_settings()
 
+    def _init_lens_settings(self):
         self.lens_type = ui.select(
             options=[
                 LENS_IDENTITY,
@@ -263,13 +266,18 @@ class App:
         )
 
     def _init_cover(self):
-        ui.markdown("#### Cover")
+        with ui.card().tight().classes("w-full"):
+            with ui.card_section().classes("w-full"):
+                with ui.row().classes("w-full"):
+                    ui.markdown("##### 🌐 Cover").classes("flex-1")
 
-        self.cover_scale = ui.switch(
-            text="Scale Data",
-            value=COVER_SCALE_DATA,
-        ).classes("w-full")
+                    self.cover_scale = ui.switch(
+                        text="Scale Data",
+                        value=COVER_SCALE_DATA,
+                    ).classes("flex-none")
+                self._init_cover_settings()
 
+    def _init_cover_settings(self):
         self.cover_type = ui.select(
             options=[
                 COVER_CUBICAL,
@@ -321,13 +329,17 @@ class App:
         )
 
     def _init_clustering(self):
-        ui.markdown("##### Clustering")
+        with ui.card().tight().classes("w-full"):
+            with ui.card_section().classes("w-full"):
+                with ui.row().classes("w-full"):
+                    ui.markdown("##### 🧮 Clustering").classes("flex-1")
+                    self.clustering_scale = ui.switch(
+                        text="Scale Data",
+                        value=CLUSTERING_SCALE_DATA,
+                    ).classes("flex-none")
+                self._init_clustering_settings()
 
-        self.clustering_scale = ui.switch(
-            text="Scale Data",
-            value=CLUSTERING_SCALE_DATA,
-        ).classes("w-full")
-
+    def _init_clustering_settings(self):
         self.clustering_type = ui.select(
             options=[
                 CLUSTERING_TRIVIAL,
@@ -468,18 +480,21 @@ class App:
             logger.warning("No data found. Please upload a file first.")
             ui.notify("No data found. Please upload a file first.", type="warning")
             return
-        ui.notify("Running Mapper...", type="info")
-        with self.plot_container:
-            ui.spinner(size="lg")
+        notification = ui.notification(timeout=None, type="ongoing")
+        notification.message = "Running Mapper..."
+        notification.spinner = True
         mapper_config = self.get_mapper_config()
         mapper_fig = await run.cpu_bound(run_mapper, df, **asdict(mapper_config))
         mapper_fig.layout.width = None
         mapper_fig.layout.height = None
         mapper_fig.layout.autosize = True
+        notification.message = "Done!"
+        notification.spinner = False
         self.plot_container.clear()
         with self.plot_container:
             logger.info("Displaying Mapper plot.")
             ui.plotly(mapper_fig).classes("w-full h-full")
+        notification.dismiss()
 
 
 @ui.page("/")
