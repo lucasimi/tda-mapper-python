@@ -17,6 +17,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+GIT_REPO_URL = "https://github.com/lucasimi/tda-mapper-python"
+
+ICON_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png"
+
+LOGO_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png"
+
+
 LENS_IDENTITY = "Identity"
 LENS_PCA = "PCA"
 LENS_UMAP = "UMAP"
@@ -191,24 +198,26 @@ class App:
 
     def __init__(self, storage):
         self.storage = storage
-        with ui.row().classes("w-full h-screen overflow-hidden"):
-            with ui.column().classes("w-80 h-full overflow-y-auto p-1"):
-                with ui.card().classes("w-full"):
-                    self._init_file_upload()
-                with ui.card().classes("w-full"):
-                    self._init_lens()
-                with ui.card().classes("w-full"):
-                    self._init_cover()
-                with ui.card().classes("w-full"):
-                    self._init_clustering()
+        with ui.row().classes("w-full h-screen overflow-hidden p-0 m-0"):
+            with ui.column().classes("w-96 h-full p-1 m-0"):
+                with ui.link(target=GIT_REPO_URL, new_tab=True).classes("w-full"):
+                    ui.image(LOGO_URL)
+                with ui.column().classes("w-96 h-full overflow-y-auto p-1 m-0"):
+                    with ui.card().classes("w-full"):
+                        self._init_file_upload()
+                    with ui.card().classes("w-full"):
+                        self._init_lens()
+                    with ui.card().classes("w-full"):
+                        self._init_cover()
+                    with ui.card().classes("w-full"):
+                        self._init_clustering()
 
-                ui.button(
-                    "Run Mapper",
-                    on_click=self.async_run_mapper,
-                    color="primary",
-                ).classes("w-full")
-
-            with ui.column().classes("flex-1 h-full overflow-hidden p-1"):
+                    ui.button(
+                        "Run Mapper",
+                        on_click=self.async_run_mapper,
+                        color="primary",
+                    ).classes("w-full")
+            with ui.column().classes("flex-1 h-full overflow-hidden p-1 m-0"):
                 self._init_plot()
 
     def _init_file_upload(self):
@@ -370,7 +379,7 @@ class App:
         )
 
     def _init_plot(self):
-        self.plot_container = ui.card().classes("w-full h-full p-1 overflow-hidden")
+        self.plot_container = ui.card().classes("w-full h-full")
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -448,13 +457,20 @@ class App:
         df = self.storage.get("df")
         if df is not None:
             logger.info("Data loaded successfully.")
-            ui.notify("File loaded successfully.", type="info")
+            ui.notify("File loaded successfully.", type="positive")
         else:
             logger.warning("No data found. Please upload a file first.")
             ui.notify("No data found. Please upload a file first.", type="warning")
 
     async def async_run_mapper(self):
         df = self.storage.get("df")
+        if df is None or df.empty:
+            logger.warning("No data found. Please upload a file first.")
+            ui.notify("No data found. Please upload a file first.", type="warning")
+            return
+        ui.notify("Running Mapper...", type="info")
+        with self.plot_container:
+            ui.spinner(size="lg")
         mapper_config = self.get_mapper_config()
         mapper_fig = await run.cpu_bound(run_mapper, df, **asdict(mapper_config))
         mapper_fig.layout.width = None
@@ -463,13 +479,12 @@ class App:
         self.plot_container.clear()
         with self.plot_container:
             logger.info("Displaying Mapper plot.")
-            ui.plotly(mapper_fig).classes(
-                "w-full h-full max-h-full max-w-full overflow-hidden"
-            )
+            ui.plotly(mapper_fig).classes("w-full h-full")
 
 
 @ui.page("/")
 def main():
+    ui.query(".nicegui-content").classes("p-0")
     storage = app.storage.client
     App(storage=storage)
 
