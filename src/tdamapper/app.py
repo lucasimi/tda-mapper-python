@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 import pandas as pd
 from nicegui import app, run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
+from sklearn.datasets import load_digits, load_iris
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from umap import UMAP
@@ -23,6 +24,11 @@ ICON_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png"
 
 LOGO_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png"
 
+
+LOAD_EXAMPLE = "Example"
+LOAD_EXAMPLE_DIGITS = "Digits"
+LOAD_EXAMPLE_IRIS = "Iris"
+LOAD_CSV = "CSV"
 
 LENS_IDENTITY = "Identity"
 LENS_PCA = "PCA"
@@ -106,8 +112,8 @@ def lens_umap(n_components):
     return _umap
 
 
-def run_mapper(df, **kwargs):
-    if df is None:
+def run_mapper(df, labels, **kwargs):
+    if df is None or df.empty:
         logger.error("No data found. Please upload a file first.")
         return
     logger.info("Computing Mapper.")
@@ -133,12 +139,14 @@ def run_mapper(df, **kwargs):
     )
 
     lens = lens_pca(n_components=LENS_PCA_N_COMPONENTS)
+    lens_name = LENS_PCA
     if lens_type == LENS_IDENTITY:
         lens = lens_identity
     elif lens_type == LENS_PCA:
         lens = lens_pca(n_components=lens_pca_n_components)
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
+    lens_name = lens_type
 
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
@@ -177,16 +185,20 @@ def run_mapper(df, **kwargs):
     df_fixed = fix_data(df)
     X = df_fixed.to_numpy()
     y = lens(X)
+    df_y = pd.DataFrame(y, columns=[f"{lens_type} {i}" for i in range(y.shape[1])])
+    df_labels = pd.DataFrame(labels) if labels is not None else pd.DataFrame()
     if cover_scale_data:
         y = StandardScaler().fit_transform(y)
     if clustering_scale_data:
         X = StandardScaler().fit_transform(X)
+    df_colors = pd.concat([df_labels, df_y, df_fixed], axis=1)
     mapper_graph = mapper.fit_transform(X, y)
     mapper_fig = MapperPlot(
         mapper_graph,
         dim=3,
     ).plot_plotly(
-        colors=X,
+        colors=df_colors.to_numpy(),
+        title=df_colors.columns.to_list(),
         height=800,
         node_size=[i * 0.125 for i in range(17)],
     )
@@ -198,41 +210,80 @@ class App:
 
     def __init__(self, storage):
         self.storage = storage
-        with ui.row().classes("w-full h-screen overflow-hidden p-0 m-0"):
-            with ui.column().classes("w-96 h-full p-1 m-0"):
-                with ui.link(target=GIT_REPO_URL, new_tab=True).classes(
-                    "w-full p-1 m-0"
-                ):
-                    ui.image(LOGO_URL)
-                with ui.column().classes("w-full h-full overflow-y-auto p-1 m-0"):
-                    self._init_file_upload()
-                    self._init_lens()
-                    self._init_cover()
-                    self._init_clustering()
+        with ui.left_drawer(elevated=True).classes(
+            "w-96 h-full overflow-y-auto gap-12"
+        ):
+            with ui.link(target=GIT_REPO_URL, new_tab=True).classes("w-full"):
+                ui.image(LOGO_URL)
 
-                    ui.button(
-                        "Run Mapper",
-                        on_click=self.async_run_mapper,
-                        color="primary",
-                    ).classes("w-full")
-            with ui.column().classes("flex-1 h-full overflow-hidden p-1 m-0"):
-                self._init_plot()
+            with ui.column().classes("w-full gap-2"):
+                self._init_file_upload()
+
+            ui.button(
+                "Load Data",
+                on_click=self.load_file,
+                color="primary",
+            ).classes("w-full")
+
+            with ui.column().classes("w-full gap-2"):
+                self._init_lens()
+
+            with ui.column().classes("w-full gap-2"):
+                self._init_cover()
+
+            with ui.column().classes("w-full gap-2"):
+                self._init_clustering()
+
+            ui.button(
+                "Run Mapper",
+                on_click=self.async_run_mapper,
+                color="primary",
+            ).classes("w-full")
+
+            ui.label(
+                text="If you like this project, please consider giving it a ⭐ on GitHub! Made with ❤️ and ☕️ in Rome."
+            ).classes("text-caption text-gray-500").classes(
+                "text-caption text-gray-500"
+            )
+
+        with ui.column().classes("w-full h-screen overflow-hidden"):
+            self._init_plot()
 
     def _init_file_upload(self):
-        with ui.card().tight().classes("w-full"):
-            ui.upload(
-                on_upload=self.upload_file,
-                auto_upload=True,
-                label="Upload CSV File",
-            ).classes("w-full")
-            with ui.card_section().classes("w-full"):
-                ui.button("Load", on_click=self.load_file).classes("w-full")
+        ui.label("📊 Data").classes("text-h6")
+
+        self.load_type = ui.select(
+            options=[LOAD_EXAMPLE, LOAD_CSV],
+            label="Data Source",
+            value=LOAD_EXAMPLE,
+        ).classes("w-full")
+
+        upload = ui.upload(
+            on_upload=self.upload_file,
+            auto_upload=True,
+            label="Upload CSV File",
+        ).classes("w-full mt-4")
+        upload.props("accept=.csv")
+        upload.bind_visibility_from(
+            target_object=self.load_type,
+            target_name="value",
+            value=LOAD_CSV,
+        )
+
+        self.load_example = ui.select(
+            options=[LOAD_EXAMPLE_DIGITS, LOAD_EXAMPLE_IRIS],
+            label="Dataset",
+            value=LOAD_EXAMPLE_DIGITS,
+        ).classes("w-full")
+        self.load_example.bind_visibility_from(
+            target_object=self.load_type,
+            target_name="value",
+            value=LOAD_EXAMPLE,
+        )
 
     def _init_lens(self):
-        with ui.card().tight().classes("w-full"):
-            with ui.card_section().classes("w-full"):
-                ui.markdown("##### 🔎 Lens").classes("w-full")
-                self._init_lens_settings()
+        ui.label("🔎 Lens").classes("text-h6")
+        self._init_lens_settings()
 
     def _init_lens_settings(self):
         self.lens_type = ui.select(
@@ -266,16 +317,13 @@ class App:
         )
 
     def _init_cover(self):
-        with ui.card().tight().classes("w-full"):
-            with ui.card_section().classes("w-full"):
-                with ui.row().classes("w-full"):
-                    ui.markdown("##### 🌐 Cover").classes("flex-1")
-
-                    self.cover_scale = ui.switch(
-                        text="Scale Data",
-                        value=COVER_SCALE_DATA,
-                    ).classes("flex-none")
-                self._init_cover_settings()
+        with ui.row().classes("w-full items-center justify-between"):
+            ui.label("🌐 Cover").classes("text-h6")
+            self.cover_scale = ui.switch(
+                text="Scaling",
+                value=COVER_SCALE_DATA,
+            )
+        self._init_cover_settings()
 
     def _init_cover_settings(self):
         self.cover_type = ui.select(
@@ -329,15 +377,13 @@ class App:
         )
 
     def _init_clustering(self):
-        with ui.card().tight().classes("w-full"):
-            with ui.card_section().classes("w-full"):
-                with ui.row().classes("w-full"):
-                    ui.markdown("##### 🧮 Clustering").classes("flex-1")
-                    self.clustering_scale = ui.switch(
-                        text="Scale Data",
-                        value=CLUSTERING_SCALE_DATA,
-                    ).classes("flex-none")
-                self._init_clustering_settings()
+        with ui.row().classes("w-full items-center justify-between"):
+            ui.label("🧮 Clustering").classes("text-h6")
+            self.clustering_scale = ui.switch(
+                text="Scaling",
+                value=CLUSTERING_SCALE_DATA,
+            )
+        self._init_clustering_settings()
 
     def _init_clustering_settings(self):
         self.clustering_type = ui.select(
@@ -391,7 +437,7 @@ class App:
         )
 
     def _init_plot(self):
-        self.plot_container = ui.card().classes("w-full h-full")
+        self.plot_container = ui.element("div").classes("w-full h-full")
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -460,12 +506,33 @@ class App:
         if file is not None:
             df = pd.read_csv(file.content)
             self.storage["df"] = df
+            self.storage["labels"] = None
             logger.info("File uploaded successfully.")
             ui.notify("File uploaded successfully.", type="info")
         else:
             logger.info("No file uploaded.")
 
     def load_file(self):
+        if self.load_type.value == LOAD_EXAMPLE:
+            if self.load_example.value == LOAD_EXAMPLE_DIGITS:
+                df, labels = load_digits(as_frame=True, return_X_y=True)
+            elif self.load_example.value == LOAD_EXAMPLE_IRIS:
+                df, labels = load_iris(as_frame=True, return_X_y=True)
+            else:
+                logger.error("Unknown example dataset selected.")
+                return
+            self.storage["df"] = df
+            self.storage["labels"] = labels
+        elif self.load_type.value == LOAD_CSV:
+            df = self.storage.get("df")
+            if df is None:
+                logger.warning("No data found. Please upload a file first.")
+                ui.notify("No data found. Please upload a file first.", type="warning")
+                return
+        else:
+            logger.error("Unknown load type selected.")
+            return
+
         df = self.storage.get("df")
         if df is not None:
             logger.info("Data loaded successfully.")
@@ -480,11 +547,14 @@ class App:
             logger.warning("No data found. Please upload a file first.")
             ui.notify("No data found. Please upload a file first.", type="warning")
             return
+        labels = self.storage.get("labels")
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = "Running Mapper..."
         notification.spinner = True
         mapper_config = self.get_mapper_config()
-        mapper_fig = await run.cpu_bound(run_mapper, df, **asdict(mapper_config))
+        mapper_fig = await run.cpu_bound(
+            run_mapper, df, labels, **asdict(mapper_config)
+        )
         mapper_fig.layout.width = None
         mapper_fig.layout.height = None
         mapper_fig.layout.autosize = True
