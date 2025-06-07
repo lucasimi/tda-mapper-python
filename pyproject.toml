@@ -52,6 +52,15 @@ dev = [
     "flake8",
     "nbformat>=4.2.0",
 ]
+app = [
+    "pandas<3.0.0",
+    "scikit-learn<1.6.0",
+    "nicegui>=2.18.0,<3.0.0",
+    "umap-learn<0.6.0",
+]
+
+[project.scripts]
+tda-mapper-app = "tdamapper.app:main"
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"

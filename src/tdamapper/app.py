@@ -199,6 +199,19 @@ def run_mapper(df, labels, **kwargs):
     ).plot_plotly(
         colors=df_colors.to_numpy(),
         title=df_colors.columns.to_list(),
+        cmap=[
+            "Viridis",
+            "Cividis",
+            "Jet",
+            "Plasma",
+            "Inferno",
+            "Magma",
+            "Turbo",
+            "RdBu",
+            "BrBG",
+            "PiYG",
+            "PuOr",
+        ],
         height=800,
         node_size=[i * 0.125 for i in range(17)],
     )
@@ -235,7 +248,7 @@ class App:
                 self._init_clustering()
 
             ui.button(
-                "Run Mapper",
+                "✨ Run Mapper",
                 on_click=self.async_run_mapper,
                 color="primary",
             ).classes("w-full")
@@ -568,10 +581,15 @@ class App:
 
 
 @ui.page("/")
-def main():
+def main_page():
     ui.query(".nicegui-content").classes("p-0")
     storage = app.storage.client
     App(storage=storage)
 
 
-ui.run(storage_secret="secret")
+def main():
+    ui.run(storage_secret="secret", title="tda-mapper-app", favicon=ICON_URL)
+
+
+if __name__ in ["__main__", "__mp_main__", "tdamapper.app"]:
+    main()
