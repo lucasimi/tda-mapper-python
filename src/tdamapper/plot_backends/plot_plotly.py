@@ -523,11 +523,14 @@ def _set_ui(mapper_fig: go.Figure, plotly_ui: PlotlyUI) -> None:
     sliders = []
     x = 0.0
     if plotly_ui.menu_cmap:
-        plotly_ui.menu_cmap["x"] = x
-        x += 0.25
+        if len(plotly_ui.menu_cmap["buttons"]) > 0:
+            plotly_ui.menu_cmap["x"] = x
+            x += 0.25
         menus.append(plotly_ui.menu_cmap)
     if plotly_ui.menu_color:
-        plotly_ui.menu_color["x"] = x
+        if len(plotly_ui.menu_color["buttons"]) > 0:
+            plotly_ui.menu_color["x"] = x
+            x += 0.25
         menus.append(plotly_ui.menu_color)
     if plotly_ui.slider_size:
         plotly_ui.slider_size["x"] = 0.0
@@ -569,7 +572,7 @@ def _ui_cmap(mapper_plot, cmaps: List[str]) -> dict:
 
     return dict(
         buttons=buttons,
-        x=0.25,
+        x=0.0,
         xanchor="left",
         y=1.0,
         yanchor="top",
