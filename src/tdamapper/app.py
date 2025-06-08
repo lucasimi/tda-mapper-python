@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import asdict, dataclass
 
 import pandas as pd
@@ -588,7 +589,8 @@ def main_page():
 
 
 def main():
-    ui.run(storage_secret="secret", title="tda-mapper-app", favicon=ICON_URL)
+    port = os.getenv("PORT", "8080")
+    ui.run(storage_secret="secret", title="tda-mapper-app", favicon=ICON_URL, port=port)
 
 
 if __name__ in ["__main__", "__mp_main__", "tdamapper.app"]:
