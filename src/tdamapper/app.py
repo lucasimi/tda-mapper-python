@@ -590,8 +590,10 @@ def main_page():
 
 def main():
     port = os.getenv("PORT", "8080")
+    host = os.getenv("HOST", "0.0.0.0")
     ui.run(
         storage_secret="secret",
+        host=host,
         title="tda-mapper-app",
         favicon=ICON_URL,
         port=int(port),
