@@ -590,7 +590,12 @@ def main_page():
 
 def main():
     port = os.getenv("PORT", "8080")
-    ui.run(storage_secret="secret", title="tda-mapper-app", favicon=ICON_URL, port=port)
+    ui.run(
+        storage_secret="secret",
+        title="tda-mapper-app",
+        favicon=ICON_URL,
+        port=int(port),
+    )
 
 
 if __name__ in ["__main__", "__mp_main__", "tdamapper.app"]:
