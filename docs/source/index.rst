@@ -14,8 +14,6 @@
    :target: https://codecov.io/github/lucasimi/tda-mapper-python
 .. |DOI| image:: https://img.shields.io/badge/DOI-10.5281/zenodo.10642381-blue?logo=doi&logoColor=silver
    :target: https://doi.org/10.5281/zenodo.10642381
-.. |Streamlit App| image:: https://img.shields.io/badge/Streamlit-App-blue?logo=streamlit&logoColor=silver
-   :target: https://tda-mapper-app.streamlit.app/
 .. |Step 1| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png
 .. |Step 2| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png
 .. |Step 3| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png
@@ -68,9 +66,9 @@ Core features
 
 - **Interactive app**
 
-   Provides an interactive web-based interface (via Streamlit) for dynamic
-   exploration of Mapper graph structures, offering real-time adjustments to
-   parameters and visualizations.
+   Provides an interactive web-based interface for dynamic exploration of
+   Mapper graph structures, offering real-time adjustments to parameters and
+   visualizations.
 
 
 Background

@@ -45,9 +45,9 @@ and in the
 
 - **Interactive app**
 
-    Provides an interactive web-based interface (via Streamlit) for dynamic
-    exploration of Mapper graph structures, offering real-time adjustments to
-    parameters and visualizations.
+    Provides an interactive web-based interface for dynamic exploration of
+    Mapper graph structures, offering real-time adjustments to parameters and
+    visualizations.
 
 ## Background
 
@@ -138,21 +138,20 @@ More examples can be found in the
 
 ## Interactive App
 
-Use our Streamlit app to visualize and explore your data without writing code.
-You can run a live demo directly on
-[Streamlit Cloud](https://tda-mapper-app.streamlit.app/),
+Use our app to visualize and explore your data without writing code. You can
+use it directly on
+[Our Demo App](https://tda-mapper-app.up.railway.app/),
 or locally on your machine. The first time you run the app locally, you may
-need to install the required dependencies from the `requirements.txt` file by
-running 
+need to install the required dependencies by running 
 
 ```bash
-pip install -r app/requirements.txt
+pip install tda-mapper[app]
 ```
 
 then run the app locally with 
 
 ```bash
-streamlit run app/streamlit_app.py
+tda-mapper-app
 ```
 
 ![tda-mapper-app](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png)
