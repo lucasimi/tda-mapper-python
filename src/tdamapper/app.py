@@ -593,6 +593,7 @@ def main():
     host = os.getenv("HOST", "0.0.0.0")
     ui.run(
         storage_secret="secret",
+        reload=False,
         host=host,
         title="tda-mapper-app",
         favicon=ICON_URL,
