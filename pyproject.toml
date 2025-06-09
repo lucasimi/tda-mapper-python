@@ -56,8 +56,8 @@ dev = [
 app = [
     "pandas<3.0.0",
     "scikit-learn<1.6.0",
-    "nicegui>=2.18.0,<3.0.0",
     "umap-learn<0.6.0",
+    "nicegui>=2.18.0,<3.0.0",
 ]
 
 [project.scripts]
