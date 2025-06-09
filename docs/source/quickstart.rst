@@ -92,21 +92,24 @@ More examples can be found in the
 Interactive App
 ---------------
 
-Use our app to visualize and explore your data without writing code. You can
-use it directly on
-`Our Demo App <https://tda-mapper-app.up.railway.app/>`__,
-or locally on your machine. The first time you run the app locally, you may
-need to install the required dependencies by running 
+Use our app to interactively visualize and explore your data without writing
+code. You can try it right away using 
+`our live demo <https://tda-mapper-app.up.railway.app/>`__,
+or run it locally on your machine.
 
-.. code:: bash
+To run it locally:
 
-   pip install tda-mapper[app]
+1. Install the app and its dependencies:
 
-then run the app locally with 
+   .. code:: bash
 
-.. code:: bash
+      pip install tda-mapper[app]
 
-   tda-mapper-app
+2. Launch the app:
+
+   .. code:: bash
+
+      tda-mapper-app
 
 |Interactive App|
 
