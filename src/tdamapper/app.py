@@ -140,14 +140,12 @@ def run_mapper(df, labels, **kwargs):
     )
 
     lens = lens_pca(n_components=LENS_PCA_N_COMPONENTS)
-    lens_name = LENS_PCA
     if lens_type == LENS_IDENTITY:
         lens = lens_identity
     elif lens_type == LENS_PCA:
         lens = lens_pca(n_components=lens_pca_n_components)
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
-    lens_name = lens_type
 
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
@@ -255,7 +253,10 @@ class App:
             ).classes("w-full")
 
             ui.label(
-                text="If you like this project, please consider giving it a ⭐ on GitHub! Made with ❤️ and ☕️ in Rome."
+                text=(
+                    "If you like this project, please consider giving it a ⭐ on GitHub!"
+                    "Made with ❤️ and ☕️ in Rome."
+                )
             ).classes("text-caption text-gray-500").classes(
                 "text-caption text-gray-500"
             )
@@ -591,8 +592,9 @@ def main_page():
 def main():
     port = os.getenv("PORT", "8080")
     host = os.getenv("HOST", "0.0.0.0")
+    storage_secret = os.getenv("STORAGE_SECRET", "storage_secret")
     ui.run(
-        storage_secret="secret",
+        storage_secret=storage_secret,
         reload=False,
         host=host,
         title="tda-mapper-app",
