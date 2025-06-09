@@ -8,10 +8,6 @@ from tdamapper import _app
 
 pytest_plugins = ["nicegui.testing.user_plugin"]
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="NiceGUI requires Python 3.9+"
-)
-
 
 @pytest.mark.module_under_test(_app)
 async def test_run_mapper(user: User) -> None:
