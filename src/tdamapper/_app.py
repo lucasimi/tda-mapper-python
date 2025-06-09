@@ -603,5 +603,5 @@ def main():
     )
 
 
-if __name__ in ["__main__", "__mp_main__", "tdamapper.app"]:
+if __name__ in ["__main__", "__mp_main__"]:
     main()

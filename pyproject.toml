@@ -47,6 +47,7 @@ dev = [
     "pandas",
     "scikit-learn<1.6.0",
     "pytest",
+    "pytest-asyncio",
     "black[jupyter]",
     "isort",
     "flake8",
@@ -60,7 +61,7 @@ app = [
 ]
 
 [project.scripts]
-tda-mapper-app = "tdamapper.app:main"
+tda-mapper-app = "tdamapper._app:main"
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
@@ -97,3 +98,15 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 skip = ["venv", ".venv", "build", "dist"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+  'ignore::DeprecationWarning:_plotly_utils\.basevalidators',
+]
+
+markers = [
+    "module_under_test",
+]
