@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 from nicegui import ui
 from nicegui.testing import User
@@ -5,6 +7,10 @@ from nicegui.testing import User
 from tdamapper import _app
 
 pytest_plugins = ["nicegui.testing.user_plugin"]
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="NiceGUI requires Python 3.9+"
+)
 
 
 @pytest.mark.module_under_test(_app)
