@@ -4,7 +4,7 @@ plotly.
 """
 
 import math
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -127,20 +127,29 @@ def _to_node_sizes(
 
 def plot_plotly(
     mapper_plot,
-    width: int,
-    height: int,
     colors: Union[np.ndarray, List[float]],
     node_size: Optional[Union[int, float, List[Union[int, float]]]] = None,
     title: Optional[Union[str, List[str]]] = None,
     agg=np.nanmean,
     cmap: Optional[Union[str, List[str]]] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
 ) -> go.Figure:
     cmaps = _to_cmaps(cmap)
     colors = _to_colors(colors)
     colors_num = colors.shape[1]
     titles = _to_titles(title, colors_num)
     node_sizes = _to_node_sizes(node_size)
-    fig = _figure(mapper_plot, width, height, node_sizes, colors, titles, agg, cmaps)
+    fig = _figure(
+        mapper_plot=mapper_plot,
+        node_sizes=node_sizes,
+        colors=colors,
+        titles=titles,
+        agg=agg,
+        cmaps=cmaps,
+        width=width,
+        height=height,
+    )
     ui = PlotlyUI()
     ui.set_menu_cmap(mapper_plot, cmaps)
     ui.set_menu_color(mapper_plot, colors, titles, agg)
@@ -250,35 +259,44 @@ def _set_cmap(mapper_plot, fig: go.Figure, cmap: str) -> None:
         )
 
 
+def _edge_colors_from_node_colors(
+    graph: nx.Graph,
+    node_colors: dict[Any, float],
+) -> List[float]:
+    edge_col = []
+    for e in graph.edges():
+        c0, c1 = node_colors[e[0]], node_colors[e[1]]
+        edge_col.append(c0)
+        edge_col.append(c1)
+        edge_col.append(c1)
+    return edge_col
+
+
 def _set_colors(mapper_plot, fig: go.Figure, colors, agg):
-    node_col = aggregate_graph(colors, mapper_plot.graph, agg)
-    scatter_text = _text(mapper_plot, node_col)
-    colors_arr = list(node_col.values())
+    node_col_agg = aggregate_graph(colors, mapper_plot.graph, agg)
+    node_col_arr = list(node_col_agg.values())
+    scatter_text = _text(mapper_plot, node_col_agg)
     fig.update_traces(
         patch=dict(
             text=scatter_text,
             marker=dict(
-                color=colors_arr,
-                cmin=min(colors_arr, default=None),
-                cmax=max(colors_arr, default=None),
+                color=node_col_arr,
+                cmin=min(node_col_arr, default=None),
+                cmax=max(node_col_arr, default=None),
             ),
         ),
         selector=dict(name=_NODES_TRACE),
     )
     if mapper_plot.dim == 3:
-        colors_avg = []
-        for e in mapper_plot.graph.edges():
-            c0, c1 = node_col[e[0]], node_col[e[1]]
-            colors_avg.append(c0)
-            colors_avg.append(c1)
-            colors_avg.append(c1)
+        edge_col = _edge_colors_from_node_colors(
+            mapper_plot.graph,
+            node_col_agg,
+        )
         fig.update_traces(
             patch=dict(
-                marker=dict(
-                    line_color=colors_avg,
-                    line_cmin=min(colors_arr, default=None),
-                    line_cmax=max(colors_arr, default=None),
-                ),
+                line_color=edge_col,
+                line_cmin=min(node_col_arr, default=None),
+                line_cmax=max(node_col_arr, default=None),
             ),
             selector=dict(name=_EDGES_TRACE),
         )
@@ -316,13 +334,13 @@ def _set_height(fig: go.Figure, height: int) -> None:
 
 def _figure(
     mapper_plot,
-    width: int,
-    height: int,
     node_sizes: List[float],
     colors: np.ndarray,
     titles: List[str],
     agg,
     cmaps: List[str],
+    width: Optional[int] = None,
+    height: Optional[int] = None,
 ) -> go.Figure:
     node_pos = mapper_plot.positions
     node_pos_arr = _node_pos_array(
@@ -343,13 +361,13 @@ def _figure(
     _update(
         mapper_plot,
         fig,
-        width=width,
-        height=height,
         titles=titles,
         node_sizes=node_sizes,
         colors=colors,
         agg=agg,
         cmaps=cmaps,
+        width=width,
+        height=height,
     )
 
     return fig
@@ -358,13 +376,13 @@ def _figure(
 def _update(
     mapper_plot,
     fig: go.Figure,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
     titles: Optional[List[str]] = None,
     node_sizes: Optional[List[float]] = None,
     colors=None,
     agg=None,
     cmaps: Optional[List[str]] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
 ) -> go.Figure:
     if width is not None:
         _set_width(fig, width)
@@ -504,7 +522,9 @@ def _layout() -> go.Layout:
     )
     return go.Layout(
         plot_bgcolor="rgba(0, 0, 0, 0)",
-        autosize=False,
+        autosize=True,
+        height=None,
+        width=None,
         showlegend=False,
         hovermode="closest",
         margin=dict(b=10, l=10, r=10, t=10),
@@ -613,43 +633,33 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
             arr = colors_arr[:, i] if colors_arr.ndim == 2 else colors_arr
         return aggregate_graph(arr, mapper_plot.graph, agg)
 
-    def _colors(i: int) -> List[float]:
-        return list(_colors_agg(i).values())
-
-    def _edge_colors(i: int) -> List[float]:
-        colors_avg = []
-        colors_agg = _colors_agg(i)
-        for edge in mapper_plot.graph.edges():
-            c0, c1 = colors_agg[edge[0]], colors_agg[edge[1]]
-            colors_avg.append(c0)
-            colors_avg.append(c1)
-            colors_avg.append(c1)
-        return colors_avg
-
     def _update_colors(i: int) -> dict:
-        arr_agg = _colors_agg(i)
-        arr = list(arr_agg.values())
-        scatter_text = _text(mapper_plot, arr_agg)
+        node_col_agg = _colors_agg(i)
+        node_col_arr = list(node_col_agg.values())
+        scatter_text = _text(mapper_plot, node_col_agg)
         cbar = _colorbar(titles[i])
         if mapper_plot.dim == 2:
             return {
                 "text": [scatter_text],
                 "marker.colorbar": [cbar],
-                "marker.color": [arr],
-                "marker.cmax": [max(arr, default=None)],
-                "marker.cmin": [min(arr, default=None)],
+                "marker.color": [node_col_arr],
+                "marker.cmax": [max(node_col_arr, default=None)],
+                "marker.cmin": [min(node_col_arr, default=None)],
             }
         elif mapper_plot.dim == 3:
-            arr_edge = _edge_colors(i)
+            edge_col = _edge_colors_from_node_colors(
+                mapper_plot.graph,
+                node_col_agg,
+            )
             return {
                 "text": [None, scatter_text],
                 "marker.colorbar": [None, cbar],
-                "marker.color": [None, arr],
-                "marker.cmax": [None, max(arr, default=None)],
-                "marker.cmin": [None, min(arr, default=None)],
-                "line.color": [arr_edge, None],
-                "line.cmax": [max(arr_edge, default=None), None],
-                "line.cmin": [min(arr_edge, default=None), None],
+                "marker.color": [None, node_col_arr],
+                "marker.cmax": [None, max(node_col_arr, default=None)],
+                "marker.cmin": [None, min(node_col_arr, default=None)],
+                "line.color": [edge_col, None],
+                "line.cmax": [max(node_col_arr, default=None), None],
+                "line.cmin": [min(node_col_arr, default=None), None],
             }
         return {}
 
@@ -668,6 +678,7 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
 
     return dict(
         buttons=buttons,
+        active=0,
         x=0.0,
         xanchor="left",
         y=1.0,

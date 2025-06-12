@@ -98,8 +98,6 @@ fig = plot.plot_plotly(
     cmap=["jet", "viridis", "cividis"],
     node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
     agg=np.nanmean,
-    width=600,
-    height=600,
 )
 
 fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
@@ -121,8 +119,6 @@ fig = plot.plot_plotly(
     cmap=["jet", "viridis", "cividis"],
     node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
     agg=np.nanstd,
-    width=600,
-    height=600,
 )
 
 fig.show(config={"scrollZoom": True}, renderer="notebook_connected")

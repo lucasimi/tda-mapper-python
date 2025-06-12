@@ -103,9 +103,9 @@ class MapperPlot:
         node_size=1,
         agg=np.nanmean,
         title=None,
+        cmap="jet",
         width=512,
         height=512,
-        cmap="jet",
     ):
         """
         Draw a static plot using Matplotlib.
@@ -123,15 +123,15 @@ class MapperPlot:
         :type agg: Callable, optional
         :param title: The title to be displayed alongside the figure.
         :type title: str, optional
+        :param cmap: The name of a colormap used to map `colors` data values,
+            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
+        :type cmap: str, optional
         :param width: The desired width of the figure in pixels. Defaults to
             512.
         :type width: int, optional
         :param height: The desired height of the figure in pixels. Defaults to
             512
         :type height: int, optional
-        :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
-        :type cmap: str, optional
 
         :return: A static matplotlib figure that can be displayed on screen
             and notebooks.
@@ -145,9 +145,9 @@ class MapperPlot:
             node_size=node_size,
             agg=agg,
             title=title,
+            cmap=cmap,
             width=width,
             height=height,
-            cmap=cmap,
         )
 
     def plot_plotly(
@@ -156,9 +156,9 @@ class MapperPlot:
         node_size=1,
         agg=np.nanmean,
         title=None,
-        width=512,
-        height=512,
         cmap="jet",
+        width=None,
+        height=None,
     ):
         """
         Draw an interactive plot using Plotly.
@@ -180,15 +180,13 @@ class MapperPlot:
             and title is a list of string, each item will be used as title for
             its corresponding colormap.
         :type title: str, list[str], optional
-        :param width: The desired width of the figure in pixels. Defaults to
-            512.
-        :type width: int, optional
-        :param height: The desired height of the figure in pixels. Defaults to
-            512.
-        :type height: int, optional
         :param cmap: The name of a colormap used to map `colors` data values,
             aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
         :type cmap: str, optional
+        :param width: The desired width of the figure in pixels.
+        :type width: int, optional
+        :param height: The desired height of the figure in pixels.
+        :type height: int, optional
 
         :return: An interactive Plotly figure that can be displayed on screen
             and notebooks. For 3D embeddings, the figure requires a WebGL
@@ -201,9 +199,9 @@ class MapperPlot:
             node_size=node_size,
             agg=agg,
             title=title,
+            cmap=cmap,
             width=width,
             height=height,
-            cmap=cmap,
         )
 
     def plot_plotly_update(
@@ -213,9 +211,9 @@ class MapperPlot:
         node_size=None,
         agg=None,
         title=None,
+        cmap=None,
         width=None,
         height=None,
-        cmap=None,
     ):
         """
         Draw an interactive plot using Plotly on a previously rendered figure.
@@ -240,15 +238,15 @@ class MapperPlot:
         :param title: The title to be displayed alongside the figure. Defaults
             to None.
         :type title: str, optional
+        :param cmap: The name of a colormap used to map `colors` data values,
+            aggregated by `agg`, to actual RGBA colors. Defaults to None.
+        :type cmap: str, optional
         :param width: The desired width of the figure in pixels. Defaults to
             None.
         :type width: int, optional
         :param height: The desired height of the figure in pixels. Defaults to
             None.
         :type height: int, optional
-        :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to None.
-        :type cmap: str, optional
 
         :return: An interactive Plotly figure that can be displayed on screen
             and notebooks. For 3D embeddings, the figure requires a WebGL
@@ -262,9 +260,9 @@ class MapperPlot:
             node_size=node_size,
             agg=agg,
             title=title,
+            cmap=cmap,
             width=width,
             height=height,
-            cmap=cmap,
         )
 
     def plot_pyvis(
@@ -274,9 +272,9 @@ class MapperPlot:
         node_size=1,
         agg=np.nanmean,
         title=None,
+        cmap="jet",
         width=512,
         height=512,
-        cmap="jet",
     ):
         """
         Draw an interactive HTML plot using PyVis.
@@ -298,15 +296,15 @@ class MapperPlot:
         :param title: The title to be displayed alongside the figure. Defaults
             to None.
         :type title: str, optional
+        :param cmap: The name of a colormap used to map `colors` data values,
+            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
+        :type cmap: str, optional
         :param width: The desired width of the figure in pixels. Defaults to
             512.
         :type width: int, optional
         :param height: The desired height of the figure in pixels. Defaults to
             512.
         :type height: int, optional
-        :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
-        :type cmap: str, optional
         """
         return plot_pyvis(
             self,
@@ -315,9 +313,9 @@ class MapperPlot:
             node_size=node_size,
             agg=agg,
             title=title,
+            cmap=cmap,
             width=width,
             height=height,
-            cmap=cmap,
         )
 
 

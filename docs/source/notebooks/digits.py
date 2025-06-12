@@ -105,8 +105,6 @@ fig = plot.plot_plotly(
     agg=mode,
     node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
     title="mode of digits",
-    width=600,
-    height=600,
 )
 
 fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
@@ -136,8 +134,6 @@ fig = plot.plot_plotly(
     agg=entropy,
     node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
     title="entropy of digits",
-    width=600,
-    height=600,
 )
 
 fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
