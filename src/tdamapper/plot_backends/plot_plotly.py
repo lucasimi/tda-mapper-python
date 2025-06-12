@@ -4,7 +4,7 @@ plotly.
 """
 
 import math
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -261,7 +261,7 @@ def _set_cmap(mapper_plot, fig: go.Figure, cmap: str) -> None:
 
 def _edge_colors_from_node_colors(
     graph: nx.Graph,
-    node_colors: dict[Any, float],
+    node_colors: Dict[Any, float],
 ) -> List[float]:
     edge_col = []
     for e in graph.edges():
