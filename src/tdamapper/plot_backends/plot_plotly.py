@@ -460,11 +460,10 @@ def _colorbar(title: str) -> dict:
         showticklabels=True,
         outlinewidth=1,
         borderwidth=0,
-        orientation="v",
-        thickness=0.025,
         thicknessmode="fraction",
         xanchor="left",
         title_side="right",
+        title_text=title,
         ypad=0,
         xpad=0,
         tickwidth=1,
@@ -472,8 +471,6 @@ def _colorbar(title: str) -> dict:
         nticks=_TICKS_NUM,
         tickmode="auto",
     )
-    if title is not None:
-        cbar["title"] = title
     return cbar
 
 
@@ -521,7 +518,7 @@ def _layout() -> go.Layout:
         title="",
     )
     return go.Layout(
-        plot_bgcolor="rgba(0, 0, 0, 0)",
+        template="plotly",
         autosize=True,
         height=None,
         width=None,
@@ -641,7 +638,10 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
         if mapper_plot.dim == 2:
             return {
                 "text": [scatter_text],
-                "marker.colorbar": [cbar],
+                **{
+                    f"marker.colorbar.{'.'.join(k.split('_'))}": [v]
+                    for k, v in cbar.items()
+                },
                 "marker.color": [node_col_arr],
                 "marker.cmax": [max(node_col_arr, default=None)],
                 "marker.cmin": [min(node_col_arr, default=None)],
@@ -653,7 +653,10 @@ def _ui_color(mapper_plot, colors, titles: List[str], agg) -> dict:
             )
             return {
                 "text": [None, scatter_text],
-                "marker.colorbar": [None, cbar],
+                **{
+                    f"marker.colorbar.{'.'.join(k.split('_'))}": [None, v]
+                    for k, v in cbar.items()
+                },
                 "marker.color": [None, node_col_arr],
                 "marker.cmax": [None, max(node_col_arr, default=None)],
                 "marker.cmin": [None, min(node_col_arr, default=None)],
