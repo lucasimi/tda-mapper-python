@@ -959,4 +959,14 @@ def main():
     st.markdown(FOOTER)
 
 
-main()
+def redirect():
+    st.markdown(
+        """
+        ## 🚨 Notice: This app is no longer not maintained and will be removed soon.
+
+        ### 👉 To continue using the service, please switch to the [new, updated version](https://tda-mapper-app.up.railway.app/).
+        """
+    )
+
+
+redirect()
