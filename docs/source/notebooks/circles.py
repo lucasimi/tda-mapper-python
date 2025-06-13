@@ -96,7 +96,7 @@ plot = MapperPlot(graph, dim=2, iterations=60, seed=42)
 fig = plot.plot_plotly(
     colors=labels,
     cmap=["jet", "viridis", "cividis"],
-    node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
+    node_size=[0.25 * x for x in range(9)],
     agg=np.nanmean,
 )
 
@@ -117,7 +117,7 @@ fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 fig = plot.plot_plotly(
     colors=labels,
     cmap=["jet", "viridis", "cividis"],
-    node_size=[0.0, 0.5, 1.0, 1.5, 2.0],
+    node_size=[0.25 * x for x in range(9)],
     agg=np.nanstd,
 )
 
