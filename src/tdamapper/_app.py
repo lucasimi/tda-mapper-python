@@ -3,6 +3,7 @@ import os
 from dataclasses import asdict, dataclass
 
 import pandas as pd
+import plotly.graph_objects as go
 from nicegui import app, run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import load_digits, load_iris
@@ -81,6 +82,18 @@ class MapperConfig:
     clustering_dbscan_eps: float = CLUSTERING_DBSCAN_EPS
     clustering_dbscan_min_samples: int = CLUSTERING_DBSCAN_MIN_SAMPLES
     clustering_agglomerative_n_clusters: int = CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
+
+
+def empty_figure():
+    fig = go.Figure()
+    fig.update_layout(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=0, b=0),
+    )
+    return fig
 
 
 def fix_data(data):
@@ -453,6 +466,9 @@ class App:
 
     def _init_plot(self):
         self.plot_container = ui.element("div").classes("w-full h-full")
+        with self.plot_container:
+            fig = empty_figure()
+            self.draw_area = ui.plotly(fig).classes("w-full h-full")
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -575,10 +591,11 @@ class App:
         mapper_fig.layout.autosize = True
         notification.message = "Done!"
         notification.spinner = False
+        self.draw_area.clear()
         self.plot_container.clear()
         with self.plot_container:
             logger.info("Displaying Mapper plot.")
-            ui.plotly(mapper_fig).classes("w-full h-full")
+            self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
         notification.dismiss()
 
 
