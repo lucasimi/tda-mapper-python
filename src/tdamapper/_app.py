@@ -62,6 +62,10 @@ CLUSTERING_DBSCAN_EPS = 0.5
 CLUSTERING_DBSCAN_MIN_SAMPLES = 5
 CLUSTERING_AGGLOMERATIVE_N_CLUSTERS = 2
 
+PLOT_ITERATIONS = 100
+PLOT_COLORMAP = "Viridis"
+PLOT_NODE_SIZE = 1.0
+
 RANDOM_SEED = 42
 
 
@@ -82,18 +86,8 @@ class MapperConfig:
     clustering_dbscan_eps: float = CLUSTERING_DBSCAN_EPS
     clustering_dbscan_min_samples: int = CLUSTERING_DBSCAN_MIN_SAMPLES
     clustering_agglomerative_n_clusters: int = CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
-
-
-def empty_figure():
-    fig = go.Figure()
-    fig.update_layout(
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=0, r=0, t=0, b=0),
-    )
-    return fig
+    plot_iterations: int = PLOT_ITERATIONS
+    plot_seed: int = RANDOM_SEED
 
 
 def fix_data(data):
@@ -126,7 +120,7 @@ def lens_umap(n_components):
     return _umap
 
 
-def run_mapper(df, labels, **kwargs):
+def run_mapper(df, **kwargs):
     if df is None or df.empty:
         logger.error("No data found. Please upload a file first.")
         return
@@ -194,25 +188,32 @@ def run_mapper(df, labels, **kwargs):
         return
 
     mapper = MapperAlgorithm(cover=cover, clustering=clustering)
-    df_fixed = fix_data(df)
-    X = df_fixed.to_numpy()
+    X = df.to_numpy()
     y = lens(X)
     df_y = pd.DataFrame(y, columns=[f"{lens_type} {i}" for i in range(y.shape[1])])
-    df_labels = pd.DataFrame(labels) if labels is not None else pd.DataFrame()
     if cover_scale_data:
         y = StandardScaler().fit_transform(y)
     if clustering_scale_data:
         X = StandardScaler().fit_transform(X)
-    df_colors = pd.concat([df_labels, df_y, df_fixed], axis=1)
     mapper_graph = mapper.fit_transform(X, y)
+    return mapper_graph, df_y
+
+
+def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
+    df_colors = pd.concat([df_target, df_y, df_X], axis=1)
+    mapper_config = MapperConfig(**kwargs)
+    plot_iterations = mapper_config.plot_iterations
+    plot_seed = mapper_config.plot_seed
     mapper_fig = MapperPlot(
         mapper_graph,
         dim=3,
+        iterations=plot_iterations,
+        seed=plot_seed,
     ).plot_plotly(
         colors=df_colors.to_numpy(),
         title=df_colors.columns.to_list(),
         cmap=[
-            "Viridis",
+            PLOT_COLORMAP,
             "Cividis",
             "Jet",
             "Plasma",
@@ -225,8 +226,11 @@ def run_mapper(df, labels, **kwargs):
             "PuOr",
         ],
         height=800,
-        node_size=[i * 0.125 for i in range(17)],
+        node_size=[i * 0.125 * PLOT_NODE_SIZE for i in range(17)],
     )
+    mapper_fig.layout.width = None
+    mapper_fig.layout.height = None
+    mapper_fig.layout.autosize = True
     logger.info("Mapper run completed successfully.")
     return mapper_fig
 
@@ -235,6 +239,12 @@ class App:
 
     def __init__(self, storage):
         self.storage = storage
+
+        ui.colors(
+            themelight="#ebedf8",
+            themedark="#132f48",
+        )
+
         with ui.left_drawer(elevated=True).classes(
             "w-96 h-full overflow-y-auto gap-12"
         ):
@@ -242,13 +252,16 @@ class App:
                 ui.image(LOGO_URL)
 
             with ui.column().classes("w-full gap-2"):
+                self._init_about()
+
+            with ui.column().classes("w-full gap-2"):
                 self._init_file_upload()
 
             ui.button(
-                "Load Data",
+                "⬆️ Load Data",
                 on_click=self.load_file,
-                color="primary",
-            ).classes("w-full")
+                color="themelight",
+            ).classes("w-full text-themedark")
 
             with ui.column().classes("w-full gap-2"):
                 self._init_lens()
@@ -260,22 +273,53 @@ class App:
                 self._init_clustering()
 
             ui.button(
-                "✨ Run Mapper",
+                "🚀 Run Mapper",
                 on_click=self.async_run_mapper,
-                color="primary",
-            ).classes("w-full")
+                color="themelight",
+            ).classes("w-full text-themedark")
 
-            ui.label(
-                text=(
-                    "If you like this project, please consider giving it a ⭐ on GitHub!"
-                    "Made with ❤️ and ☕️ in Rome."
-                )
-            ).classes("text-caption text-gray-500").classes(
-                "text-caption text-gray-500"
-            )
+            with ui.column().classes("w-full gap-2"):
+                self._init_draw()
+
+            ui.button(
+                "🌊 Redraw",
+                on_click=self.async_draw_mapper,
+                color="themelight",
+            ).classes("w-full text-themedark")
+
+            with ui.column().classes("w-full gap-2"):
+                self._init_footnotes()
 
         with ui.column().classes("w-full h-screen overflow-hidden"):
-            self._init_plot()
+            self._init_draw_area()
+
+    def _init_about(self):
+        with ui.dialog() as dialog, ui.card():
+            ui.markdown(
+                """
+                ### About
+
+                **tda-mapper** is a Python library built around the Mapper algorithm, a core
+                technique in Topological Data Analysis (TDA) for extracting topological
+                structure from complex data. Designed for computational efficiency and
+                scalability, it leverages optimized spatial search methods to support
+                high-dimensional datasets. You can find further details in the
+                [documentation](https://tda-mapper.readthedocs.io/en/main/)
+                and in the
+                [paper](https://openreview.net/pdf?id=lTX4bYREAZ).
+                """
+            )
+            ui.link(
+                text="If you like this project, please consider giving it a ⭐ on GitHub!",
+                target=GIT_REPO_URL,
+                new_tab=True,
+            ).classes("w-full")
+            ui.button("Close", on_click=dialog.close, color="themelight").classes(
+                "w-full text-themedark"
+            )
+        ui.button("ℹ️ About", on_click=dialog.open, color="themelight").classes(
+            "w-full text-themedark"
+        )
 
     def _init_file_upload(self):
         ui.label("📊 Data").classes("text-h6")
@@ -464,11 +508,31 @@ class App:
             value=CLUSTERING_AGGLOMERATIVE,
         )
 
-    def _init_plot(self):
+    def _init_draw(self):
+        ui.label("🎨 Draw").classes("text-h6")
+        self._init_draw_settings()
+
+    def _init_draw_settings(self):
+        self.plot_iterations = ui.number(
+            label="Iterations",
+            value=PLOT_ITERATIONS,
+            min=1,
+            max=10 * PLOT_ITERATIONS,
+        ).classes("w-full")
+        self.plot_seed = ui.number(
+            label="Seed",
+            value=RANDOM_SEED,
+        ).classes("w-full")
+
+    def _init_footnotes(self):
+        ui.label(text=("Made in Rome with ❤️ and ☕️")).classes(
+            "text-caption text-gray-500"
+        ).classes("text-caption text-gray-500")
+
+    def _init_draw_area(self):
         self.plot_container = ui.element("div").classes("w-full h-full")
         with self.plot_container:
-            fig = empty_figure()
-            self.draw_area = ui.plotly(fig).classes("w-full h-full")
+            self.draw_area = None
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -531,13 +595,21 @@ class App:
                 if self.clustering_agglomerative_n_clusters.value
                 else CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
             ),
+            plot_iterations=(
+                int(self.plot_iterations.value)
+                if self.plot_iterations.value
+                else PLOT_ITERATIONS
+            ),
+            plot_seed=(
+                int(self.plot_seed.value) if self.plot_seed.value else RANDOM_SEED
+            ),
         )
 
     def upload_file(self, file):
         if file is not None:
             df = pd.read_csv(file.content)
-            self.storage["df"] = df
-            self.storage["labels"] = None
+            self.storage["df"] = fix_data(df)
+            self.storage["labels"] = pd.DataFrame()
             logger.info("File uploaded successfully.")
             ui.notify("File uploaded successfully.", type="info")
         else:
@@ -552,8 +624,8 @@ class App:
             else:
                 logger.error("Unknown example dataset selected.")
                 return
-            self.storage["df"] = df
-            self.storage["labels"] = labels
+            self.storage["df"] = fix_data(df)
+            self.storage["labels"] = fix_data(labels)
         elif self.load_type.value == LOAD_CSV:
             df = self.storage.get("df")
             if df is None:
@@ -573,29 +645,67 @@ class App:
             ui.notify("No data found. Please upload a file first.", type="warning")
 
     async def async_run_mapper(self):
-        df = self.storage.get("df")
-        if df is None or df.empty:
-            logger.warning("No data found. Please upload a file first.")
-            ui.notify("No data found. Please upload a file first.", type="warning")
-            return
-        labels = self.storage.get("labels")
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = "Running Mapper..."
         notification.spinner = True
+        df_X = self.storage.get("df")
+        if df_X is None or df_X.empty:
+            logger.warning("No data found. Please upload a file first.")
+            ui.notify("No data found. Please upload a file first.", type="warning")
+            return
         mapper_config = self.get_mapper_config()
-        mapper_fig = await run.cpu_bound(
-            run_mapper, df, labels, **asdict(mapper_config)
+        mapper_graph, df_y = await run.cpu_bound(
+            run_mapper, df_X, **asdict(mapper_config)
         )
-        mapper_fig.layout.width = None
-        mapper_fig.layout.height = None
-        mapper_fig.layout.autosize = True
+        self.storage["mapper_graph"] = mapper_graph
+        self.storage["df_y"] = df_y
         notification.message = "Done!"
         notification.spinner = False
-        self.draw_area.clear()
+        notification.dismiss()
+
+        await self.async_draw_mapper()
+
+    async def async_draw_mapper(self):
+        notification = ui.notification(timeout=None, type="ongoing")
+        notification.message = "Drawing Mapper..."
+        notification.spinner = True
+
+        mapper_config = self.get_mapper_config()
+
+        df_X = self.storage.get("df", pd.DataFrame())
+        df_y = self.storage.get("df_y", pd.DataFrame())
+        df_target = self.storage.get("labels", pd.DataFrame())
+        mapper_graph = self.storage.get("mapper_graph", None)
+
+        if df_X.empty or mapper_graph is None:
+            logger.warning("No data or Mapper graph found. Please run Mapper first.")
+            ui.notify(
+                "No data or Mapper graph found. Please run Mapper first.",
+                type="warning",
+            )
+            notification.message = "No data or Mapper graph found."
+            notification.spinner = False
+            notification.dismiss()
+            return
+
+        mapper_fig = await run.cpu_bound(
+            create_mapper_figure,
+            df_X,
+            df_y,
+            df_target,
+            mapper_graph,
+            **asdict(mapper_config),
+        )
+
+        if self.draw_area is not None:
+            self.draw_area.clear()
         self.plot_container.clear()
         with self.plot_container:
             logger.info("Displaying Mapper plot.")
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
+
+        notification.message = "Done!"
+        notification.spinner = False
         notification.dismiss()
 
 
@@ -609,10 +719,11 @@ def main_page():
 def main():
     port = os.getenv("PORT", "8080")
     host = os.getenv("HOST", "0.0.0.0")
+    production = os.getenv("PRODUCTION", "false").lower() == "true"
     storage_secret = os.getenv("STORAGE_SECRET", "storage_secret")
     ui.run(
         storage_secret=storage_secret,
-        reload=False,
+        reload=not production,
         host=host,
         title="tda-mapper-app",
         favicon=ICON_URL,
