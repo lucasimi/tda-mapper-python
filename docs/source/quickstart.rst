@@ -92,27 +92,24 @@ More examples can be found in the
 Interactive App
 ---------------
 
-Use our Streamlit app to visualize and explore your data without writing code.
-You can run a live demo directly on
-`Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
-or locally on your machine using the following:
+Use our app to interactively visualize and explore your data without writing
+code. You can try it right away using 
+`our live demo <https://tda-mapper-app.up.railway.app/>`__,
+or run it locally on your machine.
 
-Use our Streamlit app to visualize and explore your data without writing code.
-You can run a live demo directly on
-`Streamlit Cloud <https://tda-mapper-app.streamlit.app/>`__,
-or locally on your machine. The first time you run the app locally, you may
-need to install the required dependencies from the `requirements.txt` file by
-running
+To run it locally:
 
-.. code:: bash
+1. Install the app and its dependencies:
 
-   pip install -r app/requirements.txt
+   .. code:: bash
 
-then run the app locally with 
+      pip install tda-mapper[app]
 
-.. code:: bash
+2. Launch the app:
 
-   streamlit run app/streamlit_app.py
+   .. code:: bash
+
+      tda-mapper-app
 
 |Interactive App|
 
