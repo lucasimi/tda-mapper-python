@@ -33,6 +33,10 @@ _EDGES_TRACE = "edges_trace"
 
 _DEFAULT_SPACING = 0.25
 
+FONT_COLOR_LIGHT = "#2a3f5f"
+
+FONT_COLOR_DARK = "#f2f5fa"
+
 DEFAULT_NODE_SIZE = 1
 
 DEFAULT_CMAP = "Jet"
@@ -209,6 +213,7 @@ class PlotlyPlot:
         self.ui_menu_cmap: Dict = {}
         self.ui_menu_color: Dict = {}
         self.ui_slider_size: Dict = {}
+        self.ui_menu_dark_mode: Dict = {}
 
     def plot(
         self,
@@ -468,13 +473,15 @@ class PlotlyPlot:
 
     def _colorbar(self, title: str) -> dict:
         cbar = dict(
+            orientation="v",
             showticklabels=True,
             outlinewidth=1,
             borderwidth=0,
             thicknessmode="fraction",
-            xanchor="left",
             title_side="right",
             title_text=title,
+            xanchor="right",
+            x=1.0,
             ypad=0,
             xpad=0,
             tickwidth=1,
@@ -495,7 +502,6 @@ class PlotlyPlot:
         return [_lbl(n) for n in self.graph.nodes()]
 
     def _layout(self) -> go.Layout:
-        line_col = "rgba(230, 230, 230, 1.0)"
         axis = dict(
             showline=False,
             linewidth=1,
@@ -513,16 +519,12 @@ class PlotlyPlot:
             backgroundcolor="rgba(0, 0, 0, 0)",
             showaxeslabels=False,
             showline=False,
-            linecolor=line_col,
-            zerolinecolor=line_col,
-            gridcolor=line_col,
             linewidth=1,
             mirror=True,
             showticklabels=False,
             title="",
         )
         return go.Layout(
-            template="plotly_white",
             autosize=True,
             height=None,
             width=None,
@@ -536,6 +538,9 @@ class PlotlyPlot:
                 yaxis=scene_axis,
                 zaxis=scene_axis,
             ),
+            font_color=FONT_COLOR_LIGHT,
+            paper_bgcolor="white",
+            plot_bgcolor="white",
         )
 
     def set_ui(
@@ -558,19 +563,23 @@ class PlotlyPlot:
         if node_sizes is not None:
             self.ui_slider_size = self._ui_slider_node_size(node_sizes)
 
+        self.ui_menu_dark_mode = self.ui_dark_mode()
+
         menus = []
         sliders = []
-        x = 0.0
+
         if self.ui_menu_cmap:
-            self.ui_menu_cmap["x"] = x
-            x += _DEFAULT_SPACING
             menus.append(self.ui_menu_cmap)
         if self.ui_menu_color:
-            self.ui_menu_color["x"] = x
             menus.append(self.ui_menu_color)
+        if self.ui_menu_dark_mode:
+            menus.append(self.ui_menu_dark_mode)
         if self.ui_slider_size:
-            self.ui_slider_size["x"] = 0.0
             sliders.append(self.ui_slider_size)
+
+        # self.fig.layout.updatemenus = [self.ui_menu_dark_mode]
+        # self.fig.layout.sliders = []
+
         self.fig.update_layout(
             updatemenus=menus,
             sliders=sliders,
@@ -607,14 +616,14 @@ class PlotlyPlot:
 
         return dict(
             buttons=buttons,
-            x=0.25,
-            xanchor="left",
-            y=1.0,
-            yanchor="top",
             direction="down",
+            x=0.5,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
         )
 
-    def _ui_slider_node_size(self, node_sizes: List[float]) -> dict:
+    def _ui_slider_node_size(self, node_sizes: List[float]) -> Dict:
         steps = [
             dict(
                 method="restyle",
@@ -629,16 +638,25 @@ class PlotlyPlot:
 
         return dict(
             active=len(steps) // 2,
-            currentvalue={"prefix": "Node size: "},
+            currentvalue=dict(
+                prefix="Node size: ",
+                visible=False,
+                xanchor="center",
+            ),
             steps=steps,
-            x=0.0,
+            x=0.5,
             y=0.0,
-            xanchor="left",
-            len=0.3,
+            xanchor="center",
             yanchor="bottom",
+            len=0.5,
+            lenmode="fraction",
+            ticklen=1,
+            pad=dict(t=1, b=1, l=1, r=1),
+            bgcolor="rgba(1.0, 1.0, 1.0, 0.5)",
+            activebgcolor="rgba(127, 127, 127, 0.5)",
         )
 
-    def _ui_menu_color(self, colors: np.ndarray, titles: List[str], agg) -> dict:
+    def _ui_menu_color(self, colors: np.ndarray, titles: List[str], agg) -> Dict:
         colors_arr = np.array(colors)
         colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
@@ -699,10 +717,45 @@ class PlotlyPlot:
 
         return dict(
             buttons=buttons,
-            active=0,
-            x=0.0,
-            xanchor="left",
-            y=1.0,
-            yanchor="top",
             direction="down",
+            active=0,
+            x=0.75,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
+        )
+
+    def ui_dark_mode(self) -> Dict:
+        buttons = [
+            dict(
+                label="Light",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_LIGHT,
+                        "paper_bgcolor": "white",
+                        "plot_bgcolor": "white",
+                    }
+                ],
+            ),
+            dict(
+                label="Dark",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_DARK,
+                        "paper_bgcolor": "black",
+                        "plot_bgcolor": "black",
+                    }
+                ],
+            ),
+        ]
+        return dict(
+            buttons=buttons,
+            direction="down",
+            active=0,
+            x=0.25,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
         )

@@ -3,7 +3,6 @@ import os
 from dataclasses import asdict, dataclass
 
 import pandas as pd
-import plotly.graph_objects as go
 from nicegui import app, run, ui
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import load_digits, load_iris
@@ -62,6 +61,7 @@ CLUSTERING_DBSCAN_EPS = 0.5
 CLUSTERING_DBSCAN_MIN_SAMPLES = 5
 CLUSTERING_AGGLOMERATIVE_N_CLUSTERS = 2
 
+PLOT_DIMENSIONS = 2
 PLOT_ITERATIONS = 100
 PLOT_COLORMAP = "Viridis"
 PLOT_NODE_SIZE = 1.0
@@ -86,6 +86,7 @@ class MapperConfig:
     clustering_dbscan_eps: float = CLUSTERING_DBSCAN_EPS
     clustering_dbscan_min_samples: int = CLUSTERING_DBSCAN_MIN_SAMPLES
     clustering_agglomerative_n_clusters: int = CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
+    plot_dimensions: int = PLOT_DIMENSIONS
     plot_iterations: int = PLOT_ITERATIONS
     plot_seed: int = RANDOM_SEED
 
@@ -202,11 +203,12 @@ def run_mapper(df, **kwargs):
 def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
     df_colors = pd.concat([df_target, df_y, df_X], axis=1)
     mapper_config = MapperConfig(**kwargs)
+    plot_dimensions = mapper_config.plot_dimensions
     plot_iterations = mapper_config.plot_iterations
     plot_seed = mapper_config.plot_seed
     mapper_fig = MapperPlot(
         mapper_graph,
-        dim=3,
+        dim=plot_dimensions,
         iterations=plot_iterations,
         seed=plot_seed,
     ).plot_plotly(
@@ -217,20 +219,18 @@ def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
             "Cividis",
             "Jet",
             "Plasma",
-            "Inferno",
-            "Magma",
-            "Turbo",
             "RdBu",
-            "BrBG",
-            "PiYG",
-            "PuOr",
         ],
         height=800,
         node_size=[i * 0.125 * PLOT_NODE_SIZE for i in range(17)],
     )
-    mapper_fig.layout.width = None
-    mapper_fig.layout.height = None
-    mapper_fig.layout.autosize = True
+    mapper_fig.update_layout(
+        width=None,
+        height=None,
+        autosize=True,
+        xaxis=dict(scaleanchor="y"),
+        uirevision="constant",
+    )
     logger.info("Mapper run completed successfully.")
     return mapper_fig
 
@@ -513,6 +513,11 @@ class App:
         self._init_draw_settings()
 
     def _init_draw_settings(self):
+        self.plot_dimensions = ui.select(
+            options=[2, 3],
+            label="Dimensions",
+            value=PLOT_DIMENSIONS,
+        ).classes("w-full")
         self.plot_iterations = ui.number(
             label="Iterations",
             value=PLOT_ITERATIONS,
@@ -531,8 +536,7 @@ class App:
 
     def _init_draw_area(self):
         self.plot_container = ui.element("div").classes("w-full h-full")
-        with self.plot_container:
-            self.draw_area = None
+        self.draw_area = None
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -594,6 +598,11 @@ class App:
                 int(self.clustering_agglomerative_n_clusters.value)
                 if self.clustering_agglomerative_n_clusters.value
                 else CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
+            ),
+            plot_dimensions=(
+                int(self.plot_dimensions.value)
+                if self.plot_dimensions.value
+                else PLOT_DIMENSIONS
             ),
             plot_iterations=(
                 int(self.plot_iterations.value)
@@ -697,11 +706,11 @@ class App:
             **asdict(mapper_config),
         )
 
+        logger.info("Displaying Mapper plot.")
         if self.draw_area is not None:
             self.draw_area.clear()
-        self.plot_container.clear()
+            self.plot_container.clear()
         with self.plot_container:
-            logger.info("Displaying Mapper plot.")
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
 
         notification.message = "Done!"
