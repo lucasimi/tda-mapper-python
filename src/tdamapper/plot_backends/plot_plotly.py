@@ -19,7 +19,9 @@ _NODE_OUTER_COLOR = "#777"
 
 _NODE_OPACITY = 1.0
 
-_EDGE_WIDTH = 0.75
+_EDGE_WIDTH_2D = 0.75
+
+_EDGE_WIDTH_3D = 1.5
 
 _EDGE_OPACITY = 1.0
 
@@ -32,6 +34,10 @@ _NODES_TRACE = "nodes_trace"
 _EDGES_TRACE = "edges_trace"
 
 _DEFAULT_SPACING = 0.25
+
+_MAX_SIZEREF = 1000000000
+
+_MARKER_SIZE_FACTOR = 400.0
 
 MENU_DARK_MODE_NAME = "menu_dark_mode"
 
@@ -262,12 +268,11 @@ class PlotlyPlot:
                 edges_arr[i].append(None)
         return edges_arr
 
-    def _marker_size(self, node_size: float) -> List[float]:
+    def _marker_size(self) -> List[float]:
         attr_size = nx.get_node_attributes(self.graph, ATTR_SIZE)
         max_size = max(attr_size.values(), default=1.0)
-        scale = node_size * (25.0 if self.dim == 2 else 15.0)
         marker_size = [
-            scale * math.sqrt(attr_size[n] / max_size) for n in self.graph.nodes()
+            _MARKER_SIZE_FACTOR * attr_size[n] / max_size for n in self.graph.nodes()
         ]
         return marker_size
 
@@ -317,6 +322,7 @@ class PlotlyPlot:
             patch=dict(
                 text=scatter_text,
                 marker=dict(
+                    opacity=_NODE_OPACITY,
                     color=node_col_arr,
                     cmin=min(node_col_arr, default=None),
                     cmax=max(node_col_arr, default=None),
@@ -352,7 +358,11 @@ class PlotlyPlot:
             return
         self.fig.update_traces(
             patch=dict(
-                marker_size=self._marker_size(node_size),
+                marker_sizeref=(
+                    _MAX_SIZEREF if node_size == 0.0 else (1.0 / node_size) ** 2
+                ),
+                marker_sizemin=1.0,
+                marker_sizemode="area",
             ),
             selector=dict(name=_NODES_TRACE),
         )
@@ -432,7 +442,7 @@ class PlotlyPlot:
             marker=dict(
                 showscale=True,
                 reversescale=False,
-                size=self._marker_size(DEFAULT_NODE_SIZE),
+                size=self._marker_size(),
                 opacity=_NODE_OPACITY,
                 line_width=_NODE_OUTER_WIDTH,
                 line_color=_NODE_OUTER_COLOR,
@@ -454,7 +464,6 @@ class PlotlyPlot:
             y=edge_pos_arr[1],
             mode="lines",
             opacity=_EDGE_OPACITY,
-            line_width=_EDGE_WIDTH,
             line_color=_EDGE_COLOR,
             hoverinfo="skip",
         )
@@ -463,6 +472,8 @@ class PlotlyPlot:
                 dict(
                     z=edge_pos_arr[2],
                     line_colorscale=DEFAULT_CMAP,
+                    line_width=_EDGE_WIDTH_3D,
+                    marker_line_width=_EDGE_WIDTH_3D,
                 ),
             )
             return go.Scatter3d(scatter)
@@ -470,7 +481,9 @@ class PlotlyPlot:
             scatter.update(
                 dict(
                     marker_colorscale=DEFAULT_CMAP,
+                    marker_line_width=_EDGE_WIDTH_2D,
                     marker_line_colorscale=DEFAULT_CMAP,
+                    line_width=_EDGE_WIDTH_2D,
                 ),
             )
             return go.Scatter(scatter)
@@ -745,13 +758,17 @@ class PlotlyPlot:
         steps = [
             dict(
                 method="restyle",
-                label=f"{size}",
+                label=f"{node_size}",
                 args=[
-                    {"marker.size": [self._marker_size(size)]},
+                    {
+                        "marker.sizeref": [
+                            _MAX_SIZEREF if node_size == 0.0 else (1.0 / node_size) ** 2
+                        ]
+                    },
                     [1],
                 ],
             )
-            for size in node_sizes
+            for node_size in node_sizes
         ]
 
         return dict(
