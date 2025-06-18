@@ -530,7 +530,7 @@ class App:
         ).classes("w-full")
 
     def _init_footnotes(self):
-        ui.label(text=("Made in Rome with ❤️ and ☕️")).classes(
+        ui.label(text=("Made in Rome, with ❤️ and ☕️.")).classes(
             "text-caption text-gray-500"
         ).classes("text-caption text-gray-500")
 
@@ -740,5 +740,5 @@ def main():
     )
 
 
-if __name__ in ["__main__", "__mp_main__"]:
+if __name__ in {"__main__", "__mp_main__", "tdamapper._app"}:
     main()
