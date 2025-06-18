@@ -33,6 +33,14 @@ _EDGES_TRACE = "edges_trace"
 
 _DEFAULT_SPACING = 0.25
 
+MENU_DARK_MODE_NAME = "menu_dark_mode"
+
+MENU_CMAP_NAME = "menu_cmap"
+
+MENU_COLOR_NAME = "menu_color"
+
+SLIDER_NODE_SIZE_NAME = "slider_node_size"
+
 FONT_COLOR_LIGHT = "#2a3f5f"
 
 FONT_COLOR_DARK = "#f2f5fa"
@@ -210,10 +218,6 @@ class PlotlyPlot:
         self.graph = mapper_plot.graph
         self.positions = mapper_plot.positions
         self.dim = mapper_plot.dim
-        self.ui_menu_cmap: Dict = {}
-        self.ui_menu_color: Dict = {}
-        self.ui_slider_size: Dict = {}
-        self.ui_menu_dark_mode: Dict = {}
 
     def plot(
         self,
@@ -553,36 +557,79 @@ class PlotlyPlot:
     ) -> None:
         if self.fig is None:
             return
+
+        ui_menu_dark_mode = None
+        ui_menu_cmap = None
+        ui_menu_color = None
+        ui_slider_size = None
+        for m in self.fig.layout.updatemenus:
+            if m.name == MENU_DARK_MODE_NAME:
+                ui_menu_dark_mode = m
+            elif m.name == MENU_CMAP_NAME:
+                ui_menu_cmap = m
+            elif m.name == MENU_COLOR_NAME:
+                ui_menu_color = m
+        for s in self.fig.layout.sliders:
+            if s.name == SLIDER_NODE_SIZE_NAME:
+                ui_slider_size = s
+
+        ui_menu_dark_mode = self.ui_menu_dark_mode()
+
         if cmaps is not None:
             cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-            self.ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
+            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
 
         if colors is not None and agg is not None and titles is not None:
-            self.ui_menu_color = self._ui_menu_color(colors, titles, agg)
+            ui_menu_color = self._ui_menu_color(colors, titles, agg)
 
         if node_sizes is not None:
-            self.ui_slider_size = self._ui_slider_node_size(node_sizes)
+            ui_slider_size = self._ui_slider_node_size(node_sizes)
 
-        self.ui_menu_dark_mode = self.ui_dark_mode()
+        menus = [m for m in [ui_menu_dark_mode, ui_menu_cmap, ui_menu_color] if m]
+        sliders = [s for s in [ui_slider_size] if s]
 
-        menus = []
-        sliders = []
-
-        if self.ui_menu_cmap:
-            menus.append(self.ui_menu_cmap)
-        if self.ui_menu_color:
-            menus.append(self.ui_menu_color)
-        if self.ui_menu_dark_mode:
-            menus.append(self.ui_menu_dark_mode)
-        if self.ui_slider_size:
-            sliders.append(self.ui_slider_size)
-
-        # self.fig.layout.updatemenus = [self.ui_menu_dark_mode]
-        # self.fig.layout.sliders = []
+        self.fig.layout.updatemenus = ()
+        self.fig.layout.sliders = ()
 
         self.fig.update_layout(
             updatemenus=menus,
             sliders=sliders,
+        )
+
+    def ui_menu_dark_mode(self) -> Dict:
+        buttons = [
+            dict(
+                label="Light",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_LIGHT,
+                        "paper_bgcolor": "white",
+                        "plot_bgcolor": "white",
+                    }
+                ],
+            ),
+            dict(
+                label="Dark",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_DARK,
+                        "paper_bgcolor": "black",
+                        "plot_bgcolor": "black",
+                    }
+                ],
+            ),
+        ]
+        return dict(
+            name=MENU_DARK_MODE_NAME,
+            buttons=buttons,
+            direction="down",
+            active=0,
+            x=0.25,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
         )
 
     def _ui_menu_cmap(self, cmaps: List[str]) -> dict:
@@ -615,45 +662,13 @@ class PlotlyPlot:
             ]
 
         return dict(
+            name=MENU_CMAP_NAME,
             buttons=buttons,
             direction="down",
             x=0.5,
             y=1.0,
             xanchor="center",
             yanchor="top",
-        )
-
-    def _ui_slider_node_size(self, node_sizes: List[float]) -> Dict:
-        steps = [
-            dict(
-                method="restyle",
-                label=f"{size}",
-                args=[
-                    {"marker.size": [self._marker_size(size)]},
-                    [1],
-                ],
-            )
-            for size in node_sizes
-        ]
-
-        return dict(
-            active=len(steps) // 2,
-            currentvalue=dict(
-                prefix="Node size: ",
-                visible=False,
-                xanchor="center",
-            ),
-            steps=steps,
-            x=0.5,
-            y=0.0,
-            xanchor="center",
-            yanchor="bottom",
-            len=0.5,
-            lenmode="fraction",
-            ticklen=1,
-            pad=dict(t=1, b=1, l=1, r=1),
-            bgcolor="rgba(1.0, 1.0, 1.0, 0.5)",
-            activebgcolor="rgba(127, 127, 127, 0.5)",
         )
 
     def _ui_menu_color(self, colors: np.ndarray, titles: List[str], agg) -> Dict:
@@ -716,6 +731,7 @@ class PlotlyPlot:
             ]
 
         return dict(
+            name=MENU_COLOR_NAME,
             buttons=buttons,
             direction="down",
             active=0,
@@ -725,37 +741,36 @@ class PlotlyPlot:
             yanchor="top",
         )
 
-    def ui_dark_mode(self) -> Dict:
-        buttons = [
+    def _ui_slider_node_size(self, node_sizes: List[float]) -> Dict:
+        steps = [
             dict(
-                label="Light",
-                method="relayout",
+                method="restyle",
+                label=f"{size}",
                 args=[
-                    {
-                        "font.color": FONT_COLOR_LIGHT,
-                        "paper_bgcolor": "white",
-                        "plot_bgcolor": "white",
-                    }
+                    {"marker.size": [self._marker_size(size)]},
+                    [1],
                 ],
-            ),
-            dict(
-                label="Dark",
-                method="relayout",
-                args=[
-                    {
-                        "font.color": FONT_COLOR_DARK,
-                        "paper_bgcolor": "black",
-                        "plot_bgcolor": "black",
-                    }
-                ],
-            ),
+            )
+            for size in node_sizes
         ]
+
         return dict(
-            buttons=buttons,
-            direction="down",
-            active=0,
-            x=0.25,
-            y=1.0,
+            name=SLIDER_NODE_SIZE_NAME,
+            active=len(steps) // 2,
+            currentvalue=dict(
+                prefix="Node size: ",
+                visible=False,
+                xanchor="center",
+            ),
+            steps=steps,
+            x=0.5,
+            y=0.0,
             xanchor="center",
-            yanchor="top",
+            yanchor="bottom",
+            len=0.5,
+            lenmode="fraction",
+            ticklen=1,
+            pad=dict(t=1, b=1, l=1, r=1),
+            bgcolor="rgba(1.0, 1.0, 1.0, 0.5)",
+            activebgcolor="rgba(127, 127, 127, 0.5)",
         )

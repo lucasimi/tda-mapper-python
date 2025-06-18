@@ -44,7 +44,7 @@ requires-python = ">=3.8"
 [project.optional-dependencies]
 dev = [
     "coverage[toml]",
-    "pandas",
+    "pandas<3.0.0",
     "scikit-learn<1.6.0",
     "pytest",
     "pytest-asyncio",
