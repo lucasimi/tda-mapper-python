@@ -61,7 +61,7 @@ app = [
 ]
 
 [project.scripts]
-tda-mapper-app = "tdamapper._app:main"
+tda-mapper-app = "tdamapper._run_app:run"
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"

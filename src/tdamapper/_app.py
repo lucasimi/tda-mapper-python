@@ -738,7 +738,3 @@ def main():
         favicon=ICON_URL,
         port=int(port),
     )
-
-
-if __name__ in {"__main__", "__mp_main__", "tdamapper._app"}:
-    main()
