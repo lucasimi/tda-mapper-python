@@ -37,7 +37,9 @@ _DEFAULT_SPACING = 0.25
 
 _MAX_SIZEREF = 1000000000
 
-_MARKER_SIZE_FACTOR = 400.0
+_MARKER_SIZE_FACTOR_2D = 400.0
+
+_MARKER_SIZE_FACTOR_3D = 600.0
 
 MENU_DARK_MODE_NAME = "menu_dark_mode"
 
@@ -271,9 +273,8 @@ class PlotlyPlot:
     def _marker_size(self) -> List[float]:
         attr_size = nx.get_node_attributes(self.graph, ATTR_SIZE)
         max_size = max(attr_size.values(), default=1.0)
-        marker_size = [
-            _MARKER_SIZE_FACTOR * attr_size[n] / max_size for n in self.graph.nodes()
-        ]
+        factor = _MARKER_SIZE_FACTOR_3D if self.dim == 3 else _MARKER_SIZE_FACTOR_2D
+        marker_size = [factor * attr_size[n] / max_size for n in self.graph.nodes()]
         return marker_size
 
     def set_cmap(self, cmap: str) -> None:
@@ -646,20 +647,20 @@ class PlotlyPlot:
         )
 
     def _ui_menu_cmap(self, cmaps: List[str]) -> dict:
-        target_traces = [1] if self.dim == 2 else [0, 1]
+        target_traces = [0, 1] if self.dim == 3 else [1]
 
         def _update_cmap(cmap: str) -> dict:
             cmap_rgb = _get_cmap_rgb(cmap)
-            if self.dim == 2:
-                return {
-                    "marker.colorscale": [cmap_rgb],
-                    "marker.line.colorscale": [cmap_rgb],
-                }
-            elif self.dim == 3:
+            if self.dim == 3:
                 return {
                     "marker.colorscale": [None, cmap_rgb],
                     "marker.line.colorscale": [None, cmap_rgb],
                     "line.colorscale": [cmap_rgb, None],
+                }
+            elif self.dim == 2:
+                return {
+                    "marker.colorscale": [cmap_rgb],
+                    "marker.line.colorscale": [cmap_rgb],
                 }
             return {}
 
@@ -700,18 +701,7 @@ class PlotlyPlot:
             node_col_arr = list(node_col_agg.values())
             scatter_text = self._text(node_col_agg)
             cbar = self._colorbar(titles[i])
-            if self.dim == 2:
-                return {
-                    "text": [scatter_text],
-                    **{
-                        f"marker.colorbar.{'.'.join(k.split('_'))}": [v]
-                        for k, v in cbar.items()
-                    },
-                    "marker.color": [node_col_arr],
-                    "marker.cmax": [max(node_col_arr, default=None)],
-                    "marker.cmin": [min(node_col_arr, default=None)],
-                }
-            elif self.dim == 3:
+            if self.dim == 3:
                 edge_col = self._edge_colors_from_node_colors(
                     node_col_agg,
                 )
@@ -728,9 +718,20 @@ class PlotlyPlot:
                     "line.cmax": [max(node_col_arr, default=None), None],
                     "line.cmin": [min(node_col_arr, default=None), None],
                 }
+            elif self.dim == 2:
+                return {
+                    "text": [scatter_text],
+                    **{
+                        f"marker.colorbar.{'.'.join(k.split('_'))}": [v]
+                        for k, v in cbar.items()
+                    },
+                    "marker.color": [node_col_arr],
+                    "marker.cmax": [max(node_col_arr, default=None)],
+                    "marker.cmin": [min(node_col_arr, default=None)],
+                }
             return {}
 
-        target_traces = [1] if self.dim == 2 else [0, 1]
+        target_traces = [0, 1] if self.dim == 3 else [1]
 
         buttons = []
         if colors.shape[1] > 1:
