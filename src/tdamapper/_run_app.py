@@ -1,4 +1,4 @@
-from tdamapper._app import main
+from tdamapper.app import main
 
 
 def run():
