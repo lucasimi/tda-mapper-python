@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
-from tdamapper.clustering import TrivialClustering
+from tdamapper.core import TrivialClustering
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -636,8 +636,8 @@ class App:
             self.storage["df"] = fix_data(df)
             self.storage["labels"] = fix_data(labels)
         elif self.load_type.value == LOAD_CSV:
-            df = self.storage.get("df")
-            if df is None:
+            df = self.storage.get("df", pd.DataFrame())
+            if df is None or df.empty:
                 logger.warning("No data found. Please upload a file first.")
                 ui.notify("No data found. Please upload a file first.", type="warning")
                 return
@@ -645,8 +645,8 @@ class App:
             logger.error("Unknown load type selected.")
             return
 
-        df = self.storage.get("df")
-        if df is not None:
+        df = self.storage.get("df", pd.DataFrame())
+        if df is not None or not df.empty:
             logger.info("Data loaded successfully.")
             ui.notify("File loaded successfully.", type="positive")
         else:
@@ -657,18 +657,27 @@ class App:
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = "Running Mapper..."
         notification.spinner = True
-        df_X = self.storage.get("df")
+        df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
             logger.warning("No data found. Please upload a file first.")
             ui.notify("No data found. Please upload a file first.", type="warning")
+            notification.message = "No data found. Please upload a file first."
+            notification.spinner = False
+            notification.dismiss()
             return
         mapper_config = self.get_mapper_config()
-        mapper_graph, df_y = await run.cpu_bound(
-            run_mapper, df_X, **asdict(mapper_config)
-        )
-        self.storage["mapper_graph"] = mapper_graph
-        self.storage["df_y"] = df_y
-        notification.message = "Done!"
+        result = await run.cpu_bound(run_mapper, df_X, **asdict(mapper_config))
+        if result is None:
+            notification.message = "Something went wrong."
+            notification.spinner = False
+            notification.dismiss()
+            return
+        mapper_graph, df_y = result
+        if mapper_graph is not None:
+            self.storage["mapper_graph"] = mapper_graph
+        if df_y is not None:
+            self.storage["df_y"] = df_y
+        notification.message = "Running Mapper Completed!"
         notification.spinner = False
         notification.dismiss()
 
@@ -713,16 +722,17 @@ class App:
         with self.plot_container:
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
 
-        notification.message = "Done!"
+        notification.message = "Drawing Mapper Completed!"
         notification.spinner = False
         notification.dismiss()
 
 
-@ui.page("/")
-def main_page():
-    ui.query(".nicegui-content").classes("p-0")
-    storage = app.storage.client
-    App(storage=storage)
+def startup():
+    @ui.page("/")
+    def main_page():
+        ui.query(".nicegui-content").classes("p-0")
+        storage = app.storage.client
+        App(storage=storage)
 
 
 def main():
@@ -730,6 +740,7 @@ def main():
     host = os.getenv("HOST", "0.0.0.0")
     production = os.getenv("PRODUCTION", "false").lower() == "true"
     storage_secret = os.getenv("STORAGE_SECRET", "storage_secret")
+    startup()
     ui.run(
         storage_secret=storage_secret,
         reload=not production,
