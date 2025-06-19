@@ -19,7 +19,9 @@ _NODE_OUTER_COLOR = "#777"
 
 _NODE_OPACITY = 1.0
 
-_EDGE_WIDTH = 0.75
+_EDGE_WIDTH_2D = 0.75
+
+_EDGE_WIDTH_3D = 1.5
 
 _EDGE_OPACITY = 1.0
 
@@ -32,6 +34,24 @@ _NODES_TRACE = "nodes_trace"
 _EDGES_TRACE = "edges_trace"
 
 _DEFAULT_SPACING = 0.25
+
+_MAX_SIZEREF = 1000000000
+
+_MARKER_SIZE_FACTOR_2D = 400.0
+
+_MARKER_SIZE_FACTOR_3D = 600.0
+
+MENU_DARK_MODE_NAME = "menu_dark_mode"
+
+MENU_CMAP_NAME = "menu_cmap"
+
+MENU_COLOR_NAME = "menu_color"
+
+SLIDER_NODE_SIZE_NAME = "slider_node_size"
+
+FONT_COLOR_LIGHT = "#2a3f5f"
+
+FONT_COLOR_DARK = "#f2f5fa"
 
 DEFAULT_NODE_SIZE = 1
 
@@ -206,9 +226,6 @@ class PlotlyPlot:
         self.graph = mapper_plot.graph
         self.positions = mapper_plot.positions
         self.dim = mapper_plot.dim
-        self.ui_menu_cmap: Dict = {}
-        self.ui_menu_color: Dict = {}
-        self.ui_slider_size: Dict = {}
 
     def plot(
         self,
@@ -253,13 +270,11 @@ class PlotlyPlot:
                 edges_arr[i].append(None)
         return edges_arr
 
-    def _marker_size(self, node_size: float) -> List[float]:
+    def _marker_size(self) -> List[float]:
         attr_size = nx.get_node_attributes(self.graph, ATTR_SIZE)
         max_size = max(attr_size.values(), default=1.0)
-        scale = node_size * (25.0 if self.dim == 2 else 15.0)
-        marker_size = [
-            scale * math.sqrt(attr_size[n] / max_size) for n in self.graph.nodes()
-        ]
+        factor = _MARKER_SIZE_FACTOR_3D if self.dim == 3 else _MARKER_SIZE_FACTOR_2D
+        marker_size = [factor * attr_size[n] / max_size for n in self.graph.nodes()]
         return marker_size
 
     def set_cmap(self, cmap: str) -> None:
@@ -308,6 +323,7 @@ class PlotlyPlot:
             patch=dict(
                 text=scatter_text,
                 marker=dict(
+                    opacity=_NODE_OPACITY,
                     color=node_col_arr,
                     cmin=min(node_col_arr, default=None),
                     cmax=max(node_col_arr, default=None),
@@ -343,7 +359,11 @@ class PlotlyPlot:
             return
         self.fig.update_traces(
             patch=dict(
-                marker_size=self._marker_size(node_size),
+                marker_sizeref=(
+                    _MAX_SIZEREF if node_size == 0.0 else (1.0 / node_size) ** 2
+                ),
+                marker_sizemin=1.0,
+                marker_sizemode="area",
             ),
             selector=dict(name=_NODES_TRACE),
         )
@@ -423,7 +443,7 @@ class PlotlyPlot:
             marker=dict(
                 showscale=True,
                 reversescale=False,
-                size=self._marker_size(DEFAULT_NODE_SIZE),
+                size=self._marker_size(),
                 opacity=_NODE_OPACITY,
                 line_width=_NODE_OUTER_WIDTH,
                 line_color=_NODE_OUTER_COLOR,
@@ -445,7 +465,6 @@ class PlotlyPlot:
             y=edge_pos_arr[1],
             mode="lines",
             opacity=_EDGE_OPACITY,
-            line_width=_EDGE_WIDTH,
             line_color=_EDGE_COLOR,
             hoverinfo="skip",
         )
@@ -454,6 +473,8 @@ class PlotlyPlot:
                 dict(
                     z=edge_pos_arr[2],
                     line_colorscale=DEFAULT_CMAP,
+                    line_width=_EDGE_WIDTH_3D,
+                    marker_line_width=_EDGE_WIDTH_3D,
                 ),
             )
             return go.Scatter3d(scatter)
@@ -461,20 +482,24 @@ class PlotlyPlot:
             scatter.update(
                 dict(
                     marker_colorscale=DEFAULT_CMAP,
+                    marker_line_width=_EDGE_WIDTH_2D,
                     marker_line_colorscale=DEFAULT_CMAP,
+                    line_width=_EDGE_WIDTH_2D,
                 ),
             )
             return go.Scatter(scatter)
 
     def _colorbar(self, title: str) -> dict:
         cbar = dict(
+            orientation="v",
             showticklabels=True,
             outlinewidth=1,
             borderwidth=0,
             thicknessmode="fraction",
-            xanchor="left",
             title_side="right",
             title_text=title,
+            xanchor="right",
+            x=1.0,
             ypad=0,
             xpad=0,
             tickwidth=1,
@@ -495,7 +520,6 @@ class PlotlyPlot:
         return [_lbl(n) for n in self.graph.nodes()]
 
     def _layout(self) -> go.Layout:
-        line_col = "rgba(230, 230, 230, 1.0)"
         axis = dict(
             showline=False,
             linewidth=1,
@@ -513,16 +537,12 @@ class PlotlyPlot:
             backgroundcolor="rgba(0, 0, 0, 0)",
             showaxeslabels=False,
             showline=False,
-            linecolor=line_col,
-            zerolinecolor=line_col,
-            gridcolor=line_col,
             linewidth=1,
             mirror=True,
             showticklabels=False,
             title="",
         )
         return go.Layout(
-            template="plotly_white",
             autosize=True,
             height=None,
             width=None,
@@ -536,6 +556,9 @@ class PlotlyPlot:
                 yaxis=scene_axis,
                 zaxis=scene_axis,
             ),
+            font_color=FONT_COLOR_LIGHT,
+            paper_bgcolor="white",
+            plot_bgcolor="white",
         )
 
     def set_ui(
@@ -548,49 +571,96 @@ class PlotlyPlot:
     ) -> None:
         if self.fig is None:
             return
+
+        ui_menu_dark_mode = None
+        ui_menu_cmap = None
+        ui_menu_color = None
+        ui_slider_size = None
+        for m in self.fig.layout.updatemenus:
+            if m.name == MENU_DARK_MODE_NAME:
+                ui_menu_dark_mode = m
+            elif m.name == MENU_CMAP_NAME:
+                ui_menu_cmap = m
+            elif m.name == MENU_COLOR_NAME:
+                ui_menu_color = m
+        for s in self.fig.layout.sliders:
+            if s.name == SLIDER_NODE_SIZE_NAME:
+                ui_slider_size = s
+
+        ui_menu_dark_mode = self.ui_menu_dark_mode()
+
         if cmaps is not None:
             cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-            self.ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
+            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
 
         if colors is not None and agg is not None and titles is not None:
-            self.ui_menu_color = self._ui_menu_color(colors, titles, agg)
+            ui_menu_color = self._ui_menu_color(colors, titles, agg)
 
         if node_sizes is not None:
-            self.ui_slider_size = self._ui_slider_node_size(node_sizes)
+            ui_slider_size = self._ui_slider_node_size(node_sizes)
 
-        menus = []
-        sliders = []
-        x = 0.0
-        if self.ui_menu_cmap:
-            self.ui_menu_cmap["x"] = x
-            x += _DEFAULT_SPACING
-            menus.append(self.ui_menu_cmap)
-        if self.ui_menu_color:
-            self.ui_menu_color["x"] = x
-            menus.append(self.ui_menu_color)
-        if self.ui_slider_size:
-            self.ui_slider_size["x"] = 0.0
-            sliders.append(self.ui_slider_size)
+        menus = [m for m in [ui_menu_dark_mode, ui_menu_cmap, ui_menu_color] if m]
+        sliders = [s for s in [ui_slider_size] if s]
+
+        self.fig.layout.updatemenus = ()
+        self.fig.layout.sliders = ()
+
         self.fig.update_layout(
             updatemenus=menus,
             sliders=sliders,
         )
 
+    def ui_menu_dark_mode(self) -> Dict:
+        buttons = [
+            dict(
+                label="Light",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_LIGHT,
+                        "paper_bgcolor": "white",
+                        "plot_bgcolor": "white",
+                    }
+                ],
+            ),
+            dict(
+                label="Dark",
+                method="relayout",
+                args=[
+                    {
+                        "font.color": FONT_COLOR_DARK,
+                        "paper_bgcolor": "black",
+                        "plot_bgcolor": "black",
+                    }
+                ],
+            ),
+        ]
+        return dict(
+            name=MENU_DARK_MODE_NAME,
+            buttons=buttons,
+            direction="down",
+            active=0,
+            x=0.25,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
+        )
+
     def _ui_menu_cmap(self, cmaps: List[str]) -> dict:
-        target_traces = [1] if self.dim == 2 else [0, 1]
+        target_traces = [0, 1] if self.dim == 3 else [1]
 
         def _update_cmap(cmap: str) -> dict:
             cmap_rgb = _get_cmap_rgb(cmap)
-            if self.dim == 2:
-                return {
-                    "marker.colorscale": [cmap_rgb],
-                    "marker.line.colorscale": [cmap_rgb],
-                }
-            elif self.dim == 3:
+            if self.dim == 3:
                 return {
                     "marker.colorscale": [None, cmap_rgb],
                     "marker.line.colorscale": [None, cmap_rgb],
                     "line.colorscale": [cmap_rgb, None],
+                }
+            elif self.dim == 2:
+                return {
+                    "marker.colorscale": [cmap_rgb],
+                    "marker.line.colorscale": [cmap_rgb],
                 }
             return {}
 
@@ -606,39 +676,16 @@ class PlotlyPlot:
             ]
 
         return dict(
+            name=MENU_CMAP_NAME,
             buttons=buttons,
-            x=0.25,
-            xanchor="left",
-            y=1.0,
-            yanchor="top",
             direction="down",
+            x=0.5,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
         )
 
-    def _ui_slider_node_size(self, node_sizes: List[float]) -> dict:
-        steps = [
-            dict(
-                method="restyle",
-                label=f"{size}",
-                args=[
-                    {"marker.size": [self._marker_size(size)]},
-                    [1],
-                ],
-            )
-            for size in node_sizes
-        ]
-
-        return dict(
-            active=len(steps) // 2,
-            currentvalue={"prefix": "Node size: "},
-            steps=steps,
-            x=0.0,
-            y=0.0,
-            xanchor="left",
-            len=0.3,
-            yanchor="bottom",
-        )
-
-    def _ui_menu_color(self, colors: np.ndarray, titles: List[str], agg) -> dict:
+    def _ui_menu_color(self, colors: np.ndarray, titles: List[str], agg) -> Dict:
         colors_arr = np.array(colors)
         colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
@@ -654,18 +701,7 @@ class PlotlyPlot:
             node_col_arr = list(node_col_agg.values())
             scatter_text = self._text(node_col_agg)
             cbar = self._colorbar(titles[i])
-            if self.dim == 2:
-                return {
-                    "text": [scatter_text],
-                    **{
-                        f"marker.colorbar.{'.'.join(k.split('_'))}": [v]
-                        for k, v in cbar.items()
-                    },
-                    "marker.color": [node_col_arr],
-                    "marker.cmax": [max(node_col_arr, default=None)],
-                    "marker.cmin": [min(node_col_arr, default=None)],
-                }
-            elif self.dim == 3:
+            if self.dim == 3:
                 edge_col = self._edge_colors_from_node_colors(
                     node_col_agg,
                 )
@@ -682,9 +718,20 @@ class PlotlyPlot:
                     "line.cmax": [max(node_col_arr, default=None), None],
                     "line.cmin": [min(node_col_arr, default=None), None],
                 }
+            elif self.dim == 2:
+                return {
+                    "text": [scatter_text],
+                    **{
+                        f"marker.colorbar.{'.'.join(k.split('_'))}": [v]
+                        for k, v in cbar.items()
+                    },
+                    "marker.color": [node_col_arr],
+                    "marker.cmax": [max(node_col_arr, default=None)],
+                    "marker.cmin": [min(node_col_arr, default=None)],
+                }
             return {}
 
-        target_traces = [1] if self.dim == 2 else [0, 1]
+        target_traces = [0, 1] if self.dim == 3 else [1]
 
         buttons = []
         if colors.shape[1] > 1:
@@ -698,11 +745,50 @@ class PlotlyPlot:
             ]
 
         return dict(
+            name=MENU_COLOR_NAME,
             buttons=buttons,
-            active=0,
-            x=0.0,
-            xanchor="left",
-            y=1.0,
-            yanchor="top",
             direction="down",
+            active=0,
+            x=0.75,
+            y=1.0,
+            xanchor="center",
+            yanchor="top",
+        )
+
+    def _ui_slider_node_size(self, node_sizes: List[float]) -> Dict:
+        steps = [
+            dict(
+                method="restyle",
+                label=f"{node_size}",
+                args=[
+                    {
+                        "marker.sizeref": [
+                            _MAX_SIZEREF if node_size == 0.0 else (1.0 / node_size) ** 2
+                        ]
+                    },
+                    [1],
+                ],
+            )
+            for node_size in node_sizes
+        ]
+
+        return dict(
+            name=SLIDER_NODE_SIZE_NAME,
+            active=len(steps) // 2,
+            currentvalue=dict(
+                prefix="Node size: ",
+                visible=False,
+                xanchor="center",
+            ),
+            steps=steps,
+            x=0.5,
+            y=0.0,
+            xanchor="center",
+            yanchor="bottom",
+            len=0.5,
+            lenmode="fraction",
+            ticklen=1,
+            pad=dict(t=1, b=1, l=1, r=1),
+            bgcolor="rgba(1.0, 1.0, 1.0, 0.5)",
+            activebgcolor="rgba(127, 127, 127, 0.5)",
         )

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tda-mapper"
-version = "0.11.2"
+version = "0.12.0"
 description = "A simple and efficient Python implementation of Mapper algorithm for Topological Data Analysis"
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
@@ -44,14 +44,25 @@ requires-python = ">=3.8"
 [project.optional-dependencies]
 dev = [
     "coverage[toml]",
-    "pandas",
+    "pandas<3.0.0",
     "scikit-learn<1.6.0",
     "pytest",
+    "pytest-asyncio",
     "black[jupyter]",
     "isort",
     "flake8",
+    "kaleido",
     "nbformat>=4.2.0",
 ]
+app = [
+    "pandas<3.0.0",
+    "scikit-learn<1.6.0",
+    "umap-learn<0.6.0",
+    "nicegui>=2.18.0,<3.0.0",
+]
+
+[project.scripts]
+tda-mapper-app = "tdamapper._run_app:run"
 
 [project.urls]
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
@@ -88,3 +99,15 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 skip = ["venv", ".venv", "build", "dist"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+  'ignore::DeprecationWarning:_plotly_utils\.basevalidators',
+]
+
+markers = [
+    "module_under_test",
+]
