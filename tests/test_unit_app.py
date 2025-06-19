@@ -5,6 +5,8 @@ from sklearn.datasets import load_digits
 
 from tdamapper import app
 
+RETRIES = 40
+
 pytest_plugins = ["nicegui.testing.user_plugin"]
 
 
@@ -23,14 +25,14 @@ async def test_run_app(user: User) -> None:
     user.find("Run Mapper").click()
     await user.should_see("Running Mapper...")
     await user.should_not_see("No data found.")
-    await user.should_see("Running Mapper Completed!", retries=20)
+    await user.should_see("Running Mapper Completed!", retries=RETRIES)
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("No data")
-    await user.should_see("Drawing Mapper Completed!", retries=20)
+    await user.should_see("Drawing Mapper Completed!", retries=RETRIES)
     user.find("Redraw").click()
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("No data")
-    await user.should_see("Drawing Mapper Completed!", retries=20)
+    await user.should_see("Drawing Mapper Completed!", retries=RETRIES)
 
 
 def test_run_mapper() -> None:

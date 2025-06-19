@@ -51,6 +51,7 @@ dev = [
     "black[jupyter]",
     "isort",
     "flake8",
+    "kaleido",
     "nbformat>=4.2.0",
 ]
 app = [
