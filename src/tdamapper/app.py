@@ -122,10 +122,11 @@ def lens_umap(n_components):
 
 
 def run_mapper(df, **kwargs):
+    logger.info("Mapper computation started...")
     if df is None or df.empty:
-        logger.error("No data found. Please upload a file first.")
+        error = "Mapper computation failed: no data found, please load data first."
+        logger.error(error)
         return
-    logger.info("Computing Mapper.")
 
     mapper_config = MapperConfig(**kwargs)
 
@@ -197,10 +198,12 @@ def run_mapper(df, **kwargs):
     if clustering_scale_data:
         X = StandardScaler().fit_transform(X)
     mapper_graph = mapper.fit_transform(X, y)
+    logger.info("Mapper computation completed.")
     return mapper_graph, df_y
 
 
 def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
+    logger.info("Mapper rendering started...")
     df_colors = pd.concat([df_target, df_y, df_X], axis=1)
     mapper_config = MapperConfig(**kwargs)
     plot_dimensions = mapper_config.plot_dimensions
@@ -231,7 +234,7 @@ def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
         xaxis=dict(scaleanchor="y"),
         uirevision="constant",
     )
-    logger.info("Mapper run completed successfully.")
+    logger.info("Mapper rendering completed.")
     return mapper_fig
 
 
@@ -259,7 +262,7 @@ class App:
 
             ui.button(
                 "⬆️ Load Data",
-                on_click=self.load_file,
+                on_click=self.load_data,
                 color="themelight",
             ).classes("w-full text-themedark")
 
@@ -619,39 +622,48 @@ class App:
             df = pd.read_csv(file.content)
             self.storage["df"] = fix_data(df)
             self.storage["labels"] = pd.DataFrame()
-            logger.info("File uploaded successfully.")
-            ui.notify("File uploaded successfully.", type="info")
+            message = "File upload completed."
+            logger.info(message)
+            ui.notify(message, type="info")
         else:
-            logger.info("No file uploaded.")
+            error = "File upload failed: no file provided."
+            logger.info(error)
+            ui.notify(error, type="warning")
 
-    def load_file(self):
+    def load_data(self):
         if self.load_type.value == LOAD_EXAMPLE:
             if self.load_example.value == LOAD_EXAMPLE_DIGITS:
                 df, labels = load_digits(as_frame=True, return_X_y=True)
             elif self.load_example.value == LOAD_EXAMPLE_IRIS:
                 df, labels = load_iris(as_frame=True, return_X_y=True)
             else:
-                logger.error("Unknown example dataset selected.")
+                error = "Load data failed: unknown example dataset selected."
+                logger.error(error)
+                ui.notify(error, type="warning")
                 return
             self.storage["df"] = fix_data(df)
             self.storage["labels"] = fix_data(labels)
         elif self.load_type.value == LOAD_CSV:
             df = self.storage.get("df", pd.DataFrame())
             if df is None or df.empty:
-                logger.warning("No data found. Please upload a file first.")
-                ui.notify("No data found. Please upload a file first.", type="warning")
+                error = "Load data failed: no data found, please upload a file first."
+                logger.warning(error)
+                ui.notify(error, type="warning")
                 return
         else:
-            logger.error("Unknown load type selected.")
+            error = "Load data failed: unknown load type selected."
+            logger.error(error)
+            ui.notify(error, type="warning")
             return
 
         df = self.storage.get("df", pd.DataFrame())
         if df is not None or not df.empty:
-            logger.info("Data loaded successfully.")
-            ui.notify("File loaded successfully.", type="positive")
+            logger.info("Load data completed.")
+            ui.notify("Load data completed.", type="positive")
         else:
-            logger.warning("No data found. Please upload a file first.")
-            ui.notify("No data found. Please upload a file first.", type="warning")
+            error = "Load data failed: no data found, please upload a file first."
+            logger.warning(error)
+            ui.notify(error, type="warning")
 
     def notification_running_start(self, message):
         notification = ui.notification(timeout=None, type="ongoing")
@@ -670,19 +682,16 @@ class App:
         notification = self.notification_running_start("Running Mapper...")
         df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
-            logger.warning("No data found. Please load data first.")
-            self.notification_running_stop(
-                notification,
-                "Running Mapper failed: No data found, please load data first.",
-                type="warning",
-            )
+            error = "Run Mapper failed: no data found, please load data first."
+            logger.warning(error)
+            self.notification_running_stop(notification, error, type="warning")
             return
         mapper_config = self.get_mapper_config()
         result = await run.cpu_bound(run_mapper, df_X, **asdict(mapper_config))
         if result is None:
-            self.notification_running_stop(
-                notification, "Running Mapper failed.", type="error"
-            )
+            error = "Run Mapper failed: something went wrong."
+            logger.error(error)
+            self.notification_running_stop(notification, error, type="error")
             return
         mapper_graph, df_y = result
         if mapper_graph is not None:
@@ -690,7 +699,7 @@ class App:
         if df_y is not None:
             self.storage["df_y"] = df_y
         self.notification_running_stop(
-            notification, "Running Mapper completed.", type="positive"
+            notification, "Run Mapper completed.", type="positive"
         )
         await self.async_draw_mapper()
 
@@ -705,11 +714,12 @@ class App:
         mapper_graph = self.storage.get("mapper_graph", None)
 
         if df_X.empty or mapper_graph is None:
-            logger.warning("No data or Mapper graph found. Please run Mapper first.")
+            error = (
+                "Draw Mapper failed: no Mapper graph found, please run Mapper first."
+            )
+            logger.warning(error)
             self.notification_running_stop(
-                notification=notification,
-                message="Drawing Mapper failed: no data or graph found.",
-                type="warning",
+                notification=notification, message=error, type="warning"
             )
             return
 
@@ -722,9 +732,8 @@ class App:
             **asdict(mapper_config),
         )
         if mapper_fig is None:
-            self.notification_running_stop(
-                notification, "Drawing Mapper failed.", type="error"
-            )
+            error = "Draw Mapper failed: something went wrong."
+            self.notification_running_stop(notification, error, type="error")
             return
 
         logger.info("Displaying Mapper plot.")
@@ -734,7 +743,7 @@ class App:
         with self.plot_container:
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
         self.notification_running_stop(
-            notification, "Drawing Mapper completed", type="positive"
+            notification, "Draw Mapper completed.", type="positive"
         )
 
 
