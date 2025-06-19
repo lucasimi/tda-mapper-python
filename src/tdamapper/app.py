@@ -653,40 +653,49 @@ class App:
             logger.warning("No data found. Please upload a file first.")
             ui.notify("No data found. Please upload a file first.", type="warning")
 
-    async def async_run_mapper(self):
+    def notification_running_start(self, message):
         notification = ui.notification(timeout=None, type="ongoing")
-        notification.message = "Running Mapper..."
+        notification.message = message
         notification.spinner = True
+        return notification
+
+    def notification_running_stop(self, notification, message, type=None):
+        if type is not None:
+            notification.type = type
+        notification.message = message
+        notification.timeout = 5.0
+        notification.spinner = False
+
+    async def async_run_mapper(self):
+        notification = self.notification_running_start("Running Mapper...")
         df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
-            logger.warning("No data found. Please upload a file first.")
-            ui.notify("No data found. Please upload a file first.", type="warning")
-            notification.message = "No data found. Please upload a file first."
-            notification.spinner = False
-            notification.dismiss()
+            logger.warning("No data found. Please load data first.")
+            self.notification_running_stop(
+                notification,
+                "Running Mapper failed: No data found, please load data first.",
+                type="warning",
+            )
             return
         mapper_config = self.get_mapper_config()
         result = await run.cpu_bound(run_mapper, df_X, **asdict(mapper_config))
         if result is None:
-            notification.message = "Something went wrong."
-            notification.spinner = False
-            notification.dismiss()
+            self.notification_running_stop(
+                notification, "Running Mapper failed.", type="error"
+            )
             return
         mapper_graph, df_y = result
         if mapper_graph is not None:
             self.storage["mapper_graph"] = mapper_graph
         if df_y is not None:
             self.storage["df_y"] = df_y
-        notification.message = "Running Mapper Completed!"
-        notification.spinner = False
-        notification.dismiss()
-
+        self.notification_running_stop(
+            notification, "Running Mapper completed.", type="positive"
+        )
         await self.async_draw_mapper()
 
     async def async_draw_mapper(self):
-        notification = ui.notification(timeout=None, type="ongoing")
-        notification.message = "Drawing Mapper..."
-        notification.spinner = True
+        notification = self.notification_running_start("Drawing Mapper...")
 
         mapper_config = self.get_mapper_config()
 
@@ -697,13 +706,11 @@ class App:
 
         if df_X.empty or mapper_graph is None:
             logger.warning("No data or Mapper graph found. Please run Mapper first.")
-            ui.notify(
-                "No data or Mapper graph found. Please run Mapper first.",
+            self.notification_running_stop(
+                notification=notification,
+                message="Drawing Mapper failed: no data or graph found.",
                 type="warning",
             )
-            notification.message = "No data or Mapper graph found."
-            notification.spinner = False
-            notification.dismiss()
             return
 
         mapper_fig = await run.cpu_bound(
@@ -714,6 +721,11 @@ class App:
             mapper_graph,
             **asdict(mapper_config),
         )
+        if mapper_fig is None:
+            self.notification_running_stop(
+                notification, "Drawing Mapper failed.", type="error"
+            )
+            return
 
         logger.info("Displaying Mapper plot.")
         if self.draw_area is not None:
@@ -721,10 +733,9 @@ class App:
             self.plot_container.clear()
         with self.plot_container:
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
-
-        notification.message = "Drawing Mapper Completed!"
-        notification.spinner = False
-        notification.dismiss()
+        self.notification_running_stop(
+            notification, "Drawing Mapper completed", type="positive"
+        )
 
 
 def startup():

@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import asdict
 
 from nicegui.testing import User
@@ -10,7 +11,21 @@ RETRIES = 40
 pytest_plugins = ["nicegui.testing.user_plugin"]
 
 
-async def test_run_app(user: User) -> None:
+async def test_run_app_fail(user: User) -> None:
+    app.startup()
+    await user.open("/")
+    await user.should_see("Load Data")
+    await user.should_see("Lens")
+    await user.should_see("Cover")
+    await user.should_see("Clustering")
+    await user.should_see("Run Mapper")
+    await user.should_see("Redraw")
+    user.find("Run Mapper").click()
+    await user.should_see("Running Mapper failed")
+    await user.should_not_see("File loaded successfully")
+
+
+async def test_run_app_success(user: User) -> None:
     app.startup()
     await user.open("/")
     await user.should_see("Load Data")
@@ -25,14 +40,14 @@ async def test_run_app(user: User) -> None:
     user.find("Run Mapper").click()
     await user.should_see("Running Mapper...")
     await user.should_not_see("No data found.")
-    await user.should_see("Running Mapper Completed!", retries=RETRIES)
+    await user.should_see("Running Mapper completed", retries=RETRIES)
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("No data")
-    await user.should_see("Drawing Mapper Completed!", retries=RETRIES)
+    await user.should_see("Drawing Mapper completed", retries=RETRIES)
     user.find("Redraw").click()
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("No data")
-    await user.should_see("Drawing Mapper Completed!", retries=RETRIES)
+    await user.should_see("Drawing Mapper completed", retries=RETRIES)
 
 
 def test_run_mapper() -> None:
