@@ -6,12 +6,15 @@ the whole dataset. Unlike clustering, open subsets do not need to be disjoint.
 Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 """
 
+from __future__ import annotations
+
 import math
+from typing import Generator, List
 
 import numpy as np
 
 from tdamapper._common import warn_user
-from tdamapper.core import Cover, Proximity
+from tdamapper.core import ArrayLike, Cover, ProximityNetCover
 from tdamapper.utils.metrics import chebyshev, get_metric
 from tdamapper.utils.vptree import VPTree
 
@@ -30,7 +33,7 @@ def _snd(x):
     return x[1]
 
 
-class BallCover(Proximity):
+class BallCover(ProximityNetCover):
     """
     Cover algorithm based on `ball proximity function`, which covers data with
     open balls of fixed radius.
@@ -83,7 +86,7 @@ class BallCover(Proximity):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X):
+    def fit(self, X: ArrayLike) -> BallCover:
         """
         Train internal parameters.
 
@@ -131,7 +134,7 @@ class BallCover(Proximity):
         return [x for (x, _) in neighs]
 
 
-class KNNCover(Proximity):
+class KNNCover(ProximityNetCover):
     """
     Cover algorithm based on `KNN proximity function`, which covers data using
     k-nearest neighbors (KNN).
@@ -184,7 +187,7 @@ class KNNCover(Proximity):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X):
+    def fit(self, X: ArrayLike) -> KNNCover:
         """
         Train internal parameters.
 
@@ -280,7 +283,7 @@ class BaseCubicalCover:
         _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
         return _min, _max, _delta
 
-    def fit(self, X):
+    def fit(self, X: ArrayLike) -> Cover:
         """
         Train internal parameters.
 
@@ -331,8 +334,39 @@ class BaseCubicalCover:
         center = self._phi(x)
         return self._cover.search(center)
 
+    def _landmarks(self, X: ArrayLike):
+        lmrks = {}
+        for x in X:
+            lmrk, center = self._get_center(x)
+            if lmrk not in lmrks:
+                lmrks[lmrk] = x
+        return lmrks
 
-class ProximityCubicalCover(BaseCubicalCover, Proximity):
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Covers the dataset using landmarks.
+
+        This function yields all the hypercubes intersecting the dataset.
+
+        This function returns a generator that yields each element of the
+        open cover as a list of ids. The ids are the indices of the points
+        in the original dataset.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator of lists of ids.
+        :rtype: generator of lists of ints
+        """
+        self.fit(X)
+        lmrks_to_cover = self._landmarks(X)
+        while lmrks_to_cover:
+            _, x = lmrks_to_cover.popitem()
+            neigh_ids = self.search(x)
+            if neigh_ids:
+                yield neigh_ids
+
+
+class ProximityCubicalCover(BaseCubicalCover, ProximityNetCover):
     """
     Cover algorithm based on the `cubical proximity function`, which covers
     data with open hypercubes of uniform size and overlap. The cubical cover is
@@ -390,7 +424,7 @@ class ProximityCubicalCover(BaseCubicalCover, Proximity):
         )
 
 
-class StandardCubicalCover(BaseCubicalCover, Cover):
+class StandardCubicalCover(BaseCubicalCover):
     """
     Cover algorithm based on the standard open cover, which covers data with
     open hypercubes of uniform size and overlap. The standard cover is
@@ -444,7 +478,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
             pivoting=pivoting,
         )
 
-    def _landmarks(self, X):
+    def _landmarks(self, X: ArrayLike):
         lmrks = {}
         for x in X:
             lmrk, center = self._get_center(x)
@@ -452,7 +486,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X):
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         """
         Covers the dataset using landmarks.
 
@@ -476,7 +510,7 @@ class StandardCubicalCover(BaseCubicalCover, Cover):
                 yield neigh_ids
 
 
-class CubicalCover(Cover):
+class CubicalCover:
     """
     Wrapper class for cubical cover algorithms, which cover data with open
     hypercubes of uniform size and overlap. This class delegates its methods to
@@ -556,7 +590,7 @@ class CubicalCover(Cover):
                 "'proximity'."
             )
 
-    def fit(self, X):
+    def fit(self, X: ArrayLike) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -586,7 +620,7 @@ class CubicalCover(Cover):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X):
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         """
         Covers the dataset using hypercubes.
 
@@ -599,4 +633,4 @@ class CubicalCover(Cover):
         :rtype: generator of lists of ints
         """
         self._cubical_cover = self._get_cubical_cover()
-        return self._cubical_cover.apply(X)
+        return self._cubical_cover.transform(X)

@@ -28,10 +28,15 @@ encapsulates the algorithm and its parameters. The Mapper graph produced by
 this module is a NetworkX graph object.
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
 
 import networkx as nx
+import numpy as np
 from joblib import Parallel, delayed
+from numpy.typing import NDArray
 
 from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
 from tdamapper.utils.unionfind import UnionFind
@@ -50,8 +55,16 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
+ArrayLike = Union[List[Any], NDArray[np.float64]]
 
-def mapper_labels(X, y, cover, clustering, n_jobs=1):
+
+def mapper_labels(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> List[List[int]]:
     """
     Identify the nodes of the Mapper graph.
 
@@ -94,9 +107,9 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
         delayed(_run_clustering)(
             local_ids, [X[j] for j in local_ids], clone(clustering)
         )
-        for local_ids in cover.apply(y)
+        for local_ids in cover.transform(y)
     )
-    itm_lbls = [[] for _ in X]
+    itm_lbls: List[List[int]] = [[] for _ in X]
     max_lbl = 0
     for local_ids, local_lbls in _lbls:
         max_local_lbl = 0
@@ -109,7 +122,13 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
     return itm_lbls
 
 
-def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
+def mapper_connected_components(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> List[int]:
     """
     Identify the connected components of the Mapper graph.
 
@@ -159,7 +178,13 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     return labels
 
 
-def mapper_graph(X, y, cover, clustering, n_jobs=1):
+def mapper_graph(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> nx.Graph:
     """
     Create the Mapper graph.
 
@@ -211,7 +236,7 @@ def mapper_graph(X, y, cover, clustering, n_jobs=1):
     return graph
 
 
-def aggregate_graph(X, graph, agg):
+def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -243,101 +268,29 @@ def aggregate_graph(X, graph, agg):
     return agg_values
 
 
-class Cover(ParamsMixin):
+class Cover(Protocol):
     """
     Abstract interface for cover algorithms.
 
-    This is a naive implementation. Subclasses should override the methods of
+    Subclasses should override the methods of
     this class to implement more meaningful cover algorithms.
     """
 
-    def apply(self, X):
-        """
-        Covers the dataset with a single open set.
+    def fit(self, X: ArrayLike) -> Cover: ...
 
-        This is a naive implementation that returns a generator producing a
-        single list containing all the ids if the original dataset. This
-        method should be overridden by subclasses to implement more meaningful
-        cover algorithms.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
-        """
-        yield list(range(0, len(X)))
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]: ...
 
 
-class Proximity(Cover):
-    """
-    Abstract interface for proximity functions. A proximity function is a
-    function that maps each point into a subset of the dataset that contains
-    the point itself.  Every proximity function defines also a covering
-    algorithm based on proximity-netm that is implemented in this class.
+class ProximityNetCover:
 
-    Proximity functions, implemented as subclasses of this class, are a
-    convenient way to implement open cover algorithms by using the
-    proximity-net construction. Proximity-net is implemented by function
-    :func:`tdamapper.core.Proximity.apply`.
+    def fit(self, X: ArrayLike) -> Cover:
+        raise NotImplementedError()
 
-    Subclasses should override the methods :func:`tdamapper.core.Proximity.fit`
-    and :func:`tdamapper.core.Proximity.search` of this class to implement
-    more meaningful proximity functions.
-    """
+    def search(self, x: Any) -> List[int]:
+        raise NotImplementedError()
 
-    def fit(self, X):
-        """
-        Train internal parameters.
-
-        This is a naive implementation that should be overridden by subclasses
-        to implement more meaningful proximity functions.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: The object itself.
-        :rtype: self
-        """
-        self._X = X
-        return self
-
-    def search(self, x):
-        """
-        Return a list of neighbors for the query point.
-
-        This is a naive implementation that returns all the points in the
-        dataset as neighbors. This method should be overridden by subclasses
-        to implement more meaningful proximity functions.
-
-        :param x: A query point for which we want to find neighbors.
-        :type x: Any
-        :return: A list containing all the indices of the points in the
-            dataset.
-        :rtype: list[int]
-        """
-        return list(range(0, len(self._X)))
-
-    def apply(self, X):
-        """
-        Covers the dataset using proximity-net.
-
-        This function applies an iterative algorithm to create the
-        proximity-net. It picks an arbitrary point and forms an open cover
-        calling the proximity function on the chosen point. The points
-        contained in the open cover are then marked as covered, and discarded
-        in the following steps. The procedure is repeated on the leftover
-        points until every point is eventually covered.
-
-        This function returns a generator that yields each element of the
-        proximity-net as a list of ids. The ids are the indices of the points
-        in the original dataset.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
-        """
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         covered_ids = set()
-        self.fit(X)
         for i, xi in enumerate(X):
             if i not in covered_ids:
                 neigh_ids = self.search(xi)
@@ -346,7 +299,14 @@ class Proximity(Cover):
                     yield neigh_ids
 
 
-class TrivialCover(Cover):
+class Clustering(Protocol):
+
+    labels_: List[int]
+
+    def fit(self, X: ArrayLike, y: Any = None) -> Clustering: ...
+
+
+class TrivialCover:
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.
@@ -355,27 +315,22 @@ class TrivialCover(Cover):
     dataset.
     """
 
-    def apply(self, X):
-        """
-        Covers the dataset with a single open set.
+    def fit(self, X: ArrayLike) -> TrivialCover:
+        return self
 
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
-        """
-        yield list(range(0, len(X)))
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        yield list(range(len(X)))
 
 
 class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
 
     def __init__(
         self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        failsafe: bool = True,
+        verbose: bool = True,
+        n_jobs: int = 1,
     ):
         self.cover = cover
         self.clustering = clustering
@@ -383,7 +338,7 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None):
         X, y = self._validate_X_y(X, y)
         self._cover = TrivialCover() if self.cover is None else self.cover
         self._clustering = (
@@ -410,7 +365,7 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self._set_n_features_in(X)
         return self
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X: ArrayLike, y: ArrayLike) -> nx.Graph:
         self.fit(X, y)
         return self.graph_
 
@@ -446,11 +401,11 @@ class FailSafeClustering(ParamsMixin):
     :type verbose: bool, optional.
     """
 
-    def __init__(self, clustering=None, verbose=True):
+    def __init__(self, clustering: Optional[Clustering] = None, verbose: bool = True):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None):
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
@@ -479,7 +434,7 @@ class TrivialClustering(ParamsMixin):
     def __init__(self):
         pass
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> TrivialClustering:
         """
         Fit the clustering algorithm to the data.
 
