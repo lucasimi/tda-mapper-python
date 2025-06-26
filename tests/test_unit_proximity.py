@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
+from tdamapper.search import BallSearch, CubicalSearch, KNNSearch
 
 
 def dataset(dim=1, num=10000):
@@ -15,7 +16,7 @@ def absdist(x, y):
 
 def test_ball_proximity():
     data = list(range(100))
-    cover = BallCover(radius=10, metric=absdist)
+    cover = BallSearch(radius=10, metric=absdist)
     cover.fit(data)
     for x in data:
         result = cover.search(x)
@@ -25,7 +26,7 @@ def test_ball_proximity():
 
 def test_knn_proximity():
     data = list(range(100))
-    cover = KNNCover(neighbors=11, metric=absdist)
+    cover = KNNSearch(neighbors=11, metric=absdist)
     cover.fit(data)
     for x in range(5, 94):
         result = cover.search(x)
@@ -40,7 +41,7 @@ def test_cubical_proximity():
     w = (M - m) / (n * (1.0 - p))
     delta = p * w
     data = list(range(m, M + 1))
-    cover = CubicalCover(n_intervals=n, overlap_frac=p)
+    cover = CubicalSearch(n_intervals=n, overlap_frac=p)
     cover.fit(data)
     for x in data[:-1]:
         result = cover.search(x)

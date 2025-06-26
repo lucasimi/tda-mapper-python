@@ -55,6 +55,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
+PointLike = Union[Any, NDArray[np.float64]]
+
 ArrayLike = Union[List[Any], NDArray[np.float64]]
 
 
@@ -103,6 +105,7 @@ def mapper_labels(
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
 
+    cover.fit(y)
     _lbls = Parallel(n_jobs, prefer="threads")(
         delayed(_run_clustering)(
             local_ids, [X[j] for j in local_ids], clone(clustering)
@@ -268,6 +271,19 @@ def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     return agg_values
 
 
+class SpatialSearch(Protocol):
+    """
+    Abstract interface for spatial search algorithms.
+
+    Subclasses should override the methods of this class to implement more
+    meaningful spatial search algorithms.
+    """
+
+    def fit(self, X: ArrayLike) -> SpatialSearch: ...
+
+    def search(self, x: PointLike) -> List[int]: ...
+
+
 class Cover(Protocol):
     """
     Abstract interface for cover algorithms.
@@ -281,24 +297,6 @@ class Cover(Protocol):
     def transform(self, X: ArrayLike) -> Generator[List[int], None, None]: ...
 
 
-class ProximityNetCover:
-
-    def fit(self, X: ArrayLike) -> Cover:
-        raise NotImplementedError()
-
-    def search(self, x: Any) -> List[int]:
-        raise NotImplementedError()
-
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        covered_ids = set()
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
-
-
 class Clustering(Protocol):
 
     labels_: List[int]
@@ -306,7 +304,7 @@ class Clustering(Protocol):
     def fit(self, X: ArrayLike, y: Any = None) -> Clustering: ...
 
 
-class TrivialCover:
+class TrivialCover(ParamsMixin):
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.

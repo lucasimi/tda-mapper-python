@@ -1,6 +1,6 @@
 import numpy as np
 
-from tdamapper.cover import KNNCover
+from tdamapper.search import KNNSearch
 from tdamapper.utils.metrics import euclidean
 from tdamapper.utils.vptree_flat.vptree import VPTree
 
@@ -94,7 +94,7 @@ x = np.array([99.73199663, 100.8024564])
 
 
 def test_knn_search():
-    knn_cover = KNNCover(neighbors=5, metric="euclidean")
+    knn_cover = KNNSearch(neighbors=5, metric="euclidean")
     knn_cover.fit(X)
     neigh_ids = knn_cover.search(x)
     d = euclidean()

@@ -190,7 +190,10 @@ def test_mock_connected_components():
 
     class MockCover:
 
-        def apply(self, X):
+        def fit(self, X):
+            return self
+
+        def transform(self, X):
             yield [0, 3]
             yield [1, 3]
             yield [1, 2]
@@ -211,7 +214,10 @@ def test_mock_labels():
 
     class MockCover:
 
-        def apply(self, X):
+        def fit(self, X):
+            return self
+
+        def transform(self, X):
             yield [0, 3]
             yield [1, 3]
             yield [1, 2]

@@ -26,6 +26,8 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
+from typing import Callable, Union
+
 import numpy as np
 
 import tdamapper.utils._metrics as _metrics
@@ -143,7 +145,7 @@ def cosine():
     return _metrics.cosine
 
 
-def get_metric(metric, **kwargs):
+def get_metric(metric: Union[str, Callable], **kwargs) -> Callable:
     """
     Return a distance function based on the specified string or callable.
 

@@ -122,7 +122,7 @@ def _to_titles(title: Optional[Union[str, List[str]]], colors_num: int) -> List[
 
 
 def _to_node_sizes(
-    node_size: Optional[Union[int, float, List[Union[int, float]]]]
+    node_size: Optional[Union[int, float, List[Union[int, float]]]],
 ) -> List[float]:
     if isinstance(node_size, (int, float)):
         return [node_size]
@@ -591,7 +591,8 @@ class PlotlyPlot:
 
         if cmaps is not None:
             cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
+            cmaps_plotly_ok = [c for c in cmaps_plotly if c is not None]
+            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly_ok)
 
         if colors is not None and agg is not None and titles is not None:
             ui_menu_color = self._ui_menu_color(colors, titles, agg)
