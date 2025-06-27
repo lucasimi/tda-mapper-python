@@ -1,9 +1,9 @@
 """
-Open cover construction for the Mapper algorithm.
+This module provides search algorithms for the tdamapper package.
 
-An open cover is a collection of open subsets of a dataset whose union spans
-the whole dataset. Unlike clustering, open subsets do not need to be disjoint.
-Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
+It includes classes for ball search, KNN search, and cubical search.
+These classes are used to efficiently find neighbors in a dataset based on
+various distance metrics and search strategies.
 """
 
 from __future__ import annotations
@@ -34,6 +34,40 @@ def _snd(x):
 
 
 class BallSearch:
+    """
+    Search points within a given radius from a query point.
+
+    This class uses a vantage point tree (VPTree) for efficient searching of
+    neighbors in a dataset. It implements a search algorithm that returns all
+    points within a specified radius from a query point. The search can be
+    customized with various parameters such as the distance metric, kind of
+    vantage point tree, leaf capacity, and pivoting method. This class implements
+    the :class:`tdamapper.core.SpatialSearch` protocol.
+
+    :param radius: The radius within which to search for neighbors.
+        Must be a positive value. Defaults to 1.0.
+    :type radius: float
+    :param metric: The distance metric to use for searching. Can be a string
+        (e.g., 'euclidean') or a callable function. Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the distance metric.
+        This should be a dictionary containing parameters specific to the
+        chosen metric. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults to None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
 
     def __init__(
         self,
@@ -58,7 +92,7 @@ class BallSearch:
         Train internal parameters.
 
         This method creates a vptree on the dataset in order to perform fast
-        range queries in the func:`tdamapper.cover.BallCover.search`
+        range queries in the func:`tdamapper.cover.BallSearch.search`
         method.
 
         :param X: A dataset of n points.
@@ -102,6 +136,42 @@ class BallSearch:
 
 
 class KNNSearch:
+    """
+    Search for k-nearest neighbors in a dataset.
+
+    This class uses a vantage point tree (VPTree) to efficiently find the
+    k-nearest neighbors of a query point in a dataset. It implements a search
+    algorithm that returns the indices of the k-nearest neighbors based on a
+    specified distance metric. The search can be customized with various
+    parameters such as the number of neighbors, distance metric, and kind of
+    vantage point tree. This class implements the
+    :class:`tdamapper.core.SpatialSearch` protocol.
+
+    :param neighbors: The number of nearest neighbors to search for.
+        Must be a positive integer. Defaults to 1.
+    :type neighbors: int
+    :param metric: The distance metric to use for searching. Can be a string
+        (e.g., 'euclidean') or a callable function. Defaults to 'euclidean'.
+    :type metric: str or callable
+    :param metric_params: Additional parameters for the distance metric.
+        This should be a dictionary containing parameters specific to the
+        chosen metric. Defaults to None.
+    :type metric_params: dict, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to None, which
+        means it will be set to the value of `neighbors`.
+    :type leaf_capacity: int, optional
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to 0.0. Must be a non-negative value. Defaults to 0.0.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
 
     def __init__(
         self,
@@ -126,7 +196,7 @@ class KNNSearch:
         Train internal parameters.
 
         This method creates a vptree on the dataset in order to perform fast
-        KNN queries in the func:`tdamapper.cover.BallCover.search`
+        KNN queries in the func:`tdamapper.cover.KNNSearch.search`
         method.
 
         :param X: A dataset of n points.
@@ -167,6 +237,40 @@ class KNNSearch:
 
 
 class CubicalSearch:
+    """
+    Search points within a cubical grid.
+
+    This class implements a search algorithm that returns the indices of the
+    hypercube whose center is closest to the target point. The hypercubes are
+    defined by a uniform grid of intervals in each dimension, with a specified
+    overlap fraction. The search can be customized with various parameters such as
+    the number of intervals, overlap fraction, kind of vantage point tree,
+    leaf capacity, leaf radius, and pivoting method. This class implements the
+    :class:`tdamapper.core.SpatialSearch` protocol.
+
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
+        Defaults to 1.
+    :type n_intervals: int
+    :param overlap_frac: The fraction of overlap between adjacent intervals on
+        each dimension, must be in the range (0.0, 0.5]. If not specified, the
+        overlap_frac is computed such that the volume of the overlap within
+        each hypercube is half the total volume. Defaults to None.
+    :type overlap_frac: float, optional
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults to None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
 
     def __init__(
         self,
@@ -221,8 +325,8 @@ class CubicalSearch:
         """
         Train internal parameters.
 
-        This method builds an internal :class:`tdamapper.cover.BallCover`
-        attribute that allows efficient queries of the dataset.
+        This method builds an internal :class:`tdamapper.search.BallSearch`
+        instance that allows efficient queries of the dataset.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
@@ -271,14 +375,12 @@ class CubicalSearch:
 
 class CubicalLandmarks(CubicalSearch):
     """
-    Cover algorithm based on the standard open cover, which covers data with
-    open hypercubes of uniform size and overlap. The standard cover is
-    obtained by selecting all the hypercubes that intersect the dataset.
+    Search points within a cubical grid and identify landmarks.
 
-    A hypercube is a multidimensional generalization of a square or a cube.
-    The size and overlap of the hypercubes are determined by the number of
-    intervals and the overlap fraction parameters. This class maps each point
-    to the hypercube with the nearest center.
+    This class extends the :class:`tdamapper.search.CubicalSearch` adding a
+    `landmarks` method that identifies unique hypercubes based on the centers of
+    the hypercubes that intersect the dataset. This class implements the
+    :class:`tdamapper.core.SpatialSearch` protocol.
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
@@ -324,32 +426,20 @@ class CubicalLandmarks(CubicalSearch):
         )
 
     def landmarks(self, X: ArrayLike) -> Dict:
+        """
+        Identify unique hypercubes based on the centers of the hypercubes that
+        intersect the dataset.
+        This method returns a dictionary where the keys are the centers of the
+        hypercubes and the values are the first point found in that hypercube.
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A dictionary with hypercube centers as keys and the first point
+                 found in that hypercube as values.
+        :rtype: dict
+        """
         lmrks = {}
         for x in X:
-            lmrk, center = self._get_center(x)
+            lmrk, _ = self._get_center(x)
             if lmrk not in lmrks:
                 lmrks[lmrk] = x
         return lmrks
-
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        """
-        Covers the dataset using landmarks.
-
-        This function yields all the hypercubes intersecting the dataset.
-
-        This function returns a generator that yields each element of the
-        open cover as a list of ids. The ids are the indices of the points
-        in the original dataset.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
-        """
-        self.fit(X)
-        lmrks_to_cover = self.landmarks(X)
-        while lmrks_to_cover:
-            _, x = lmrks_to_cover.popitem()
-            neigh_ids = self.search(x)
-            if neigh_ids:
-                yield neigh_ids

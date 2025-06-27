@@ -1,14 +1,20 @@
 """
-Open cover construction for the Mapper algorithm.
+This module provides various cover algorithms for the Mapper algorithm,
 
-An open cover is a collection of open subsets of a dataset whose union spans
-the whole dataset. Unlike clustering, open subsets do not need to be disjoint.
-Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
+including ball cover, KNN cover, proximity cubical cover, standard cubical
+cover, and cubical cover. These algorithms are used to create open covers of
+datasets, which are essential for constructing the Mapper graph. An open cover
+is a collection of open subsets of a dataset whose union spans the whole dataset.
+Unlike clustering, open subsets do not need to be disjoint. The overlaps of the
+open subsets define the edges of the Mapper graph.
+The module also includes a ProximityNet class that provides a common interface
+for applying spatial search algorithms to datasets, yielding the indices of
+covered points based on the search results.
 """
 
 from __future__ import annotations
 
-from typing import Generator, List
+from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
 from tdamapper._common import ParamsMixin
 from tdamapper.core import ArrayLike, SpatialSearch
@@ -16,15 +22,52 @@ from tdamapper.search import BallSearch, CubicalLandmarks, CubicalSearch, KNNSea
 
 
 class ProximityNet:
+    """
+    A class that provides a common interface for applying spatial search
+    algorithms to datasets, yielding the indices of covered points based on
+    the search results.
+
+    :param search: An instance of a spatial search algorithm that implements
+        the `fit` and `search` methods. This can be any class that adheres
+        to the :class:`tdamapper.core.SpatialSearch` interface, such as
+        `BallSearch` or `KNNSearch`.
+    :type search: SpatialSearch
+    """
 
     def __init__(self, search: SpatialSearch):
         self._search = search
 
     def fit(self, X: ArrayLike) -> ProximityNet:
+        """
+        Train internal parameters of the search algorithm.
+
+        This method fits the search algorithm to the dataset `X`, allowing it
+        to prepare for efficient searching.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: The object itself.
+        """
         self._search.fit(X)
         return self
 
     def apply(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Applies the search algorithm to the dataset `X` and yields the indices
+        of covered points.
+
+        This method iterates over each point in `X`, performs a search using
+        the search algorithm, and yields the indices of the points that are
+        covered by the search results. It ensures that each point is only
+        covered once, even if multiple points are found in the same search.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator that yields lists of indices of covered points.
+        :rtype: generator of lists of ints
+        :yield: Lists of indices of points covered by the search results.
+        :rtype: Lists of ints
+        """
         covered_ids = set()
         for i, xi in enumerate(X):
             if i not in covered_ids:
@@ -71,13 +114,13 @@ class BallCover(ParamsMixin):
 
     def __init__(
         self,
-        radius=1.0,
-        metric="euclidean",
-        metric_params=None,
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=None,
-        pivoting=None,
+        radius: float = 1.0,
+        metric: Union[str, Callable] = "euclidean",
+        metric_params: Optional[Dict[str, Any]] = None,
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: Optional[float] = None,
+        pivoting: Optional[str] = None,
     ):
         self.radius = radius
         self.metric = metric
@@ -86,9 +129,18 @@ class BallCover(ParamsMixin):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        self._proximity_net = None
 
     def fit(self, X: ArrayLike) -> BallCover:
+        """
+        Train internal parameters of the ball search algorithm.
+        This method fits the ball search algorithm to the dataset `X`, allowing
+        it to prepare for efficient searching.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: The object itself.
+        :rtype: BallCover
+        """
         search = BallSearch(
             radius=self.radius,
             metric=self.metric,
@@ -103,6 +155,22 @@ class BallCover(ParamsMixin):
         return self
 
     def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Applies the ball search algorithm to the dataset `X` and yields the
+        indices of covered points.
+
+        This method iterates over each point in `X`, performs a search using
+        the ball search algorithm, and yields the indices of the points that are
+        covered by the search results. It ensures that each point is only
+        covered once, even if multiple points are found in the same search.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator that yields lists of indices of covered points.
+        :rtype: generator of lists of ints
+        :yield: Lists of indices of points covered by the search results.
+        :rtype: Lists of ints
+        """
         return self._proximity_net.apply(X)
 
 
@@ -143,13 +211,13 @@ class KNNCover(ParamsMixin):
 
     def __init__(
         self,
-        neighbors=1,
-        metric="euclidean",
-        metric_params=None,
-        kind="flat",
-        leaf_capacity=None,
-        leaf_radius=0.0,
-        pivoting=None,
+        neighbors: int = 1,
+        metric: Union[str, Callable] = "euclidean",
+        metric_params: Optional[Dict[str, Any]] = None,
+        kind: str = "flat",
+        leaf_capacity: Optional[int] = None,
+        leaf_radius: float = 0.0,
+        pivoting: Optional[str] = None,
     ):
         self.neighbors = neighbors
         self.metric = metric
@@ -158,7 +226,6 @@ class KNNCover(ParamsMixin):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        self._proximity_net = None
 
     def fit(self, X: ArrayLike) -> KNNCover:
         search = KNNSearch(
@@ -219,12 +286,12 @@ class ProximityCubicalCover(ParamsMixin):
 
     def __init__(
         self,
-        n_intervals=1,
-        overlap_frac=None,
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=None,
-        pivoting=None,
+        n_intervals: int = 1,
+        overlap_frac: Optional[float] = None,
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: Optional[float] = None,
+        pivoting: Optional[str] = None,
     ):
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
@@ -232,7 +299,6 @@ class ProximityCubicalCover(ParamsMixin):
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
-        self._proximity_net = None
 
     def fit(self, X: ArrayLike) -> ProximityCubicalCover:
         search = CubicalSearch(
@@ -289,12 +355,12 @@ class StandardCubicalCover(ParamsMixin):
 
     def __init__(
         self,
-        n_intervals=1,
-        overlap_frac=None,
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=None,
-        pivoting=None,
+        n_intervals: int = 1,
+        overlap_frac: Optional[float] = None,
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: Optional[float] = None,
+        pivoting: Optional[str] = None,
     ):
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac
@@ -384,13 +450,13 @@ class CubicalCover(ParamsMixin):
 
     def __init__(
         self,
-        n_intervals=1,
-        overlap_frac=None,
-        algorithm="proximity",
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=None,
-        pivoting=None,
+        n_intervals: int = 1,
+        overlap_frac: Optional[float] = None,
+        algorithm: str = "proximity",
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: Optional[float] = None,
+        pivoting: Optional[str] = None,
     ):
         self.n_intervals = n_intervals
         self.overlap_frac = overlap_frac

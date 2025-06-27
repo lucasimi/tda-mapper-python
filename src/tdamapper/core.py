@@ -275,33 +275,98 @@ class SpatialSearch(Protocol):
     """
     Abstract interface for spatial search algorithms.
 
-    Subclasses should override the methods of this class to implement more
-    meaningful spatial search algorithms.
+    This interface defines the methods that a spatial search algorithm must
+    implement. A spatial search algorithm is used to find the nearest neighbors
+    of a point in a dataset. The algorithm should be able to handle datasets of
+    arbitrary size and dimensionality, and should be efficient in terms of both
+    time and space complexity.
     """
 
-    def fit(self, X: ArrayLike) -> SpatialSearch: ...
+    def fit(self, X: ArrayLike) -> SpatialSearch:
+        """
+        Fit the spatial search algorithm to the data.
 
-    def search(self, x: PointLike) -> List[int]: ...
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: self
+        """
+
+    def search(self, x: PointLike) -> List[int]:
+        """
+        Search for the nearest neighbors of a point.
+
+        :param x: A point to search for.
+        :type x: A point-like object, such as a list or a numpy array.
+        :return: A list of indices of the nearest neighbors of the point.
+        :rtype: list[int]
+        """
 
 
 class Cover(Protocol):
     """
     Abstract interface for cover algorithms.
 
-    Subclasses should override the methods of
-    this class to implement more meaningful cover algorithms.
+    This interface defines the methods that a cover algorithm must implement.
+    A cover algorithm is used to cover the space with overlapping open sets.
+    The cover algorithm should be able to handle datasets of arbitrary size and
+    dimensionality, and should be efficient in terms of both time and space
+    complexity.
     """
 
-    def fit(self, X: ArrayLike) -> Cover: ...
+    def fit(self, X: ArrayLike) -> Cover:
+        """
+        Fit the cover algorithm to the data.
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]: ...
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: self
+        """
+
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Transform the data into overlapping open sets.
+
+        This method should yield a generator of lists, where each list contains
+        the indices of the points in the dataset that belong to the open set.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :yield: A generator of lists of indices.
+        """
 
 
 class Clustering(Protocol):
+    """
+    Abstract interface for clustering algorithms.
+
+    This interface defines the methods that a clustering algorithm must
+    implement. A clustering algorithm is used to group the points in the
+    dataset into clusters. The clustering algorithm should be able to handle
+    datasets of arbitrary size and dimensionality, and should be efficient in
+    terms of both time and space complexity.
+
+    This interface is compatible with scikit-learn's clustering
+    interface, typically from :mod:`sklearn.cluster`.
+    The clustering algorithm should implement the `fit` method, which takes a
+    dataset as input and returns the clustering labels for each point in the
+    dataset. The labels should be stored in the `labels_` attribute of the
+    clustering algorithm instance. The labels should be integers starting from
+    zero, and should be unique for each cluster. Points that are not assigned to
+    any cluster should have a label of -1 (this is typically the case for noise
+    points in clustering algorithms like DBSCAN).
+    """
 
     labels_: List[int]
 
-    def fit(self, X: ArrayLike, y: Any = None) -> Clustering: ...
+    def fit(self, X: ArrayLike, y: Any = None) -> Clustering:
+        """
+        Fit the clustering algorithm to the data.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :param y: Ignored.
+        :return: self
+        """
 
 
 class TrivialCover(ParamsMixin):
