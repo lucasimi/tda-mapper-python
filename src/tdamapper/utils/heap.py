@@ -1,22 +1,47 @@
-def _left(i):
+"""
+This module implements a max-heap data structure.
+It provides methods to add elements, pop the maximum element,
+and iterate over the elements in the heap.
+"""
+
+
+def _left(i: int) -> int:
     return 2 * i + 1
 
 
-def _right(i):
+def _right(i: int) -> int:
     return 2 * i + 2
 
 
-def _parent(i):
+def _parent(i: int) -> int:
     return max(0, (i - 1) // 2)
 
 
 class _HeapNode:
+    """
+    A node in the max-heap, storing a key and a value.
+
+    It provides methods to get the key and value, and to compare nodes.
+    The comparison is based on the key, allowing the heap to maintain
+    the max-heap property. It is important to note that the key must be
+    comparable with other keys in the heap for the heap to function correctly.
+
+    :param key: The key used for ordering in the heap.
+    :param value: The value associated with the key.
+    :type key: Any
+    :type value: Any
+    """
 
     def __init__(self, key, value):
         self._key = key
         self._value = value
 
     def get(self):
+        """
+        Returns the key and value of the node.
+        :return: A tuple containing the key and value.
+        :rtype: tuple
+        """
         return self._key, self._value
 
     def __lt__(self, other):
@@ -33,6 +58,12 @@ class _HeapNode:
 
 
 class MaxHeap:
+    """
+    A max-heap data structure that allows for efficient retrieval of the maximum element.
+
+    It supports adding elements, popping the maximum element, and iterating over the elements.
+    It is important to note that the keys used in the heap must be comparable with each other.
+    """
 
     def __init__(self):
         self._heap = []
@@ -50,11 +81,23 @@ class MaxHeap:
         return len(self._heap)
 
     def top(self):
+        """
+        Returns the maximum element in the heap without removing it.
+
+        :return: A tuple containing the key and value of the maximum element, or (None, None) if the heap is empty.
+        :rtype: tuple
+        """
         if not self._heap:
             return (None, None)
         return self._heap[0].get()
 
     def pop(self):
+        """
+        Removes and returns the maximum element from the heap.
+
+        :return: A tuple containing the key and value of the maximum element, or None if the heap is empty.
+        :rtype: tuple
+        """
         if not self._heap:
             return
         max_val = self._heap[0]
@@ -64,6 +107,16 @@ class MaxHeap:
         return max_val.get()
 
     def add(self, key, val):
+        """
+        Adds a new element to the heap with the specified key and value.
+
+        :param key: The key used for ordering in the heap.
+        :param val: The value associated with the key.
+        :type key: Any
+        :type val: Any
+        :return: None
+        :rtype: None
+        """
         self._heap.append(_HeapNode(key, val))
         self._bubble_up()
 
