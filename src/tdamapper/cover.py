@@ -14,70 +14,120 @@ covered points based on the search results.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Generator, List, Optional, Union
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
 from tdamapper._common import ParamsMixin
-from tdamapper.core import ArrayLike, SpatialSearch
+from tdamapper.core import ArrayLike, PointLike, SpatialSearch
 from tdamapper.search import BallSearch, CubicalLandmarks, CubicalSearch, KNNSearch
 
 
-class ProximityNet:
+class ProximityNet(ABC, ParamsMixin):
     """
-    A class that provides a common interface for applying spatial search
+    Base class for proximity net algorithms, which cover data using spatial
+    search algorithms.
+
+    This class provides a common interface for applying spatial search
     algorithms to datasets, yielding the indices of covered points based on
     the search results.
-
-    :param search: An instance of a spatial search algorithm that implements
-        the `fit` and `search` methods. This can be any class that adheres
-        to the :class:`tdamapper.core.SpatialSearch` interface, such as
-        `BallSearch` or `KNNSearch`.
-    :type search: SpatialSearch
     """
 
-    def __init__(self, search: SpatialSearch):
-        self._search = search
+    landmarks_: List[PointLike]
+    labels_: List[List[int]]
+
+    @abstractmethod
+    def spatial_search(self) -> SpatialSearch:
+        """
+        Returns a new instance of a spatial search algorithm.
+
+        This method should be implemented by subclasses to provide
+        the specific spatial search algorithm to be used.
+
+        :return: An instance of a spatial search algorithm.
+        """
+
+    def _cover(self, X: ArrayLike) -> Generator[Tuple[int, List[int]], None, None]:
+        """
+        Covers the dataset using landmarks and spatial search.
+
+        This function yields pairs of indices and lists of ids, where each
+        pair represents a point in the dataset and the indices of its covered
+        neighbors. The first element of the pair is the index of the point in
+        the dataset, and the second element is a list of ids of the covered
+        neighbors. If the index is -1, it indicates that the point is a
+        landmark, and the list of ids contains the indices of its neighbors.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :return: A generator of pairs of indices and lists of ids.
+        :rtype: generator of tuples (int, List[int])
+        :yield: A tuple containing the index of the point and a list of ids of
+                its covered neighbors. If the index is -1, it indicates a
+                landmark, and the list contains the indices of its neighbors.
+        """
+        search = self.spatial_search()
+        search.fit(X)
+        covered_ids = set()
+        for x in self.landmarks_:
+            neigh_ids = search.search(x)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield -1, neigh_ids
+        for i, xi in enumerate(X):
+            if i not in covered_ids:
+                neigh_ids = search.search(xi)
+                covered_ids.update(neigh_ids)
+                if neigh_ids:
+                    yield i, neigh_ids
 
     def fit(self, X: ArrayLike) -> ProximityNet:
         """
-        Train internal parameters of the search algorithm.
+        Train internal parameters.
 
-        This method fits the search algorithm to the dataset `X`, allowing it
-        to prepare for efficient searching.
+        This method applies the spatial search algorithm to the dataset and
+        stores the landmarks and labels.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         """
-        self._search.fit(X)
+        self.landmarks_ = []
+        self.labels_ = []
+        for i, neigh_ids in self._cover(X):
+            if i >= 0:
+                self.landmarks_.append(X[i])
+            self.labels_.append(neigh_ids)
         return self
 
-    def apply(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         """
-        Applies the search algorithm to the dataset `X` and yields the indices
-        of covered points.
+        Covers the dataset using landmarks.
 
-        This method iterates over each point in `X`, performs a search using
-        the search algorithm, and yields the indices of the points that are
-        covered by the search results. It ensures that each point is only
-        covered once, even if multiple points are found in the same search.
+        This function yields all the indices of the covered neighbors for each
+        point in the dataset. The indices are the indices of the points in the
+        original dataset.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator that yields lists of indices of covered points.
-        :rtype: generator of lists of ints
-        :yield: Lists of indices of points covered by the search results.
-        :rtype: Lists of ints
+        :return: A generator of lists of ids.
         """
-        covered_ids = set()
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self._search.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
+        for _, neigh_ids in self._cover(X):
+            yield neigh_ids
+
+    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Fit the model and transform the dataset.
+
+        This function first fits the model to the dataset and then yields
+        the indices of the covered neighbors for each point in the dataset.
+
+        :param X: A dataset of n points.
+        :return: A generator of lists of ids.
+        """
+        self.fit(X)
+        for neigh_ids in self.labels_:
+            yield neigh_ids
 
 
-class BallCover(ParamsMixin):
+class BallCover(ProximityNet):
     """
     Cover algorithm based on `ball proximity function`, which covers data with
     open balls of fixed radius.
@@ -88,28 +138,21 @@ class BallCover(ParamsMixin):
 
     :param radius: The radius of the open balls. Must be a positive value.
         Defaults to 1.0.
-    :type radius: float
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
-    :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
         passed to `tdamapper.metrics.get_metric`. Defaults to None.
-    :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
         to 'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults
         to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
 
     def __init__(
@@ -130,18 +173,8 @@ class BallCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> BallCover:
-        """
-        Train internal parameters of the ball search algorithm.
-        This method fits the ball search algorithm to the dataset `X`, allowing
-        it to prepare for efficient searching.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: The object itself.
-        :rtype: BallCover
-        """
-        search = BallSearch(
+    def spatial_search(self) -> BallSearch:
+        return BallSearch(
             radius=self.radius,
             metric=self.metric,
             metric_params=self.metric_params,
@@ -150,31 +183,9 @@ class BallCover(ParamsMixin):
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        self._proximity_net = ProximityNet(search)
-        self._proximity_net.fit(X)
-        return self
-
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        """
-        Applies the ball search algorithm to the dataset `X` and yields the
-        indices of covered points.
-
-        This method iterates over each point in `X`, performs a search using
-        the ball search algorithm, and yields the indices of the points that are
-        covered by the search results. It ensures that each point is only
-        covered once, even if multiple points are found in the same search.
-
-        :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :return: A generator that yields lists of indices of covered points.
-        :rtype: generator of lists of ints
-        :yield: Lists of indices of points covered by the search results.
-        :rtype: Lists of ints
-        """
-        return self._proximity_net.apply(X)
 
 
-class KNNCover(ParamsMixin):
+class KNNCover(ProximityNet):
     """
     Cover algorithm based on `KNN proximity function`, which covers data using
     k-nearest neighbors (KNN).
@@ -185,28 +196,21 @@ class KNNCover(ParamsMixin):
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the length of the dataset.
         Defaults to 1.
-    :type neighbors: int
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
-    :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
         passed to `tdamapper.metrics.get_metric`. Defaults to None.
-    :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
         to 'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. If not specified, it defaults to the value of
         `neighbors`. Must be a positive value. Defaults to None.
-    :type leaf_capacity: int, optional
     :param leaf_radius: The radius of the leaf nodes. Must be a positive value.
         Defaults to 0.0.
-    :type leaf_radius: float
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
 
     def __init__(
@@ -227,8 +231,8 @@ class KNNCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> KNNCover:
-        search = KNNSearch(
+    def spatial_search(self) -> KNNSearch:
+        return KNNSearch(
             neighbors=self.neighbors,
             metric=self.metric,
             metric_params=self.metric_params,
@@ -237,15 +241,9 @@ class KNNCover(ParamsMixin):
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        self._proximity_net = ProximityNet(search)
-        self._proximity_net.fit(X)
-        return self
-
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        return self._proximity_net.apply(X)
 
 
-class ProximityCubicalCover(ParamsMixin):
+class ProximityCubicalCover(ProximityNet):
     """
     Cover algorithm based on the `cubical proximity function`, which covers
     data with open hypercubes of uniform size and overlap. The cubical cover is
@@ -262,26 +260,20 @@ class ProximityCubicalCover(ParamsMixin):
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
         Defaults to 1.
-    :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
         each hypercube is half the total volume. Defaults to None.
-    :type overlap_frac: float
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults
         to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
 
     def __init__(
@@ -300,8 +292,8 @@ class ProximityCubicalCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> ProximityCubicalCover:
-        search = CubicalSearch(
+    def spatial_search(self) -> CubicalSearch:
+        return CubicalSearch(
             n_intervals=self.n_intervals,
             overlap_frac=self.overlap_frac,
             kind=self.kind,
@@ -309,12 +301,6 @@ class ProximityCubicalCover(ParamsMixin):
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        self._proximity_net = ProximityNet(search)
-        self._proximity_net.fit(X)
-        return self
-
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        return self._proximity_net.apply(X)
 
 
 class StandardCubicalCover(ParamsMixin):
@@ -331,27 +317,23 @@ class StandardCubicalCover(ParamsMixin):
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
         Defaults to 1.
-    :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
         each hypercube is half the total volume. Defaults to None.
-    :type overlap_frac: float
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults
         to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
+
+    _landmarks: CubicalLandmarks
 
     def __init__(
         self,
@@ -392,9 +374,7 @@ class StandardCubicalCover(ParamsMixin):
         in the original dataset.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
         """
         self.fit(X)
         lmrks_to_cover = self._landmarks.landmarks(X)
@@ -403,6 +383,10 @@ class StandardCubicalCover(ParamsMixin):
             neigh_ids = self._landmarks.search(x)
             if neigh_ids:
                 yield neigh_ids
+
+    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        self.fit(X)
+        return self.transform(X)
 
 
 class CubicalCover(ParamsMixin):
@@ -420,33 +404,28 @@ class CubicalCover(ParamsMixin):
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
         Defaults to 1.
-    :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
         each hypercube is half the total volume. Defaults to None.
-    :type overlap_frac: float
     :param algorithm: Specifies whether to use standard cubical cover, as in
         :class:`tdamapper.cover.StandardCubicalCover` or proximity cubical
         cover, as in :class:`tdamapper.cover.ProximityCubicalCover`.
         Acceptable values are 'standard' or 'proximity'. Defaults to
         'proximity'.
-    :type algorithm: str
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults
         to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
+
+    _cubical_cover: Union[StandardCubicalCover, ProximityCubicalCover]
 
     def __init__(
         self,
@@ -493,9 +472,7 @@ class CubicalCover(ParamsMixin):
         cover used.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
-        :rtype: self
         """
         self._cubical_cover = self._get_cubical_cover()
         self._cubical_cover.fit(X)
@@ -509,8 +486,19 @@ class CubicalCover(ParamsMixin):
         cover used.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: A generator of lists of ids.
-        :rtype: generator of lists of ints
         """
         return self._cubical_cover.transform(X)
+
+    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Fit the model and transform the dataset.
+
+        This method first fits the model to the dataset and then yields
+        the indices of the covered neighbors for each point in the dataset.
+
+        :param X: A dataset of n points.
+        :return: A generator of lists of ids.
+        """
+        self._cubical_cover = self._get_cubical_cover()
+        return self._cubical_cover.fit_transform(X)

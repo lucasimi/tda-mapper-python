@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
-from tdamapper._common import warn_user
+from tdamapper._common import ParamsMixin, warn_user
 from tdamapper.core import ArrayLike, PointLike
 from tdamapper.metrics import chebyshev, get_metric
 from tdamapper.vptree import VPTree
@@ -33,7 +33,7 @@ def _snd(x):
     return x[1]
 
 
-class BallSearch:
+class BallSearch(ParamsMixin):
     """
     Search points within a given radius from a query point.
 
@@ -46,28 +46,25 @@ class BallSearch:
 
     :param radius: The radius within which to search for neighbors.
         Must be a positive value. Defaults to 1.0.
-    :type radius: float
     :param metric: The distance metric to use for searching. Can be a string
         (e.g., 'euclidean') or a callable function. Defaults to 'euclidean'.
-    :type metric: str or callable
     :param metric_params: Additional parameters for the distance metric.
         This should be a dictionary containing parameters specific to the
         chosen metric. Defaults to None.
-    :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
+
+    _radius: float
+    _data: List[tuple[int, Any]]
+    _vptree: VPTree
 
     def __init__(
         self,
@@ -96,9 +93,7 @@ class BallSearch:
         method.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
-        :rtype: self
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
         self._radius = self.radius
@@ -121,9 +116,7 @@ class BallSearch:
         This method uses the internal vptree to perform fast range queries.
 
         :param x: A query point for which we want to find neighbors.
-        :type x: Any
         :return: The indices of the neighbors contained in the dataset.
-        :rtype: list[int]
         """
         if self._vptree is None:
             return []
@@ -135,7 +128,7 @@ class BallSearch:
         return [x for (x, _) in neighs]
 
 
-class KNNSearch:
+class KNNSearch(ParamsMixin):
     """
     Search for k-nearest neighbors in a dataset.
 
@@ -149,29 +142,26 @@ class KNNSearch:
 
     :param neighbors: The number of nearest neighbors to search for.
         Must be a positive integer. Defaults to 1.
-    :type neighbors: int
     :param metric: The distance metric to use for searching. Can be a string
         (e.g., 'euclidean') or a callable function. Defaults to 'euclidean'.
-    :type metric: str or callable
     :param metric_params: Additional parameters for the distance metric.
         This should be a dictionary containing parameters specific to the
         chosen metric. Defaults to None.
-    :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to None, which
         means it will be set to the value of `neighbors`.
-    :type leaf_capacity: int, optional
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to 0.0. Must be a non-negative value. Defaults to 0.0.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
+
+    _neighbors: int
+    _data: List[tuple[int, Any]]
+    _vptree: VPTree
 
     def __init__(
         self,
@@ -200,9 +190,7 @@ class KNNSearch:
         method.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
-        :rtype: self
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
         self._neighbors = self.neighbors
@@ -226,9 +214,7 @@ class KNNSearch:
         queries.
 
         :param x: A query point for which we want to find neighbors.
-        :type x: Any
         :return: The indices of the neighbors contained in the dataset.
-        :rtype: list[int]
         """
         if self._vptree is None:
             return []
@@ -236,7 +222,7 @@ class KNNSearch:
         return [x for (x, _) in neighs]
 
 
-class CubicalSearch:
+class CubicalSearch(ParamsMixin):
     """
     Search points within a cubical grid.
 
@@ -251,26 +237,27 @@ class CubicalSearch:
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
         Defaults to 1.
-    :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
         each hypercube is half the total volume. Defaults to None.
-    :type overlap_frac: float, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
+
+    _n_intervals: int
+    _overlap_frac: float
+    _min: np.ndarray
+    _max: np.ndarray
+    _delta: np.ndarray
+    _ball_search: BallSearch
 
     def __init__(
         self,
@@ -329,9 +316,7 @@ class CubicalSearch:
         instance that allows efficient queries of the dataset.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
-        :rtype: self
         """
         X = np.asarray(X).reshape(len(X), -1).astype(float)
         if self.overlap_frac is None:
@@ -365,9 +350,7 @@ class CubicalSearch:
         whose center is closest to the target point.
 
         :param x: A query point for which we want to find neighbors.
-        :type x: Any
         :return: The indices of the neighbors contained in the dataset.
-        :rtype: list[int]
         """
         center = self._phi(x)
         return self._ball_search.search(center)
@@ -385,26 +368,20 @@ class CubicalLandmarks(CubicalSearch):
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
         Defaults to 1.
-    :type n_intervals: int
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
         each hypercube is half the total volume. Defaults to None.
-    :type overlap_frac: float
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
         'flat'.
-    :type kind: str
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. Must be a positive value. Defaults to 1.
-    :type leaf_capacity: int
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
         defaults to the value of `radius`. Must be a positive value. Defaults
         to None.
-    :type leaf_radius: float, optional
     :param pivoting: The method used for pivoting in the vantage point tree.
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
-    :type pivoting: str or callable, optional
     """
 
     def __init__(
@@ -431,11 +408,10 @@ class CubicalLandmarks(CubicalSearch):
         intersect the dataset.
         This method returns a dictionary where the keys are the centers of the
         hypercubes and the values are the first point found in that hypercube.
+
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: A dictionary with hypercube centers as keys and the first point
-                 found in that hypercube as values.
-        :rtype: dict
+            found in that hypercube as values.
         """
         lmrks = {}
         for x in X:

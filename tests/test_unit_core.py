@@ -199,6 +199,10 @@ def test_mock_connected_components():
             yield [1, 2]
             yield [0, 1, 3]
 
+        def fit_transform(self, X):
+            self.fit(X)
+            return self.transform(X)
+
     cover = MockCover()
     clustering = TrivialClustering()
     ccs = mapper_connected_components(data, data, cover, clustering)
@@ -222,6 +226,10 @@ def test_mock_labels():
             yield [1, 3]
             yield [1, 2]
             yield [0, 1, 3]
+
+        def fit_transform(self, X):
+            self.fit(X)
+            return self.transform(X)
 
     cover = MockCover()
     clustering = TrivialClustering()

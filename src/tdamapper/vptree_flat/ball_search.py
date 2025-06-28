@@ -1,24 +1,34 @@
-from tdamapper.vptree_flat.common import _mid
+from typing import Generic, List, TypeVar
+
+from tdamapper.vptree_flat.common import VPTreeType, _mid
+
+T = TypeVar("T")
 
 
-class BallSearch:
+class BallSearch(Generic[T]):
 
-    def __init__(self, vpt, point, eps, inclusive=True):
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+    def __init__(
+        self,
+        vpt: VPTreeType[T],
+        point: T,
+        eps: float,
+        inclusive: bool = True,
+    ):
+        self._arr = vpt.array
+        self._distance = vpt.distance
         self._point = point
         self._eps = eps
         self._inclusive = inclusive
 
-    def search(self):
+    def search(self) -> List[T]:
         return self._search_iter()
 
-    def _inside(self, dist):
+    def _inside(self, dist: float) -> bool:
         if self._inclusive:
             return dist <= self._eps
         return dist < self._eps
 
-    def _search_iter(self):
+    def _search_iter(self) -> List[T]:
         stack = [(0, self._arr.size())]
         result = []
         while stack:

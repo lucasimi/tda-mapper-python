@@ -1,18 +1,22 @@
 from random import randrange
+from typing import Generic, Iterable, TypeVar
 
 import numpy as np
 
-from tdamapper.vptree_flat.common import VPArray
+from tdamapper.vptree_flat.common import VPArray, VPTreeType
 
 
-def _mid(start, end):
+def _mid(start: int, end: int) -> int:
     return (start + end) // 2
 
 
-class Builder:
+T = TypeVar("T")
 
-    def __init__(self, vpt, X):
-        self._distance = vpt._get_distance()
+
+class Builder(Generic[T]):
+
+    def __init__(self, vpt: VPTreeType[T], X: Iterable[T]):
+        self._distance = vpt.distance
 
         dataset = [x for x in X]
         indices = np.array([i for i in range(len(dataset))])
@@ -20,26 +24,26 @@ class Builder:
         is_terminal = np.array([False for _ in X])
         self._arr = VPArray(dataset, distances, indices, is_terminal)
 
-        self._leaf_capacity = vpt.get_leaf_capacity()
-        self._leaf_radius = vpt.get_leaf_radius()
-        pivoting = vpt.get_pivoting()
+        self._leaf_capacity = vpt.leaf_capacity
+        self._leaf_radius = vpt.leaf_radius
+        pivoting = vpt.pivoting
         self._pivoting = self._pivoting_disabled
         if pivoting == "random":
             self._pivoting = self._pivoting_random
         elif pivoting == "furthest":
             self._pivoting = self._pivoting_furthest
 
-    def _pivoting_disabled(self, start, end):
+    def _pivoting_disabled(self, start: int, end: int) -> None:
         pass
 
-    def _pivoting_random(self, start, end):
+    def _pivoting_random(self, start: int, end: int) -> None:
         if end <= start:
             return
         pivot = randrange(start, end)
         if pivot > start:
             self._arr.swap(start, pivot)
 
-    def _furthest(self, start, end, i):
+    def _furthest(self, start: int, end: int, i: int) -> int:
         furthest_dist = 0.0
         furthest = start
         i_point = self._arr.get_point(i)
@@ -51,7 +55,7 @@ class Builder:
                 furthest_dist = j_dist
         return furthest
 
-    def _pivoting_furthest(self, start, end):
+    def _pivoting_furthest(self, start: int, end: int) -> None:
         if end <= start:
             return
         rnd = randrange(start, end)
@@ -60,7 +64,7 @@ class Builder:
         if furthest > start:
             self._arr.swap(start, furthest)
 
-    def _update(self, start, end):
+    def _update(self, start: int, end: int) -> None:
         self._pivoting(start, end)
         v_point = self._arr.get_point(start)
         is_terminal = self._arr.is_terminal(start)
@@ -69,11 +73,11 @@ class Builder:
             self._arr.set_distance(i, self._distance(v_point, point))
             self._arr.set_terminal(i, is_terminal)
 
-    def build(self):
+    def build(self) -> VPArray[T]:
         self._build_iter()
         return self._arr
 
-    def _build_iter(self):
+    def _build_iter(self) -> None:
         stack = [(0, self._arr.size())]
         while stack:
             start, end = stack.pop()

@@ -105,12 +105,11 @@ def mapper_labels(
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
 
-    cover.fit(y)
     _lbls = Parallel(n_jobs, prefer="threads")(
         delayed(_run_clustering)(
             local_ids, [X[j] for j in local_ids], clone(clustering)
         )
-        for local_ids in cover.transform(y)
+        for local_ids in cover.fit_transform(y)
     )
     itm_lbls: List[List[int]] = [[] for _ in X]
     max_lbl = 0
@@ -322,6 +321,18 @@ class Cover(Protocol):
         :return: self
         """
 
+    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Fit the cover algorithm to the data and transform it.
+
+        This method should yield a generator of lists, where each list contains
+        the indices of the points in the dataset that belong to the open set.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :yield: A generator of lists of indices.
+        """
+
     def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         """
         Transform the data into overlapping open sets.
@@ -383,6 +394,10 @@ class TrivialCover(ParamsMixin):
 
     def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
         yield list(range(len(X)))
+
+    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        self.fit(X)
+        return self.transform(X)
 
 
 class _MapperAlgorithm(EstimatorMixin, ParamsMixin):

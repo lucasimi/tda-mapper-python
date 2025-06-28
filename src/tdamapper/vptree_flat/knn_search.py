@@ -1,30 +1,35 @@
+from typing import Generic, List, TypeVar
+
 from tdamapper.heap import MaxHeap
-from tdamapper.vptree_flat.common import _mid
+from tdamapper.vptree_flat.common import VPTreeType, _mid
 
 _PRE = 0
 _POST = 1
 
 
-class KnnSearch:
+T = TypeVar("T")
 
-    def __init__(self, vpt, point, neighbors):
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+
+class KnnSearch(Generic[T]):
+
+    def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int):
+        self._arr = vpt.array
+        self._distance = vpt.distance
         self._point = point
         self._neighbors = neighbors
         self._radius = float("inf")
         self._result = MaxHeap()
 
-    def _get_items(self):
+    def _get_items(self) -> List[T]:
         while len(self._result) > self._neighbors:
             self._result.pop()
         return [x for (_, x) in self._result]
 
-    def search(self):
+    def search(self) -> List[T]:
         self._search_iter()
         return self._get_items()
 
-    def _process(self, x):
+    def _process(self, x: T) -> float:
         dist = self._distance(self._point, x)
         if dist >= self._radius:
             return dist
@@ -35,7 +40,7 @@ class KnnSearch:
             self._radius, _ = self._result.top()
         return dist
 
-    def _search_iter(self):
+    def _search_iter(self) -> List[T]:
         self._result = MaxHeap()
         stack = [(0, self._arr.size(), 0.0, _PRE)]
         while stack:

@@ -1,42 +1,75 @@
+from __future__ import annotations
+
+from typing import Callable, Generic, Iterable, List, Optional, Protocol, TypeVar
+
+import numpy as np
+from numpy.typing import NDArray
+
 from tdamapper.quickselect import quickselect, swap_all
 
+T = TypeVar("T")
 
-def _mid(start, end):
+
+def _mid(start: int, end: int) -> int:
     return (start + end) // 2
 
 
-class VPArray:
+class VPTreeType(Protocol, Generic[T]):
 
-    def __init__(self, dataset, distances, indices, is_terminal):
+    @property
+    def leaf_capacity(self) -> int: ...
+
+    @property
+    def leaf_radius(self) -> float: ...
+
+    @property
+    def pivoting(self) -> Optional[str]: ...
+
+    @property
+    def array(self) -> VPArray[T]: ...
+
+    @property
+    def distance(self) -> Callable[[T, T], float]: ...
+
+
+class VPArray(Generic[T]):
+
+    def __init__(
+        self,
+        dataset: List[T],
+        distances: NDArray[np.float64],
+        indices: NDArray[np.float64],
+        is_terminal,
+    ):
         self._dataset = dataset
         self._distances = distances
         self._indices = indices
         self._is_terminal = is_terminal
 
-    def size(self):
+    def size(self) -> int:
         return len(self._dataset)
 
-    def get_point(self, i):
+    def get_point(self, i: int) -> T:
         return self._dataset[self._indices[i]]
 
-    def get_points(self, s, e):
+    def get_points(self, s: int, e: int) -> Iterable[T]:
         for x_index in self._indices[s:e]:
             yield self._dataset[x_index]
 
-    def get_distance(self, i):
+    def get_distance(self, i: int) -> float:
         return self._distances[i]
 
-    def set_distance(self, i, dist):
+    def set_distance(self, i: int, dist: float) -> None:
         self._distances[i] = dist
 
-    def set_terminal(self, i, terminal):
+    def set_terminal(self, i: int, terminal: bool) -> None:
         self._is_terminal[i] = terminal
 
-    def is_terminal(self, i):
+    def is_terminal(self, i: int) -> bool:
         return self._is_terminal[i]
 
-    def swap(self, i, j):
+    def swap(self, i: int, j: int) -> None:
         swap_all(self._distances, i, j, self._indices, self._is_terminal)
 
-    def partition(self, s, e, k):
+    def partition(self, s: int, e: int, k: int) -> None:
         quickselect(self._distances, s, e, k, self._indices, self._is_terminal)

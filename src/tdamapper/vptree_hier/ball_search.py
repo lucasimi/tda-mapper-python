@@ -1,25 +1,42 @@
-class BallSearch:
+from __future__ import annotations
 
-    def __init__(self, vpt, point, eps, inclusive=True):
-        self._tree = vpt._get_tree()
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+from typing import Generic, List, TypeVar
+
+from tdamapper.vptree_hier.common import Tree, VPTreeType
+
+T = TypeVar("T")
+
+
+class BallSearch(Generic[T]):
+
+    _result: List[T]
+
+    def __init__(
+        self,
+        vpt: VPTreeType[T],
+        point: T,
+        eps: float,
+        inclusive: bool = True,
+    ):
+        self._tree = vpt.tree
+        self._arr = vpt.array
+        self._distance = vpt.distance
         self._point = point
         self._eps = eps
         self._inclusive = inclusive
         self._result = []
 
-    def search(self):
+    def search(self) -> List[T]:
         self._result.clear()
         self._search_rec(self._tree)
         return self._result
 
-    def _inside(self, dist):
+    def _inside(self, dist: float) -> bool:
         if self._inclusive:
             return dist <= self._eps
         return dist < self._eps
 
-    def _search_rec(self, tree):
+    def _search_rec(self, tree: Tree[T]) -> None:
         if tree.is_terminal():
             start, end = tree.get_bounds()
             for x in self._arr.get_points(start, end):

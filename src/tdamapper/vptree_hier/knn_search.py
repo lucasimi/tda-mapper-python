@@ -1,37 +1,42 @@
+from typing import Generic, List, TypeVar
+
 from tdamapper.heap import MaxHeap
+from tdamapper.vptree_hier.common import Tree, VPTreeType
+
+T = TypeVar("T")
 
 
-class KnnSearch:
+class KnnSearch(Generic[T]):
 
-    def __init__(self, vpt, point, neighbors):
-        self._tree = vpt._get_tree()
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+    def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int):
+        self._tree = vpt.tree
+        self._arr = vpt.array
+        self._distance = vpt.distance
         self._point = point
         self._neighbors = neighbors
         self._items = MaxHeap()
 
-    def _add(self, dist, x):
+    def _add(self, dist: float, x: T) -> None:
         self._items.add(dist, x)
         if len(self._items) > self._neighbors:
             self._items.pop()
 
-    def _get_items(self):
+    def _get_items(self) -> List[T]:
         while len(self._items) > self._neighbors:
             self._items.pop()
         return [x for (_, x) in self._items]
 
-    def _get_radius(self):
+    def _get_radius(self) -> float:
         if len(self._items) < self._neighbors:
             return float("inf")
         furthest_dist, _ = self._items.top()
         return furthest_dist
 
-    def search(self):
+    def search(self) -> List[T]:
         self._search_rec(self._tree)
         return self._get_items()
 
-    def _search_rec(self, tree):
+    def _search_rec(self, tree: Tree[T]) -> None:
         if tree.is_terminal():
             start, end = tree.get_bounds()
             for x in self._arr.get_points(start, end):
