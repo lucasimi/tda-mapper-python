@@ -85,20 +85,13 @@ def mapper_labels(
     than those at position j.
 
     :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of length n
     :param y: Lens values for the n points of the dataset.
-    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: A cover algorithm.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: A clustering algorithm.
-    :type clustering: An estimator compatible with scikit-learn's clustering
-        interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
         Defaults to 1.
-    :type n_jobs: int
     :return: A list of node labels for each point in the dataset.
-    :rtype: list[list[int]]
     """
 
     def _run_clustering(local_ids, X_local, clust):
@@ -146,22 +139,15 @@ def mapper_connected_components(
     :func:`networkx.connected_components` on it.
 
     :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of length n
     :param y: Lens values for the n points of the dataset.
-    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: A cover algorithm.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
-    :type clustering: An estimator compatible with scikit-learn's clustering
-        interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
         Defaults to 1.
-    :type n_jobs: int
     :return: A list of labels. The label at position i identifies the connected
         component of the point at position i in the dataset.
-    :rtype: list[int]
     """
     itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
     label_values = set()
@@ -202,21 +188,14 @@ def mapper_graph(
     contained in the cluster.
 
     :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of length n
     :param y: Lens values for the n points of the dataset.
-    :type y: array-like of shape (n, k) or list-like of length n
     :param cover: A cover algorithm.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
-    :type clustering: An estimator compatible with scikit-learn's clustering
-        interface, typically from :mod:`sklearn.cluster`.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
         Defaults to 1.
-    :type n_jobs: int
     :return: The Mapper graph.
-    :rtype: :class:`networkx.Graph`
     """
     itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
     graph = nx.Graph()
@@ -253,13 +232,9 @@ def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     and the values are the aggregation values.
 
     :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of length n
     :param graph: The graph to apply the aggregation function to.
-    :type graph: :class:`networkx.Graph`.
     :param agg: The aggregation function to use.
-    :type agg: Callable.
     :return: A dictionary of node-aggregation pairs.
-    :rtype: dict
     """
     agg_values = {}
     nodes = graph.nodes()
@@ -286,7 +261,6 @@ class SpatialSearch(Protocol):
         Fit the spatial search algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: self
         """
 
@@ -295,9 +269,7 @@ class SpatialSearch(Protocol):
         Search for the nearest neighbors of a point.
 
         :param x: A point to search for.
-        :type x: A point-like object, such as a list or a numpy array.
         :return: A list of indices of the nearest neighbors of the point.
-        :rtype: list[int]
         """
 
 
@@ -317,7 +289,6 @@ class Cover(Protocol):
         Fit the cover algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: self
         """
 
@@ -329,7 +300,6 @@ class Cover(Protocol):
         the indices of the points in the dataset that belong to the open set.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :yield: A generator of lists of indices.
         """
 
@@ -341,7 +311,6 @@ class Cover(Protocol):
         the indices of the points in the dataset that belong to the open set.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :yield: A generator of lists of indices.
         """
 
@@ -374,7 +343,6 @@ class Clustering(Protocol):
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Ignored.
         :return: self
         """
@@ -401,6 +369,13 @@ class TrivialCover(ParamsMixin):
 
 
 class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
+
+    _cover: Cover
+    _clustering: Clustering
+    _verbose: bool
+    _failsafe: bool
+    _n_jobs: int
+    graph_: nx.Graph
 
     def __init__(
         self,
@@ -472,12 +447,13 @@ class FailSafeClustering(ParamsMixin):
     returned. This can be useful for robustness and debugging purposes.
 
     :param clustering: A clustering algorithm to delegate to.
-    :type clustering: An estimator compatible with scikit-learn's clustering
-        interface, typically from :mod:`sklearn.cluster`.
     :param verbose: A flag to log clustering exceptions. Set to True to
         enable logging, or False to suppress it. Defaults to True.
-    :type verbose: bool, optional.
     """
+
+    _clustering: Clustering
+    _verbose: bool
+    labels_: List[int]
 
     def __init__(self, clustering: Optional[Clustering] = None, verbose: bool = True):
         self.clustering = clustering
@@ -488,7 +464,7 @@ class FailSafeClustering(ParamsMixin):
             TrivialClustering() if self.clustering is None else self.clustering
         )
         self._verbose = self.verbose
-        self.labels_ = None
+        self.labels_ = []
         try:
             self._clustering.fit(X, y)
             self.labels_ = self._clustering.labels_
@@ -509,15 +485,16 @@ class TrivialClustering(ParamsMixin):
     construction of the Mapper graph.
     """
 
+    labels_: List[int]
+
     def __init__(self):
         pass
 
-    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> TrivialClustering:
+    def fit(self, X: ArrayLike, _: Optional[ArrayLike] = None) -> TrivialClustering:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Ignored.
         :return: self
         """

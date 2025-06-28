@@ -141,30 +141,29 @@ def _get_supported_metrics() -> List[str]:
     """
     return [m.value for m in Metric]
 
-    
+
 def get_metric_function(metric: Metric, *args, **kwargs) -> Callable:
     """
     Return the distance function for the specified metric.
 
     :param metric: The metric to use, as a string from the supported metrics.
-    :type metric: Metric
-
     :return: The selected distance metric function.
-    :rtype: callable
-
     :raises ValueError: If an invalid metric string is provided.
     """
-    match metric:
-        case Metric.EUCLIDEAN:
-            return euclidean(*args, **kwargs)
-        case Metric.MANHATTAN:
-            return manhattan(*args, **kwargs)
-        case Metric.MINKOWSKI:
-            return minkowski(*args, **kwargs)
-        case Metric.CHEBYSHEV:
-            return chebyshev(*args, **kwargs)
-        case Metric.COSINE:
-            return cosine(*args, **kwargs)
+    if metric == Metric.EUCLIDEAN:
+        return euclidean(*args, **kwargs)
+    elif metric == Metric.MANHATTAN:
+        return manhattan(*args, **kwargs)
+    elif metric == Metric.MINKOWSKI:
+        return minkowski(*args, **kwargs)
+    elif metric == Metric.CHEBYSHEV:
+        return chebyshev(*args, **kwargs)
+    elif metric == Metric.COSINE:
+        return cosine(*args, **kwargs)
+    raise ValueError(
+        f"Unsupported metric: {metric}. "
+        f"Supported metrics are: {', '.join(_get_supported_metrics())}"
+    )
 
 
 def get_metric(metric: Union[str, Metric, Callable], *args, **kwargs) -> Callable:
@@ -174,15 +173,9 @@ def get_metric(metric: Union[str, Metric, Callable], *args, **kwargs) -> Callabl
     :param metric: The metric to use. If a callable function is provided, it
         is returned directly. Otherwise, predefined metric names returned by
         `get_supported_metrics()` are supported.
-    :type metric: str or callable
-
     :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski
         distance).
-    :type kwargs: dict
-
     :return: The selected distance metric function.
-    :rtype: callable
-
     :raises ValueError: If an invalid metric string is provided.
     """
     if callable(metric):

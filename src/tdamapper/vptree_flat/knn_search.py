@@ -1,3 +1,12 @@
+"""
+This module implements a k-nearest neighbors search in a VP-tree.
+
+It provides a KnnSearch class that allows searching for the k-nearest
+neighbors of a given point in a VP-tree. The search is performed iteratively,
+and the results are returned as a list of points that are the k-nearest
+neighbors.
+"""
+
 from typing import Generic, List, TypeVar
 
 from tdamapper.heap import MaxHeap
@@ -11,6 +20,21 @@ T = TypeVar("T")
 
 
 class KnnSearch(Generic[T]):
+    """
+    KnnSearch class for searching k-nearest neighbors of a point in a VP-tree.
+
+    This class performs a search in a VP-tree to find the k-nearest neighbors
+    of a given point. It uses an iterative approach to traverse the VP-tree
+    and collect points that are within the specified number of neighbors.
+
+    :param vpt: VPTreeType instance containing distance function and
+        parameters.
+    :param point: The point from which the search is performed.
+    :param neighbors: The number of nearest neighbors to find.
+    """
+
+    _result: MaxHeap[float, T]
+    _radius: float
 
     def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int):
         self._arr = vpt.array
@@ -26,6 +50,14 @@ class KnnSearch(Generic[T]):
         return [x for (_, x) in self._result]
 
     def search(self) -> List[T]:
+        """
+        Perform the search for k-nearest neighbors of the point.
+        This method initiates the search process and returns a list of points
+        that are the k-nearest neighbors of the given point.
+
+        :return: A list of points that are the k-nearest neighbors of the
+            given point.
+        """
         self._search_iter()
         return self._get_items()
 
@@ -37,7 +69,9 @@ class KnnSearch(Generic[T]):
         while len(self._result) > self._neighbors:
             self._result.pop()
         if len(self._result) == self._neighbors:
-            self._radius, _ = self._result.top()
+            rad, _ = self._result.top()
+            if rad is not None:
+                self._radius = rad
         return dist
 
     def _search_iter(self) -> List[T]:

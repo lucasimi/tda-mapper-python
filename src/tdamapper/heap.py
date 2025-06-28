@@ -4,6 +4,10 @@ It provides methods to add elements, pop the maximum element,
 and iterate over the elements in the heap.
 """
 
+from __future__ import annotations
+
+from typing import Generic, Optional, Tuple, TypeVar
+
 
 def _left(i: int) -> int:
     return 2 * i + 1
@@ -17,7 +21,11 @@ def _parent(i: int) -> int:
     return max(0, (i - 1) // 2)
 
 
-class _HeapNode:
+K = TypeVar("K")
+T = TypeVar("T")
+
+
+class _HeapNode(Generic[K, T]):
     """
     A node in the max-heap, storing a key and a value.
 
@@ -28,15 +36,13 @@ class _HeapNode:
 
     :param key: The key used for ordering in the heap.
     :param value: The value associated with the key.
-    :type key: Any
-    :type value: Any
     """
 
-    def __init__(self, key, value):
+    def __init__(self, key: K, value: T):
         self._key = key
         self._value = value
 
-    def get(self):
+    def get(self) -> Tuple[K, T]:
         """
         Returns the key and value of the node.
         :return: A tuple containing the key and value.
@@ -44,20 +50,20 @@ class _HeapNode:
         """
         return self._key, self._value
 
-    def __lt__(self, other):
+    def __lt__(self, other: _HeapNode[K, T]) -> bool:
         return self._key < other._key
 
-    def __le__(self, other):
+    def __le__(self, other: _HeapNode[K, T]) -> bool:
         return self._key <= other._key
 
-    def __gt__(self, other):
+    def __gt__(self, other: _HeapNode[K, T]) -> bool:
         return self._key > other._key
 
-    def __ge__(self, other):
+    def __ge__(self, other: _HeapNode[K, T]) -> bool:
         return self._key >= other._key
 
 
-class MaxHeap:
+class MaxHeap(Generic[K, T]):
     """
     A max-heap data structure that allows for efficient retrieval of the maximum element.
 
@@ -69,29 +75,28 @@ class MaxHeap:
         self._heap = []
         self._iter = None
 
-    def __iter__(self):
+    def __iter__(self) -> MaxHeap[K, T]:
         self._iter = iter(self._heap)
         return self
 
-    def __next__(self):
+    def __next__(self) -> Tuple[K, T]:
         node = next(self._iter)
         return node.get()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._heap)
 
-    def top(self):
+    def top(self) -> Tuple[Optional[K], Optional[T]]:
         """
         Returns the maximum element in the heap without removing it.
 
         :return: A tuple containing the key and value of the maximum element, or (None, None) if the heap is empty.
-        :rtype: tuple
         """
         if not self._heap:
             return (None, None)
         return self._heap[0].get()
 
-    def pop(self):
+    def pop(self) -> Optional[Tuple[K, T]]:
         """
         Removes and returns the maximum element from the heap.
 
@@ -99,28 +104,25 @@ class MaxHeap:
         :rtype: tuple
         """
         if not self._heap:
-            return
+            return None
         max_val = self._heap[0]
         self._heap[0] = self._heap[-1]
         self._heap.pop()
         self._bubble_down()
         return max_val.get()
 
-    def add(self, key, val):
+    def add(self, key: K, val: T) -> None:
         """
         Adds a new element to the heap with the specified key and value.
 
         :param key: The key used for ordering in the heap.
         :param val: The value associated with the key.
-        :type key: Any
-        :type val: Any
         :return: None
-        :rtype: None
         """
         self._heap.append(_HeapNode(key, val))
         self._bubble_up()
 
-    def _get_local_max(self, i):
+    def _get_local_max(self, i: int) -> int:
         heap_len = len(self._heap)
         left = _left(i)
         right = _right(i)
@@ -137,7 +139,7 @@ class MaxHeap:
             return max_child
         return i
 
-    def _fix_down(self, i):
+    def _fix_down(self, i: int) -> int:
         local_max = self._get_local_max(i)
         if i < local_max:
             self._heap[i], self._heap[local_max] = (
@@ -147,14 +149,14 @@ class MaxHeap:
             return local_max
         return i
 
-    def _fix_up(self, i):
+    def _fix_up(self, i: int) -> int:
         parent = _parent(i)
         if self._heap[parent] < self._heap[i]:
             self._heap[i], self._heap[parent] = self._heap[parent], self._heap[i]
             return parent
         return i
 
-    def _bubble_down(self):
+    def _bubble_down(self) -> None:
         current = 0
         done = False
         while not done:
@@ -162,7 +164,7 @@ class MaxHeap:
             done = current == local_max
             current = local_max
 
-    def _bubble_up(self):
+    def _bubble_up(self) -> None:
         current = len(self._heap) - 1
         done = False
         while not done:

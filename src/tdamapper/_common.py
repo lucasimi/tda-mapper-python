@@ -98,7 +98,6 @@ class ParamsMixin:
         Get all public parameters of the object as a dictionary.
 
         :param deep: A flag for returning also nested parameters.
-        :type deep: bool, optional.
         """
         params = {}
         for k, v in self.__dict__.items():

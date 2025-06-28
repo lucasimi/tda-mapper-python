@@ -1,3 +1,11 @@
+"""
+VP-tree Ball Search Module.
+
+This module provides a BallSearch class for searching points within a specified distance (epsilon)
+from a given point in a VP-tree. It uses an iterative approach to traverse the VP-tree
+and collect points that meet the distance criteria.
+"""
+
 from typing import Generic, List, TypeVar
 
 from tdamapper.vptree_flat.common import VPTreeType, _mid
@@ -6,6 +14,21 @@ T = TypeVar("T")
 
 
 class BallSearch(Generic[T]):
+    """
+    BallSearch class for searching points within a specified distance (epsilon)
+    from a given point in a VP-tree.
+
+    This class performs a search in a VP-tree to find all points that are within
+    a specified distance (epsilon) from a given point. It uses an iterative
+    approach to traverse the VP-tree and collect points that meet the distance
+    criteria.
+
+    :param vpt: VPTreeType instance containing distance function and parameters.
+    :param point: The point from which the search is performed.
+    :param eps: The distance threshold (epsilon) for the search.
+    :param inclusive: If True, points exactly at distance eps are included in the
+        results. If False, they are excluded. Defaults to True.
+    """
 
     def __init__(
         self,
@@ -21,6 +44,15 @@ class BallSearch(Generic[T]):
         self._inclusive = inclusive
 
     def search(self) -> List[T]:
+        """
+        Perform the search for points within the specified distance from the point.
+
+        This method initiates the search process and returns a list of points
+        that are within the specified distance (epsilon) from the given point.
+
+        :return: A list of points that are within the specified distance from the
+            given point.
+        """
         return self._search_iter()
 
     def _inside(self, dist: float) -> bool:

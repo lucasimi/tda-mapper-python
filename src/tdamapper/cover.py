@@ -58,9 +58,7 @@ class ProximityNet(ABC, ParamsMixin):
         landmark, and the list of ids contains the indices of its neighbors.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :return: A generator of pairs of indices and lists of ids.
-        :rtype: generator of tuples (int, List[int])
         :yield: A tuple containing the index of the point and a list of ids of
                 its covered neighbors. If the index is -1, it indicates a
                 landmark, and the list contains the indices of its neighbors.
