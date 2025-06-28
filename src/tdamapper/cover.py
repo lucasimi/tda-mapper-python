@@ -90,11 +90,11 @@ class BallCover(ParamsMixin):
         Defaults to 1.0.
     :type radius: float
     :param metric: The metric used to define the distance between points.
-        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
@@ -187,11 +187,11 @@ class KNNCover(ParamsMixin):
         Defaults to 1.
     :type neighbors: int
     :param metric: The metric used to define the distance between points.
-        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults

@@ -5,7 +5,7 @@ import numba
 import numpy as np
 import pandas as pd
 
-import tdamapper.utils.metrics as metrics
+import tdamapper.metrics as metrics
 from tests.setup_logging import setup_logging
 
 

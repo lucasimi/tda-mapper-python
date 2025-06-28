@@ -30,7 +30,7 @@ from typing import Callable, Union
 
 import numpy as np
 
-import tdamapper.utils._metrics as _metrics
+import tdamapper._metrics as _metrics
 
 _EUCLIDEAN = "euclidean"
 _MANHATTAN = "manhattan"

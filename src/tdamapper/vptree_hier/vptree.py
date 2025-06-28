@@ -1,7 +1,7 @@
-from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree_hier.ball_search import BallSearch
-from tdamapper.utils.vptree_hier.builder import Builder
-from tdamapper.utils.vptree_hier.knn_search import KnnSearch
+from tdamapper.metrics import get_metric
+from tdamapper.vptree_hier.ball_search import BallSearch
+from tdamapper.vptree_hier.builder import Builder
+from tdamapper.vptree_hier.knn_search import KnnSearch
 
 
 class VPTree:

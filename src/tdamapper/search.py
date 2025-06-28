@@ -9,14 +9,14 @@ various distance metrics and search strategies.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Dict, Generator, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
 from tdamapper._common import warn_user
 from tdamapper.core import ArrayLike, PointLike
-from tdamapper.utils.metrics import chebyshev, get_metric
-from tdamapper.utils.vptree import VPTree
+from tdamapper.metrics import chebyshev, get_metric
+from tdamapper.vptree import VPTree
 
 
 class _Pullback:
@@ -346,7 +346,7 @@ class CubicalSearch:
             warn_user("The parameter overlap_frac is expected to be <= 0.5")
         self._min, self._max, self._delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
-        self._cover = BallSearch(
+        self._ball_search = BallSearch(
             radius,
             metric=_Pullback(self._gamma_n, chebyshev()),
             kind=self.kind,
@@ -354,7 +354,7 @@ class CubicalSearch:
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        self._cover.fit(X)
+        self._ball_search.fit(X)
         return self
 
     def search(self, x: PointLike) -> List[int]:
@@ -370,7 +370,7 @@ class CubicalSearch:
         :rtype: list[int]
         """
         center = self._phi(x)
-        return self._cover.search(center)
+        return self._ball_search.search(center)
 
 
 class CubicalLandmarks(CubicalSearch):

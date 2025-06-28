@@ -1,4 +1,4 @@
-from tdamapper.utils.heap import MaxHeap
+from tdamapper.heap import MaxHeap
 
 
 class KnnSearch:

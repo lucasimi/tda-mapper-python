@@ -2,7 +2,7 @@ from random import randrange
 
 import numpy as np
 
-from tdamapper.utils.vptree_hier.common import Leaf, Node, VPArray, _mid
+from tdamapper.vptree_hier.common import Leaf, Node, VPArray, _mid
 
 
 class Builder:

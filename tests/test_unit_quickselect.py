@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 
-from tdamapper.utils.quickselect import partition, quickselect
+from tdamapper.quickselect import partition, quickselect
 
 
 def test_partition():

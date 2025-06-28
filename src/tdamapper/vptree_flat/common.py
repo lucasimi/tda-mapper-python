@@ -1,4 +1,4 @@
-from tdamapper.utils.quickselect import quickselect, swap_all
+from tdamapper.quickselect import quickselect, swap_all
 
 
 def _mid(start, end):

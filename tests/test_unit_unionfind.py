@@ -1,4 +1,4 @@
-from tdamapper.utils.unionfind import UnionFind
+from tdamapper.unionfind import UnionFind
 
 
 def test_list():

@@ -1,7 +1,7 @@
-from tdamapper.utils.metrics import get_metric
-from tdamapper.utils.vptree_flat.ball_search import BallSearch
-from tdamapper.utils.vptree_flat.builder import Builder
-from tdamapper.utils.vptree_flat.knn_search import KnnSearch
+from tdamapper.metrics import get_metric
+from tdamapper.vptree_flat.ball_search import BallSearch
+from tdamapper.vptree_flat.builder import Builder
+from tdamapper.vptree_flat.knn_search import KnnSearch
 
 
 class VPTree:

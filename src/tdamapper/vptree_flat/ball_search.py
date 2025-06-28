@@ -1,4 +1,4 @@
-from tdamapper.utils.vptree_flat.common import _mid
+from tdamapper.vptree_flat.common import _mid
 
 
 class BallSearch:

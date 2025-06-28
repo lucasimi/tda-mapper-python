@@ -5,9 +5,9 @@ import numpy as np
 from sklearn.datasets import load_digits
 
 from tdamapper._common import profile
-from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
-from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
+from tdamapper.metrics import euclidean
+from tdamapper.vptree_flat.vptree import VPTree as FVPT
+from tdamapper.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.setup_logging import setup_logging
 

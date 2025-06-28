@@ -39,7 +39,7 @@ from joblib import Parallel, delayed
 from numpy.typing import NDArray
 
 from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
-from tdamapper.utils.unionfind import UnionFind
+from tdamapper.unionfind import UnionFind
 
 ATTR_IDS = "ids"
 

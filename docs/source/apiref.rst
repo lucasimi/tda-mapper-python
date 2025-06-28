@@ -33,18 +33,18 @@ tdamapper.clustering
    :undoc-members:
    :show-inheritance:
 
-tdamapper.utils.metrics
+tdamapper.metrics
 -----------------------
 
-.. automodule:: tdamapper.utils.metrics
+.. automodule:: tdamapper.metrics
    :members:
    :undoc-members:
    :show-inheritance:
 
-tdamapper.utils.vptree
+tdamapper.vptree
 -----------------------
 
-.. automodule:: tdamapper.utils.vptree
+.. automodule:: tdamapper.vptree
    :members:
    :undoc-members:
    :show-inheritance:

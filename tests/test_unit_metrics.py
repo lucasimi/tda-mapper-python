@@ -1,6 +1,6 @@
 import numpy as np
 
-import tdamapper.utils.metrics as metrics
+import tdamapper.metrics as metrics
 
 
 def test_euclidean():

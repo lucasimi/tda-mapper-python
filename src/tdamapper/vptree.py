@@ -2,8 +2,8 @@
 A module for fast knn and range searches, depending only on a given metric
 """
 
-from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
-from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
+from tdamapper.vptree_flat.vptree import VPTree as FVPT
+from tdamapper.vptree_hier.vptree import VPTree as HVPT
 
 
 class VPTree:
@@ -13,11 +13,11 @@ class VPTree:
     :param X: A dataset of n points.
     :type X: array-like of shape (n, m) or list-like of length n
     :param metric: The metric used to define the distance between points.
-        Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
+        Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
     :type metric: str or callable
     :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.metrics.get_metric`. Defaults to None.
     :type metric_params: dict, optional
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults

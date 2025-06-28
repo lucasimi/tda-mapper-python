@@ -2,7 +2,7 @@ from random import randrange
 
 import numpy as np
 
-from tdamapper.utils.vptree_flat.common import VPArray
+from tdamapper.vptree_flat.common import VPArray
 
 
 def _mid(start, end):

@@ -1,8 +1,8 @@
 import numpy as np
 
+from tdamapper.metrics import euclidean
 from tdamapper.search import KNNSearch
-from tdamapper.utils.metrics import euclidean
-from tdamapper.utils.vptree_flat.vptree import VPTree
+from tdamapper.vptree_flat.vptree import VPTree
 
 X = np.array(
     [

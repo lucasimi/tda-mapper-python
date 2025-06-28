@@ -1,5 +1,5 @@
-from tdamapper.utils.heap import MaxHeap
-from tdamapper.utils.vptree_flat.common import _mid
+from tdamapper.heap import MaxHeap
+from tdamapper.vptree_flat.common import _mid
 
 _PRE = 0
 _POST = 1
