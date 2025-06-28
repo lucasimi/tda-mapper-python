@@ -26,37 +26,25 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-from typing import Callable, Union
+from enum import Enum
+from typing import Callable, List, Union
 
 import numpy as np
 
 import tdamapper._metrics as _metrics
 
-_EUCLIDEAN = "euclidean"
-_MANHATTAN = "manhattan"
-_MINKOWSKI = "minkowski"
 _MINKOWSKI_P = "p"
-_CHEBYSHEV = "chebyshev"
-_COSINE = "cosine"
 
 
-def get_supported_metrics():
-    """
-    Return a list of supported metric names.
-
-    :return: A list of supported metric names.
-    :rtype: list of str
-    """
-    return [
-        _EUCLIDEAN,
-        _MANHATTAN,
-        _MINKOWSKI,
-        _CHEBYSHEV,
-        _COSINE,
-    ]
+class Metric(str, Enum):
+    EUCLIDEAN = "euclidean"
+    MANHATTAN = "manhattan"
+    MINKOWSKI = "minkowski"
+    CHEBYSHEV = "chebyshev"
+    COSINE = "cosine"
 
 
-def euclidean():
+def euclidean(*args, **kwargs) -> Callable:
     """
     Return the Euclidean distance function for vectors.
 
@@ -69,7 +57,7 @@ def euclidean():
     return _metrics.euclidean
 
 
-def manhattan():
+def manhattan(*args, **kwargs) -> Callable:
     """
     Return the Manhattan distance function for vectors.
 
@@ -82,7 +70,7 @@ def manhattan():
     return _metrics.manhattan
 
 
-def chebyshev():
+def chebyshev(*args, **kwargs) -> Callable:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -95,7 +83,7 @@ def chebyshev():
     return _metrics.chebyshev
 
 
-def minkowski(p):
+def minkowski(*args, **kwargs) -> Callable:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -104,12 +92,11 @@ def minkowski(p):
     when p = 2, it is equivalent to the Euclidean distance. When p is infinite,
     it is equivalent to the Chebyshev distance.
 
-    :param p: The order of the Minkowski distance.
-    :type p: int
-
     :return: The Minkowski distance function.
     :rtype: callable
     """
+    p = kwargs.get(_MINKOWSKI_P, 2)
+
     if p == 1:
         return manhattan()
     elif p == 2:
@@ -123,7 +110,7 @@ def minkowski(p):
     return dist
 
 
-def cosine():
+def cosine(*args, **kwargs) -> Callable:
     """
     Return the cosine distance function for vectors.
 
@@ -145,7 +132,42 @@ def cosine():
     return _metrics.cosine
 
 
-def get_metric(metric: Union[str, Callable], **kwargs) -> Callable:
+def _get_supported_metrics() -> List[str]:
+    """
+    Return a list of supported metric names.
+
+    :return: A list of supported metric names.
+    :rtype: list of str
+    """
+    return [m.value for m in Metric]
+
+    
+def get_metric_function(metric: Metric, *args, **kwargs) -> Callable:
+    """
+    Return the distance function for the specified metric.
+
+    :param metric: The metric to use, as a string from the supported metrics.
+    :type metric: Metric
+
+    :return: The selected distance metric function.
+    :rtype: callable
+
+    :raises ValueError: If an invalid metric string is provided.
+    """
+    match metric:
+        case Metric.EUCLIDEAN:
+            return euclidean(*args, **kwargs)
+        case Metric.MANHATTAN:
+            return manhattan(*args, **kwargs)
+        case Metric.MINKOWSKI:
+            return minkowski(*args, **kwargs)
+        case Metric.CHEBYSHEV:
+            return chebyshev(*args, **kwargs)
+        case Metric.COSINE:
+            return cosine(*args, **kwargs)
+
+
+def get_metric(metric: Union[str, Metric, Callable], *args, **kwargs) -> Callable:
     """
     Return a distance function based on the specified string or callable.
 
@@ -165,16 +187,29 @@ def get_metric(metric: Union[str, Callable], **kwargs) -> Callable:
     """
     if callable(metric):
         return metric
-    elif metric == _EUCLIDEAN:
-        return euclidean()
-    elif metric == _MANHATTAN:
-        return manhattan()
-    elif metric == _MINKOWSKI:
-        p = kwargs.get(_MINKOWSKI_P, 2)
-        return minkowski(p)
-    elif metric == _CHEBYSHEV:
-        return chebyshev()
-    elif metric == _COSINE:
-        return cosine()
+    elif isinstance(metric, str):
+        metric_enum = Metric(metric)
+        if metric_enum not in _get_supported_metrics():
+            raise ValueError(
+                f"Unsupported metric: {metric}. "
+                f"Supported metrics are: {', '.join(_get_supported_metrics())}"
+            )
+        return get_metric_function(metric_enum, *args, **kwargs)
+    elif isinstance(metric, Metric):
+        return get_metric_function(metric, *args, **kwargs)
     else:
         raise ValueError("metric must be a string or callable")
+
+
+def _first_run() -> None:
+    """
+    Ensure that the metric functions are compiled with Numba on the first run.
+    """
+    a = np.array([0.0, 1.0])
+    b = np.array([1.0, 0.0])
+    for metric in Metric:
+        f = get_metric_function(metric)
+        f(a, b)  # Trigger the function to ensure it compiles with Numba
+
+
+_first_run()  # Ensure the functions are compiled on first import

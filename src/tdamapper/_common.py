@@ -2,17 +2,21 @@
 This module provides common functionalities for internal use.
 """
 
+from __future__ import annotations
+
 import cProfile
 import io
 import pstats
 import warnings
+from typing import Any, Callable, Dict
 
 import numpy as np
+from numpy.typing import NDArray
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
 
-def deprecated(msg):
+def deprecated(msg: str) -> Callable:
     def deprecated_func(func):
         def wrapper(*args, **kwargs):
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
@@ -23,17 +27,17 @@ def deprecated(msg):
     return deprecated_func
 
 
-def warn_user(msg):
+def warn_user(msg: str) -> None:
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
 class EstimatorMixin:
 
-    def _is_sparse(self, X):
+    def _is_sparse(self, X: NDArray) -> bool:
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
-    def _validate_X_y(self, X, y):
+    def _validate_X_y(self, X: NDArray, y: NDArray) -> tuple[NDArray, NDArray]:
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
@@ -70,7 +74,7 @@ class EstimatorMixin:
 
         return X, y
 
-    def _set_n_features_in(self, X):
+    def _set_n_features_in(self, X: NDArray) -> None:
         self.n_features_in_ = X.shape[1]
 
 
@@ -80,16 +84,16 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def _is_param_public(self, k):
+    def _is_param_public(self, k: str) -> bool:
         return (not k.startswith("_")) and (not k.endswith("_"))
 
-    def _split_param(self, k):
+    def _split_param(self, k: str) -> tuple[str, str]:
         k_split = k.split("__")
         outer = k_split[0]
         inner = "__".join(k_split[1:])
         return outer, inner
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """
         Get all public parameters of the object as a dictionary.
 
@@ -105,7 +109,7 @@ class ParamsMixin:
                         params[f"{k}__{_k}"] = _v
         return params
 
-    def set_params(self, **params):
+    def set_params(self, **params: Dict[str, Any]) -> ParamsMixin:
         """
         Set public parameters. Only updates attributes that already exist.
         """
@@ -124,7 +128,7 @@ class ParamsMixin:
                 k_attr.set_params(**{k_inner: v})
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         obj_noargs = type(self)()
         args_repr = []
         for k, v in self.__dict__.items():
@@ -136,7 +140,7 @@ class ParamsMixin:
         return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
 
-def clone(obj):
+def clone(obj: Any) -> Any:
     """
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
@@ -152,7 +156,7 @@ def clone(obj):
     return obj_noargs
 
 
-def profile(n_lines=10):
+def profile(n_lines: int = 10) -> Callable:
     def decorator(func):
         def wrapper(*args, **kwargs):
             profiler = cProfile.Profile()
