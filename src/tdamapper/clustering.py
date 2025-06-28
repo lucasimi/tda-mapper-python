@@ -2,9 +2,19 @@
 Clustering tools based on the Mapper algorithm.
 """
 
+from __future__ import annotations
+
+from typing import List, Optional
+
 import tdamapper.core
 from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
-from tdamapper.core import TrivialCover, mapper_connected_components
+from tdamapper.core import (
+    ArrayLike,
+    Clustering,
+    Cover,
+    TrivialCover,
+    mapper_connected_components,
+)
 
 
 class TrivialClustering(tdamapper.core.TrivialClustering):
@@ -37,12 +47,19 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
 
 class _MapperClustering(EstimatorMixin, ParamsMixin):
 
-    def __init__(self, cover=None, clustering=None, n_jobs=1):
+    labels_: List[int]
+
+    def __init__(
+        self,
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        n_jobs: int = 1,
+    ):
         self.cover = cover
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> _MapperClustering:
         y = X if y is None else y
         X, y = self._validate_X_y(X, y)
         cover = TrivialCover() if self.cover is None else self.cover
