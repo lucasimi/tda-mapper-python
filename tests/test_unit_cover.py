@@ -1,7 +1,12 @@
 import numpy as np
 
 from tdamapper.core import TrivialCover
-from tdamapper.cover import BallCover, CubicalCover, KNNCover
+from tdamapper.cover import (
+    BallCover,
+    KNNCover,
+    ProximityCubicalCover,
+    StandardCubicalCover,
+)
 
 
 def test_trivial_cover_empty():
@@ -13,7 +18,14 @@ def test_trivial_cover_empty():
 
 
 def test_trivial_cover_ok():
-    data = np.array([[0.0, 1.0], [1.0, 0.0], [0.0, 0.0], [1.0, 1.0]])
+    data = np.array(
+        [
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [0.0, 0.0],
+            [1.0, 1.0],
+        ]
+    )
     cover = TrivialCover()
     cover.fit(data)
     charts = list(cover.transform(data))
@@ -29,16 +41,23 @@ def test_ball_cover_empty():
 
 
 def test_ball_cover_ok():
-    data = [
-        np.array([0.0, 1.0]),
-        np.array([1.0, 0.0]),
-        np.array([0.0, 0.0]),
-        np.array([1.0, 1.0]),
-    ]
+    data = np.array(
+        [
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [0.0, 0.0],
+            [1.0, 1.0],
+        ]
+    )
     cover = BallCover(radius=1.1, metric="euclidean")
     cover.fit(data)
     charts = list(cover.transform(data))
     assert 2 == len(charts)
+
+    data_extra = np.array([[1.25, 1.25], [1.7, 1.7]])
+    charts = list(cover.transform(data_extra))
+    assert 1 == len(charts)
+    assert 2 == len(charts[0])
 
 
 def test_ball_cover_params():
@@ -57,16 +76,23 @@ def test_knn_cover_empty():
 
 
 def test_knn_cover_ok():
-    data = [
-        np.array([0.0, 1.0]),
-        np.array([1.1, 0.0]),
-        np.array([0.0, 0.0]),
-        np.array([1.1, 1.0]),
-    ]
+    data = np.array(
+        [
+            [0.0, 1.0],
+            [1.1, 0.0],
+            [0.0, 0.0],
+            [1.1, 1.0],
+        ]
+    )
     cover = KNNCover(neighbors=2, metric="euclidean")
     cover.fit(data)
     charts = list(cover.transform(data))
     assert 2 == len(charts)
+
+    data_extra = np.array([[1.25, 1.25], [1.7, 1.7]])
+    charts = list(cover.transform(data_extra))
+    assert 1 == len(charts)
+    assert 2 == len(charts[0])
 
 
 def test_knn_cover_params():
@@ -76,29 +102,36 @@ def test_knn_cover_params():
     assert "euclidean" == params["metric"]
 
 
-def test_cubical_cover_empty():
+def test_proximity_cubical_cover_empty():
     data = []
-    cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
+    cover = ProximityCubicalCover(n_intervals=2, overlap_frac=0.5)
     cover.fit(data)
     charts = list(cover.transform(data))
     assert 0 == len(charts)
 
 
-def test_cubical_cover_ok():
-    data = [
-        np.array([0.0, 1.0]),
-        np.array([1.1, 0.0]),
-        np.array([0.0, 0.0]),
-        np.array([1.1, 1.0]),
-    ]
-    cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
+def test_proximity_cubical_cover_ok():
+    data = np.array(
+        [
+            [0.0, 1.0],
+            [1.1, 0.0],
+            [0.0, 0.0],
+            [1.1, 1.0],
+        ]
+    )
+    cover = ProximityCubicalCover(n_intervals=2, overlap_frac=0.5)
     cover.fit(data)
     charts = list(cover.transform(data))
     assert 4 == len(charts)
 
+    data_extra = np.array([[1.25, 1.25], [1.26, 1.26]])
+    charts = list(cover.transform(data_extra))
+    assert 1 == len(charts)
+    assert 2 == len(charts[0])
 
-def test_cubical_cover_params():
-    cover = CubicalCover(n_intervals=2, overlap_frac=0.5)
+
+def test_proximity_cubical_cover_params():
+    cover = ProximityCubicalCover(n_intervals=2, overlap_frac=0.5)
     params = cover.get_params(deep=True)
     assert 2 == params["n_intervals"]
     assert 0.5 == params["overlap_frac"]
@@ -106,7 +139,7 @@ def test_cubical_cover_params():
 
 def test_standard_cover_empty():
     data = []
-    cover = CubicalCover(
+    cover = StandardCubicalCover(
         n_intervals=2,
         overlap_frac=0.5,
     )
@@ -116,16 +149,17 @@ def test_standard_cover_empty():
 
 
 def test_standard_cover_ok():
-    data = [
-        np.array([0.0, 1.0]),
-        np.array([1.1, 0.0]),
-        np.array([0.0, 0.0]),
-        np.array([1.1, 1.0]),
-    ]
-    cover = CubicalCover(
+    data = np.array(
+        [
+            [0.0, 1.0],
+            [1.1, 0.0],
+            [0.0, 0.0],
+            [1.1, 1.0],
+        ]
+    )
+    cover = StandardCubicalCover(
         n_intervals=2,
         overlap_frac=0.5,
-        algorithm="standard",
     )
     cover.fit(data)
     charts = list(cover.transform(data))
@@ -133,12 +167,10 @@ def test_standard_cover_ok():
 
 
 def test_standard_cover_params():
-    cover = CubicalCover(
+    cover = StandardCubicalCover(
         n_intervals=2,
         overlap_frac=0.5,
-        algorithm="standard",
     )
     params = cover.get_params(deep=True)
     assert 2 == params["n_intervals"]
     assert 0.5 == params["overlap_frac"]
-    assert "standard" == params["algorithm"]
