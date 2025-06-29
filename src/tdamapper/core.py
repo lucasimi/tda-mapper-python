@@ -31,16 +31,7 @@ this module is a NetworkX graph object.
 from __future__ import annotations
 
 import logging
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Protocol,
-    Union,
-)
+from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
 
 import networkx as nx
 import numpy as np
@@ -367,12 +358,37 @@ class TrivialCover(ParamsMixin):
     """
 
     def fit(self, X: ArrayLike) -> TrivialCover:
+        """
+        Fit the cover algorithm to the data.
+
+        :param X: A dataset of n points.
+        :return: self
+        """
         return self
 
     def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Transform the data into overlapping open sets.
+
+        This method yields a generator that produces a single list containing
+        the indices of all points in the dataset.
+
+        :param X: A dataset of n points.
+        :yield: A generator yielding a single list of indices.
+        """
         yield list(range(len(X)))
 
     def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Fit the cover algorithm to the data and transform it.
+
+        This method fits the cover algorithm to the data and then yields a
+        generator that produces a single list containing the indices of all
+        points in the dataset.
+
+        :param X: A dataset of n points.
+        :return: A generator yielding a single list of indices.
+        """
         self.fit(X)
         return self.transform(X)
 
