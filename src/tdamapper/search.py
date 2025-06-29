@@ -9,9 +9,10 @@ various distance metrics and search strategies.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from tdamapper._common import ParamsMixin, warn_user
 from tdamapper.core import ArrayLike, PointLike
@@ -62,9 +63,8 @@ class BallSearch(ParamsMixin):
         Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
-    _radius: float
-    _data: List[tuple[int, Any]]
     _vptree: VPTree
+    _radius: float
 
     def __init__(
         self,
@@ -96,15 +96,17 @@ class BallSearch(ParamsMixin):
         :return: The object itself.
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
+        metric_pullback = _Pullback(_snd, metric)
+        data = list(enumerate(X))
+        leaf_radius = self.leaf_radius or self.radius
         self._radius = self.radius
-        self._data = list(enumerate(X))
         self._vptree = VPTree(
-            self._data,
-            metric=_Pullback(_snd, metric),
+            data,
+            metric=metric_pullback,
             metric_params=None,
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
-            leaf_radius=self.leaf_radius or self.radius,
+            leaf_radius=leaf_radius,
             pivoting=self.pivoting,
         )
         return self
@@ -160,7 +162,6 @@ class KNNSearch(ParamsMixin):
     """
 
     _neighbors: int
-    _data: List[tuple[int, Any]]
     _vptree: VPTree
 
     def __init__(
@@ -193,14 +194,16 @@ class KNNSearch(ParamsMixin):
         :return: The object itself.
         """
         metric = get_metric(self.metric, **(self.metric_params or {}))
+        metric_pullback = _Pullback(_snd, metric)
+        data = list(enumerate(X))
+        leaf_capacity = self.leaf_capacity or self.neighbors
         self._neighbors = self.neighbors
-        self._data = list(enumerate(X))
         self._vptree = VPTree(
-            self._data,
-            metric=_Pullback(_snd, metric),
+            data,
+            metric=metric_pullback,
             metric_params=None,
             kind=self.kind,
-            leaf_capacity=self.leaf_capacity or self.neighbors,
+            leaf_capacity=leaf_capacity,
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
@@ -275,19 +278,22 @@ class CubicalSearch(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def _get_center(self, x):
+    def _get_center(
+        self,
+        x: NDArray[np.float64],
+    ) -> Tuple[Tuple[float], NDArray[np.float64]]:
         offset = self._offset(x)
         center = self._phi(x)
         return tuple(offset), center
 
-    def _get_overlap_frac(self, dim, overlap_vol_frac):
+    def _get_overlap_frac(self, dim: int, overlap_vol_frac: float) -> float:
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
-    def _offset(self, x):
+    def _offset(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.minimum(self._n_intervals - 1, np.floor(self._gamma_n(x)))
 
-    def _phi(self, x):
+    def _phi(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         offset = self._offset(x)
         return self._gamma_n_inv(0.5 + offset)
 
@@ -297,9 +303,11 @@ class CubicalSearch(ParamsMixin):
     def _gamma_n_inv(self, x):
         return self._min + self._delta * x / self._n_intervals
 
-    def _get_bounds(self, X):
+    def _get_bounds(
+        self, X: NDArray[np.float64]
+    ) -> Optional[Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]]:
         if (X is None) or len(X) == 0:
-            return
+            return None
         _min, _max = X[0], X[0]
         eps = np.finfo(np.float64).eps
         _min = np.min(X, axis=0)
@@ -308,7 +316,7 @@ class CubicalSearch(ParamsMixin):
         _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
         return _min, _max, _delta
 
-    def fit(self, X: ArrayLike) -> CubicalSearch:
+    def fit(self, X: NDArray[np.float64]) -> CubicalSearch:
         """
         Train internal parameters.
 
@@ -318,18 +326,22 @@ class CubicalSearch(ParamsMixin):
         :param X: A dataset of n points.
         :return: The object itself.
         """
-        X = np.asarray(X).reshape(len(X), -1).astype(float)
-        if self.overlap_frac is None:
-            dim = 1 if X.ndim == 1 else X.shape[1]
-            self._overlap_frac = self._get_overlap_frac(dim, 0.5)
-        else:
-            self._overlap_frac = self.overlap_frac
-        self._n_intervals = self.n_intervals
-        if self._overlap_frac <= 0.0:
-            raise ValueError("The parameter overlap_frac is expected to be " "> 0.0")
-        if self._overlap_frac > 0.5:
+        if self.overlap_frac is not None and self.overlap_frac <= 0.0:
+            raise ValueError("The parameter overlap_frac is expected to be > 0.0")
+        if self.overlap_frac is not None and self.overlap_frac > 0.5:
             warn_user("The parameter overlap_frac is expected to be <= 0.5")
-        self._min, self._max, self._delta = self._get_bounds(X)
+        X = np.asarray(X).reshape(len(X), -1).astype(float)
+        dim = 1 if X.ndim == 1 else X.shape[1]
+        self._n_intervals = self.n_intervals
+        self._overlap_frac = (
+            self.overlap_frac
+            if self.overlap_frac is not None
+            else self._get_overlap_frac(dim, 0.5)
+        )
+        bounds = self._get_bounds(X)
+        if bounds is None:
+            raise ValueError("The dataset is empty or not properly defined.")
+        self._min, self._max, self._delta = bounds
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
         self._ball_search = BallSearch(
             radius,
@@ -342,7 +354,7 @@ class CubicalSearch(ParamsMixin):
         self._ball_search.fit(X)
         return self
 
-    def search(self, x: PointLike) -> List[int]:
+    def search(self, x: NDArray[np.float64]) -> List[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -402,7 +414,9 @@ class CubicalLandmarks(CubicalSearch):
             pivoting=pivoting,
         )
 
-    def landmarks(self, X: ArrayLike) -> Dict:
+    def landmarks(
+        self, X: NDArray[np.float64]
+    ) -> Dict[Tuple[float], NDArray[np.float64]]:
         """
         Identify unique hypercubes based on the centers of the hypercubes that
         intersect the dataset.
