@@ -377,7 +377,8 @@ class TrivialCover(ParamsMixin):
         :param x_arr: A dataset of n points.
         :yield: A generator yielding a single list of indices.
         """
-        yield list(range(len(x_arr)))
+        if len(x_arr) > 0:
+            yield list(range(len(x_arr)))
 
     def fit_transform(self, x_arr: ArrayLike) -> Generator[List[int], None, None]:
         """
