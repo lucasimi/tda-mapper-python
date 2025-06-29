@@ -120,8 +120,6 @@ class BallSearch(ParamsMixin):
         :param x: A query point for which we want to find neighbors.
         :return: The indices of the neighbors contained in the dataset.
         """
-        if self._vptree is None:
-            return []
         neighs = self._vptree.ball_search(
             (-1, x),
             self._radius,
@@ -219,8 +217,6 @@ class KNNSearch(ParamsMixin):
         :param x: A query point for which we want to find neighbors.
         :return: The indices of the neighbors contained in the dataset.
         """
-        if self._vptree is None:
-            return []
         neighs = self._vptree.knn_search((-1, x), self._neighbors)
         return [x for (x, _) in neighs]
 
@@ -306,7 +302,7 @@ class CubicalSearch(ParamsMixin):
     def _get_bounds(
         self, arr: NDArray[np.float64]
     ) -> Optional[Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]]:
-        if (arr is None) or len(arr) == 0:
+        if len(arr) == 0:
             return None
         _min, _max = arr[0], arr[0]
         eps = np.finfo(np.float64).eps
@@ -330,7 +326,9 @@ class CubicalSearch(ParamsMixin):
             raise ValueError("The parameter overlap_frac is expected to be > 0.0")
         if self.overlap_frac is not None and self.overlap_frac > 0.5:
             warn_user("The parameter overlap_frac is expected to be <= 0.5")
-        arr_ = np.asarray(arr).reshape(len(arr), -1).astype(float)
+        arr_ = np.asarray(arr)
+        if len(arr) > 0:
+            arr_ = np.asarray(arr).reshape(len(arr), -1).astype(float)
         dim = 1 if arr_.ndim == 1 else arr_.shape[1]
         self._n_intervals = self.n_intervals
         self._overlap_frac = (
@@ -339,9 +337,12 @@ class CubicalSearch(ParamsMixin):
             else self._get_overlap_frac(dim, 0.5)
         )
         bounds = self._get_bounds(arr_)
-        if bounds is None:
-            raise ValueError("The dataset is empty or not properly defined.")
-        self._min, self._max, self._delta = bounds
+        if bounds is not None:
+            self._min, self._max, self._delta = bounds
+        else:
+            self._min = np.zeros(dim, dtype=np.float64)
+            self._max = np.ones(dim, dtype=np.float64)
+            self._delta = np.ones(dim, dtype=np.float64)
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
         self._ball_search = BallSearch(
             radius,

@@ -9,15 +9,7 @@ VPTreeType protocol for type checking.
 
 from __future__ import annotations
 
-from typing import (
-    Callable,
-    Generic,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    TypeVar,
-)
+from typing import Callable, Generic, Iterable, List, Optional, Protocol, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray

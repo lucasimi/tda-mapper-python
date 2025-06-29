@@ -102,6 +102,8 @@ class Builder(Generic[T]):
 
         :return: The VPArray instance containing the constructed VP-tree.
         """
+        if self._arr.size() == 0:
+            return self._arr
         self._build_iter()
         return self._arr
 

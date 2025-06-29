@@ -59,8 +59,9 @@ class KnnSearch(Generic[T]):
         :return: A list of points that are the k-nearest neighbors of the
             given point.
         """
-        self._search_iter()
-        return self._get_items()
+        if self._arr.size() == 0:
+            return []
+        return self._search_iter()
 
     def _process(self, x: T) -> float:
         dist = self._distance(self._point, x)

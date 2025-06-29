@@ -55,6 +55,8 @@ class BallSearch(Generic[T]):
         :return: A list of points that are within the specified distance from
             the given point.
         """
+        if self._arr.size() == 0:
+            return []
         return self._search_iter()
 
     def _inside(self, dist: float) -> bool:
