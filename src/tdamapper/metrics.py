@@ -57,7 +57,7 @@ class Metric(str, Enum):
     COSINE = "cosine"
 
 
-def euclidean(*args, **kwargs) -> Callable:
+def euclidean(*_args, **_kwargs) -> Callable:
     """
     Return the Euclidean distance function for vectors.
 
@@ -70,7 +70,7 @@ def euclidean(*args, **kwargs) -> Callable:
     return _euclidean
 
 
-def manhattan(*args, **kwargs) -> Callable:
+def manhattan(*_args, **_kwargs) -> Callable:
     """
     Return the Manhattan distance function for vectors.
 
@@ -83,7 +83,7 @@ def manhattan(*args, **kwargs) -> Callable:
     return _manhattan
 
 
-def chebyshev(*args, **kwargs) -> Callable:
+def chebyshev(*_args, **_kwargs) -> Callable:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -96,7 +96,7 @@ def chebyshev(*args, **kwargs) -> Callable:
     return _chebyshev
 
 
-def minkowski(*args, **kwargs) -> Callable:
+def minkowski(*_args, **kwargs) -> Callable:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -123,7 +123,7 @@ def minkowski(*args, **kwargs) -> Callable:
     return dist
 
 
-def cosine(*args, **kwargs) -> Callable:
+def cosine(*_args, **_kwargs) -> Callable:
     """
     Return the cosine distance function for vectors.
 
@@ -193,7 +193,7 @@ def get_metric(metric: Union[str, Metric, Callable], *args, **kwargs) -> Callabl
     """
     if callable(metric):
         return metric
-    elif isinstance(metric, str):
+    if isinstance(metric, str):
         metric_enum = Metric(metric)
         if metric_enum not in _get_supported_metrics():
             raise ValueError(
@@ -201,10 +201,9 @@ def get_metric(metric: Union[str, Metric, Callable], *args, **kwargs) -> Callabl
                 f"Supported metrics are: {', '.join(_get_supported_metrics())}"
             )
         return get_metric_function(metric_enum, *args, **kwargs)
-    elif isinstance(metric, Metric):
+    if isinstance(metric, Metric):
         return get_metric_function(metric, *args, **kwargs)
-    else:
-        raise ValueError("metric must be a string or callable")
+    raise ValueError("metric must be a string or callable")
 
 
 def _first_run() -> None:

@@ -24,7 +24,7 @@ class VPTree(Generic[T]):
     """
     A Vantage Point Tree, or vp-tree, for fast range-queries and knn-queries.
 
-    :param X: A dataset of n points.
+    :param items: A dataset of n points.
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.metrics.get_metric`.
         Defaults to 'euclidean'.
@@ -43,7 +43,7 @@ class VPTree(Generic[T]):
 
     def __init__(
         self,
-        X: Iterable[T],
+        items: Iterable[T],
         metric: Union[str, Callable] = "euclidean",
         metric_params: Optional[Dict[str, Any]] = None,
         kind: str = "flat",
@@ -60,7 +60,7 @@ class VPTree(Generic[T]):
         else:
             raise ValueError(f"Unknown kind of vptree: {kind}")
         self._vpt = builder(
-            X,
+            items,
             metric=metric,
             metric_params=metric_params,
             leaf_capacity=leaf_capacity,

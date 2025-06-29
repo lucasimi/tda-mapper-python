@@ -6,7 +6,7 @@ and iterate over the elements in the heap.
 
 from __future__ import annotations
 
-from typing import Generic, Optional, Tuple, TypeVar
+from typing import Generic, Optional, Protocol, Tuple, TypeVar
 
 
 def _left(i: int) -> int:
@@ -21,11 +21,27 @@ def _parent(i: int) -> int:
     return max(0, (i - 1) // 2)
 
 
-K = TypeVar("K")
+class Comparable(Protocol):
+    """
+    A protocol that defines the comparison methods for a type.
+
+    This protocol requires the type to implement the less than, less than or equal,
+    greater than, and greater than or equal methods. This allows the type to be
+    used in a max-heap where elements are compared based on their keys.
+    """
+
+    def __lt__(self: C, other: C) -> bool: ...
+    def __le__(self: C, other: C) -> bool: ...
+    def __gt__(self: C, other: C) -> bool: ...
+    def __ge__(self: C, other: C) -> bool: ...
+
+
+C = TypeVar("C", bound=Comparable)
+
 T = TypeVar("T")
 
 
-class _HeapNode(Generic[K, T]):
+class _HeapNode(Generic[C, T]):
     """
     A node in the max-heap, storing a key and a value.
 
@@ -38,11 +54,11 @@ class _HeapNode(Generic[K, T]):
     :param value: The value associated with the key.
     """
 
-    def __init__(self, key: K, value: T):
+    def __init__(self, key: C, value: T):
         self._key = key
         self._value = value
 
-    def get(self) -> Tuple[K, T]:
+    def get(self) -> Tuple[C, T]:
         """
         Returns the key and value of the node.
         :return: A tuple containing the key and value.
@@ -50,58 +66,61 @@ class _HeapNode(Generic[K, T]):
         """
         return self._key, self._value
 
-    def __lt__(self, other: _HeapNode[K, T]) -> bool:
+    def __lt__(self, other: _HeapNode[C, T]) -> bool:
         return self._key < other._key
 
-    def __le__(self, other: _HeapNode[K, T]) -> bool:
+    def __le__(self, other: _HeapNode[C, T]) -> bool:
         return self._key <= other._key
 
-    def __gt__(self, other: _HeapNode[K, T]) -> bool:
+    def __gt__(self, other: _HeapNode[C, T]) -> bool:
         return self._key > other._key
 
-    def __ge__(self, other: _HeapNode[K, T]) -> bool:
+    def __ge__(self, other: _HeapNode[C, T]) -> bool:
         return self._key >= other._key
 
 
-class MaxHeap(Generic[K, T]):
+class MaxHeap(Generic[C, T]):
     """
-    A max-heap data structure that allows for efficient retrieval of the maximum element.
+    A max-heap data structure that allows for efficient retrieval of the
+    maximum element.
 
-    It supports adding elements, popping the maximum element, and iterating over the elements.
-    It is important to note that the keys used in the heap must be comparable with each other.
+    It supports adding elements, popping the maximum element, and iterating
+    over the elements. It is important to note that the keys used in the heap
+    must be comparable with each other.
     """
 
     def __init__(self):
         self._heap = []
         self._iter = None
 
-    def __iter__(self) -> MaxHeap[K, T]:
+    def __iter__(self) -> MaxHeap[C, T]:
         self._iter = iter(self._heap)
         return self
 
-    def __next__(self) -> Tuple[K, T]:
+    def __next__(self) -> Tuple[C, T]:
         node = next(self._iter)
         return node.get()
 
     def __len__(self) -> int:
         return len(self._heap)
 
-    def top(self) -> Tuple[Optional[K], Optional[T]]:
+    def top(self) -> Tuple[Optional[C], Optional[T]]:
         """
         Returns the maximum element in the heap without removing it.
 
-        :return: A tuple containing the key and value of the maximum element, or (None, None) if the heap is empty.
+        :return: A tuple containing the key and value of the maximum element,
+            or (None, None) if the heap is empty.
         """
         if not self._heap:
             return (None, None)
         return self._heap[0].get()
 
-    def pop(self) -> Optional[Tuple[K, T]]:
+    def pop(self) -> Optional[Tuple[C, T]]:
         """
         Removes and returns the maximum element from the heap.
 
-        :return: A tuple containing the key and value of the maximum element, or None if the heap is empty.
-        :rtype: tuple
+        :return: A tuple containing the key and value of the maximum element,
+            or None if the heap is empty.
         """
         if not self._heap:
             return None
@@ -111,7 +130,7 @@ class MaxHeap(Generic[K, T]):
         self._bubble_down()
         return max_val.get()
 
-    def add(self, key: K, val: T) -> None:
+    def add(self, key: C, val: T) -> None:
         """
         Adds a new element to the heap with the specified key and value.
 

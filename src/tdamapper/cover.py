@@ -19,12 +19,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
 from tdamapper._common import ParamsMixin
 from tdamapper.core import ArrayLike, PointLike, SpatialSearch
-from tdamapper.search import (
-    BallSearch,
-    CubicalLandmarks,
-    CubicalSearch,
-    KNNSearch,
-)
+from tdamapper.search import BallSearch, CubicalLandmarks, CubicalSearch, KNNSearch
 
 
 class ProximityNet(ABC, ParamsMixin):
@@ -51,7 +46,7 @@ class ProximityNet(ABC, ParamsMixin):
         :return: An instance of a spatial search algorithm.
         """
 
-    def _cover(self, X: ArrayLike) -> Generator[Tuple[int, List[int]], None, None]:
+    def _cover(self, arr: ArrayLike) -> Generator[Tuple[int, List[int]], None, None]:
         """
         Covers the dataset using landmarks and spatial search.
 
@@ -62,46 +57,46 @@ class ProximityNet(ABC, ParamsMixin):
         neighbors. If the index is -1, it indicates that the point is a
         landmark, and the list of ids contains the indices of its neighbors.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of pairs of indices and lists of ids.
         :yield: A tuple containing the index of the point and a list of ids of
                 its covered neighbors. If the index is -1, it indicates a
                 landmark, and the list contains the indices of its neighbors.
         """
         search = self.spatial_search()
-        search.fit(X)
+        search.fit(arr)
         covered_ids = set()
         for x in self.landmarks_:
             neigh_ids = search.search(x)
             covered_ids.update(neigh_ids)
             if neigh_ids:
                 yield -1, neigh_ids
-        for i, xi in enumerate(X):
+        for i, xi in enumerate(arr):
             if i not in covered_ids:
                 neigh_ids = search.search(xi)
                 covered_ids.update(neigh_ids)
                 if neigh_ids:
                     yield i, neigh_ids
 
-    def fit(self, X: ArrayLike) -> ProximityNet:
+    def fit(self, arr: ArrayLike) -> ProximityNet:
         """
         Train internal parameters.
 
         This method applies the spatial search algorithm to the dataset and
         stores the landmarks and labels.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: The object itself.
         """
         self.landmarks_ = []
         self.labels_ = []
-        for i, neigh_ids in self._cover(X):
+        for i, neigh_ids in self._cover(arr):
             if i >= 0:
-                self.landmarks_.append(X[i])
+                self.landmarks_.append(arr[i])
             self.labels_.append(neigh_ids)
         return self
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Covers the dataset using landmarks.
 
@@ -109,23 +104,23 @@ class ProximityNet(ABC, ParamsMixin):
         point in the dataset. The indices are the indices of the points in the
         original dataset.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of lists of ids.
         """
-        for _, neigh_ids in self._cover(X):
+        for _, neigh_ids in self._cover(arr):
             yield neigh_ids
 
-    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def fit_transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Fit the model and transform the dataset.
 
         This function first fits the model to the dataset and then yields
         the indices of the covered neighbors for each point in the dataset.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of lists of ids.
         """
-        self.fit(X)
+        self.fit(arr)
         for neigh_ids in self.labels_:
             yield neigh_ids
 
@@ -354,7 +349,16 @@ class StandardCubicalCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> StandardCubicalCover:
+    def fit(self, arr: ArrayLike) -> StandardCubicalCover:
+        """
+        Train internal parameters.
+
+        This method fits the cubical landmarks to the dataset, which are used
+        to create the open cover of hypercubes.
+
+        :param arr: A dataset of n points.
+        :return: The object itself.
+        """
         self._landmarks = CubicalLandmarks(
             n_intervals=self.n_intervals,
             overlap_frac=self.overlap_frac,
@@ -363,10 +367,10 @@ class StandardCubicalCover(ParamsMixin):
             leaf_radius=self.leaf_radius,
             pivoting=self.pivoting,
         )
-        self._landmarks.fit(X)
+        self._landmarks.fit(arr)
         return self
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Covers the dataset using landmarks.
 
@@ -376,20 +380,29 @@ class StandardCubicalCover(ParamsMixin):
         open cover as a list of ids. The ids are the indices of the points
         in the original dataset.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of lists of ids.
         """
-        self.fit(X)
-        lmrks_to_cover = self._landmarks.landmarks(X)
+        self.fit(arr)
+        lmrks_to_cover = self._landmarks.landmarks(arr)
         while lmrks_to_cover:
             _, x = lmrks_to_cover.popitem()
             neigh_ids = self._landmarks.search(x)
             if neigh_ids:
                 yield neigh_ids
 
-    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
-        self.fit(X)
-        return self.transform(X)
+    def fit_transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
+        """
+        Fit the model and transform the dataset.
+
+        This function first fits the model to the dataset and then yields
+        the indices of the covered neighbors for each point in the dataset.
+
+        :param arr: A dataset of n points.
+        :return: A generator of lists of ids.
+        """
+        self.fit(arr)
+        return self.transform(arr)
 
 
 class CubicalCover(ParamsMixin):
@@ -465,41 +478,41 @@ class CubicalCover(ParamsMixin):
             "The only possible values for algorithm are 'standard' and 'proximity'."
         )
 
-    def fit(self, X: ArrayLike) -> CubicalCover:
+    def fit(self, arr: ArrayLike) -> CubicalCover:
         """
         Train internal parameters.
 
         This method delegates to the :func:`fit` method of the internal cubical
         cover used.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: The object itself.
         """
         self._cubical_cover = self._get_cubical_cover()
-        self._cubical_cover.fit(X)
+        self._cubical_cover.fit(arr)
         return self
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Covers the dataset using hypercubes.
 
         This method delegates to the `apply` method of the internal cubical
         cover used.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of lists of ids.
         """
-        return self._cubical_cover.transform(X)
+        return self._cubical_cover.transform(arr)
 
-    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def fit_transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Fit the model and transform the dataset.
 
         This method first fits the model to the dataset and then yields
         the indices of the covered neighbors for each point in the dataset.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: A generator of lists of ids.
         """
         self._cubical_cover = self._get_cubical_cover()
-        return self._cubical_cover.fit_transform(X)
+        return self._cubical_cover.fit_transform(arr)

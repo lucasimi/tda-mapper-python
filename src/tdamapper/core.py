@@ -31,14 +31,19 @@ this module is a NetworkX graph object.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
+from typing import Callable, Dict, Generator, List, Optional, Protocol
 
 import networkx as nx
-import numpy as np
 from joblib import Parallel, delayed
-from numpy.typing import NDArray
 
-from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
+from tdamapper._common import (
+    ArrayLike,
+    EstimatorMixin,
+    ParamsMixin,
+    PointLike,
+    clone,
+    deprecated,
+)
 from tdamapper.unionfind import UnionFind
 
 ATTR_IDS = "ids"
@@ -55,14 +60,10 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
-PointLike = Union[Any, NDArray[np.float64]]
-
-ArrayLike = Union[List[Any], NDArray[np.float64]]
-
 
 def mapper_labels(
-    X: ArrayLike,
-    y: ArrayLike,
+    x_arr: ArrayLike,
+    y_arr: ArrayLike,
     cover: Cover,
     clustering: Clustering,
     n_jobs: int = 1,
@@ -84,8 +85,8 @@ def mapper_labels(
     are no duplicates. If i < j, the labels at position i are strictly less
     than those at position j.
 
-    :param X: A dataset of n points.
-    :param y: Lens values for the n points of the dataset.
+    :param x_arr: A dataset of n points.
+    :param y_arr: Lens values for the n points of the dataset.
     :param cover: A cover algorithm.
     :param clustering: A clustering algorithm.
     :param n_jobs: The maximum number of parallel clustering jobs. This
@@ -94,17 +95,17 @@ def mapper_labels(
     :return: A list of node labels for each point in the dataset.
     """
 
-    def _run_clustering(local_ids, X_local, clust):
-        local_lbls = clust.fit(X_local).labels_
+    def _run_clustering(local_ids, x_arr_local, clust):
+        local_lbls = clust.fit(x_arr_local).labels_
         return local_ids, local_lbls
 
     _lbls = Parallel(n_jobs, prefer="threads")(
         delayed(_run_clustering)(
-            local_ids, [X[j] for j in local_ids], clone(clustering)
+            local_ids, [x_arr[j] for j in local_ids], clone(clustering)
         )
-        for local_ids in cover.fit_transform(y)
+        for local_ids in cover.fit_transform(y_arr)
     )
-    itm_lbls: List[List[int]] = [[] for _ in X]
+    itm_lbls: List[List[int]] = [[] for _ in x_arr]
     max_lbl = 0
     for local_ids, local_lbls in _lbls:
         max_local_lbl = 0
@@ -118,8 +119,8 @@ def mapper_labels(
 
 
 def mapper_connected_components(
-    X: ArrayLike,
-    y: ArrayLike,
+    x_arr: ArrayLike,
+    y_arr: ArrayLike,
     cover: Cover,
     clustering: Clustering,
     n_jobs: int = 1,
@@ -138,8 +139,8 @@ def mapper_connected_components(
     :func:`tdamapper.core.mapper_graph` and then calling
     :func:`networkx.connected_components` on it.
 
-    :param X: A dataset of n points.
-    :param y: Lens values for the n points of the dataset.
+    :param x_arr: A dataset of n points.
+    :param y_arr: Lens values for the n points of the dataset.
     :param cover: A cover algorithm.
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
@@ -149,7 +150,7 @@ def mapper_connected_components(
     :return: A list of labels. The label at position i identifies the connected
         component of the point at position i in the dataset.
     """
-    itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
+    itm_lbls = mapper_labels(x_arr, y_arr, cover, clustering, n_jobs=n_jobs)
     label_values = set()
     for lbls in itm_lbls:
         label_values.update(lbls)
@@ -158,7 +159,7 @@ def mapper_connected_components(
         if len(lbls) > 1:
             for first, second in zip(lbls, lbls[1:]):
                 uf.union(first, second)
-    labels = [-1 for _ in X]
+    labels = [-1 for _ in x_arr]
     for i, lbls in enumerate(itm_lbls):
         # assign -1 to noise points
         root = uf.find(lbls[0]) if lbls else -1
@@ -167,8 +168,8 @@ def mapper_connected_components(
 
 
 def mapper_graph(
-    X: ArrayLike,
-    y: ArrayLike,
+    x_arr: ArrayLike,
+    y_arr: ArrayLike,
     cover: Cover,
     clustering: Clustering,
     n_jobs: int = 1,
@@ -187,8 +188,8 @@ def mapper_graph(
     'ids' that stores the indices of the points in the dataset that are
     contained in the cluster.
 
-    :param X: A dataset of n points.
-    :param y: Lens values for the n points of the dataset.
+    :param x_arr: A dataset of n points.
+    :param y_arr: Lens values for the n points of the dataset.
     :param cover: A cover algorithm.
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
@@ -197,7 +198,7 @@ def mapper_graph(
         Defaults to 1.
     :return: The Mapper graph.
     """
-    itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
+    itm_lbls = mapper_labels(x_arr, y_arr, cover, clustering, n_jobs=n_jobs)
     graph = nx.Graph()
     for n, lbls in enumerate(itm_lbls):
         for lbl in lbls:
@@ -217,7 +218,7 @@ def mapper_graph(
     return graph
 
 
-def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
+def aggregate_graph(arr: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -231,7 +232,7 @@ def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     aggregation value. The keys of the dictionary are the nodes of the graph,
     and the values are the aggregation values.
 
-    :param X: A dataset of n points.
+    :param x_arr: A dataset of n points.
     :param graph: The graph to apply the aggregation function to.
     :param agg: The aggregation function to use.
     :return: A dictionary of node-aggregation pairs.
@@ -239,7 +240,7 @@ def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> Dict:
     agg_values = {}
     nodes = graph.nodes()
     for node_id in nodes:
-        node_values = [X[i] for i in nodes[node_id][ATTR_IDS]]
+        node_values = [arr[i] for i in nodes[node_id][ATTR_IDS]]
         agg_value = agg(node_values)
         agg_values[node_id] = agg_value
     return agg_values
@@ -256,11 +257,11 @@ class SpatialSearch(Protocol):
     time and space complexity.
     """
 
-    def fit(self, X: ArrayLike) -> SpatialSearch:
+    def fit(self, arr: ArrayLike) -> SpatialSearch:
         """
         Fit the spatial search algorithm to the data.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: self
         """
 
@@ -284,33 +285,33 @@ class Cover(Protocol):
     complexity.
     """
 
-    def fit(self, X: ArrayLike) -> Cover:
+    def fit(self, arr: ArrayLike) -> Cover:
         """
         Fit the cover algorithm to the data.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :return: self
         """
 
-    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def fit_transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Fit the cover algorithm to the data and transform it.
 
         This method should yield a generator of lists, where each list contains
         the indices of the points in the dataset that belong to the open set.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :yield: A generator of lists of indices.
         """
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Transform the data into overlapping open sets.
 
         This method should yield a generator of lists, where each list contains
         the indices of the points in the dataset that belong to the open set.
 
-        :param X: A dataset of n points.
+        :param arr: A dataset of n points.
         :yield: A generator of lists of indices.
         """
 
@@ -338,12 +339,12 @@ class Clustering(Protocol):
 
     labels_: List[int]
 
-    def fit(self, X: ArrayLike, y: Any = None) -> Clustering:
+    def fit(self, x_arr: ArrayLike, y_arr: Optional[ArrayLike] = None) -> Clustering:
         """
         Fit the clustering algorithm to the data.
 
-        :param X: A dataset of n points.
-        :param y: Ignored.
+        :param x_arr: A dataset of n points.
+        :param y_arr: Ignored.
         :return: self
         """
 
@@ -357,28 +358,28 @@ class TrivialCover(ParamsMixin):
     dataset.
     """
 
-    def fit(self, X: ArrayLike) -> TrivialCover:
+    def fit(self, _x_arr: ArrayLike) -> TrivialCover:
         """
         Fit the cover algorithm to the data.
 
-        :param X: A dataset of n points.
+        :param _x_arr: A dataset of n points.
         :return: self
         """
         return self
 
-    def transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def transform(self, x_arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Transform the data into overlapping open sets.
 
         This method yields a generator that produces a single list containing
         the indices of all points in the dataset.
 
-        :param X: A dataset of n points.
+        :param x_arr: A dataset of n points.
         :yield: A generator yielding a single list of indices.
         """
-        yield list(range(len(X)))
+        yield list(range(len(x_arr)))
 
-    def fit_transform(self, X: ArrayLike) -> Generator[List[int], None, None]:
+    def fit_transform(self, x_arr: ArrayLike) -> Generator[List[int], None, None]:
         """
         Fit the cover algorithm to the data and transform it.
 
@@ -386,14 +387,46 @@ class TrivialCover(ParamsMixin):
         generator that produces a single list containing the indices of all
         points in the dataset.
 
-        :param X: A dataset of n points.
+        :param x_arr: A dataset of n points.
         :return: A generator yielding a single list of indices.
         """
-        self.fit(X)
-        return self.transform(X)
+        self.fit(x_arr)
+        return self.transform(x_arr)
 
 
 class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
+    """
+    Mapper algorithm for constructing Mapper graphs.
+
+    This class implements the Mapper algorithm for constructing Mapper graphs
+    from a dataset. It allows the user to specify the cover and clustering
+    algorithms to use, as well as various parameters such as verbosity and
+    failsafe behavior. The Mapper graph is constructed by first covering the
+    lens space with overlapping open sets, then clustering the points in each
+    open set, and finally connecting the clusters that share points.
+
+    The Mapper graph is represented as a NetworkX graph object, where each node
+    corresponds to a cluster of points, and edges connect nodes that share
+    points. The nodes have attributes 'size' (the number of points in the
+    cluster) and 'ids' (the indices of the points in the dataset that belong to
+    the cluster).
+
+    :param cover: A cover algorithm to use for covering the lens space.
+        If None, a trivial cover that contains all points in a single open set
+        is used. Defaults to None.
+    :param clustering: A clustering algorithm to use for clustering the points
+        in each open set. If None, a trivial clustering that assigns all points
+        to a single cluster is used. Defaults to None.
+    :param failsafe: A flag to enable failsafe behavior. If True, the clustering
+        algorithm is wrapped in a failsafe clustering that prevents failure by
+        returning a single cluster containing all points if the clustering
+        algorithm fails. Defaults to True.
+    :param verbose: A flag to enable verbose logging. If True, the algorithm
+        logs information about the clustering process. Defaults to True.
+    :param n_jobs: The maximum number of parallel clustering jobs. This
+        parameter is passed to the constructor of :class:`joblib.Parallel`.
+        Defaults to 1.
+    """
 
     _cover: Cover
     _clustering: Clustering
@@ -416,8 +449,25 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None):
-        X, y = self._validate_X_y(X, y)
+    def fit(self, x_arr: ArrayLike, y_arr: Optional[ArrayLike] = None):
+        """
+        Fit the Mapper algorithm to the data.
+
+        This method fits the Mapper algorithm to the provided dataset and
+        constructs the Mapper graph. It uses the cover and clustering algorithms
+        specified in the constructor to cover the lens space and cluster the
+        points in each open set.
+
+        :param x_arr: A dataset of n points.
+        :param y_arr: Lens values for the n points of the dataset. If None,
+            the lens values are assumed to be the same as the dataset points.
+            Defaults to None.
+        :return: self
+        :raises ValueError: If the input arrays are not valid or if the cover or
+            clustering algorithms are not set properly.
+        """
+        y_arr_ = x_arr if y_arr is None else y_arr
+        x_arr_, y_arr_ = self._validate_x_y(x_arr, y_arr_)
         self._cover = TrivialCover() if self.cover is None else self.cover
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
@@ -432,19 +482,29 @@ class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self._cover = clone(self._cover)
         self._clustering = clone(self._clustering)
         self._n_jobs = self.n_jobs
-        y = X if y is None else y
         self.graph_ = mapper_graph(
-            X,
-            y,
+            x_arr_,
+            y_arr_,
             self._cover,
             self._clustering,
             n_jobs=self._n_jobs,
         )
-        self._set_n_features_in(X)
+        self._set_n_features_in(x_arr_)
         return self
 
-    def fit_transform(self, X: ArrayLike, y: ArrayLike) -> nx.Graph:
-        self.fit(X, y)
+    def fit_transform(self, x_arr: ArrayLike, y_arr: Optional[ArrayLike]) -> nx.Graph:
+        """
+        Fit the Mapper algorithm to the data and return the Mapper graph.
+
+        This method fits the Mapper algorithm to the provided dataset and
+        returns the Mapper graph as a NetworkX graph object. The graph is built
+        using the cover and clustering algorithms specified in the constructor.
+
+        :param x_arr: A dataset of n points.
+        :param y_arr: Lens values for the n points of the dataset.
+        :return: The Mapper graph as a NetworkX graph object.
+        """
+        self.fit(x_arr, y_arr)
         return self.graph_
 
 
@@ -484,19 +544,30 @@ class FailSafeClustering(ParamsMixin):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None):
+    def fit(self, x_arr: ArrayLike, y_arr: Optional[ArrayLike] = None):
+        """
+        Fit the clustering algorithm to the data.
+
+        This method attempts to fit the clustering algorithm to the provided
+        dataset. If the clustering algorithm raises a ValueError, it logs a
+        warning message and assigns all points to a single cluster (label 0).
+
+        :param x_arr: A dataset of n points.
+        :param y_arr: Ignored.
+        :return: self
+        """
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
         self._verbose = self.verbose
         self.labels_ = []
         try:
-            self._clustering.fit(X, y)
+            self._clustering.fit(x_arr, y_arr)
             self.labels_ = self._clustering.labels_
         except ValueError as err:
             if self._verbose:
                 _logger.warning("Unable to perform clustering on local chart: %s", err)
-            self.labels_ = [0 for _ in X]
+            self.labels_ = [0 for _ in x_arr]
         return self
 
 
@@ -515,13 +586,15 @@ class TrivialClustering(ParamsMixin):
     def __init__(self):
         pass
 
-    def fit(self, X: ArrayLike, _: Optional[ArrayLike] = None) -> TrivialClustering:
+    def fit(
+        self, x_arr: ArrayLike, _y_arr: Optional[ArrayLike] = None
+    ) -> TrivialClustering:
         """
         Fit the clustering algorithm to the data.
 
-        :param X: A dataset of n points.
-        :param y: Ignored.
+        :param x_arr: A dataset of n points.
+        :param _y_arr: Ignored.
         :return: self
         """
-        self.labels_ = [0 for _ in X]
+        self.labels_ = [0 for _ in x_arr]
         return self

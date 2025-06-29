@@ -250,6 +250,20 @@ class Node(Generic[T]):
         """
         return self._right
 
+    def get_bounds(self) -> Tuple[int, int]:
+        """
+        Get the bounds of the range of points in this node.
+
+        Since this is a non-terminal node, it does not have bounds like a leaf
+        node does. This method raises an exception to indicate that bounds are
+        not applicable for this node type.
+
+        :return: Raises an exception since this node does not have bounds.
+        """
+        raise NotImplementedError(
+            "Node does not have bounds. Use Leaf class for leaf nodes."
+        )
+
 
 class Leaf:
     """
@@ -288,6 +302,37 @@ class Leaf:
         :return: True if this node is a terminal node, False otherwise.
         """
         return True
+
+    def get_left(self) -> Tree:
+        """
+        Get the left subtree of this node.
+
+        Since this is a leaf node, it does not have a left subtree.
+
+        :return: Raises an exception since a leaf node does not have a left subtree.
+        """
+        raise NotImplementedError("Leaf nodes do not have left subtrees.")
+
+    def get_right(self) -> Tree:
+        """
+        Get the right subtree of this node.
+
+        Since this is a leaf node, it does not have a right subtree.
+
+        :return: Raises an exception since a leaf node does not have a right subtree.
+        """
+        raise NotImplementedError("Leaf nodes do not have right subtrees.")
+
+    def get_ball(self) -> Tuple[float, T]:
+        """
+        Get the radius and center of the ball represented by this leaf.
+
+        Since this is a leaf node, it does not represent a ball, so this method
+        raises an exception.
+
+        :return: Raises an exception since a leaf node does not have a ball.
+        """
+        raise NotImplementedError("Leaf nodes do not represent balls.")
 
 
 Tree = Union[Node[T], Leaf]

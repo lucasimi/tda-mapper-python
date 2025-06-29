@@ -57,9 +57,13 @@ class MapperClustering(_MapperClustering):
         """
         Fit the clustering algorithm to the data.
 
-        :param X: A dataset of n points.
-        :param y: Ignored.
-        :return: self
+        This method computes the connected components of the Mapper graph and
+        assigns labels to each point in the dataset based on their connected
+        component.
+
+        :param X: The input features array.
+        :param y: The target values array. If None, `x_arr` is used as `y_arr`.
+        :return: The fitted MapperClustering object.
         """
         super().fit(X, y)
         return self
@@ -129,7 +133,7 @@ class MapperAlgorithm(_MapperAlgorithm):
         super().fit(X, y)
         return self
 
-    def fit_transform(self, X: ArrayLike, y: ArrayLike) -> nx.Graph:
+    def fit_transform(self, X: ArrayLike, y: Optional[ArrayLike]) -> nx.Graph:
         """
         Create the Mapper graph.
 

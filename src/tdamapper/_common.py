@@ -8,7 +8,7 @@ import cProfile
 import io
 import pstats
 import warnings
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,7 +16,19 @@ from numpy.typing import NDArray
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
 
+PointLike = Union[Any, NDArray[np.float64]]
+
+ArrayLike = Union[List[Any], NDArray[np.float64]]
+
+
 def deprecated(msg: str) -> Callable:
+    """
+    Decorator to mark a function as deprecated.
+
+    :param msg: A message to be shown when the function is called.
+    :return: A decorator that wraps the function and issues a warning when called.
+    """
+
     def deprecated_func(func):
         def wrapper(*args, **kwargs):
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
@@ -28,54 +40,91 @@ def deprecated(msg: str) -> Callable:
 
 
 def warn_user(msg: str) -> None:
+    """
+    Issues a warning to the user.
+
+    :param msg: A message to be shown to the user.
+    """
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
 class EstimatorMixin:
+    """
+    Mixin to add common functionalities to estimators, such as validation of
+    input data, setting the number of features, and checking for sparse data.
+    This mixin is intended to be used with scikit-learn compatible estimators.
+    """
 
-    def _is_sparse(self, X: NDArray) -> bool:
+    def _is_sparse(self, x_arr: ArrayLike) -> bool:
+        """
+        Checks if the input array `x_arr` is sparse.
+
+        :param x_arr: The input array to check.
+        :return: True if `x_arr` is sparse, False otherwise.
+        """
         # simple alternative use scipy.sparse.issparse
-        return hasattr(X, "toarray")
+        return hasattr(x_arr, "toarray")
 
-    def _validate_X_y(self, X: NDArray, y: NDArray) -> tuple[NDArray, NDArray]:
-        if self._is_sparse(X):
+    def _validate_x_y(
+        self,
+        x_arr: ArrayLike,
+        y_arr: ArrayLike,
+    ) -> tuple[NDArray, NDArray]:
+        """
+        Validates the input arrays `x_arr` and `y_arr`.
+
+        :param x_arr: The input features array.
+        :param y_arr: The target values array.
+        :return: A tuple of validated numpy arrays (x_arr, y_arr).
+        :raises ValueError: If the input arrays are not valid, e.g., if they
+            are sparse, empty, 1-dimensional, contain complex numbers, or have
+            NaNs or infinite values.
+        """
+        if self._is_sparse(x_arr):
             raise ValueError("Sparse data not supported.")
 
-        X = np.asarray(X)
-        y = np.asarray(y)
+        x_arr_ = np.asarray(x_arr)
+        y_arr_ = np.asarray(y_arr)
 
-        if X.size == 0:
-            msg = f"0 feature(s) (shape={X.shape}) while a minimum of 1 is " "required."
+        if x_arr_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={x_arr_.shape}) while a minimum of 1 is "
+                "required."
+            )
             raise ValueError(msg)
 
-        if y.size == 0:
-            msg = f"0 feature(s) (shape={y.shape}) while a minimum of 1 is " "required."
+        if y_arr_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={y_arr_.shape}) while a minimum of 1 is "
+                "required."
+            )
             raise ValueError(msg)
 
-        if X.ndim == 1:
+        if x_arr_.ndim == 1:
             raise ValueError("1d-arrays not supported.")
 
-        if np.iscomplexobj(X) or np.iscomplexobj(y):
+        if np.iscomplexobj(x_arr_) or np.iscomplexobj(y_arr_):
             raise ValueError("Complex data not supported.")
 
-        if X.dtype == np.object_:
-            X = np.array(X, dtype=float)
+        if x_arr_.dtype == np.object_:
+            x_arr_ = np.array(x_arr_, dtype=float)
 
-        if y.dtype == np.object_:
-            y = np.array(y, dtype=float)
+        if y_arr_.dtype == np.object_:
+            y_arr_ = np.array(y_arr_, dtype=float)
 
         if (
-            np.isnan(X).any()
-            or np.isinf(X).any()
-            or np.isnan(y).any()
-            or np.isinf(y).any()
+            np.isnan(x_arr_).any()
+            or np.isinf(x_arr_).any()
+            or np.isnan(y_arr_).any()
+            or np.isinf(y_arr_).any()
         ):
             raise ValueError("NaNs or infinite values not supported.")
 
-        return X, y
+        return x_arr_, y_arr_
 
-    def _set_n_features_in(self, X: NDArray) -> None:
-        self.n_features_in_ = X.shape[1]
+    def _set_n_features_in(self, arr: ArrayLike) -> None:
+        if hasattr(arr, "shape"):
+            self.n_features_in_ = arr.shape[1]
 
 
 class ParamsMixin:
@@ -156,6 +205,14 @@ def clone(obj: Any) -> Any:
 
 
 def profile(n_lines: int = 10) -> Callable:
+    """
+    Decorator to profile a function using cProfile and print the top `n_lines`
+    lines of the profiling report.
+
+    :param n_lines: The number of lines to print from the profiling report.
+    :return: A decorator that wraps the function and profiles its execution.
+    """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             profiler = cProfile.Profile()

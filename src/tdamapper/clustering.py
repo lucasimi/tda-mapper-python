@@ -46,6 +46,19 @@ class FailSafeClustering(tdamapper.core.FailSafeClustering):
 
 
 class _MapperClustering(EstimatorMixin, ParamsMixin):
+    """
+    Mapper clustering model that fits the Mapper algorithm to the data.
+
+    This class is designed to be used with the Mapper algorithm for clustering
+    data points based on their features. It allows for customization of the
+    cover and clustering methods used in the Mapper algorithm.
+
+    :param cover: The cover method to use for the Mapper algorithm. If None,
+        a trivial cover will be used.
+    :param clustering: The clustering method to use for the Mapper algorithm.
+        If None, a trivial clustering will be used.
+    :param n_jobs: The number of jobs to run in parallel. Default is 1.
+    """
 
     labels_: List[int]
 
@@ -59,9 +72,18 @@ class _MapperClustering(EstimatorMixin, ParamsMixin):
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> _MapperClustering:
-        y = X if y is None else y
-        X, y = self._validate_X_y(X, y)
+    def fit(
+        self, x_arr: ArrayLike, y_arr: Optional[ArrayLike] = None
+    ) -> _MapperClustering:
+        """
+        Fit the Mapper clustering model to the data.
+
+        :param x_arr: The input features array.
+        :param y_arr: The target values array. If None, `x_arr` is used as `y_arr`.
+        :return: The fitted Mapper clustering model.
+        """
+        y_arr = x_arr if y_arr is None else y_arr
+        x_arr, y_arr = self._validate_x_y(x_arr, y_arr)
         cover = TrivialCover() if self.cover is None else self.cover
         cover = clone(cover)
         clustering = (
@@ -72,14 +94,14 @@ class _MapperClustering(EstimatorMixin, ParamsMixin):
         clustering = clone(clustering)
         n_jobs = self.n_jobs
         itm_lbls = mapper_connected_components(
-            X,
-            y,
+            x_arr,
+            y_arr,
             cover,
             clustering,
             n_jobs=n_jobs,
         )
-        self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
-        self._set_n_features_in(X)
+        self.labels_ = [itm_lbls[i] for i, _ in enumerate(x_arr)]
+        self._set_n_features_in(x_arr)
         return self
 
 
