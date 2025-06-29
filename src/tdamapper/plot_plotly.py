@@ -86,10 +86,9 @@ def _to_cmaps(cmap: Optional[Union[str, List[str]]]) -> List[str]:
         return [DEFAULT_CMAP]
     if isinstance(cmap, str):
         return [cmap]
-    elif isinstance(cmap, list):
+    if isinstance(cmap, list):
         return cmap
-    else:
-        raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
+    raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
 
 
 def _to_colors(colors: Union[np.ndarray, List[float]]) -> np.ndarray:
@@ -97,28 +96,23 @@ def _to_colors(colors: Union[np.ndarray, List[float]]) -> np.ndarray:
     colors_arr = np.array(colors)
     if colors_arr.ndim == 1:
         return colors_arr.reshape(-1, 1)
-    elif colors_arr.ndim == 2:
+    if colors_arr.ndim == 2:
         return colors_arr
-    else:
-        raise ValueError(
-            f"Invalid colors shape: {colors_arr.shape}. Expected 1D or 2D array."
-        )
+    raise ValueError(
+        f"Invalid colors shape: {colors_arr.shape}. Expected 1D or 2D array."
+    )
 
 
 def _to_titles(title: Optional[Union[str, List[str]]], colors_num: int) -> List[str]:
     if title is None:
         return [f"{i}" for i in range(colors_num)]
-    elif isinstance(title, str):
+    if isinstance(title, str):
         if colors_num == 1:
             return [title]
-        else:
-            return [f"{title} [{i}]" for i in range(colors_num)]
-    elif isinstance(title, list) and len(title) == colors_num:
+        return [f"{title} [{i}]" for i in range(colors_num)]
+    if isinstance(title, list) and len(title) == colors_num:
         return title
-    else:
-        raise ValueError(
-            f"Invalid title type: {type(title)}. Expected str or list[str]."
-        )
+    raise ValueError(f"Invalid title type: {type(title)}. Expected str or list[str].")
 
 
 def _to_node_sizes(
@@ -126,13 +120,12 @@ def _to_node_sizes(
 ) -> List[float]:
     if isinstance(node_size, (int, float)):
         return [node_size]
-    elif isinstance(node_size, list):
+    if isinstance(node_size, list):
         return node_size
-    else:
-        raise ValueError(
-            f"Invalid node_size type: {type(node_size)}. "
-            "Expected int, float or list[int, float]."
-        )
+    raise ValueError(
+        f"Invalid node_size type: {type(node_size)}. "
+        "Expected int, float or list[int, float]."
+    )
 
 
 def _get_cmap_rgb(cmap: str):
@@ -152,6 +145,19 @@ def plot_plotly(
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> go.Figure:
+    """
+    Plot a Mapper graph using Plotly.
+
+    :param mapper_plot: The Mapper plot object containing the graph and positions.
+    :param colors: Colors for the nodes, can be a 1D or 2D numpy array or a list.
+    :param node_size: Size of the nodes, can be a single value or a list of values.
+    :param title: Title for the color bar, can be a string or a list of strings.
+    :param agg: Aggregation function to apply to the colors, defaults to np.nanmean.
+    :param cmap: Colormap to use for the nodes, can be a string or a list of strings.
+    :param width: Width of the plot, defaults to None (auto).
+    :param height: Height of the plot, defaults to None (auto).
+    :return: A Plotly Figure object containing the Mapper graph.
+    """
     cmaps = _to_cmaps(cmap)
     colors = _to_colors(colors)
     colors_num = colors.shape[1]

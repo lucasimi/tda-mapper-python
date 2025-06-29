@@ -1,7 +1,9 @@
 """
-VP-tree Builder Module
-This module provides a Builder class for constructing a VP-tree from a collection of items.
-It supports different pivoting strategies and allows customization of the tree's parameters.
+VP-tree Builder Module.
+
+This module provides a Builder class for constructing a VP-tree from a
+collection of items. It supports different pivoting strategies and allows
+customization of the tree's parameters.
 """
 
 from __future__ import annotations
@@ -25,10 +27,11 @@ class Builder(Generic[T]):
     """
     Builder for constructing a VP-tree from a collection of items.
 
-    This class takes a VPTreeType and an iterable of items, and builds a VP-tree
-    using the specified pivoting strategy and parameters.
+    This class takes a VPTreeType and an iterable of items, and builds a
+    VP-tree using the specified pivoting strategy and parameters.
 
-    :param vpt: VPTreeType instance containing distance function and parameters.
+    :param vpt: VPTreeType instance containing distance function and
+        parameters.
     :param items: Iterable of items to be included in the VP-tree.
     """
 
@@ -92,9 +95,12 @@ class Builder(Generic[T]):
 
     def build(self) -> VPArray[T]:
         """
-        Build the VP-tree from the given items.
+        Build the VP-tree from the items provided during initialization.
 
-        :return: VPArray containing the VP-tree structure.
+        This method constructs the VP-tree iteratively, starting from the root
+        node.
+
+        :return: The VPArray instance containing the constructed VP-tree.
         """
         self._build_iter()
         return self._arr

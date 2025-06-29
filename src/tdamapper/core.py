@@ -31,7 +31,16 @@ this module is a NetworkX graph object.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, Generator, List, Optional, Protocol, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Protocol,
+    Union,
+)
 
 import networkx as nx
 import numpy as np

@@ -533,7 +533,7 @@ class App:
         ).classes("w-full")
 
     def _init_footnotes(self):
-        ui.label(text=("Made in Rome, with ❤️ and ☕️.")).classes(
+        ui.label(text="Made in Rome, with ❤️ and ☕️.").classes(
             "text-caption text-gray-500"
         ).classes("text-caption text-gray-500")
 
@@ -543,7 +543,7 @@ class App:
 
     def get_mapper_config(self):
         return MapperConfig(
-            lens_type=str(self.lens_type.value) if self.lens_type.value else LENS_PCA,
+            lens_type=(str(self.lens_type.value) if self.lens_type.value else LENS_PCA),
             cover_type=(
                 str(self.cover_type.value) if self.cover_type.value else COVER_CUBICAL
             ),

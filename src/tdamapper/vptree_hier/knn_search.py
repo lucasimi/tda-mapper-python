@@ -1,3 +1,12 @@
+"""
+This module implements a k-nearest neighbors search in a VP-tree.
+
+It provides a KnnSearch class that allows searching for the k-nearest
+neighbors of a given point in a VP-tree. The search is performed iteratively,
+and the results are returned as a list of points that are the k-nearest
+neighbors.
+"""
+
 from typing import Generic, List, TypeVar
 
 from tdamapper.heap import MaxHeap
@@ -7,6 +16,20 @@ T = TypeVar("T")
 
 
 class KnnSearch(Generic[T]):
+    """
+    KnnSearch class for searching k-nearest neighbors of a point in a VP-tree.
+
+    This class performs a search in a VP-tree to find the k-nearest neighbors
+    of a given point. It uses an iterative approach to traverse the VP-tree
+    and collect points that are within the specified number of neighbors.
+
+    :param vpt: VPTreeType instance containing distance function and
+        parameters.
+    :param point: The point from which the search is performed.
+    :param neighbors: The number of nearest neighbors to find.
+    """
+
+    _items: MaxHeap[float, T]
 
     def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int):
         self._tree = vpt.tree
@@ -30,9 +53,20 @@ class KnnSearch(Generic[T]):
         if len(self._items) < self._neighbors:
             return float("inf")
         furthest_dist, _ = self._items.top()
+        if furthest_dist is None:
+            return float("inf")
         return furthest_dist
 
     def search(self) -> List[T]:
+        """
+        Perform the search for k-nearest neighbors of the point.
+
+        This method initiates the search process and returns a list of points
+        that are the k-nearest neighbors of the given point.
+
+        :return: A list of points that are the k-nearest neighbors of the
+            given point.
+        """
         self._search_rec(self._tree)
         return self._get_items()
 

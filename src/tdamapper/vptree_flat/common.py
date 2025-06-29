@@ -1,8 +1,23 @@
-""" """
+"""
+Common types and structures for VP-tree implementation.
+
+This module defines the basic types and structures used in the VP-tree
+implementation, including the VPArray for managing the dataset and distances,
+the Node and Leaf classes for representing the tree structure, and the
+VPTreeType protocol for type checking.
+"""
 
 from __future__ import annotations
 
-from typing import Callable, Generic, Iterable, List, Optional, Protocol, TypeVar
+from typing import (
+    Callable,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    TypeVar,
+)
 
 import numpy as np
 from numpy.typing import NDArray
@@ -78,7 +93,7 @@ class VPArray(Generic[T]):
     :param dataset: A list of points of type T.
     :param distances: A NumPy array of distances corresponding to the points.
     :param indices: A NumPy array of indices mapping points to their positions
-        in the dataset
+        in the dataset.
     :param is_terminal: A NumPy array indicating whether each point is terminal
         (True) or not (False). A terminal point is a leaf node in the VP-tree.
         It is used to determine if a point is a leaf node in the VP-tree.

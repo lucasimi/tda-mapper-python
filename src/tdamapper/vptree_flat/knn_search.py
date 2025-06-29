@@ -52,6 +52,7 @@ class KnnSearch(Generic[T]):
     def search(self) -> List[T]:
         """
         Perform the search for k-nearest neighbors of the point.
+
         This method initiates the search process and returns a list of points
         that are the k-nearest neighbors of the given point.
 
@@ -69,9 +70,8 @@ class KnnSearch(Generic[T]):
         while len(self._result) > self._neighbors:
             self._result.pop()
         if len(self._result) == self._neighbors:
-            rad, _ = self._result.top()
-            if rad is not None:
-                self._radius = rad
+            radius, _ = self._result.top()
+            self._radius = radius if radius is not None else float("inf")
         return dist
 
     def _search_iter(self) -> List[T]:

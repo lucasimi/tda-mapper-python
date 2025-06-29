@@ -1,3 +1,11 @@
+"""
+VP-tree Builder Module.
+
+This module provides a Builder class for constructing a VP-tree from a
+collection of items. It supports different pivoting strategies and allows
+customization of the tree's parameters.
+"""
+
 from __future__ import annotations
 
 from random import randrange
@@ -5,19 +13,36 @@ from typing import Generic, Iterable, Tuple, TypeVar
 
 import numpy as np
 
-from tdamapper.vptree_hier.common import Leaf, Node, Tree, VPArray, VPTreeType, _mid
+from tdamapper.vptree_hier.common import (
+    Leaf,
+    Node,
+    Tree,
+    VPArray,
+    VPTreeType,
+    _mid,
+)
 
 T = TypeVar("T")
 
 
 class Builder(Generic[T]):
+    """
+    Builder for constructing a VP-tree from a collection of items.
 
-    def __init__(self, vpt: VPTreeType, X: Iterable[T]) -> None:
+    This class takes a VPTreeType and an iterable of items, and builds a
+    VP-tree using the specified pivoting strategy and parameters.
+
+    :param vpt: VPTreeType instance containing distance function and
+        parameters.
+    :param items: Iterable of items to be included in the VP-tree.
+    """
+
+    def __init__(self, vpt: VPTreeType, items: Iterable[T]) -> None:
         self._distance = vpt.distance
 
-        dataset = [x for x in X]
-        indices = np.array([i for i in range(len(dataset))])
-        distances = np.array([0.0 for _ in X])
+        dataset = list(items)
+        indices = np.array(list(range(len(dataset))))
+        distances = np.array([0.0 for _ in items])
         self._arr = VPArray(dataset, distances, indices)
 
         self._leaf_capacity = vpt.leaf_capacity
@@ -68,6 +93,15 @@ class Builder(Generic[T]):
             self._arr.set_distance(i, self._distance(v_point, point))
 
     def build(self) -> Tuple[Tree[T], VPArray[T]]:
+        """
+        Build the VP-tree from the items provided during initialization.
+
+        This method constructs the VP-tree recursively, starting from the root
+        node.
+
+        :return: A tuple containing the root of the VP-tree and the VPArray
+            instance.
+        """
         tree = self._build_rec(0, self._arr.size())
         return tree, self._arr
 

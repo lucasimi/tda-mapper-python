@@ -152,7 +152,10 @@ class MaxHeap(Generic[K, T]):
     def _fix_up(self, i: int) -> int:
         parent = _parent(i)
         if self._heap[parent] < self._heap[i]:
-            self._heap[i], self._heap[parent] = self._heap[parent], self._heap[i]
+            self._heap[i], self._heap[parent] = (
+                self._heap[parent],
+                self._heap[i],
+            )
             return parent
         return i
 

@@ -31,12 +31,25 @@ from typing import Callable, List, Union
 
 import numpy as np
 
-import tdamapper._metrics as _metrics
+from tdamapper._metrics import (
+    chebyshev as _chebyshev,
+    cosine as _cosine,
+    euclidean as _euclidean,
+    manhattan as _manhattan,
+    minkowski as _minkowski,
+)
 
 _MINKOWSKI_P = "p"
 
 
 class Metric(str, Enum):
+    """
+    Enum representing supported distance metrics.
+
+    Each metric corresponds to a specific distance function that can be
+    used to compute distances between vectors.
+    """
+
     EUCLIDEAN = "euclidean"
     MANHATTAN = "manhattan"
     MINKOWSKI = "minkowski"
@@ -54,7 +67,7 @@ def euclidean(*args, **kwargs) -> Callable:
     :return: The Euclidean distance function.
     :rtype: callable
     """
-    return _metrics.euclidean
+    return _euclidean
 
 
 def manhattan(*args, **kwargs) -> Callable:
@@ -67,7 +80,7 @@ def manhattan(*args, **kwargs) -> Callable:
     :return: The Manhattan distance function.
     :rtype: callable
     """
-    return _metrics.manhattan
+    return _manhattan
 
 
 def chebyshev(*args, **kwargs) -> Callable:
@@ -80,7 +93,7 @@ def chebyshev(*args, **kwargs) -> Callable:
     :return: The Chebyshev distance function.
     :rtype: callable
     """
-    return _metrics.chebyshev
+    return _chebyshev
 
 
 def minkowski(*args, **kwargs) -> Callable:
@@ -105,7 +118,7 @@ def minkowski(*args, **kwargs) -> Callable:
         return chebyshev()
 
     def dist(x, y):
-        return _metrics.minkowski(p, x, y)
+        return _minkowski(p, x, y)
 
     return dist
 
@@ -129,7 +142,7 @@ def cosine(*args, **kwargs) -> Callable:
     :return: The cosine distance function.
     :rtype: callable
     """
-    return _metrics.cosine
+    return _cosine
 
 
 def _get_supported_metrics() -> List[str]:
@@ -152,13 +165,13 @@ def get_metric_function(metric: Metric, *args, **kwargs) -> Callable:
     """
     if metric == Metric.EUCLIDEAN:
         return euclidean(*args, **kwargs)
-    elif metric == Metric.MANHATTAN:
+    if metric == Metric.MANHATTAN:
         return manhattan(*args, **kwargs)
-    elif metric == Metric.MINKOWSKI:
+    if metric == Metric.MINKOWSKI:
         return minkowski(*args, **kwargs)
-    elif metric == Metric.CHEBYSHEV:
+    if metric == Metric.CHEBYSHEV:
         return chebyshev(*args, **kwargs)
-    elif metric == Metric.COSINE:
+    if metric == Metric.COSINE:
         return cosine(*args, **kwargs)
     raise ValueError(
         f"Unsupported metric: {metric}. "

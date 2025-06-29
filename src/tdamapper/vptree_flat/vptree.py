@@ -4,6 +4,10 @@ neighbor search. It provides a VPTree class that allows for the construction of
 a VP-tree from a collection of items and supports searching for points within a
 specified distance (ball search) or finding the k-nearest neighbors of a point
 (k-nearest neighbors search).
+
+This flat implementation of the VP-tree does not use a hierarchical structure,
+but instead maintains a flat array representation of the tree, which is
+suitable for certain applications where a simpler structure is preferred.
 """
 
 from typing import (

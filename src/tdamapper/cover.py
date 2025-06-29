@@ -19,7 +19,12 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
 from tdamapper._common import ParamsMixin
 from tdamapper.core import ArrayLike, PointLike, SpatialSearch
-from tdamapper.search import BallSearch, CubicalLandmarks, CubicalSearch, KNNSearch
+from tdamapper.search import (
+    BallSearch,
+    CubicalLandmarks,
+    CubicalSearch,
+    KNNSearch,
+)
 
 
 class ProximityNet(ABC, ParamsMixin):
@@ -454,13 +459,11 @@ class CubicalCover(ParamsMixin):
         )
         if self.algorithm == "proximity":
             return ProximityCubicalCover(**params)
-        elif self.algorithm == "standard":
+        if self.algorithm == "standard":
             return StandardCubicalCover(**params)
-        else:
-            raise ValueError(
-                "The only possible values for algorithm are 'standard' and "
-                "'proximity'."
-            )
+        raise ValueError(
+            "The only possible values for algorithm are 'standard' and 'proximity'."
+        )
 
     def fit(self, X: ArrayLike) -> CubicalCover:
         """
