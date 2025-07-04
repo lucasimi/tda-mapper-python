@@ -53,6 +53,8 @@ dev = [
     "flake8",
     "kaleido",
     "nbformat>=4.2.0",
+    "umap-learn<0.6.0",
+    "nicegui>=2.18.0,<3.0.0",
 ]
 app = [
     "pandas<3.0.0",
