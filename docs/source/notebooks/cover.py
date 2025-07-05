@@ -226,7 +226,8 @@ fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 
 # The `KNNCover` algorithm uses k-nearest neighbors to define the cover. The cover is created by
 # choosing a set of points in the dataset and then connecting each point to its k-nearest
-# neighbors.
+# neighbors. For this reason, each set in the cover has cardinality equal to the number of
+# neighbors specified.
 
 # ### Parameters
 # The key parameter in the `KNNCover` is the `neighbors`, which determines how many nearest
@@ -283,6 +284,25 @@ fig.show(config={"scrollZoom": True}, renderer="notebook_connected")
 # %% [markdown]
 
 # ## Conclusions
+
+# In this notebook, we explored three different cover algorithms: `CubicalCover`, `BallCover`, and
+# `KNNCover`. Each algorithm has its own strengths and weaknesses, and the choice of cover can
+# significantly influence the resulting Mapper graph. Here is a summary of the key differences
+# between the three cover algorithms:
+
+# +------------------------+------------------+-------------------------------------+-------------------------------------+
+# | Cover Algorithm        | Parameters       | Advantages                          | Disadvantages                       |
+# +========================+==================+=====================================+=====================================+
+# | CubicalCover           | - `n_intervals`  | - Widely used and well-supported    | - Sensitive to parameters           |
+# |                        | - `overlap_frac` | - Easy to interpret                 | - Only supports Euclidean spaces    |
+# |                        | - `algorithm`    |                                     |                                     |
+# +------------------------+------------------+-------------------------------------+-------------------------------------+
+# | BallCover              | - `radius`       | - Works with any metric space       | - Struggles with varying densities  |
+# |                        | - `metric`       | - Can capture isolated clusters     | - Radius tuning can be difficult    |
+# +------------------------+------------------+-------------------------------------+-------------------------------------+
+# | KNNCover               | - `neighbors`    | - Works with any metric space       | - Struggles with isolated clusters  |
+# |                        | - `metric`       | - Adapts to local densities         | - Risk of over-connecting nodes     |
+# +------------------------+------------------+-------------------------------------+-------------------------------------+
 
 # As a final remark, in the example dataset that we used, despite a significative difference in the
 # structure of the Mapper graph, the relationship between the different parts of the data are still
