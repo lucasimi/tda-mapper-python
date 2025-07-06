@@ -10,13 +10,11 @@ on:
 
 jobs:
   test-unit-matrix-job:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         include:
-          - python-version: 3.8
-            allow-failure: false
           - python-version: 3.9
             allow-failure: false
           - python-version: 3.10
