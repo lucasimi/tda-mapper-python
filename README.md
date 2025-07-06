@@ -64,16 +64,6 @@ mathematical foundations and practical applications, read
 | ![Step 1](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png) | ![Step 3](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png) | ![Step 2](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_4.png) |
 | Choose lens | Cover image | Run clustering | Build graph |
 
-## Citations
-
-If you use **tda-mapper** in your work, please consider citing both the
-[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
-Zenodo record, and the [paper](https://openreview.net/pdf?id=lTX4bYREAZ),
-which provides a broader methodological overview. We recommend citing the
-specific version of the library used in your research, along with the paper.
-For citation examples, please refer to the
-[documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
-
 ## Quick Start
 
 ### Installation
@@ -158,3 +148,13 @@ To run it locally:
     ```
 
 ![tda-mapper-app](https://github.com/lucasimi/tda-mapper-python/raw/main/resources/tda-mapper-app.png)
+
+## Citations
+
+If you use **tda-mapper** in your work, please consider citing both the
+[library](https://doi.org/10.5281/zenodo.10642381), archived in a permanent
+Zenodo record, and the [paper](https://openreview.net/pdf?id=lTX4bYREAZ),
+which provides a broader methodological overview. We recommend citing the
+specific version of the library used in your research, along with the paper.
+For citation examples, please refer to the
+[documentation](https://tda-mapper.readthedocs.io/en/main/#citations).
