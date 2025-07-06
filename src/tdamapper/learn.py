@@ -9,11 +9,17 @@ relationships, and uncover meaningful structures in a manner that aligns with
 scikit-learn's conventions for estimators.
 """
 
-from tdamapper.clustering import _MapperClustering
-from tdamapper.core import _MapperAlgorithm
+from tdamapper._common import EstimatorMixin, ParamsMixin, clone
+from tdamapper.core import (
+    FailSafeClustering,
+    TrivialClustering,
+    TrivialCover,
+    mapper_connected_components,
+    mapper_graph,
+)
 
 
-class MapperClustering(_MapperClustering):
+class MapperClustering(EstimatorMixin, ParamsMixin):
     """
     A clustering algorithm based on the Mapper graph.
 
@@ -45,11 +51,9 @@ class MapperClustering(_MapperClustering):
         clustering=None,
         n_jobs=1,
     ):
-        super().__init__(
-            cover=cover,
-            clustering=clustering,
-            n_jobs=n_jobs,
-        )
+        self.cover = cover
+        self.clustering = clustering
+        self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
         """
@@ -60,10 +64,26 @@ class MapperClustering(_MapperClustering):
         :param y: Ignored.
         :return: self
         """
-        return super().fit(X, y)
+        y = X if y is None else y
+        X, y = self._validate_X_y(X, y)
+        cover = TrivialCover() if self.cover is None else self.cover
+        cover = clone(cover)
+        clustering = TrivialClustering() if self.clustering is None else self.clustering
+        clustering = clone(clustering)
+        n_jobs = self.n_jobs
+        itm_lbls = mapper_connected_components(
+            X,
+            y,
+            cover,
+            clustering,
+            n_jobs=n_jobs,
+        )
+        self.labels_ = [itm_lbls[i] for i, _ in enumerate(X)]
+        self._set_n_features_in(X)
+        return self
 
 
-class MapperAlgorithm(_MapperAlgorithm):
+class MapperAlgorithm(EstimatorMixin, ParamsMixin):
     """
     A class for creating and analyzing Mapper graphs.
 
@@ -111,13 +131,11 @@ class MapperAlgorithm(_MapperAlgorithm):
         verbose=True,
         n_jobs=1,
     ):
-        super().__init__(
-            cover=cover,
-            clustering=clustering,
-            failsafe=failsafe,
-            verbose=verbose,
-            n_jobs=n_jobs,
-        )
+        self.cover = cover
+        self.clustering = clustering
+        self.failsafe = failsafe
+        self.verbose = verbose
+        self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
         """
@@ -132,7 +150,31 @@ class MapperAlgorithm(_MapperAlgorithm):
         :type y: array-like of shape (n, k) or list-like of length n
         :return: The object itself.
         """
-        return super().fit(X, y)
+        X, y = self._validate_X_y(X, y)
+        self._cover = TrivialCover() if self.cover is None else self.cover
+        self._clustering = (
+            TrivialClustering() if self.clustering is None else self.clustering
+        )
+        self._verbose = self.verbose
+        self._failsafe = self.failsafe
+        if self._failsafe:
+            self._clustering = FailSafeClustering(
+                clustering=self._clustering,
+                verbose=self._verbose,
+            )
+        self._cover = clone(self._cover)
+        self._clustering = clone(self._clustering)
+        self._n_jobs = self.n_jobs
+        y = X if y is None else y
+        self.graph_ = mapper_graph(
+            X,
+            y,
+            self._cover,
+            self._clustering,
+            n_jobs=self._n_jobs,
+        )
+        self._set_n_features_in(X)
+        return self
 
     def fit_transform(self, X, y):
         """
@@ -148,4 +190,5 @@ class MapperAlgorithm(_MapperAlgorithm):
         :return: The Mapper graph.
         :rtype: :class:`networkx.Graph`
         """
-        return super().fit_transform(X, y)
+        self.fit(X, y)
+        return self.graph_

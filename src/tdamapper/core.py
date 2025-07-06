@@ -33,7 +33,7 @@ import logging
 import networkx as nx
 from joblib import Parallel, delayed
 
-from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
+from tdamapper._common import ParamsMixin, clone
 from tdamapper.utils.unionfind import UnionFind
 
 ATTR_IDS = "ids"
@@ -365,68 +365,6 @@ class TrivialCover(Cover):
         :rtype: generator of lists of ints
         """
         yield list(range(0, len(X)))
-
-
-class _MapperAlgorithm(EstimatorMixin, ParamsMixin):
-
-    def __init__(
-        self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
-    ):
-        self.cover = cover
-        self.clustering = clustering
-        self.failsafe = failsafe
-        self.verbose = verbose
-        self.n_jobs = n_jobs
-
-    def fit(self, X, y=None):
-        X, y = self._validate_X_y(X, y)
-        self._cover = TrivialCover() if self.cover is None else self.cover
-        self._clustering = (
-            TrivialClustering() if self.clustering is None else self.clustering
-        )
-        self._verbose = self.verbose
-        self._failsafe = self.failsafe
-        if self._failsafe:
-            self._clustering = FailSafeClustering(
-                clustering=self._clustering,
-                verbose=self._verbose,
-            )
-        self._cover = clone(self._cover)
-        self._clustering = clone(self._clustering)
-        self._n_jobs = self.n_jobs
-        y = X if y is None else y
-        self.graph_ = mapper_graph(
-            X,
-            y,
-            self._cover,
-            self._clustering,
-            n_jobs=self._n_jobs,
-        )
-        self._set_n_features_in(X)
-        return self
-
-    def fit_transform(self, X, y):
-        self.fit(X, y)
-        return self.graph_
-
-
-class MapperAlgorithm(_MapperAlgorithm):
-    """
-    **DEPRECATED**: This class is deprecated and will be removed in a future
-    release. Use :class:`tdamapper.learn.MapperAlgorithm`.
-    """
-
-    @deprecated(
-        "This class is deprecated and will be removed in a future release. "
-        "Use tdamapper.learn.MapperAlgorithm."
-    )
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 class FailSafeClustering(ParamsMixin):
