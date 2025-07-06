@@ -2,18 +2,31 @@
 This module provides common functionalities for internal use.
 """
 
+from __future__ import annotations
+
 import cProfile
 import io
 import pstats
 import warnings
+from typing import Any, Callable, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
+PointLike = Union[NDArray[np.float64], list[Any]]
+ArrayLike = Union[NDArray[np.float64], list[PointLike]]
 
-def deprecated(msg):
-    def deprecated_func(func):
+
+def deprecated(msg: str) -> Callable:
+    """
+    Decorator to mark a function as deprecated.
+
+    :param msg: A message to be shown when the function is called.
+    """
+
+    def deprecated_func(func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
@@ -23,17 +36,45 @@ def deprecated(msg):
     return deprecated_func
 
 
-def warn_user(msg):
+def warn_user(msg: str) -> None:
+    """
+    Warn the user with a message.
+
+    :param msg: A message to be shown to the user.
+    """
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
 class EstimatorMixin:
+    """
+    Mixin to add common functionalities to estimators, such as validation of
+    input data, setting the number of features, and checking for sparse data.
+    """
 
-    def _is_sparse(self, X):
+    def _is_sparse(self, X: ArrayLike) -> bool:
+        """
+        Check if the input data is sparse.
+
+        :param X: Input data.
+        :type X: array-like, shape (n_samples, n_features)
+        """
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
-    def _validate_X_y(self, X, y):
+    def _validate_X_y(
+        self, X: ArrayLike, y: ArrayLike
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """
+        Validate input data and target values.
+
+        :param X: Input data.
+        :type X: array-like, shape (n_samples, n_features)
+        :param y: Target values.
+        :type y: array-like, shape (n_samples,)
+        :return: Validated input data and target values.
+        :rtype: tuple of (X, y)
+        :raises ValueError: If the input data or target values are invalid.
+        """
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
@@ -70,8 +111,9 @@ class EstimatorMixin:
 
         return X, y
 
-    def _set_n_features_in(self, X):
-        self.n_features_in_ = X.shape[1]
+    def _set_n_features_in(self, X: ArrayLike) -> None:
+        if hasattr(X, "shape"):
+            self.n_features_in_ = X.shape[1]
 
 
 class ParamsMixin:
@@ -80,16 +122,16 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def _is_param_public(self, k):
+    def _is_param_public(self, k: str) -> bool:
         return (not k.startswith("_")) and (not k.endswith("_"))
 
-    def _split_param(self, k):
+    def _split_param(self, k: str):
         k_split = k.split("__")
         outer = k_split[0]
         inner = "__".join(k_split[1:])
         return outer, inner
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
         """
         Get all public parameters of the object as a dictionary.
 
@@ -105,7 +147,7 @@ class ParamsMixin:
                         params[f"{k}__{_k}"] = _v
         return params
 
-    def set_params(self, **params):
+    def set_params(self, **params: dict[str, Any]) -> ParamsMixin:
         """
         Set public parameters. Only updates attributes that already exist.
         """
@@ -124,7 +166,7 @@ class ParamsMixin:
                 k_attr.set_params(**{k_inner: v})
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         obj_noargs = type(self)()
         args_repr = []
         for k, v in self.__dict__.items():
@@ -136,7 +178,7 @@ class ParamsMixin:
         return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
 
-def clone(obj):
+def clone(obj: Any) -> Any:
     """
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
@@ -152,8 +194,15 @@ def clone(obj):
     return obj_noargs
 
 
-def profile(n_lines=10):
-    def decorator(func):
+def profile(n_lines: int = 10) -> Callable:
+    """
+    Decorator to profile a function using cProfile and print the top `n_lines`
+    lines of the profiling report.
+
+    :param n_lines: Number of lines to print from the profiling report.
+    """
+
+    def decorator(func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
             profiler = cProfile.Profile()
             profiler.enable()

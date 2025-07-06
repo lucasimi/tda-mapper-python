@@ -1,16 +1,21 @@
 import logging
 import os
 from dataclasses import asdict, dataclass
+from typing import Any, Callable, Optional, Union
 
+import networkx as nx
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from nicegui import app, run, ui
+from numpy.typing import NDArray
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import load_digits, load_iris
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
-from tdamapper.core import TrivialClustering
+from tdamapper.core import Cover, TrivialClustering
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -71,6 +76,29 @@ RANDOM_SEED = 42
 
 @dataclass
 class MapperConfig:
+    """
+    Configuration for the Mapper algorithm.
+
+    :param lens_type: Type of lens to use.
+    :param cover_scale_data: Whether to scale the data before applying the cover.
+    :param cover_type: Type of cover to use.
+    :param clustering_scale_data: Whether to scale the data before clustering.
+    :param clustering_type: Type of clustering to use.
+    :param lens_pca_n_components: Number of components for PCA lens.
+    :param lens_umap_n_components: Number of components for UMAP lens.
+    :param cover_cubical_n_intervals: Number of intervals for cubical cover.
+    :param cover_cubical_overlap_frac: Overlap fraction for cubical cover.
+    :param cover_ball_radius: Radius for ball cover.
+    :param cover_knn_neighbors: Number of neighbors for KNN cover.
+    :param clustering_kmeans_n_clusters: Number of clusters for KMeans clustering.
+    :param clustering_dbscan_eps: Epsilon parameter for DBSCAN clustering.
+    :param clustering_dbscan_min_samples: Minimum samples for DBSCAN clustering.
+    :param clustering_agglomerative_n_clusters: Number of clusters for Agglomerative clustering.
+    :param plot_dimensions: Number of dimensions for the plot.
+    :param plot_iterations: Number of iterations for the plot.
+    :param plot_seed: Random seed for reproducibility.
+    """
+
     lens_type: str = LENS_PCA
     cover_scale_data: bool = COVER_SCALE_DATA
     cover_type: str = COVER_CUBICAL
@@ -91,7 +119,14 @@ class MapperConfig:
     plot_seed: int = RANDOM_SEED
 
 
-def fix_data(data):
+def fix_data(data: Union[pd.DataFrame, pd.Series, NDArray[np.float64]]) -> pd.DataFrame:
+    """
+    Fix the input data by converting it to a DataFrame, selecting numeric types,
+    dropping columns with all NaN values, and filling NaN values with the mean
+    of each column.
+
+    :param data: Input data, can be a DataFrame or array-like structure.
+    """
     df = pd.DataFrame(data)
     df = df.select_dtypes(include="number")
     df.dropna(axis=1, how="all", inplace=True)
@@ -99,34 +134,61 @@ def fix_data(data):
     return df
 
 
-def lens_identity(X):
+def lens_identity(X: NDArray[np.float64]) -> NDArray[np.float64]:
+    """
+    Identity lens function that returns the input data as is.
+
+    :param X: Input data as a NumPy array.
+    :return: The input data unchanged.
+    """
     return X
 
 
-def lens_pca(n_components):
+def lens_pca(n_components: int) -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
+    """
+    Create a PCA lens function that reduces the dimensionality of the input data.
 
-    def _pca(X):
+    :param n_components: Number of components to keep after PCA transformation.
+    """
+
+    def _pca(X: NDArray[np.float64]) -> NDArray[np.float64]:
         pca_model = PCA(n_components=n_components, random_state=RANDOM_SEED)
         return pca_model.fit_transform(X)
 
     return _pca
 
 
-def lens_umap(n_components):
+def lens_umap(
+    n_components: int,
+) -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
+    """
+    Create a UMAP lens function that reduces the dimensionality of the input data.
 
-    def _umap(X):
+    :param n_components: Number of components to keep after UMAP transformation.
+    """
+
+    def _umap(X: NDArray[np.float64]) -> NDArray[np.float64]:
         um = UMAP(n_components=n_components, random_state=RANDOM_SEED)
         return um.fit_transform(X)
 
     return _umap
 
 
-def run_mapper(df, **kwargs):
+def run_mapper(
+    df: pd.DataFrame, **kwargs: dict[str, Any]
+) -> Optional[tuple[MapperAlgorithm, pd.DataFrame]]:
+    """
+    Run the Mapper algorithm on the provided DataFrame.
+
+    :param df: Input DataFrame containing the data to be processed.
+    :param kwargs: Additional keyword arguments for Mapper configuration.
+    :return: A tuple containing the Mapper algorithm instance and a DataFrame with lens output.
+    """
     logger.info("Mapper computation started...")
     if df is None or df.empty:
         error = "Mapper computation failed: no data found, please load data first."
         logger.error(error)
-        return
+        return None
 
     mapper_config = MapperConfig(**kwargs)
 
@@ -156,6 +218,7 @@ def run_mapper(df, **kwargs):
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
 
+    cover: Cover
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
             n_intervals=cover_cubical_n_intervals,
@@ -167,7 +230,7 @@ def run_mapper(df, **kwargs):
         cover = KNNCover(neighbors=cover_knn_neighbors)
     else:
         logger.error(f"Unknown cover type: {cover_type}")
-        return
+        return None
 
     if clustering_type == CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
@@ -187,7 +250,7 @@ def run_mapper(df, **kwargs):
         )
     else:
         logger.error(f"Unknown clustering type: {clustering_type}")
-        return
+        return None
 
     mapper = MapperAlgorithm(cover=cover, clustering=clustering)
     X = df.to_numpy()
@@ -202,7 +265,23 @@ def run_mapper(df, **kwargs):
     return mapper_graph, df_y
 
 
-def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
+def create_mapper_figure(
+    df_X: pd.DataFrame,
+    df_y: pd.DataFrame,
+    df_target: pd.DataFrame,
+    mapper_graph: nx.Graph,
+    **kwargs: dict[str, Any],
+) -> go.Figure:
+    """
+    Create a Plotly figure for the Mapper graph.
+
+    :param df_X: DataFrame containing the original data.
+    :param df_y: DataFrame containing the lens output.
+    :param df_target: DataFrame containing the target labels.
+    :param mapper_graph: The Mapper graph to be visualized.
+    :param kwargs: Additional keyword arguments for Mapper configuration.
+    :return: A Plotly figure representing the Mapper graph.
+    """
     logger.info("Mapper rendering started...")
     df_colors = pd.concat([df_target, df_y, df_X], axis=1)
     mapper_config = MapperConfig(**kwargs)
@@ -239,6 +318,14 @@ def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
 
 
 class App:
+    """
+    Main class for the tdamapper app.
+
+    This class initializes the user interface, handles data loading,
+    and manages the Mapper algorithm execution and visualization.
+
+    :param storage: Storage object for managing data persistence.
+    """
 
     def __init__(self, storage):
         self.storage = storage
@@ -541,7 +628,12 @@ class App:
         self.plot_container = ui.element("div").classes("w-full h-full")
         self.draw_area = None
 
-    def get_mapper_config(self):
+    def get_mapper_config(self) -> MapperConfig:
+        """
+        Get the current Mapper configuration from the UI components.
+
+        :return: A MapperConfig object containing the current settings.
+        """
         return MapperConfig(
             lens_type=str(self.lens_type.value) if self.lens_type.value else LENS_PCA,
             cover_type=(
@@ -617,7 +709,15 @@ class App:
             ),
         )
 
-    def upload_file(self, file):
+    def upload_file(self, file) -> None:
+        """
+        Handle the file upload event.
+
+        This method reads the uploaded CSV file, processes it into a DataFrame,
+        and stores it in the app's storage.
+
+        :param file: The uploaded file object.
+        """
         if file is not None:
             df = pd.read_csv(file.content)
             self.storage["df"] = fix_data(df)
@@ -630,7 +730,16 @@ class App:
             logger.info(error)
             ui.notify(error, type="warning")
 
-    def load_data(self):
+    def load_data(self) -> None:
+        """
+        Load data based on the selected load type and example dataset.
+
+        This method checks the selected load type and either loads an example dataset
+        (Digits or Iris) or retrieves the DataFrame from storage if a CSV file was uploaded.
+        It processes the data to ensure it is in the correct format and not empty,
+        and updates the storage with the loaded data.
+        If the data loading fails, it notifies the user with an appropriate message.
+        """
         if self.load_type.value == LOAD_EXAMPLE:
             if self.load_example.value == LOAD_EXAMPLE_DIGITS:
                 df, labels = load_digits(as_frame=True, return_X_y=True)
@@ -657,7 +766,7 @@ class App:
             return
 
         df = self.storage.get("df", pd.DataFrame())
-        if df is not None or not df.empty:
+        if df is not None and not df.empty:
             logger.info("Load data completed.")
             ui.notify("Load data completed.", type="positive")
         else:
@@ -665,20 +774,46 @@ class App:
             logger.warning(error)
             ui.notify(error, type="warning")
 
-    def notification_running_start(self, message):
+    def notification_running_start(self, message: str):
+        """
+        Start a notification for an ongoing process.
+
+        This method creates a notification with a spinner to indicate that a process
+        is running. The notification will not timeout, allowing the user to see the
+        ongoing status until it is manually stopped.
+
+        :param message: The message to display in the notification.
+        :return: A Notification object with the specified message and spinner enabled.
+        """
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = message
         notification.spinner = True
         return notification
 
-    def notification_running_stop(self, notification, message, type=None):
+    def notification_running_stop(
+        self, notification, message: str, type: Optional[str] = None
+    ):
+        """
+        Stop the ongoing notification and update its message.
+
+        This method updates the notification with a final message and stops the spinner.
+        If a type is specified, it will change the notification type accordingly.
+
+        :param notification: The Notification object to update.
+        :param message: The final message to display in the notification.
+        :param type: Optional; the type of notification to set (e.g., "positive", "warning", "error").
+        :return: None
+        """
         if type is not None:
             notification.type = type
         notification.message = message
         notification.timeout = 5.0
         notification.spinner = False
 
-    async def async_run_mapper(self):
+    async def async_run_mapper(self) -> None:
+        """
+        Asynchronously run the Mapper algorithm on the loaded data.
+        """
         notification = self.notification_running_start("Running Mapper...")
         df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
@@ -704,6 +839,9 @@ class App:
         await self.async_draw_mapper()
 
     async def async_draw_mapper(self):
+        """
+        Asynchronously draw the Mapper graph using the stored data and configuration.
+        """
         notification = self.notification_running_start("Drawing Mapper...")
 
         mapper_config = self.get_mapper_config()
@@ -748,6 +886,14 @@ class App:
 
 
 def startup():
+    """
+    Initialize the NiceGUI application and set up the main page.
+    This function configures the application, sets the page title, and
+    defines the main page with the Mapper app interface.
+    It also sets the content area to have no padding.
+    The Mapper app is instantiated with the storage client for data persistence.
+    """
+
     @ui.page("/")
     def main_page():
         ui.query(".nicegui-content").classes("p-0")
@@ -756,6 +902,9 @@ def startup():
 
 
 def main():
+    """
+    Main entry point for the tdamapper application.
+    """
     port = os.getenv("PORT", "8080")
     host = os.getenv("HOST", "0.0.0.0")
     production = os.getenv("PRODUCTION", "false").lower() == "true"

@@ -28,12 +28,15 @@ encapsulates the algorithm and its parameters. The Mapper graph produced by
 this module is a NetworkX graph object.
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Any, Callable, Generator, Optional, Protocol
 
 import networkx as nx
 from joblib import Parallel, delayed
 
-from tdamapper._common import EstimatorMixin, ParamsMixin, clone, deprecated
+from tdamapper._common import ArrayLike, EstimatorMixin, ParamsMixin, clone, deprecated
 from tdamapper.utils.unionfind import UnionFind
 
 ATTR_IDS = "ids"
@@ -51,7 +54,13 @@ logging.basicConfig(
 )
 
 
-def mapper_labels(X, y, cover, clustering, n_jobs=1):
+def mapper_labels(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> list[list[int]]:
     """
     Identify the nodes of the Mapper graph.
 
@@ -96,7 +105,7 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
         )
         for local_ids in cover.apply(y)
     )
-    itm_lbls = [[] for _ in X]
+    itm_lbls: list[list[int]] = [[] for _ in X]
     max_lbl = 0
     for local_ids, local_lbls in _lbls:
         max_local_lbl = 0
@@ -109,7 +118,13 @@ def mapper_labels(X, y, cover, clustering, n_jobs=1):
     return itm_lbls
 
 
-def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
+def mapper_connected_components(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> list[int]:
     """
     Identify the connected components of the Mapper graph.
 
@@ -159,7 +174,13 @@ def mapper_connected_components(X, y, cover, clustering, n_jobs=1):
     return labels
 
 
-def mapper_graph(X, y, cover, clustering, n_jobs=1):
+def mapper_graph(
+    X: ArrayLike,
+    y: ArrayLike,
+    cover: Cover,
+    clustering: Clustering,
+    n_jobs: int = 1,
+) -> nx.Graph:
     """
     Create the Mapper graph.
 
@@ -211,7 +232,7 @@ def mapper_graph(X, y, cover, clustering, n_jobs=1):
     return graph
 
 
-def aggregate_graph(X, graph, agg):
+def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> dict[Any, Any]:
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -243,110 +264,116 @@ def aggregate_graph(X, graph, agg):
     return agg_values
 
 
-class Cover(ParamsMixin):
+class Cover(Protocol):
     """
     Abstract interface for cover algorithms.
-
-    This is a naive implementation. Subclasses should override the methods of
-    this class to implement more meaningful cover algorithms.
     """
 
-    def apply(self, X):
+    def apply(self, X: ArrayLike) -> Generator[list[int]]:
         """
-        Covers the dataset with a single open set.
-
-        This is a naive implementation that returns a generator producing a
-        single list containing all the ids if the original dataset. This
-        method should be overridden by subclasses to implement more meaningful
-        cover algorithms.
+        Covers the dataset with open set.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: A generator of lists of ids.
         :rtype: generator of lists of ints
         """
-        yield list(range(0, len(X)))
 
 
-class Proximity(Cover):
+class Clustering(Protocol):
     """
-    Abstract interface for proximity functions. A proximity function is a
-    function that maps each point into a subset of the dataset that contains
-    the point itself.  Every proximity function defines also a covering
-    algorithm based on proximity-netm that is implemented in this class.
-
-    Proximity functions, implemented as subclasses of this class, are a
-    convenient way to implement open cover algorithms by using the
-    proximity-net construction. Proximity-net is implemented by function
-    :func:`tdamapper.core.Proximity.apply`.
-
-    Subclasses should override the methods :func:`tdamapper.core.Proximity.fit`
-    and :func:`tdamapper.core.Proximity.search` of this class to implement
-    more meaningful proximity functions.
+    Abstract interface for clustering algorithms.
     """
 
-    def fit(self, X):
+    labels_: list[int]
+
+    def fit(self, X: ArrayLike, y: Any = None) -> Clustering:
+        """
+        Fit the clustering algorithm to the data.
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :param y: Ignored.
+        :return: The object itself.
+        :rtype: self
+        """
+
+
+class SpatialSearch(Protocol):
+    """
+    Abstract interface for spatial search algorithms.
+    A spatial search algorithm is a function that returns a list of neighbors
+    for a given query point. The neighbors are points in the dataset that are
+    close to the query point, according to some distance metric.
+    """
+
+    def fit(self, X: ArrayLike) -> SpatialSearch:
         """
         Train internal parameters.
-
-        This is a naive implementation that should be overridden by subclasses
-        to implement more meaningful proximity functions.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: The object itself.
         :rtype: self
         """
-        self._X = X
-        return self
 
-    def search(self, x):
+    def search(self, x: Any) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
-        This is a naive implementation that returns all the points in the
-        dataset as neighbors. This method should be overridden by subclasses
-        to implement more meaningful proximity functions.
-
         :param x: A query point for which we want to find neighbors.
         :type x: Any
-        :return: A list containing all the indices of the points in the
-            dataset.
+        :return: A list containing the indices of the points in the dataset
+            that are neighbors of the query point.
         :rtype: list[int]
         """
-        return list(range(0, len(self._X)))
 
-    def apply(self, X):
+
+def proximity_net(search: SpatialSearch, X: ArrayLike) -> Generator[list[int]]:
+    """
+    Create a proximity-net for the dataset.
+
+    This function applies an iterative algorithm to create the proximity-net.
+    It picks an arbitrary point and forms an open cover calling the proximity
+    function on the chosen point. The points contained in the open cover are
+    then marked as covered, and discarded in the following steps. The procedure
+    is repeated on the leftover points until every point is eventually covered.
+
+    :param search: A spatial search algorithm.
+    :type search: A class compatible with :class:`tdamapper.core.SpatialSearch`
+    :param X: A dataset of n points.
+    :type X: array-like of shape (n, m) or list-like of length n
+    :return: A generator of lists of ids.
+    :rtype: generator of lists of ints
+    """
+    covered_ids = set()
+    search.fit(X)
+    for i, xi in enumerate(X):
+        if i not in covered_ids:
+            neigh_ids = search.search(xi)
+            covered_ids.update(neigh_ids)
+            if neigh_ids:
+                yield neigh_ids
+
+
+class Proximity(SpatialSearch):
+
+    def apply(self, X: ArrayLike) -> Generator[list[int]]:
         """
-        Covers the dataset using proximity-net.
+        Create a proximity-net for the dataset.
 
-        This function applies an iterative algorithm to create the
-        proximity-net. It picks an arbitrary point and forms an open cover
-        calling the proximity function on the chosen point. The points
-        contained in the open cover are then marked as covered, and discarded
-        in the following steps. The procedure is repeated on the leftover
-        points until every point is eventually covered.
-
-        This function returns a generator that yields each element of the
-        proximity-net as a list of ids. The ids are the indices of the points
-        in the original dataset.
+        This method is an alias for the `proximity_net` function. It allows
+        using the Proximity class as a spatial search algorithm.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
         :return: A generator of lists of ids.
         :rtype: generator of lists of ints
         """
-        covered_ids = set()
-        self.fit(X)
-        for i, xi in enumerate(X):
-            if i not in covered_ids:
-                neigh_ids = self.search(xi)
-                covered_ids.update(neigh_ids)
-                if neigh_ids:
-                    yield neigh_ids
+        return proximity_net(self, X)
 
 
-class TrivialCover(Cover):
+class TrivialCover(ParamsMixin):
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.
@@ -355,7 +382,7 @@ class TrivialCover(Cover):
     dataset.
     """
 
-    def apply(self, X):
+    def apply(self, X: ArrayLike) -> Generator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -446,16 +473,36 @@ class FailSafeClustering(ParamsMixin):
     :type verbose: bool, optional.
     """
 
-    def __init__(self, clustering=None, verbose=True):
+    _clustering: Clustering
+    _verbose: bool
+    labels_: list[int]
+
+    def __init__(
+        self,
+        clustering: Optional[Clustering] = None,
+        verbose: bool = True,
+    ):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Any = None) -> FailSafeClustering:
+        """
+        Fit the clustering algorithm to the data.
+
+        This method attempts to fit the clustering algorithm to the data. If it
+        fails, it logs a warning (if verbose is True) and assigns all points to
+        a single cluster (label 0).
+
+        :param X: A dataset of n points.
+        :type X: array-like of shape (n, m) or list-like of length n
+        :param y: Ignored.
+        :return: The object itself.
+        :rtype: self
+        """
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
         self._verbose = self.verbose
-        self.labels_ = None
         try:
             self._clustering.fit(X, y)
             self.labels_ = self._clustering.labels_
@@ -476,16 +523,18 @@ class TrivialClustering(ParamsMixin):
     construction of the Mapper graph.
     """
 
+    labels_: list[int]
+
     def __init__(self):
         pass
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, _y: Any = None) -> TrivialClustering:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
-        :param y: Ignored.
+        :param _y: Ignored.
         :return: self
         """
         self.labels_ = [0 for _ in X]

@@ -26,9 +26,12 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
+from typing import Any, Callable, Union
+
 import numpy as np
 
 import tdamapper.utils._metrics as _metrics
+from tdamapper._common import PointLike
 
 _EUCLIDEAN = "euclidean"
 _MANHATTAN = "manhattan"
@@ -37,8 +40,10 @@ _MINKOWSKI_P = "p"
 _CHEBYSHEV = "chebyshev"
 _COSINE = "cosine"
 
+Metric = Callable[[PointLike, PointLike], float]
 
-def get_supported_metrics():
+
+def get_supported_metrics() -> list[str]:
     """
     Return a list of supported metric names.
 
@@ -54,7 +59,7 @@ def get_supported_metrics():
     ]
 
 
-def euclidean():
+def euclidean() -> Metric:
     """
     Return the Euclidean distance function for vectors.
 
@@ -67,7 +72,7 @@ def euclidean():
     return _metrics.euclidean
 
 
-def manhattan():
+def manhattan() -> Metric:
     """
     Return the Manhattan distance function for vectors.
 
@@ -80,7 +85,7 @@ def manhattan():
     return _metrics.manhattan
 
 
-def chebyshev():
+def chebyshev() -> Metric:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -93,7 +98,7 @@ def chebyshev():
     return _metrics.chebyshev
 
 
-def minkowski(p):
+def minkowski(p) -> Metric:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -121,7 +126,7 @@ def minkowski(p):
     return dist
 
 
-def cosine():
+def cosine() -> Metric:
     """
     Return the cosine distance function for vectors.
 
@@ -143,7 +148,7 @@ def cosine():
     return _metrics.cosine
 
 
-def get_metric(metric, **kwargs):
+def get_metric(metric: Union[str, Metric], **kwargs: dict[str, Any]) -> Metric:
     """
     Return a distance function based on the specified string or callable.
 

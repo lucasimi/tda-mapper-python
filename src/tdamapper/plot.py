@@ -2,11 +2,14 @@
 This module provides functionalities to visualize the Mapper graph.
 """
 
+from typing import Callable, Optional, Union
+
 import igraph as ig
 import networkx as nx
 import numpy as np
+from plotly import graph_objects as go
 
-from tdamapper._common import deprecated
+from tdamapper._common import ArrayLike, deprecated
 from tdamapper.plot_backends.plot_matplotlib import plot_matplotlib
 from tdamapper.plot_backends.plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper.plot_backends.plot_pyvis import plot_pyvis
@@ -39,11 +42,11 @@ class MapperPlot:
 
     def __init__(
         self,
-        graph,
-        dim,
-        iterations=50,
-        seed=None,
-        layout_engine="igraph",
+        graph: nx.Graph,
+        dim: int,
+        iterations: int = 50,
+        seed: Optional[int] = None,
+        layout_engine: str = "igraph",
     ):
         self.graph = graph
         self.dim = dim
@@ -100,12 +103,12 @@ class MapperPlot:
     def plot_matplotlib(
         self,
         colors,
-        node_size=1,
-        agg=np.nanmean,
-        title=None,
-        cmap="jet",
-        width=512,
-        height=512,
+        node_size: int = 1,
+        agg: Callable = np.nanmean,
+        title: Optional[str] = None,
+        cmap: str = "jet",
+        width: int = 512,
+        height: int = 512,
     ):
         """
         Draw a static plot using Matplotlib.
@@ -152,13 +155,13 @@ class MapperPlot:
 
     def plot_plotly(
         self,
-        colors,
-        node_size=1,
-        agg=np.nanmean,
-        title=None,
-        cmap="jet",
-        width=None,
-        height=None,
+        colors: Union[np.ndarray, list[float]],
+        node_size: Union[int, float, list[Union[int, float]]] = 1,
+        agg: Callable = np.nanmean,
+        title: Optional[Union[str, list[str]]] = None,
+        cmap: Union[str, list[str]] = "jet",
+        width: Optional[int] = None,
+        height: Optional[int] = None,
     ):
         """
         Draw an interactive plot using Plotly.
@@ -206,14 +209,14 @@ class MapperPlot:
 
     def plot_plotly_update(
         self,
-        fig,
-        colors=None,
-        node_size=None,
-        agg=None,
-        title=None,
-        cmap=None,
-        width=None,
-        height=None,
+        fig: go.Figure,
+        colors: Optional[Union[np.ndarray, list[float]]] = None,
+        node_size: Optional[Union[int, float, list[Union[int, float]]]] = None,
+        agg: Optional[Callable] = None,
+        title: Optional[Union[str, list[str]]] = None,
+        cmap: Optional[Union[str, list[str]]] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
     ):
         """
         Draw an interactive plot using Plotly on a previously rendered figure.
@@ -267,14 +270,14 @@ class MapperPlot:
 
     def plot_pyvis(
         self,
-        output_file,
-        colors,
-        node_size=1,
-        agg=np.nanmean,
-        title=None,
-        cmap="jet",
-        width=512,
-        height=512,
+        output_file: str,
+        colors: ArrayLike,
+        node_size: int = 1,
+        agg: Callable = np.nanmean,
+        title: Optional[str] = None,
+        cmap: str = "jet",
+        width: int = 512,
+        height: int = 512,
     ):
         """
         Draw an interactive HTML plot using PyVis.

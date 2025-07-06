@@ -1,7 +1,14 @@
+"""
+This module is the entry point for running tdamapper app.
+"""
+
 from tdamapper.app import main
 
 
-def run():
+def run() -> None:
+    """
+    Run the tdamapper application.
+    """
     main()
 
 
