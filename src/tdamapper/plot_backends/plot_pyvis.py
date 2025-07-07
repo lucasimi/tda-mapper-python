@@ -4,10 +4,13 @@ pyvis.
 """
 
 import math
+from typing import Any, Callable
 
+import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 import plotly.io as pio
+from numpy.typing import NDArray
 from pyvis.network import Network
 
 from tdamapper.core import aggregate_graph
@@ -19,12 +22,18 @@ _EDGE_COLOR = "#777"
 _TICKS_NUM = 10
 
 
-def _fmt(x, max_len=3):
+def _fmt(x: Any, max_len: int = 3) -> str:
     fmt = f".{max_len}g"
     return f"{x:{fmt}}"
 
 
-def _colorbar(height, cmap, cmin, cmax, title):
+def _colorbar(
+    height: int,
+    cmap: str,
+    cmin: float,
+    cmax: float,
+    title: str,
+) -> go.Figure:
     colorbar_fig = go.Figure()
     colorbar_fig.add_trace(
         go.Scatter(
@@ -68,7 +77,7 @@ def _colorbar(height, cmap, cmin, cmax, title):
     return colorbar_fig
 
 
-def _combine(network, colorbar):
+def _combine(network: Network, colorbar: go.Figure) -> str:
     network_html = network.generate_html()
     colorbar_html = pio.to_html(
         colorbar,
@@ -130,15 +139,28 @@ def _combine(network, colorbar):
 
 def plot_pyvis(
     mapper_plot,
-    output_file,
-    colors,
-    node_size,
-    agg,
-    title,
-    width,
-    height,
-    cmap,
-):
+    output_file: str,
+    colors: NDArray[np.float64],
+    node_size: float,
+    agg: Callable,
+    title: str,
+    width: int,
+    height: int,
+    cmap: str,
+) -> None:
+    """
+    Generates a pyvis network visualization of the Mapper graph and saves it to an HTML file.
+
+    :param mapper_plot: The Mapper plot object containing the graph and positions.
+    :param output_file: The path to the output HTML file.
+    :param colors: A 2D array of colors for the nodes.
+    :param node_size: The size of the nodes in the graph.
+    :param agg: A callable function to aggregate the graph.
+    :param title: The title for the colorbar.
+    :param width: The width of the network visualization.
+    :param height: The height of the network visualization.
+    :param cmap: The colormap to use for the nodes.
+    """
     net, cmin, cmax = _compute_net(
         mapper_plot=mapper_plot,
         width=width,
@@ -150,19 +172,19 @@ def plot_pyvis(
     )
     colorbar = _colorbar(height=height, cmap=cmap, cmin=cmin, cmax=cmax, title=title)
     combined_html = _combine(net, colorbar)
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(combined_html)
 
 
 def _compute_net(
     mapper_plot,
-    colors,
-    node_size,
-    agg,
-    width,
-    height,
-    cmap,
-):
+    colors: NDArray[np.float64],
+    node_size: float,
+    agg: Callable,
+    width: int,
+    height: int,
+    cmap: str,
+) -> tuple[Network, float, float]:
     net = Network(
         height=f"{height}px",
         width=f"{width}px",

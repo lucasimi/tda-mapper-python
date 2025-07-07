@@ -11,6 +11,7 @@ import networkx as nx
 import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
+from numpy.typing import NDArray
 
 from tdamapper.core import ATTR_SIZE, aggregate_graph
 
@@ -304,13 +305,15 @@ class PlotlyPlot:
         )
         return self.fig
 
-    def _node_pos_array(self):
+    def _node_pos_array(self) -> tuple[list[float], ...]:
         return tuple(
             [self.positions[n][i] for n in self.graph.nodes()] for i in range(self.dim)
         )
 
-    def _edge_pos_array(self):
-        edges_arr = tuple([] for i in range(self.dim))
+    def _edge_pos_array(self) -> tuple[list[Optional[float]], ...]:
+        edges_arr: tuple[list[Optional[float]], ...] = tuple(
+            [] for i in range(self.dim)
+        )
         for edge in self.graph.edges():
             pos0, pos1 = self.positions[edge[0]], self.positions[edge[1]]
             for i in range(self.dim):
@@ -530,7 +533,7 @@ class PlotlyPlot:
         if cmaps is not None:
             self.set_cmap(cmaps[0])
 
-    def _nodes_trace(self, node_pos_arr: ) -> Union[go.Scatter, go.Scatter3d]:
+    def _nodes_trace(self, node_pos_arr) -> Union[go.Scatter, go.Scatter3d]:
         scatter = dict(
             name=_NODES_TRACE,
             x=node_pos_arr[0],
@@ -699,7 +702,8 @@ class PlotlyPlot:
 
         if cmaps is not None:
             cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
-            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly)
+            cmaps_plotly_ok = [c for c in cmaps_plotly if c is not None]
+            ui_menu_cmap = self._ui_menu_cmap(cmaps_plotly_ok)
 
         if colors is not None and agg is not None and titles is not None:
             ui_menu_color = self._ui_menu_color(colors, titles, agg)
@@ -798,7 +802,9 @@ class PlotlyPlot:
             yanchor="top",
         )
 
-    def _ui_menu_color(self, colors: NDArray[np.float64], titles: list[str], agg: Callable) -> dict:
+    def _ui_menu_color(
+        self, colors: NDArray[np.float64], titles: list[str], agg: Callable
+    ) -> dict:
         colors_arr = np.array(colors)
         colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
