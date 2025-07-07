@@ -161,7 +161,8 @@ def plot_plotly(
     :param node_size: Size of the nodes, can be a single value or a list of values.
     :param title: Title for the color bar, can be a single string or a list of strings.
     :param agg: Aggregation function to apply to the colors.
-    :param cmap: Colormap to use for the nodes and edges, can be a single string or a list of strings.
+    :param cmap: Colormap to use for the nodes and edges, can be a single string or a list of
+        strings.
     :param width: Width of the figure.
     :param height: Height of the figure.
     :return: A Plotly Figure object.
@@ -206,7 +207,8 @@ def plot_plotly_update(
     :param colors: Colors for the nodes, can be a 1D or 2D array.
     :param title: Title for the color bar, can be a single string or a list of strings.
     :param agg: Aggregation function to apply to the colors.
-    :param cmap: Colormap to use for the nodes and edges, can be a single string or a list of strings.
+    :param cmap: Colormap to use for the nodes and edges, can be a single string or a list of
+        strings.
     :return: An updated Plotly Figure object.
     """
     plot = PlotlyPlot(mapper_plot, fig)
@@ -278,7 +280,8 @@ class PlotlyPlot:
         :param node_sizes: Sizes of the nodes.
         :param titles: Titles for the color bar, can be a single string or a list of strings.
         :param agg: Aggregation function to apply to the colors.
-        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of strings.
+        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of
+            strings.
         :param width: Width of the figure.
         :param height: Height of the figure.
         :return: A Plotly Figure object.
@@ -454,7 +457,7 @@ class PlotlyPlot:
     def set_figure(
         self,
         node_sizes: list[float],
-        colors: np.ndarray,
+        colors: NDArray[np.float64],
         titles: list[str],
         agg: Callable,
         cmaps: list[str],
@@ -468,7 +471,8 @@ class PlotlyPlot:
         :param colors: Colors for the nodes, can be a 1D or 2D array.
         :param titles: Titles for the color bar, can be a single string or a list of strings.
         :param agg: Aggregation function to apply to the colors.
-        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of strings.
+        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of
+            strings.
         :param width: Width of the figure.
         :param height: Height of the figure.
         :return: None
@@ -494,7 +498,7 @@ class PlotlyPlot:
         self,
         titles: Optional[list[str]] = None,
         node_sizes: Optional[list[float]] = None,
-        colors: Optional[Union[np.ndarray, list[float]]] = None,
+        colors: Optional[NDArray[np.float64]] = None,
         agg: Optional[Callable] = None,
         cmaps: Optional[list[str]] = None,
         width: Optional[int] = None,
@@ -507,7 +511,8 @@ class PlotlyPlot:
         :param node_sizes: Sizes of the nodes.
         :param colors: Colors for the nodes, can be a 1D or 2D array.
         :param agg: Aggregation function to apply to the colors.
-        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of strings.
+        :param cmaps: Colormaps to use for the nodes and edges, can be a single string or a list of
+            strings.
         :param width: Width of the figure.
         :param height: Height of the figure.
         :return: None
@@ -525,7 +530,7 @@ class PlotlyPlot:
         if cmaps is not None:
             self.set_cmap(cmaps[0])
 
-    def _nodes_trace(self, node_pos_arr) -> Union[go.Scatter, go.Scatter3d]:
+    def _nodes_trace(self, node_pos_arr: ) -> Union[go.Scatter, go.Scatter3d]:
         scatter = dict(
             name=_NODES_TRACE,
             x=node_pos_arr[0],
@@ -582,7 +587,7 @@ class PlotlyPlot:
             )
             return go.Scatter(scatter)
 
-    def _colorbar(self, title: str) -> dict:
+    def _colorbar(self, title: str) -> dict[str, Any]:
         cbar = dict(
             orientation="v",
             showticklabels=True,
@@ -657,7 +662,7 @@ class PlotlyPlot:
     def set_ui(
         self,
         cmaps: Optional[list[str]],
-        colors: Optional[np.ndarray],
+        colors: Optional[NDArray[np.float64]],
         titles: Optional[list[str]],
         agg: Optional[Callable],
         node_sizes: Optional[list[float]],
@@ -793,7 +798,7 @@ class PlotlyPlot:
             yanchor="top",
         )
 
-    def _ui_menu_color(self, colors: np.ndarray, titles: list[str], agg) -> dict:
+    def _ui_menu_color(self, colors: NDArray[np.float64], titles: list[str], agg: Callable) -> dict:
         colors_arr = np.array(colors)
         colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
@@ -863,7 +868,7 @@ class PlotlyPlot:
             yanchor="top",
         )
 
-    def _ui_slider_node_size(self, node_sizes: list[float]) -> dict:
+    def _ui_slider_node_size(self, node_sizes: list[float]) -> dict[str, Any]:
         steps = [
             dict(
                 method="restyle",

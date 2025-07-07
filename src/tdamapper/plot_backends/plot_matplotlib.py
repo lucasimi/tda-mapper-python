@@ -4,10 +4,12 @@ matplotlib.
 """
 
 import math
+from typing import Any, Callable
 
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.collections import LineCollection
+from numpy.typing import NDArray
 
 from tdamapper.core import ATTR_SIZE, aggregate_graph
 
@@ -22,14 +24,27 @@ _EDGE_COLOR = "#777"
 
 def plot_matplotlib(
     mapper_plot,
-    width,
-    height,
-    title,
-    colors,
-    node_size,
-    agg,
-    cmap,
-):
+    width: int,
+    height: int,
+    title: str,
+    colors: NDArray,
+    node_size: float,
+    agg: Callable,
+    cmap: str,
+) -> tuple[plt.Figure, plt.Axes]:
+    """
+    Plots the Mapper graph using matplotlib.
+
+    :param mapper_plot: The Mapper plot object containing the graph and positions.
+    :param width: Width of the figure in inches.
+    :param height: Height of the figure in inches.
+    :param title: Title for the colorbar.
+    :param colors: A list or array of colors for the nodes.
+    :param node_size: Size of the nodes in the plot.
+    :param agg: Aggregation function to apply to the colors.
+    :param cmap: Colormap to use for the nodes.
+    :return: A tuple containing the matplotlib Figure and Axes objects.
+    """
     px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
     fig, ax = plt.subplots(figsize=(width * px, height * px))
     ax.get_xaxis().set_visible(False)
@@ -39,7 +54,15 @@ def plot_matplotlib(
     return fig, ax
 
 
-def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
+def _plot_nodes(
+    mapper_plot,
+    title: str,
+    colors: NDArray,
+    node_size: float,
+    agg: Callable,
+    cmap: str,
+    ax: plt.Axes,
+) -> None:
     nodes_arr = _node_pos_array(
         mapper_plot.graph, mapper_plot.dim, mapper_plot.positions
     )
@@ -82,7 +105,7 @@ def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
     colorbar.ax.locator_params(nbins=10)
 
 
-def _plot_edges(mapper_plot, ax):
+def _plot_edges(mapper_plot, ax: plt.Axes) -> None:
     segments = [
         (mapper_plot.positions[e[0]], mapper_plot.positions[e[1]])
         for e in mapper_plot.graph.edges()
@@ -98,5 +121,7 @@ def _plot_edges(mapper_plot, ax):
     ax.add_collection(lines)
 
 
-def _node_pos_array(graph, dim, positions):
+def _node_pos_array(
+    graph: nx.Graph, dim: int, positions: dict[Any, NDArray]
+) -> tuple[list[NDArray], ...]:
     return tuple([positions[n][i] for n in graph.nodes()] for i in range(dim))
