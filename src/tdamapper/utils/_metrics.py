@@ -29,3 +29,15 @@ def cosine(x, y):
     yy = np.linalg.norm(y)
     similarity = xy / (xx * yy)
     return np.sqrt(2.0 * (1.0 - similarity))
+
+@njit(fastmath=True) # pragma: no cover
+def hamming(x,y):
+    return x.size - np.count_nonzero(x-y)
+    
+@njit(fastmath=True): # pragma: no cover
+    def nine_wildcard_hamming(x,y):
+        a = x-y
+        return a.size - np.count_nonzero(np.logical_or(a ==0, np.logical_or(a >= 5, a <= -5) ))
+        
+        
+        
