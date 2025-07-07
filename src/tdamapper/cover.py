@@ -14,7 +14,7 @@ from typing import Any, Callable, Generator, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from tdamapper._common import ArrayLike, ParamsMixin, warn_user
+from tdamapper._common import ArrayLike, ParamsMixin, PointLike, warn_user
 from tdamapper.core import Proximity
 from tdamapper.utils.metrics import Metric, chebyshev, get_metric
 from tdamapper.utils.vptree import VPTree
@@ -282,7 +282,7 @@ class BaseCubicalCover:
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def _get_center(self, x: NDArray[np.float64]) -> tuple[tuple, NDArray]:
+    def _get_center(self, x: PointLike) -> tuple[tuple, NDArray[np.float64]]:
         offset = self._offset(x)
         center = self._phi(x)
         return tuple(offset), center
@@ -291,17 +291,17 @@ class BaseCubicalCover:
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
-    def _offset(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
+    def _offset(self, x: PointLike) -> NDArray[np.float64]:
         return np.minimum(self._n_intervals - 1, np.floor(self._gamma_n(x)))
 
-    def _phi(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
+    def _phi(self, x: PointLike) -> NDArray[np.float64]:
         offset = self._offset(x)
         return self._gamma_n_inv(0.5 + offset)
 
-    def _gamma_n(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
+    def _gamma_n(self, x: PointLike) -> NDArray[np.float64]:
         return self._n_intervals * (x - self._min) / self._delta
 
-    def _gamma_n_inv(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
+    def _gamma_n_inv(self, x: PointLike) -> NDArray[np.float64]:
         return self._min + self._delta * x / self._n_intervals
 
     def _get_bounds(
@@ -481,7 +481,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def _landmarks(self, X: NDArray[np.float64]) -> dict[tuple, NDArray[np.float64]]:
+    def _landmarks(self, X: ArrayLike) -> dict[tuple, PointLike]:
         lmrks = {}
         for x in X:
             lmrk, _ = self._get_center(x)
@@ -489,7 +489,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X: NDArray[np.float64]) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike) -> Generator[list[int]]:
         """
         Covers the dataset using landmarks.
 
@@ -595,7 +595,7 @@ class CubicalCover(ParamsMixin):
                 "'proximity'."
             )
 
-    def fit(self, X: NDArray[np.float64]) -> CubicalCover:
+    def fit(self, X: ArrayLike) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -625,7 +625,7 @@ class CubicalCover(ParamsMixin):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X: NDArray[np.float64]) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike) -> Generator[list[int]]:
         """
         Covers the dataset using hypercubes.
 

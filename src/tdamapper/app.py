@@ -190,7 +190,7 @@ def run_mapper(
         logger.error(error)
         return None
 
-    mapper_config = MapperConfig(**kwargs)
+    mapper_config: MapperConfig = MapperConfig(**kwargs)
 
     lens_type = mapper_config.lens_type
     cover_scale_data = mapper_config.cover_scale_data
@@ -218,7 +218,7 @@ def run_mapper(
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
 
-    cover: Cover
+    cover: Optional[Cover]
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
             n_intervals=cover_cubical_n_intervals,
