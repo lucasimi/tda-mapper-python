@@ -56,6 +56,12 @@ async def test_run_app_success(user: User) -> None:
     await user.should_not_see("Draw Mapper failed")
     await user.should_see("Draw Mapper completed", retries=RETRIES)
 
+    # Click on the toggle menu button to open the menu
+    await user.should_see("menu")
+    user.find("menu").click()
+    await user.should_see("menu")
+    user.find("menu").click()
+
 
 def test_run_mapper() -> None:
     config = app.MapperConfig()
