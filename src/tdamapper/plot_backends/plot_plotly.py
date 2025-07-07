@@ -94,7 +94,7 @@ def _to_cmaps(cmap: Optional[Union[str, list[str]]]) -> list[str]:
         raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
 
 
-def _to_colors(colors: Union[np.ndarray, list[float]]) -> np.ndarray:
+def _to_colors(colors: Union[NDArray[np.float64], list[float]]) -> np.ndarray:
     """Convert colors to a numpy array."""
     colors_arr = np.array(colors)
     if colors_arr.ndim == 1:
@@ -146,7 +146,7 @@ def _get_cmap_rgb(cmap: str):
 
 def plot_plotly(
     mapper_plot,
-    colors: Union[np.ndarray, list[float]],
+    colors: Union[NDArray[np.float64], list[float]],
     node_size: Optional[Union[int, float, list[Union[int, float]]]] = None,
     title: Optional[Union[str, list[str]]] = None,
     agg: Callable = np.nanmean,
@@ -192,7 +192,7 @@ def plot_plotly_update(
     width: Optional[int] = None,
     height: Optional[int] = None,
     node_size: Optional[Union[int, float, list[Union[int, float]]]] = None,
-    colors: Optional[Union[np.ndarray, list[float]]] = None,
+    colors: Optional[Union[NDArray[np.float64], list[float]]] = None,
     title: Optional[Union[str, list[str]]] = None,
     agg: Optional[Callable] = None,
     cmap: Optional[Union[str, list[str]]] = None,
@@ -266,7 +266,7 @@ class PlotlyPlot:
 
     def plot(
         self,
-        colors: np.ndarray,
+        colors: NDArray[np.float64],
         node_sizes: list[float],
         titles: list[str],
         agg: Callable,

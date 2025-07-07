@@ -4,10 +4,11 @@ matplotlib.
 """
 
 import math
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 from matplotlib.collections import LineCollection
 from numpy.typing import NDArray
 
@@ -26,8 +27,8 @@ def plot_matplotlib(
     mapper_plot,
     width: int,
     height: int,
-    title: str,
-    colors: NDArray,
+    title: Optional[str],
+    colors: NDArray[np.float64],
     node_size: float,
     agg: Callable,
     cmap: str,
@@ -56,8 +57,8 @@ def plot_matplotlib(
 
 def _plot_nodes(
     mapper_plot,
-    title: str,
-    colors: NDArray,
+    title: Optional[str],
+    colors: NDArray[np.float64],
     node_size: float,
     agg: Callable,
     cmap: str,
@@ -95,9 +96,10 @@ def _plot_nodes(
         ax=ax,
         format="%.2g",
     )
-    colorbar.set_label(title, color=_NODE_OUTER_COLOR)
+    if title is not None:
+        colorbar.set_label(title, color=_NODE_OUTER_COLOR)
     colorbar.set_alpha(1.0)
-    colorbar.outline.set_color(_NODE_OUTER_COLOR)
+    # colorbar.outline.set_color(_NODE_OUTER_COLOR)
     colorbar.ax.yaxis.set_tick_params(
         color=_NODE_OUTER_COLOR, labelcolor=_NODE_OUTER_COLOR
     )

@@ -7,9 +7,9 @@ from typing import Callable, Optional, Union
 import igraph as ig
 import networkx as nx
 import numpy as np
+from numpy.typing import NDArray
 from plotly import graph_objects as go
 
-from tdamapper._common import ArrayLike
 from tdamapper.plot_backends.plot_matplotlib import plot_matplotlib
 from tdamapper.plot_backends.plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper.plot_backends.plot_pyvis import plot_pyvis
@@ -155,7 +155,7 @@ class MapperPlot:
 
     def plot_plotly(
         self,
-        colors: Union[np.ndarray, list[float]],
+        colors: Union[NDArray[np.float64], list[float]],
         node_size: Union[int, float, list[Union[int, float]]] = 1,
         agg: Callable = np.nanmean,
         title: Optional[Union[str, list[str]]] = None,
@@ -210,7 +210,7 @@ class MapperPlot:
     def plot_plotly_update(
         self,
         fig: go.Figure,
-        colors: Optional[Union[np.ndarray, list[float]]] = None,
+        colors: Optional[Union[NDArray[np.float64], list[float]]] = None,
         node_size: Optional[Union[int, float, list[Union[int, float]]]] = None,
         agg: Optional[Callable] = None,
         title: Optional[Union[str, list[str]]] = None,
@@ -271,7 +271,7 @@ class MapperPlot:
     def plot_pyvis(
         self,
         output_file: str,
-        colors: ArrayLike,
+        colors: NDArray[np.float64],
         node_size: int = 1,
         agg: Callable = np.nanmean,
         title: Optional[str] = None,

@@ -261,9 +261,9 @@ class BaseCubicalCover:
 
     _n_intervals: int
     _overlap_frac: float
-    _min: NDArray
-    _max: NDArray
-    _delta: NDArray
+    _min: NDArray[np.float64]
+    _max: NDArray[np.float64]
+    _delta: NDArray[np.float64]
     _cover: BallCover
 
     def __init__(
@@ -282,7 +282,7 @@ class BaseCubicalCover:
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def _get_center(self, x: NDArray) -> tuple[tuple, NDArray]:
+    def _get_center(self, x: NDArray[np.float64]) -> tuple[tuple, NDArray]:
         offset = self._offset(x)
         center = self._phi(x)
         return tuple(offset), center
@@ -291,20 +291,22 @@ class BaseCubicalCover:
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
-    def _offset(self, x: NDArray) -> NDArray:
+    def _offset(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.minimum(self._n_intervals - 1, np.floor(self._gamma_n(x)))
 
-    def _phi(self, x: NDArray) -> NDArray:
+    def _phi(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         offset = self._offset(x)
         return self._gamma_n_inv(0.5 + offset)
 
-    def _gamma_n(self, x: NDArray) -> NDArray:
+    def _gamma_n(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._n_intervals * (x - self._min) / self._delta
 
-    def _gamma_n_inv(self, x: NDArray) -> NDArray:
+    def _gamma_n_inv(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._min + self._delta * x / self._n_intervals
 
-    def _get_bounds(self, X: ArrayLike) -> tuple[NDArray, NDArray, NDArray]:
+    def _get_bounds(
+        self, X: ArrayLike
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         if (X is None) or len(X) == 0:
             raise ValueError("The dataset is empty or None.")
         _min, _max = X[0], X[0]
@@ -408,12 +410,12 @@ class ProximityCubicalCover(BaseCubicalCover, ParamsMixin, Proximity):
 
     def __init__(
         self,
-        n_intervals=1,
-        overlap_frac=None,
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=None,
-        pivoting=None,
+        n_intervals: int = 1,
+        overlap_frac: Optional[float] = None,
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: Optional[float] = None,
+        pivoting: Optional[str] = None,
     ):
         super().__init__(
             n_intervals=n_intervals,
@@ -479,7 +481,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def _landmarks(self, X: ArrayLike) -> dict[tuple, NDArray]:
+    def _landmarks(self, X: NDArray[np.float64]) -> dict[tuple, NDArray[np.float64]]:
         lmrks = {}
         for x in X:
             lmrk, _ = self._get_center(x)
@@ -487,7 +489,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: NDArray[np.float64]) -> Generator[list[int]]:
         """
         Covers the dataset using landmarks.
 
@@ -575,7 +577,7 @@ class CubicalCover(ParamsMixin):
         self.pivoting = pivoting
 
     def _get_cubical_cover(self) -> Union[ProximityCubicalCover, StandardCubicalCover]:
-        params = dict(
+        params: dict[str, Any] = dict(
             n_intervals=self.n_intervals,
             overlap_frac=self.overlap_frac,
             kind=self.kind,
@@ -593,7 +595,7 @@ class CubicalCover(ParamsMixin):
                 "'proximity'."
             )
 
-    def fit(self, X: ArrayLike) -> CubicalCover:
+    def fit(self, X: NDArray[np.float64]) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -623,7 +625,7 @@ class CubicalCover(ParamsMixin):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: NDArray[np.float64]) -> Generator[list[int]]:
         """
         Covers the dataset using hypercubes.
 

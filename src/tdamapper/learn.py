@@ -9,8 +9,16 @@ relationships, and uncover meaningful structures in a manner that aligns with
 scikit-learn's conventions for estimators.
 """
 
-from tdamapper._common import EstimatorMixin, ParamsMixin, clone
+from __future__ import annotations
+
+from typing import Optional
+
+import networkx as nx
+
+from tdamapper._common import ArrayLike, EstimatorMixin, ParamsMixin, clone
 from tdamapper.core import (
+    Clustering,
+    Cover,
     FailSafeClustering,
     TrivialClustering,
     TrivialCover,
@@ -45,17 +53,19 @@ class MapperClustering(EstimatorMixin, ParamsMixin):
     :type n_jobs: int
     """
 
+    labels_: list[int]
+
     def __init__(
         self,
-        cover=None,
-        clustering=None,
-        n_jobs=1,
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        n_jobs: int = 1,
     ):
         self.cover = cover
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> MapperClustering:
         """
         Fit the clustering algorithm to the data.
 
@@ -123,13 +133,20 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
     :type n_jobs: int
     """
 
+    _cover: Cover
+    _clustering: Clustering
+    _verbose: bool
+    _failsafe: bool
+    _n_jobs: int
+    graph_: nx.Graph
+
     def __init__(
         self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        failsafe: bool = True,
+        verbose: bool = True,
+        n_jobs: int = 1,
     ):
         self.cover = cover
         self.clustering = clustering
@@ -137,7 +154,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: ArrayLike, y: Optional[ArrayLike] = None) -> MapperAlgorithm:
         """
         Create the Mapper graph and store it for later use.
 
@@ -150,6 +167,8 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         :type y: array-like of shape (n, k) or list-like of length n
         :return: The object itself.
         """
+        if y is None:
+            y = X
         X, y = self._validate_X_y(X, y)
         self._cover = TrivialCover() if self.cover is None else self.cover
         self._clustering = (
@@ -176,7 +195,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self._set_n_features_in(X)
         return self
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X: ArrayLike, y: ArrayLike) -> nx.Graph:
         """
         Create the Mapper graph.
 

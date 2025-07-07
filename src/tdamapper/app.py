@@ -176,7 +176,7 @@ def lens_umap(
 
 def run_mapper(
     df: pd.DataFrame, **kwargs: dict[str, Any]
-) -> Optional[tuple[MapperAlgorithm, pd.DataFrame]]:
+) -> Optional[tuple[nx.Graph, pd.DataFrame]]:
     """
     Run the Mapper algorithm on the provided DataFrame.
 

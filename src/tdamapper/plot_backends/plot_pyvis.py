@@ -4,7 +4,7 @@ pyvis.
 """
 
 import math
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import numpy as np
 import plotly.colors as pc
@@ -32,7 +32,7 @@ def _colorbar(
     cmap: str,
     cmin: float,
     cmax: float,
-    title: str,
+    title: Optional[str],
 ) -> go.Figure:
     colorbar_fig = go.Figure()
     colorbar_fig.add_trace(
@@ -143,7 +143,7 @@ def plot_pyvis(
     colors: NDArray[np.float64],
     node_size: float,
     agg: Callable,
-    title: str,
+    title: Optional[str],
     width: int,
     height: int,
     cmap: str,
