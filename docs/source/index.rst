@@ -1,3 +1,6 @@
+.. |Repo Status| image:: https://www.repostatus.org/badges/latest/active.svg
+   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
+   :target: https://www.repostatus.org/#active
 .. |Source Code| image:: https://img.shields.io/badge/lucasimi-tda--mapper--python-blue?logo=github&logoColor=silver
    :target: https://github.com/lucasimi/tda-mapper-python
 .. |PyPI version| image:: https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver
@@ -23,9 +26,10 @@
    https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png
    :alt: Logo
 
+|Repo Status| |Source Code|
+
 |PyPI version| |downloads| |codecov| |test| |publish| |docs|  |DOI|
 
-|Source Code|
 
 tda-mapper
 ==========

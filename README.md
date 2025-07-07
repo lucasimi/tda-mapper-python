@@ -1,5 +1,7 @@
 ![Logo](https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png)
 
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+
 [![PyPI version](https://img.shields.io/pypi/v/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
 [![downloads](https://img.shields.io/pypi/dm/tda-mapper?logo=python&logoColor=silver)](https://pypi.python.org/pypi/tda-mapper)
 [![codecov](https://img.shields.io/codecov/c/github/lucasimi/tda-mapper-python?logo=codecov&logoColor=silver)](https://codecov.io/github/lucasimi/tda-mapper-python)
