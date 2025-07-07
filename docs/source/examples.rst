@@ -6,4 +6,5 @@ Examples
 
    notebooks/circles
    notebooks/digits
+   notebooks/cover
    

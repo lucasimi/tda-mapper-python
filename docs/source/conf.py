@@ -46,6 +46,7 @@ author = "Luca Simi"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
     "sphinx_rtd_theme",
     "nbsphinx",

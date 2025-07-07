@@ -335,9 +335,11 @@ class App:
             themedark="#132f48",
         )
 
-        with ui.left_drawer(elevated=True).classes(
+        self.left_drawer = ui.left_drawer(elevated=True).classes(
             "w-96 h-full overflow-y-auto gap-12"
-        ):
+        )
+
+        with self.left_drawer:
             with ui.link(target=GIT_REPO_URL, new_tab=True).classes("w-full"):
                 ui.image(LOGO_URL)
 
@@ -628,12 +630,18 @@ class App:
         self.plot_container = ui.element("div").classes("w-full h-full")
         self.draw_area = None
 
-    def get_mapper_config(self) -> MapperConfig:
-        """
-        Get the current Mapper configuration from the UI components.
+        def _toggle_drawer():
+            self.left_drawer.toggle()
+            if self.draw_area is not None:
+                self.draw_area.update()
 
-        :return: A MapperConfig object containing the current settings.
-        """
+        with ui.page_sticky(x_offset=18, y_offset=18, position="top-left"):
+            ui.button(
+                icon="menu",
+                on_click=_toggle_drawer,
+            ).props("fab color=themedark")
+
+    def get_mapper_config(self):
         return MapperConfig(
             lens_type=str(self.lens_type.value) if self.lens_type.value else LENS_PCA,
             cover_type=(
