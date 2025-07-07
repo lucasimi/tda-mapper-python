@@ -34,6 +34,13 @@ async def test_run_app_success(user: User) -> None:
     await user.should_see("Clustering")
     await user.should_see("Run Mapper")
     await user.should_see("Redraw")
+
+    # Click on the toggle menu button to open the menu
+    await user.should_see("menu")
+    user.find("menu").click()
+    await user.should_see("menu")
+    user.find("menu").click()
+
     user.find("Load Data").click()
     await user.should_see("Load data completed")
     await user.should_not_see("Load data failed")
@@ -48,6 +55,12 @@ async def test_run_app_success(user: User) -> None:
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("Draw Mapper failed")
     await user.should_see("Draw Mapper completed", retries=RETRIES)
+
+    # Click on the toggle menu button to open the menu
+    await user.should_see("menu")
+    user.find("menu").click()
+    await user.should_see("menu")
+    user.find("menu").click()
 
 
 def test_run_mapper() -> None:
