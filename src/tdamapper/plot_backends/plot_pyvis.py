@@ -14,6 +14,7 @@ from numpy.typing import NDArray
 from pyvis.network import Network
 
 from tdamapper.core import aggregate_graph
+from tdamapper.plot_backends.plot_common import MapperPlotType
 
 _EDGE_WIDTH = 0.75
 
@@ -138,7 +139,7 @@ def _combine(network: Network, colorbar: go.Figure) -> str:
 
 
 def plot_pyvis(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     output_file: str,
     colors: NDArray[np.float64],
     node_size: float,
@@ -177,7 +178,7 @@ def plot_pyvis(
 
 
 def _compute_net(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     colors: NDArray[np.float64],
     node_size: float,
     agg: Callable,

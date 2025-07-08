@@ -2,16 +2,21 @@
 A module for fast knn and range searches, depending only on a given metric
 """
 
+from typing import Any, Generic, Iterable, Optional, TypeVar, Union
+
+from tdamapper.utils.metrics import Metric
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 
+T = TypeVar("T")
 
-class VPTree:
+
+class VPTree(Generic[T]):
     """
     A Vantage Point Tree, or vp-tree, for fast range-queries and knn-queries.
 
-    :param X: A dataset of n points.
-    :type X: array-like of shape (n, m) or list-like of length n
+    :param items: A dataset of n points.
+    :type items: array-like of shape (n, m) or list-like of length n
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
         Defaults to 'euclidean'.
@@ -34,17 +39,19 @@ class VPTree:
     :type pivoting: str or callable, optional
     """
 
+    _vpt: Union[FVPT, HVPT]
+
     def __init__(
         self,
-        X,
-        metric="euclidean",
-        metric_params=None,
-        kind="flat",
-        leaf_capacity=1,
-        leaf_radius=0.0,
-        pivoting=None,
-    ):
-        builder = FVPT
+        items: Iterable[T],
+        metric: Union[str, Metric] = "euclidean",
+        metric_params: Optional[dict[str, Any]] = None,
+        kind: str = "flat",
+        leaf_capacity: int = 1,
+        leaf_radius: float = 0.0,
+        pivoting: Optional[str] = None,
+    ) -> None:
+        builder: Union[type[FVPT], type[HVPT]]
         if kind == "flat":
             builder = FVPT
         elif kind == "hierarchical":
@@ -52,7 +59,7 @@ class VPTree:
         else:
             raise ValueError(f"Unknown kind of vptree: {kind}")
         self._vpt = builder(
-            X,
+            items,
             metric=metric,
             metric_params=metric_params,
             leaf_capacity=leaf_capacity,
@@ -60,7 +67,7 @@ class VPTree:
             pivoting=pivoting,
         )
 
-    def ball_search(self, point, eps, inclusive=True):
+    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> list[T]:
         """
         Perform a ball search in the Vantage Point Tree.
 
@@ -81,7 +88,7 @@ class VPTree:
         """
         return self._vpt.ball_search(point, eps, inclusive=inclusive)
 
-    def knn_search(self, point, k):
+    def knn_search(self, point: T, k: int) -> list[T]:
         """
         Perform a k-nearest neighbors search in the Vantage Point Tree.
 

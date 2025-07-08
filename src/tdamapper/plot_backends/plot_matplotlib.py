@@ -13,6 +13,7 @@ from matplotlib.collections import LineCollection
 from numpy.typing import NDArray
 
 from tdamapper.core import ATTR_SIZE, aggregate_graph
+from tdamapper.plot_backends.plot_common import MapperPlotType
 
 _NODE_OUTER_WIDTH = 0.75
 
@@ -24,7 +25,7 @@ _EDGE_COLOR = "#777"
 
 
 def plot_matplotlib(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     width: int,
     height: int,
     title: Optional[str],
@@ -56,7 +57,7 @@ def plot_matplotlib(
 
 
 def _plot_nodes(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     title: Optional[str],
     colors: NDArray[np.float64],
     node_size: float,
@@ -107,7 +108,7 @@ def _plot_nodes(
     colorbar.ax.locator_params(nbins=10)
 
 
-def _plot_edges(mapper_plot, ax: plt.Axes) -> None:
+def _plot_edges(mapper_plot: MapperPlotType, ax: plt.Axes) -> None:
     segments = [
         (mapper_plot.positions[e[0]], mapper_plot.positions[e[1]])
         for e in mapper_plot.graph.edges()
@@ -124,6 +125,6 @@ def _plot_edges(mapper_plot, ax: plt.Axes) -> None:
 
 
 def _node_pos_array(
-    graph: nx.Graph, dim: int, positions: dict[Any, NDArray]
-) -> tuple[list[NDArray], ...]:
+    graph: nx.Graph, dim: int, positions: dict[Any, NDArray[np.float64]]
+) -> tuple[list[NDArray[np.float64]], ...]:
     return tuple([positions[n][i] for n in graph.nodes()] for i in range(dim))

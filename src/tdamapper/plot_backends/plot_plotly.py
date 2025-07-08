@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 from numpy.typing import NDArray
 
 from tdamapper.core import ATTR_SIZE, aggregate_graph
+from tdamapper.plot_backends.plot_common import MapperPlotType
 
 _NODE_OUTER_WIDTH = 0.75
 
@@ -145,7 +146,7 @@ def _get_cmap_rgb(cmap: str):
 
 
 def plot_plotly(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     colors: Union[NDArray[np.float64], list[float]],
     node_size: Optional[Union[int, float, list[Union[int, float]]]] = None,
     title: Optional[Union[str, list[str]]] = None,
@@ -187,7 +188,7 @@ def plot_plotly(
 
 
 def plot_plotly_update(
-    mapper_plot,
+    mapper_plot: MapperPlotType,
     fig: go.Figure,
     width: Optional[int] = None,
     height: Optional[int] = None,
@@ -257,7 +258,7 @@ class PlotlyPlot:
     :param fig: Optional existing Plotly figure to update.
     """
 
-    def __init__(self, mapper_plot, fig: Optional[go.Figure] = None):
+    def __init__(self, mapper_plot: MapperPlotType, fig: Optional[go.Figure] = None):
         self.mapper_plot = mapper_plot
         self.fig = fig
         self.graph = mapper_plot.graph
@@ -370,10 +371,12 @@ class PlotlyPlot:
             edge_col.append(c1)
         return edge_col
 
-    def _set_colors(self, colors, agg):
+    def _set_colors(self, colors: NDArray[np.float64], agg: Callable) -> None:
         node_col_agg = aggregate_graph(colors, self.graph, agg)
         node_col_arr = list(node_col_agg.values())
         scatter_text = self._text(node_col_agg)
+        if self.fig is None:
+            return
         self.fig.update_traces(
             patch=dict(
                 text=scatter_text,
@@ -533,7 +536,9 @@ class PlotlyPlot:
         if cmaps is not None:
             self.set_cmap(cmaps[0])
 
-    def _nodes_trace(self, node_pos_arr) -> Union[go.Scatter, go.Scatter3d]:
+    def _nodes_trace(
+        self, node_pos_arr: tuple[list[float], ...]
+    ) -> Union[go.Scatter, go.Scatter3d]:
         scatter = dict(
             name=_NODES_TRACE,
             x=node_pos_arr[0],
@@ -559,7 +564,9 @@ class PlotlyPlot:
         else:
             return go.Scatter(scatter)
 
-    def _edges_trace(self, edge_pos_arr) -> Union[go.Scatter, go.Scatter3d]:
+    def _edges_trace(
+        self, edge_pos_arr: tuple[list[Optional[float]], ...]
+    ) -> Union[go.Scatter, go.Scatter3d]:
         scatter = dict(
             name=_EDGES_TRACE,
             x=edge_pos_arr[0],
@@ -722,7 +729,7 @@ class PlotlyPlot:
             sliders=sliders,
         )
 
-    def ui_menu_dark_mode(self) -> dict:
+    def ui_menu_dark_mode(self) -> dict[str, Any]:
         """
         Create a dropdown menu for toggling dark mode in the Plotly figure.
 
@@ -804,7 +811,7 @@ class PlotlyPlot:
 
     def _ui_menu_color(
         self, colors: NDArray[np.float64], titles: list[str], agg: Callable
-    ) -> dict:
+    ) -> dict[str, Any]:
         colors_arr = np.array(colors)
         colors_num = colors_arr.shape[1] if colors_arr.ndim == 2 else 1
 
