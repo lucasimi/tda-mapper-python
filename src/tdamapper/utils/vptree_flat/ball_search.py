@@ -1,4 +1,4 @@
-from typing import Generic, Iterable, TypeVar
+from typing import Generic, TypeVar
 
 from tdamapper.utils.metrics import Metric
 from tdamapper.utils.vptree_flat.common import VPArray, VPTreeType, _mid
@@ -23,7 +23,7 @@ class BallSearch(Generic[T]):
         self._eps = eps
         self._inclusive = inclusive
 
-    def search(self) -> Iterable[T]:
+    def search(self) -> list[T]:
         return self._search_iter()
 
     def _inside(self, dist: float) -> bool:
@@ -31,7 +31,7 @@ class BallSearch(Generic[T]):
             return dist <= self._eps
         return dist < self._eps
 
-    def _search_iter(self) -> Iterable[T]:
+    def _search_iter(self) -> list[T]:
         stack = [(0, self._arr.size())]
         result = []
         while stack:

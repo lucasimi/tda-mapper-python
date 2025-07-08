@@ -13,9 +13,15 @@ T = TypeVar("T")
 
 class VPTree(Generic[T]):
 
+    _metric: Union[str, Metric[T]]
+    _metric_params: Optional[dict[str, Any]]
+    _leaf_capacity: int
+    _leaf_radius: float
+    _pivoting: Optional[str]
+
     def __init__(
         self,
-        X: Iterable[T],
+        items: Iterable[T],
         metric: Union[str, Metric[T]] = "euclidean",
         metric_params: Optional[dict[str, Any]] = None,
         leaf_capacity: int = 1,
@@ -27,7 +33,7 @@ class VPTree(Generic[T]):
         self._leaf_capacity = leaf_capacity
         self._leaf_radius = leaf_radius
         self._pivoting = pivoting
-        self._arr = Builder(self, X).build()
+        self._arr = Builder(self, items).build()
 
     def get_metric(self) -> Union[str, Metric[T]]:
         return self._metric

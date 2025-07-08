@@ -43,7 +43,9 @@ class KnnSearch(Generic[T]):
         while len(self._result) > self._neighbors:
             self._result.pop()
         if len(self._result) == self._neighbors:
-            self._radius, _ = self._result.top()
+            radius, _ = self._result.top()
+            if radius is not None:
+                self._radius = radius
         return dist
 
     def _search_iter(self) -> list[T]:

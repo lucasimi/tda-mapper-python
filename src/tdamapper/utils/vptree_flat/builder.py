@@ -1,8 +1,9 @@
 from random import randrange
-from typing import Generic, Iterable, TypeVar
+from typing import Callable, Generic, Iterable, TypeVar
 
 import numpy as np
 
+from tdamapper.utils.metrics import Metric
 from tdamapper.utils.vptree_flat.common import VPArray, VPTreeType
 
 T = TypeVar("T")
@@ -14,13 +15,19 @@ def _mid(start, end):
 
 class Builder(Generic[T]):
 
-    def __init__(self, vpt: VPTreeType[T], X: Iterable[T]) -> None:
+    _arr: VPArray[T]
+    _leaf_capacity: int
+    _leaf_radius: float
+    _distance: Metric[T]
+    _pivoting: Callable[[int, int], None]
+
+    def __init__(self, vpt: VPTreeType[T], items: Iterable[T]) -> None:
         self._distance = vpt._get_distance()
 
-        dataset = [x for x in X]
+        dataset = [x for x in items]
         indices = np.array([i for i in range(len(dataset))])
-        distances = np.array([0.0 for _ in X])
-        is_terminal = np.array([False for _ in X])
+        distances = np.array([0.0 for _ in items])
+        is_terminal = np.array([False for _ in items])
         self._arr = VPArray(dataset, distances, indices, is_terminal)
 
         self._leaf_capacity = vpt.get_leaf_capacity()

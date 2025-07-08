@@ -12,7 +12,7 @@ from tdamapper.utils.quickselect import quickselect, swap_all
 T = TypeVar("T")
 
 
-def _mid(start, end):
+def _mid(start: int, end: int) -> int:
     return (start + end) // 2
 
 
