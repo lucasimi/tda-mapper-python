@@ -26,12 +26,12 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-from typing import Any, Callable, Union
+from typing import Any, Protocol, TypeVar, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 import tdamapper.utils._metrics as _metrics
-from tdamapper._common import PointLike
 
 _EUCLIDEAN = "euclidean"
 _MANHATTAN = "manhattan"
@@ -40,7 +40,12 @@ _MINKOWSKI_P = "p"
 _CHEBYSHEV = "chebyshev"
 _COSINE = "cosine"
 
-Metric = Callable[[PointLike, PointLike], float]
+T = TypeVar("T", contravariant=True)
+
+
+class Metric(Protocol[T]):
+
+    def __call__(self, x: T, y: T) -> float: ...
 
 
 def get_supported_metrics() -> list[str]:
@@ -59,7 +64,7 @@ def get_supported_metrics() -> list[str]:
     ]
 
 
-def euclidean() -> Metric:
+def euclidean() -> Metric[NDArray[np.float64]]:
     """
     Return the Euclidean distance function for vectors.
 
@@ -72,7 +77,7 @@ def euclidean() -> Metric:
     return _metrics.euclidean
 
 
-def manhattan() -> Metric:
+def manhattan() -> Metric[NDArray[np.float64]]:
     """
     Return the Manhattan distance function for vectors.
 
@@ -85,7 +90,7 @@ def manhattan() -> Metric:
     return _metrics.manhattan
 
 
-def chebyshev() -> Metric:
+def chebyshev() -> Metric[NDArray[np.float64]]:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -98,7 +103,7 @@ def chebyshev() -> Metric:
     return _metrics.chebyshev
 
 
-def minkowski(p) -> Metric:
+def minkowski(p) -> Metric[NDArray[np.float64]]:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -126,7 +131,7 @@ def minkowski(p) -> Metric:
     return dist
 
 
-def cosine() -> Metric:
+def cosine() -> Metric[NDArray[np.float64]]:
     """
     Return the cosine distance function for vectors.
 
@@ -148,7 +153,9 @@ def cosine() -> Metric:
     return _metrics.cosine
 
 
-def get_metric(metric: Union[str, Metric], **kwargs: dict[str, Any]) -> Metric:
+def get_metric(
+    metric: Union[str, Metric[T]], **kwargs: dict[str, Any]
+) -> Union[Metric[NDArray[np.float64]], Metric[T]]:
     """
     Return a distance function based on the specified string or callable.
 

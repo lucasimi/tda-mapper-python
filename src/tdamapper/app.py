@@ -15,7 +15,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
-from tdamapper.core import Cover, TrivialClustering
+from tdamapper.core import Clustering, Cover, TrivialClustering
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
@@ -175,7 +175,7 @@ def lens_umap(
 
 
 def run_mapper(
-    df: pd.DataFrame, **kwargs: dict[str, Any]
+    df: pd.DataFrame, **kwargs: dict
 ) -> Optional[tuple[nx.Graph, pd.DataFrame]]:
     """
     Run the Mapper algorithm on the provided DataFrame.
@@ -232,6 +232,7 @@ def run_mapper(
         logger.error(f"Unknown cover type: {cover_type}")
         return None
 
+    clustering: Optional[Clustering[NDArray[np.float64]]]
     if clustering_type == CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == CLUSTERING_KMEANS:

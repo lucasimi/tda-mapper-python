@@ -31,7 +31,16 @@ this module is a NetworkX graph object.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Generator, Optional, Protocol
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    Iterable,
+    Optional,
+    Protocol,
+    TypeVar,
+)
 
 import networkx as nx
 from joblib import Parallel, delayed
@@ -53,12 +62,16 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
+T = TypeVar("T", contravariant=True)
+
+S = TypeVar("S", contravariant=True)
+
 
 def mapper_labels(
-    X: ArrayLike,
-    y: ArrayLike,
-    cover: Cover,
-    clustering: Clustering,
+    X: ArrayLike[S],
+    y: ArrayLike[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
     n_jobs: int = 1,
 ) -> list[list[int]]:
     """
@@ -119,10 +132,10 @@ def mapper_labels(
 
 
 def mapper_connected_components(
-    X: ArrayLike,
-    y: ArrayLike,
-    cover: Cover,
-    clustering: Clustering,
+    X: ArrayLike[S],
+    y: ArrayLike[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
     n_jobs: int = 1,
 ) -> list[int]:
     """
@@ -175,10 +188,10 @@ def mapper_connected_components(
 
 
 def mapper_graph(
-    X: ArrayLike,
-    y: ArrayLike,
-    cover: Cover,
-    clustering: Clustering,
+    X: ArrayLike[S],
+    y: ArrayLike[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
     n_jobs: int = 1,
 ) -> nx.Graph:
     """
@@ -231,7 +244,9 @@ def mapper_graph(
     return graph
 
 
-def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> dict[Any, Any]:
+def aggregate_graph(
+    X: ArrayLike[S], graph: nx.Graph, agg: Callable[[Iterable[T]], Any]
+) -> dict[Any, Any]:
     """
     Apply an aggregation function to the nodes of a graph.
 
@@ -262,12 +277,12 @@ def aggregate_graph(X: ArrayLike, graph: nx.Graph, agg: Callable) -> dict[Any, A
     return agg_values
 
 
-class Cover(Protocol):
+class Cover(Protocol[T]):
     """
     Abstract interface for cover algorithms.
     """
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[T]) -> Generator[list[int]]:
         """
         Covers the dataset with open set.
 
@@ -278,14 +293,14 @@ class Cover(Protocol):
         """
 
 
-class Clustering(Protocol):
+class Clustering(Protocol[T]):
     """
     Abstract interface for clustering algorithms.
     """
 
     labels_: list[int]
 
-    def fit(self, X: ArrayLike, y: Any = None) -> Clustering:
+    def fit(self, X: ArrayLike[T], y: Any = None) -> Clustering[T]:
         """
         Fit the clustering algorithm to the data.
 
@@ -297,7 +312,7 @@ class Clustering(Protocol):
         """
 
 
-class SpatialSearch(Protocol):
+class SpatialSearch(Protocol[T]):
     """
     Abstract interface for spatial search algorithms.
     A spatial search algorithm is a function that returns a list of neighbors
@@ -305,7 +320,7 @@ class SpatialSearch(Protocol):
     close to the query point, according to some distance metric.
     """
 
-    def fit(self, X: ArrayLike) -> SpatialSearch:
+    def fit(self, X: ArrayLike[T]) -> SpatialSearch[T]:
         """
         Train internal parameters.
 
@@ -315,7 +330,7 @@ class SpatialSearch(Protocol):
         :rtype: self
         """
 
-    def search(self, x: Any) -> list[int]:
+    def search(self, x: T) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -327,7 +342,7 @@ class SpatialSearch(Protocol):
         """
 
 
-def proximity_net(search: SpatialSearch, X: ArrayLike) -> Generator[list[int]]:
+def proximity_net(search: SpatialSearch[T], X: ArrayLike[T]) -> Generator[list[int]]:
     """
     Create a proximity-net for the dataset.
 
@@ -354,9 +369,9 @@ def proximity_net(search: SpatialSearch, X: ArrayLike) -> Generator[list[int]]:
                 yield neigh_ids
 
 
-class Proximity(SpatialSearch):
+class Proximity(SpatialSearch[T], Generic[T]):
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[T]) -> Generator[list[int]]:
         """
         Create a proximity-net for the dataset.
 
@@ -371,7 +386,7 @@ class Proximity(SpatialSearch):
         return proximity_net(self, X)
 
 
-class TrivialCover(ParamsMixin):
+class TrivialCover(ParamsMixin, Generic[T]):
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.
@@ -380,7 +395,7 @@ class TrivialCover(ParamsMixin):
     dataset.
     """
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[T]) -> Generator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -392,7 +407,7 @@ class TrivialCover(ParamsMixin):
         yield list(range(0, len(X)))
 
 
-class FailSafeClustering(ParamsMixin):
+class FailSafeClustering(ParamsMixin, Generic[T]):
     """
     A delegating clustering algorithm that prevents failure.
 
@@ -415,13 +430,13 @@ class FailSafeClustering(ParamsMixin):
 
     def __init__(
         self,
-        clustering: Optional[Clustering] = None,
+        clustering: Optional[Clustering[T]] = None,
         verbose: bool = True,
     ):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: ArrayLike, y: Any = None) -> FailSafeClustering:
+    def fit(self, X: ArrayLike[T], y: Any = None) -> FailSafeClustering[T]:
         """
         Fit the clustering algorithm to the data.
 
@@ -449,7 +464,7 @@ class FailSafeClustering(ParamsMixin):
         return self
 
 
-class TrivialClustering(ParamsMixin):
+class TrivialClustering(ParamsMixin, Generic[T]):
     """
     A clustering algorithm that returns a single cluster.
 
@@ -464,7 +479,7 @@ class TrivialClustering(ParamsMixin):
     def __init__(self):
         pass
 
-    def fit(self, X: ArrayLike, _y: Any = None) -> TrivialClustering:
+    def fit(self, X: ArrayLike[T], _y: Any = None) -> TrivialClustering[T]:
         """
         Fit the clustering algorithm to the data.
 

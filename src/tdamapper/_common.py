@@ -8,15 +8,30 @@ import cProfile
 import io
 import pstats
 import warnings
-from typing import Any, Callable, Union
+from typing import Any, Callable, Generic, Iterator, Protocol, TypeVar, overload
 
 import numpy as np
-from numpy.typing import NDArray
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
-PointLike = Union[NDArray[np.float64], list[Any]]
-ArrayLike = Union[NDArray[np.float64], list[PointLike]]
+T = TypeVar("T", covariant=True)
+
+
+class ArrayLike(Protocol[T]):
+    """
+    Protocol for array-like objects that can be used as input data.
+    This includes numpy arrays and lists of points.
+    """
+
+    @overload
+    def __getitem__(self, index: int) -> T: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> ArrayLike[T]: ...
+
+    def __len__(self) -> int: ...
+
+    def __iter__(self) -> Iterator[T]: ...
 
 
 def deprecated(msg: str) -> Callable:
@@ -45,13 +60,13 @@ def warn_user(msg: str) -> None:
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
-class EstimatorMixin:
+class EstimatorMixin(Generic[T]):
     """
     Mixin to add common functionalities to estimators, such as validation of
     input data, setting the number of features, and checking for sparse data.
     """
 
-    def _is_sparse(self, X: ArrayLike) -> bool:
+    def _is_sparse(self, X: ArrayLike[T]) -> bool:
         """
         Check if the input data is sparse.
 
@@ -62,8 +77,8 @@ class EstimatorMixin:
         return hasattr(X, "toarray")
 
     def _validate_X_y(
-        self, X: ArrayLike, y: ArrayLike
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        self, X: ArrayLike[T], y: ArrayLike[T]
+    ) -> tuple[ArrayLike[T], ArrayLike[T]]:
         """
         Validate input data and target values.
 
@@ -111,7 +126,7 @@ class EstimatorMixin:
 
         return X, y
 
-    def _set_n_features_in(self, X: ArrayLike) -> None:
+    def _set_n_features_in(self, X: ArrayLike[T]) -> None:
         if hasattr(X, "shape"):
             self.n_features_in_ = X.shape[1]
 

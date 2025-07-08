@@ -9,18 +9,22 @@ Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Generator, Optional, Union
+from typing import Any, Callable, Generator, Generic, Optional, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-from tdamapper._common import ArrayLike, ParamsMixin, PointLike, warn_user
+from tdamapper._common import ArrayLike, ParamsMixin, warn_user
 from tdamapper.core import Proximity
 from tdamapper.utils.metrics import Metric, chebyshev, get_metric
 from tdamapper.utils.vptree import VPTree
 
+S = TypeVar("S")
 
-class _Pullback:
+T = TypeVar("T")
+
+
+class _Pullback(Generic[S, T]):
     """
     This class is used to pull back a given metric with a given function.
 
@@ -35,24 +39,22 @@ class _Pullback:
     :type dist: callable
     """
 
-    def __init__(
-        self, fun: Callable[[Any], Any], dist: Callable[[Any, Any], float]
-    ) -> None:
+    def __init__(self, fun: Callable[[S], T], dist: Callable[[T, T], float]) -> None:
         self.fun = fun
         self.dist = dist
 
-    def __call__(self, x: Any, y: Any) -> float:
+    def __call__(self, x: S, y: S) -> float:
         return self.dist(self.fun(x), self.fun(y))
 
 
-def _snd(x: tuple[Any, ...]) -> Any:
+def _snd(x: tuple[T, ...]) -> T:
     """
     A helper function to extract the second element from a tuple.
     """
     return x[1]
 
 
-class BallCover(ParamsMixin, Proximity):
+class BallCover(ParamsMixin, Proximity[T]):
     """
     Cover algorithm based on `ball proximity function`, which covers data with
     open balls of fixed radius.
@@ -94,7 +96,7 @@ class BallCover(ParamsMixin, Proximity):
     def __init__(
         self,
         radius: float = 1.0,
-        metric: Union[str, Metric] = "euclidean",
+        metric: Union[str, Metric[T]] = "euclidean",
         metric_params: Optional[dict[str, Any]] = None,
         kind: str = "flat",
         leaf_capacity: int = 1,
@@ -109,7 +111,7 @@ class BallCover(ParamsMixin, Proximity):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> BallCover:
+    def fit(self, X: ArrayLike[T]) -> BallCover[T]:
         """
         Train internal parameters.
 
@@ -136,7 +138,7 @@ class BallCover(ParamsMixin, Proximity):
         )
         return self
 
-    def search(self, x: Any) -> list[int]:
+    def search(self, x: T) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -155,7 +157,7 @@ class BallCover(ParamsMixin, Proximity):
         return [x for (x, _) in neighs]
 
 
-class KNNCover(ParamsMixin, Proximity):
+class KNNCover(ParamsMixin, Proximity[T]):
     """
     Cover algorithm based on `KNN proximity function`, which covers data using
     k-nearest neighbors (KNN).
@@ -197,7 +199,7 @@ class KNNCover(ParamsMixin, Proximity):
     def __init__(
         self,
         neighbors: int = 1,
-        metric: Union[str, Metric] = "euclidean",
+        metric: Union[str, Metric[T]] = "euclidean",
         metric_params: Optional[dict[str, Any]] = None,
         kind: str = "flat",
         leaf_capacity: Optional[int] = None,
@@ -212,7 +214,7 @@ class KNNCover(ParamsMixin, Proximity):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: ArrayLike) -> KNNCover:
+    def fit(self, X: ArrayLike[T]) -> KNNCover[T]:
         """
         Train internal parameters.
 
@@ -239,7 +241,7 @@ class KNNCover(ParamsMixin, Proximity):
         )
         return self
 
-    def search(self, x: Any) -> list[int]:
+    def search(self, x: T) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -282,7 +284,7 @@ class BaseCubicalCover:
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def _get_center(self, x: PointLike) -> tuple[tuple, NDArray[np.float64]]:
+    def _get_center(self, x: NDArray[np.float64]) -> tuple[tuple, NDArray[np.float64]]:
         offset = self._offset(x)
         center = self._phi(x)
         return tuple(offset), center
@@ -291,21 +293,21 @@ class BaseCubicalCover:
         beta = math.pow(1.0 - overlap_vol_frac, 1.0 / dim)
         return 1.0 - 1.0 / (2.0 - beta)
 
-    def _offset(self, x: PointLike) -> NDArray[np.float64]:
+    def _offset(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.minimum(self._n_intervals - 1, np.floor(self._gamma_n(x)))
 
-    def _phi(self, x: PointLike) -> NDArray[np.float64]:
+    def _phi(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         offset = self._offset(x)
         return self._gamma_n_inv(0.5 + offset)
 
-    def _gamma_n(self, x: PointLike) -> NDArray[np.float64]:
+    def _gamma_n(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._n_intervals * (x - self._min) / self._delta
 
-    def _gamma_n_inv(self, x: PointLike) -> NDArray[np.float64]:
+    def _gamma_n_inv(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._min + self._delta * x / self._n_intervals
 
     def _get_bounds(
-        self, X: ArrayLike
+        self, X: NDArray[np.float64]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         if (X is None) or len(X) == 0:
             raise ValueError("The dataset is empty or None.")
@@ -317,7 +319,7 @@ class BaseCubicalCover:
         _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
         return _min, _max, _delta
 
-    def fit(self, X: ArrayLike) -> BaseCubicalCover:
+    def fit(self, X: ArrayLike[NDArray[np.float64]]) -> BaseCubicalCover:
         """
         Train internal parameters.
 
@@ -353,7 +355,7 @@ class BaseCubicalCover:
         self._cover.fit(X)
         return self
 
-    def search(self, x: Any) -> list[int]:
+    def search(self, x: NDArray[np.float64]) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -369,7 +371,9 @@ class BaseCubicalCover:
         return self._cover.search(center)
 
 
-class ProximityCubicalCover(BaseCubicalCover, ParamsMixin, Proximity):
+class ProximityCubicalCover(
+    BaseCubicalCover, ParamsMixin, Proximity[NDArray[np.float64]]
+):
     """
     Cover algorithm based on the `cubical proximity function`, which covers
     data with open hypercubes of uniform size and overlap. The cubical cover is
@@ -481,7 +485,9 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def _landmarks(self, X: ArrayLike) -> dict[tuple, PointLike]:
+    def _landmarks(
+        self, X: ArrayLike[NDArray[np.float64]]
+    ) -> dict[tuple, NDArray[np.float64]]:
         lmrks = {}
         for x in X:
             lmrk, _ = self._get_center(x)
@@ -489,7 +495,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[NDArray[np.float64]]) -> Generator[list[int]]:
         """
         Covers the dataset using landmarks.
 
@@ -595,7 +601,7 @@ class CubicalCover(ParamsMixin):
                 "'proximity'."
             )
 
-    def fit(self, X: ArrayLike) -> CubicalCover:
+    def fit(self, X: ArrayLike[NDArray[np.float64]]) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -611,7 +617,7 @@ class CubicalCover(ParamsMixin):
         self._cubical_cover.fit(X)
         return self
 
-    def search(self, x: Any) -> list[int]:
+    def search(self, x: NDArray[np.float64]) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -625,7 +631,7 @@ class CubicalCover(ParamsMixin):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X: ArrayLike) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[NDArray[np.float64]]) -> Generator[list[int]]:
         """
         Covers the dataset using hypercubes.
 
