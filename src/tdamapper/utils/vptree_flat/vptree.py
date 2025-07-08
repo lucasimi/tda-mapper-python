@@ -1,20 +1,27 @@
-from tdamapper.utils.metrics import get_metric
+from typing import Any, Generic, Iterable, Optional, TypeVar, Union
+
+import numpy as np
+from numpy.typing import NDArray
+
+from tdamapper.utils.metrics import Metric, get_metric
 from tdamapper.utils.vptree_flat.ball_search import BallSearch
 from tdamapper.utils.vptree_flat.builder import Builder
 from tdamapper.utils.vptree_flat.knn_search import KnnSearch
 
+T = TypeVar("T")
 
-class VPTree:
+
+class VPTree(Generic[T]):
 
     def __init__(
         self,
-        X,
-        metric="euclidean",
-        metric_params=None,
-        leaf_capacity=1,
-        leaf_radius=0.0,
-        pivoting=None,
-    ):
+        X: Iterable[T],
+        metric: Union[str, Metric[T]] = "euclidean",
+        metric_params: Optional[dict[str, Any]] = None,
+        leaf_capacity: int = 1,
+        leaf_radius: float = 0.0,
+        pivoting: Optional[str] = None,
+    ) -> None:
         self._metric = metric
         self._metric_params = metric_params
         self._leaf_capacity = leaf_capacity
@@ -22,30 +29,30 @@ class VPTree:
         self._pivoting = pivoting
         self._arr = Builder(self, X).build()
 
-    def get_metric(self):
+    def get_metric(self) -> Union[str, Metric[T]]:
         return self._metric
 
-    def get_metric_params(self):
+    def get_metric_params(self) -> Optional[dict[str, Any]]:
         return self._metric_params
 
-    def get_leaf_capacity(self):
+    def get_leaf_capacity(self) -> int:
         return self._leaf_capacity
 
-    def get_leaf_radius(self):
+    def get_leaf_radius(self) -> float:
         return self._leaf_radius
 
-    def get_pivoting(self):
+    def get_pivoting(self) -> Optional[str]:
         return self._pivoting
 
     def _get_arr(self):
         return self._arr
 
-    def _get_distance(self):
+    def _get_distance(self) -> Union[Metric[NDArray[np.float64]], Metric[T]]:
         metric_params = self._metric_params or {}
         return get_metric(self._metric, **metric_params)
 
-    def ball_search(self, point, eps, inclusive=True):
+    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> Iterable[T]:
         return BallSearch(self, point, eps, inclusive).search()
 
-    def knn_search(self, point, k):
+    def knn_search(self, point: T, k: int) -> Iterable[T]:
         return KnnSearch(self, point, k).search()
