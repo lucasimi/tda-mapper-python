@@ -10,16 +10,16 @@ T = TypeVar("T")
 class KnnSearch(Generic[T]):
 
     _tree: Tree[T]
-    _arr: VPArray[T]
-    _distance: Metric[T]
+    _array: VPArray[T]
+    _metric: Metric[T]
     _items: MaxHeap[float, T]
 
     def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int) -> None:
         self.point = point
         self.neighbors = neighbors
-        self._tree = vpt._get_tree()
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+        self._tree = vpt.tree
+        self._array = vpt.array
+        self._metric = vpt.metric
         self._items = MaxHeap()
 
     def _add(self, dist: float, x: T) -> None:
@@ -49,15 +49,15 @@ class KnnSearch(Generic[T]):
             bounds = tree.get_bounds()
             if bounds is not None:
                 start, end = bounds
-                for x in self._arr.get_points(start, end):
-                    dist = self._distance(self.point, x)
+                for x in self._array.get_points(start, end):
+                    dist = self._metric(self.point, x)
                     if dist < self._get_radius():
                         self._add(dist, x)
         else:
             ball = tree.get_ball()
             if ball is not None:
                 v_radius, v_point = ball
-                dist = self._distance(v_point, self.point)
+                dist = self._metric(v_point, self.point)
                 if dist < self._get_radius():
                     self._add(dist, v_point)
                 if dist <= v_radius:

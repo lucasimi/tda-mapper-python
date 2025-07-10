@@ -5,7 +5,7 @@ A module for performing ball search in a vantage-point tree (VP-tree).
 from typing import Generic, TypeVar
 
 from tdamapper.utils.metrics import Metric
-from tdamapper.utils.vptree_hier.common import Leaf, Tree, VPArray, VPTreeType
+from tdamapper.utils.vptree_hier.common import Tree, VPArray, VPTreeType
 
 T = TypeVar("T")
 
@@ -25,8 +25,8 @@ class BallSearch(Generic[T]):
     """
 
     _tree: Tree[T]
-    _arr: VPArray[T]
-    _distance: Metric[T]
+    _array: VPArray[T]
+    _metric: Metric[T]
     _result: list[T]
 
     def __init__(
@@ -35,9 +35,9 @@ class BallSearch(Generic[T]):
         self.point = point
         self.eps = eps
         self.inclusive = inclusive
-        self._tree = vpt._get_tree()
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+        self._tree = vpt.tree
+        self._array = vpt.array
+        self._metric = vpt.metric
         self._result = []
 
     def search(self) -> list[T]:
@@ -60,15 +60,15 @@ class BallSearch(Generic[T]):
             bounds = tree.get_bounds()
             if bounds is not None:
                 start, end = bounds
-                for x in self._arr.get_points(start, end):
-                    dist = self._distance(self.point, x)
+                for x in self._array.get_points(start, end):
+                    dist = self._metric(self.point, x)
                     if self._inside(dist):
                         self._result.append(x)
         else:
             ball = tree.get_ball()
             if ball is not None:
                 v_radius, v_point = ball
-                dist = self._distance(v_point, self.point)
+                dist = self._metric(v_point, self.point)
                 if self._inside(dist):
                     self._result.append(v_point)
                 if dist <= v_radius:

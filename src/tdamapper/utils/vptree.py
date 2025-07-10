@@ -2,13 +2,16 @@
 A module for fast knn and range searches, depending only on a given metric
 """
 
-from typing import Any, Generic, Iterable, Optional, TypeVar, Union
+from typing import Generic, Iterable, Literal, Optional, TypeVar, Union
 
 from tdamapper.utils.metrics import Metric
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 
 T = TypeVar("T")
+
+
+VPTreeKind = Literal["flat", "hierarchical"]
 
 
 class VPTree(Generic[T]):
@@ -44,9 +47,8 @@ class VPTree(Generic[T]):
     def __init__(
         self,
         items: Iterable[T],
-        metric: Union[str, Metric] = "euclidean",
-        metric_params: Optional[dict[str, Any]] = None,
-        kind: str = "flat",
+        metric: Metric[T],
+        kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: float = 0.0,
         pivoting: Optional[str] = None,
@@ -61,7 +63,6 @@ class VPTree(Generic[T]):
         self._vpt = builder(
             items,
             metric=metric,
-            metric_params=metric_params,
             leaf_capacity=leaf_capacity,
             leaf_radius=leaf_radius,
             pivoting=pivoting,

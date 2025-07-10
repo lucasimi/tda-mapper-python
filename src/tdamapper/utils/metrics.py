@@ -26,7 +26,7 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-from typing import Any, Literal, Protocol, Type, TypeVar, Union
+from typing import Any, Literal, Protocol, Type, TypeVar, Union, get_args, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -50,23 +50,23 @@ class Metric(Protocol[T_contra]):
     def __call__(self, x: T_contra, y: T_contra) -> float: ...
 
 
-MetricLiteral = Literal[_EUCLIDEAN, _MANHATTAN, _MINKOWSKI, _CHEBYSHEV, _COSINE]
+MetricLiteral = Literal[
+    "euclidean",
+    "manhattan",
+    "minkowski",
+    "chebyshev",
+    "cosine",
+]
 
 
-def get_supported_metrics() -> list[str]:
+def get_supported_metrics() -> list[MetricLiteral]:
     """
     Return a list of supported metric names.
 
     :return: A list of supported metric names.
     :rtype: list of str
     """
-    return [
-        _EUCLIDEAN,
-        _MANHATTAN,
-        _MINKOWSKI,
-        _CHEBYSHEV,
-        _COSINE,
-    ]
+    return list(get_args(MetricLiteral))
 
 
 def euclidean() -> Metric[NDArray[np.float64]]:
@@ -158,9 +158,17 @@ def cosine() -> Metric[NDArray[np.float64]]:
     return _metrics.cosine
 
 
+@overload
 def get_metric(
-    metric: Union[MetricLiteral, Metric[T]], **kwargs: dict[str, Any]
-) -> Union[Metric[NDArray[np.float64]], Metric[T]]:
+    metric: MetricLiteral, **kwargs: dict[str, Any]
+) -> Metric[NDArray[np.float64]]: ...
+
+
+@overload
+def get_metric(metric: Metric[T], **kwargs: dict[str, Any]) -> Metric[T]: ...
+
+
+def get_metric(metric, **kwargs):
     """
     Return a distance function based on the specified string or callable.
 

@@ -16,15 +16,15 @@ from numpy.typing import NDArray
 
 from tdamapper._common import ArrayLike, ParamsMixin, warn_user
 from tdamapper.core import Cover, Proximity
-from tdamapper.utils.metrics import Metric, chebyshev, get_metric
-from tdamapper.utils.vptree import VPTree
+from tdamapper.utils.metrics import Metric, MetricLiteral, chebyshev, get_metric
+from tdamapper.utils.vptree import VPTree, VPTreeKind
 
 T = TypeVar("T")
 
 S = TypeVar("S")
 
 
-class _Pullback(Generic[S, T]):
+class _Pullback(Generic[S, T], Metric[S]):
     """
     This class is used to pull back a given metric with a given function.
 
@@ -42,7 +42,7 @@ class _Pullback(Generic[S, T]):
     def __init__(
         self,
         fun: Callable[[S], T],
-        dist: Callable[[T, T], float],
+        dist: Metric[T],
     ) -> None:
         self.fun = fun
         self.dist = dist
@@ -51,7 +51,7 @@ class _Pullback(Generic[S, T]):
         return self.dist(self.fun(x), self.fun(y))
 
 
-def _snd(x: tuple[T, ...]) -> T:
+def _snd(x: tuple[T, S]) -> S:
     """
     A helper function to extract the second element from a tuple.
     """
@@ -99,17 +99,15 @@ class BallCover(ParamsMixin, Proximity[T]):
 
     def __init__(
         self,
+        metric: Metric[T],
         radius: float = 1.0,
-        metric: Union[str, Metric[T]] = "euclidean",
-        metric_params: Optional[dict[str, Any]] = None,
-        kind: str = "flat",
+        kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: Optional[float] = None,
         pivoting: Optional[str] = None,
     ):
         self.radius = radius
         self.metric = metric
-        self.metric_params = metric_params
         self.kind = kind
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
@@ -128,13 +126,11 @@ class BallCover(ParamsMixin, Proximity[T]):
         :return: The object itself.
         :rtype: self
         """
-        metric = get_metric(self.metric, **(self.metric_params or {}))
         self._radius = self.radius
         self._data = list(enumerate(X))
         self._vptree = VPTree(
             self._data,
-            metric=_Pullback(_snd, metric),
-            metric_params=None,
+            metric=_Pullback(_snd, self.metric),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
             leaf_radius=self.leaf_radius or self.radius,
@@ -202,17 +198,15 @@ class KNNCover(ParamsMixin, Proximity[T]):
 
     def __init__(
         self,
+        metric: Metric[T],
         neighbors: int = 1,
-        metric: Union[str, Metric[T]] = "euclidean",
-        metric_params: Optional[dict[str, Any]] = None,
-        kind: str = "flat",
+        kind: VPTreeKind = "flat",
         leaf_capacity: Optional[int] = None,
         leaf_radius: float = 0.0,
         pivoting: Optional[str] = None,
     ):
         self.neighbors = neighbors
         self.metric = metric
-        self.metric_params = metric_params
         self.kind = kind
         self.leaf_capacity = leaf_capacity
         self.leaf_radius = leaf_radius
@@ -231,13 +225,11 @@ class KNNCover(ParamsMixin, Proximity[T]):
         :return: The object itself.
         :rtype: self
         """
-        metric = get_metric(self.metric, **(self.metric_params or {}))
         self._neighbors = self.neighbors
         self._data = list(enumerate(X))
         self._vptree = VPTree(
             self._data,
-            metric=_Pullback(_snd, metric),
-            metric_params=None,
+            metric=_Pullback(_snd, self.metric),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity or self.neighbors,
             leaf_radius=self.leaf_radius,
@@ -311,7 +303,7 @@ class BaseCubicalCover:
         self,
         n_intervals: int = 1,
         overlap_frac: Optional[float] = None,
-        kind: str = "flat",
+        kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: Optional[float] = None,
         pivoting: Optional[str] = None,
@@ -384,7 +376,7 @@ class BaseCubicalCover:
         self._min, self._max, self._delta = self._get_bounds(X)
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
         self._cover = BallCover(
-            radius,
+            radius=radius,
             metric=_Pullback(self._gamma_n, chebyshev()),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
@@ -455,7 +447,7 @@ class ProximityCubicalCover(
         self,
         n_intervals: int = 1,
         overlap_frac: Optional[float] = None,
-        kind: str = "flat",
+        kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: Optional[float] = None,
         pivoting: Optional[str] = None,
@@ -510,7 +502,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
         self,
         n_intervals: int = 1,
         overlap_frac: Optional[float] = None,
-        kind: str = "flat",
+        kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: Optional[float] = None,
         pivoting: Optional[str] = None,

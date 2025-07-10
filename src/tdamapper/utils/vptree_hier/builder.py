@@ -30,8 +30,8 @@ class Builder(Generic[T]):
     left and right subtrees based on the distances.
     """
 
-    _arr: VPArray[T]
-    _distance: Metric[T]
+    _array: VPArray[T]
+    _metric: Metric[T]
     _pivoting: Callable[[int, int], None]
 
     def __init__(self, vpt: VPTreeType[T], items: Iterable[T]):
@@ -41,7 +41,7 @@ class Builder(Generic[T]):
         indices = np.array([i for i in range(len(dataset))])
         distances = np.array([0.0 for _ in items])
         self._arr = VPArray(dataset, distances, indices)
-        self._distance = vpt._get_distance()
+        self._metric = vpt.metric
         pivoting = vpt.pivoting
         self._pivoting = self._pivoting_disabled
         if pivoting == "random":
@@ -65,7 +65,7 @@ class Builder(Generic[T]):
         i_point = self._arr.get_point(i)
         for j in range(start, end):
             j_point = self._arr.get_point(j)
-            j_dist = self._distance(i_point, j_point)
+            j_dist = self._metric(i_point, j_point)
             if j_dist > furthest_dist:
                 furthest = j
                 furthest_dist = j_dist
@@ -85,7 +85,7 @@ class Builder(Generic[T]):
         v_point = self._arr.get_point(start)
         for i in range(start + 1, end):
             point = self._arr.get_point(i)
-            self._arr.set_distance(i, self._distance(v_point, point))
+            self._arr.set_distance(i, self._metric(v_point, point))
 
     def build(self) -> tuple[Tree[T], VPArray[T]]:
         tree = self._build_rec(0, self._arr.size())

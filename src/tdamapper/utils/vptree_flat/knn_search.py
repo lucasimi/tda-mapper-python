@@ -12,15 +12,15 @@ T = TypeVar("T")
 
 class KnnSearch(Generic[T]):
 
-    _arr: VPArray[T]
-    _distance: Metric[T]
+    _array: VPArray[T]
+    _metric: Metric[T]
     _point: T
     _neighbors: int
     _result: MaxHeap[float, T]
 
     def __init__(self, vpt: VPTreeType[T], point: T, neighbors: int) -> None:
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+        self._array = vpt.array
+        self._metric = vpt.metric
         self._point = point
         self._neighbors = neighbors
         self._radius = float("inf")
@@ -36,7 +36,7 @@ class KnnSearch(Generic[T]):
         return self._get_items()
 
     def _process(self, x: T) -> float:
-        dist = self._distance(self._point, x)
+        dist = self._metric(self._point, x)
         if dist >= self._radius:
             return dist
         self._result.add(dist, x)
@@ -50,16 +50,16 @@ class KnnSearch(Generic[T]):
 
     def _search_iter(self) -> list[T]:
         self._result = MaxHeap()
-        stack = [(0, self._arr.size(), 0.0, _PRE)]
+        stack = [(0, self._array.size(), 0.0, _PRE)]
         while stack:
             start, end, thr, action = stack.pop()
 
-            v_radius = self._arr.get_distance(start)
-            v_point = self._arr.get_point(start)
-            is_terminal = self._arr.is_terminal(start)
+            v_radius = self._array.get_distance(start)
+            v_point = self._array.get_point(start)
+            is_terminal = self._array.is_terminal(start)
 
             if is_terminal:
-                for x in self._arr.get_points(start, end):
+                for x in self._array.get_points(start, end):
                     self._process(x)
             else:
                 if action == _PRE:
