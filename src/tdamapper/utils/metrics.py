@@ -26,12 +26,12 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-from typing import Any, Protocol, TypeVar, Union
+from typing import Any, Literal, Protocol, Type, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-import tdamapper.utils._metrics as _metrics
+from tdamapper.utils import _metrics
 
 _EUCLIDEAN = "euclidean"
 _MANHATTAN = "manhattan"
@@ -40,12 +40,17 @@ _MINKOWSKI_P = "p"
 _CHEBYSHEV = "chebyshev"
 _COSINE = "cosine"
 
-T = TypeVar("T", contravariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
+
+T = TypeVar("T")
 
 
-class Metric(Protocol[T]):
+class Metric(Protocol[T_contra]):
 
-    def __call__(self, x: T, y: T) -> float: ...
+    def __call__(self, x: T_contra, y: T_contra) -> float: ...
+
+
+MetricLiteral = Literal[_EUCLIDEAN, _MANHATTAN, _MINKOWSKI, _CHEBYSHEV, _COSINE]
 
 
 def get_supported_metrics() -> list[str]:
@@ -120,9 +125,9 @@ def minkowski(p) -> Metric[NDArray[np.float64]]:
     """
     if p == 1:
         return manhattan()
-    elif p == 2:
+    if p == 2:
         return euclidean()
-    elif np.isinf(p):
+    if np.isinf(p):
         return chebyshev()
 
     def dist(x, y):
@@ -154,7 +159,7 @@ def cosine() -> Metric[NDArray[np.float64]]:
 
 
 def get_metric(
-    metric: Union[str, Metric[T]], **kwargs: dict[str, Any]
+    metric: Union[MetricLiteral, Metric[T]], **kwargs: dict[str, Any]
 ) -> Union[Metric[NDArray[np.float64]], Metric[T]]:
     """
     Return a distance function based on the specified string or callable.
@@ -173,18 +178,18 @@ def get_metric(
 
     :raises ValueError: If an invalid metric string is provided.
     """
+    if isinstance(metric, str):
+        if metric == _EUCLIDEAN:
+            return euclidean()
+        if metric == _MANHATTAN:
+            return manhattan()
+        if metric == _MINKOWSKI:
+            p = kwargs.get(_MINKOWSKI_P, 2)
+            return minkowski(p)
+        if metric == _CHEBYSHEV:
+            return chebyshev()
+        if metric == _COSINE:
+            return cosine()
     if callable(metric):
         return metric
-    elif metric == _EUCLIDEAN:
-        return euclidean()
-    elif metric == _MANHATTAN:
-        return manhattan()
-    elif metric == _MINKOWSKI:
-        p = kwargs.get(_MINKOWSKI_P, 2)
-        return minkowski(p)
-    elif metric == _CHEBYSHEV:
-        return chebyshev()
-    elif metric == _COSINE:
-        return cosine()
-    else:
-        raise ValueError("metric must be a string or callable")
+    raise ValueError("metric must be a string or callable")

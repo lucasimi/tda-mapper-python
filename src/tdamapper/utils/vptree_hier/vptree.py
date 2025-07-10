@@ -14,12 +14,8 @@ T = TypeVar("T")
 
 class VPTree(Generic[T]):
 
-    _metric: Union[str, Metric[T]]
-    _metric_params: Optional[dict[str, Any]]
-    _leaf_capacity: int
-    _leaf_radius: float
-    _pivoting: Optional[str]
     _tree: Tree[T]
+    _arr: VPArray[T]
 
     def __init__(
         self,
@@ -30,40 +26,25 @@ class VPTree(Generic[T]):
         leaf_radius: float = 0.0,
         pivoting: Optional[str] = None,
     ):
-        self._metric = metric
-        self._metric_params = metric_params
-        self._leaf_capacity = leaf_capacity
-        self._leaf_radius = leaf_radius
-        self._pivoting = pivoting
+        self.metric = metric
+        self.metric_params = metric_params
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
         self._tree, self._arr = Builder(self, items).build()
 
-    def get_metric(self) -> Union[str, Metric[T]]:
-        return self._metric
-
-    def get_metric_params(self) -> Optional[dict[str, Any]]:
-        return self._metric_params
-
-    def get_leaf_capacity(self) -> int:
-        return self._leaf_capacity
-
-    def get_leaf_radius(self) -> float:
-        return self._leaf_radius
-
-    def get_pivoting(self) -> Optional[str]:
-        return self._pivoting
-
-    def _get_tree(self):
+    def _get_tree(self) -> Tree[T]:
         return self._tree
 
     def _get_arr(self) -> VPArray[T]:
         return self._arr
 
-    def _get_distance(self) -> Union[Metric[T], Metric[NDArray[np.float64]]]:
-        metric_params = self._metric_params or {}
-        return get_metric(self._metric, **metric_params)
+    def _get_distance(self) -> Metric[T]:
+        metric_params = self.metric_params or {}
+        return get_metric(self.metric, **metric_params)
 
-    def ball_search(self, point, eps, inclusive=True) -> list[T]:
+    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> list[T]:
         return BallSearch(self, point, eps, inclusive).search()
 
-    def knn_search(self, point, k) -> list[T]:
+    def knn_search(self, point: T, k: int) -> list[T]:
         return KnnSearch(self, point, k).search()

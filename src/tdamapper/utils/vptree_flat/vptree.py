@@ -57,8 +57,8 @@ class VPTree(Generic[T]):
         metric_params = self._metric_params or {}
         return get_metric(self._metric, **metric_params)
 
-    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> Iterable[T]:
+    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> list[T]:
         return BallSearch(self, point, eps, inclusive).search()
 
-    def knn_search(self, point: T, k: int) -> Iterable[T]:
+    def knn_search(self, point: T, k: int) -> list[T]:
         return KnnSearch(self, point, k).search()

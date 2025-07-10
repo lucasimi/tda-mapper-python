@@ -89,10 +89,9 @@ def _to_cmaps(cmap: Optional[Union[str, list[str]]]) -> list[str]:
         return [DEFAULT_CMAP]
     if isinstance(cmap, str):
         return [cmap]
-    elif isinstance(cmap, list):
+    if isinstance(cmap, list):
         return cmap
-    else:
-        raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
+    raise ValueError(f"Invalid cmap type: {type(cmap)}. Expected str or list[str].")
 
 
 def _to_colors(colors: Union[NDArray[np.float64], list[float]]) -> np.ndarray:
@@ -100,12 +99,11 @@ def _to_colors(colors: Union[NDArray[np.float64], list[float]]) -> np.ndarray:
     colors_arr = np.array(colors)
     if colors_arr.ndim == 1:
         return colors_arr.reshape(-1, 1)
-    elif colors_arr.ndim == 2:
+    if colors_arr.ndim == 2:
         return colors_arr
-    else:
-        raise ValueError(
-            f"Invalid colors shape: {colors_arr.shape}. Expected 1D or 2D array."
-        )
+    raise ValueError(
+        f"Invalid colors shape: {colors_arr.shape}. Expected 1D or 2D array."
+    )
 
 
 def _to_titles(title: Optional[Union[str, list[str]]], colors_num: int) -> list[str]:
@@ -561,8 +559,7 @@ class PlotlyPlot:
         if self.dim == 3:
             scatter.update(dict(z=node_pos_arr[2]))
             return go.Scatter3d(scatter)
-        else:
-            return go.Scatter(scatter)
+        return go.Scatter(scatter)
 
     def _edges_trace(
         self, edge_pos_arr: tuple[list[Optional[float]], ...]
@@ -586,16 +583,15 @@ class PlotlyPlot:
                 ),
             )
             return go.Scatter3d(scatter)
-        else:
-            scatter.update(
-                dict(
-                    marker_colorscale=DEFAULT_CMAP,
-                    marker_line_width=_EDGE_WIDTH_2D,
-                    marker_line_colorscale=DEFAULT_CMAP,
-                    line_width=_EDGE_WIDTH_2D,
-                ),
-            )
-            return go.Scatter(scatter)
+        scatter.update(
+            dict(
+                marker_colorscale=DEFAULT_CMAP,
+                marker_line_width=_EDGE_WIDTH_2D,
+                marker_line_colorscale=DEFAULT_CMAP,
+                line_width=_EDGE_WIDTH_2D,
+            ),
+        )
+        return go.Scatter(scatter)
 
     def _colorbar(self, title: str) -> dict[str, Any]:
         cbar = dict(
@@ -781,7 +777,7 @@ class PlotlyPlot:
                     "marker.line.colorscale": [None, cmap_rgb],
                     "line.colorscale": [cmap_rgb, None],
                 }
-            elif self.dim == 2:
+            if self.dim == 2:
                 return {
                     "marker.colorscale": [cmap_rgb],
                     "marker.line.colorscale": [cmap_rgb],
@@ -844,7 +840,7 @@ class PlotlyPlot:
                     "line.cmax": [max(node_col_arr, default=None), None],
                     "line.cmin": [min(node_col_arr, default=None), None],
                 }
-            elif self.dim == 2:
+            if self.dim == 2:
                 return {
                     "text": [scatter_text],
                     **{

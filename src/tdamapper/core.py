@@ -39,6 +39,7 @@ from typing import (
     Iterable,
     Optional,
     Protocol,
+    Self,
     TypeVar,
 )
 
@@ -62,9 +63,11 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
-T = TypeVar("T", contravariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
 
-S = TypeVar("S", contravariant=True)
+T = TypeVar("T")
+
+S = TypeVar("S")
 
 
 def mapper_labels(
@@ -277,12 +280,12 @@ def aggregate_graph(
     return agg_values
 
 
-class Cover(Protocol[T]):
+class Cover(Protocol[T_contra]):
     """
     Abstract interface for cover algorithms.
     """
 
-    def apply(self, X: ArrayLike[T]) -> Generator[list[int]]:
+    def apply(self, X: ArrayLike[T_contra]) -> Generator[list[int]]:
         """
         Covers the dataset with open set.
 
@@ -293,26 +296,23 @@ class Cover(Protocol[T]):
         """
 
 
-class Clustering(Protocol[T]):
+class Clustering(Protocol[T_contra]):
     """
     Abstract interface for clustering algorithms.
     """
 
     labels_: list[int]
 
-    def fit(self, X: ArrayLike[T], y: Any = None) -> Clustering[T]:
+    def fit(self, X: ArrayLike[T_contra]) -> Clustering[T_contra]:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
-        :param y: Ignored.
         :return: The object itself.
-        :rtype: self
         """
 
 
-class SpatialSearch(Protocol[T]):
+class SpatialSearch(Protocol[T_contra]):
     """
     Abstract interface for spatial search algorithms.
     A spatial search algorithm is a function that returns a list of neighbors
@@ -320,7 +320,7 @@ class SpatialSearch(Protocol[T]):
     close to the query point, according to some distance metric.
     """
 
-    def fit(self, X: ArrayLike[T]) -> SpatialSearch[T]:
+    def fit(self, X: ArrayLike[T_contra]) -> SpatialSearch[T_contra]:
         """
         Train internal parameters.
 
@@ -330,7 +330,7 @@ class SpatialSearch(Protocol[T]):
         :rtype: self
         """
 
-    def search(self, x: T) -> list[int]:
+    def search(self, x: T_contra) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -424,7 +424,7 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
     :type verbose: bool, optional.
     """
 
-    _clustering: Clustering
+    _clustering: Clustering[T]
     _verbose: bool
     labels_: list[int]
 
@@ -432,11 +432,11 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
         self,
         clustering: Optional[Clustering[T]] = None,
         verbose: bool = True,
-    ):
+    ) -> None:
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: ArrayLike[T], y: Any = None) -> FailSafeClustering[T]:
+    def fit(self, X: ArrayLike[T]) -> Clustering[T]:
         """
         Fit the clustering algorithm to the data.
 
@@ -446,16 +446,14 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
-        :param y: Ignored.
         :return: The object itself.
         :rtype: self
         """
-        self._clustering = (
-            TrivialClustering() if self.clustering is None else self.clustering
-        )
+        triv: TrivialClustering[T] = TrivialClustering()
+        self._clustering = triv if self.clustering is None else self.clustering
         self._verbose = self.verbose
         try:
-            self._clustering.fit(X, y)
+            self._clustering.fit(X)
             self.labels_ = self._clustering.labels_
         except ValueError as err:
             if self._verbose:
@@ -479,13 +477,12 @@ class TrivialClustering(ParamsMixin, Generic[T]):
     def __init__(self):
         pass
 
-    def fit(self, X: ArrayLike[T], _y: Any = None) -> TrivialClustering[T]:
+    def fit(self, X: ArrayLike[T]) -> Clustering[T]:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
         :type X: array-like of shape (n, m) or list-like of length n
-        :param _y: Ignored.
         :return: self
         """
         self.labels_ = [0 for _ in X]

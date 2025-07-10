@@ -204,10 +204,8 @@ def _compute_net(
     max_node_size = -float("inf")
     for node in nodes:
         n_size = nodes[node]["size"]
-        if n_size > max_node_size:
-            max_node_size = n_size
-        if n_size < min_node_size:
-            min_node_size = n_size
+        max_node_size = max(n_size, max_node_size)
+        min_node_size = min(n_size, min_node_size)
 
     node_colors = aggregate_graph(colors, graph, agg)
 

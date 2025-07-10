@@ -58,13 +58,12 @@ class MapperPlot:
     def _compute_pos(self):
         if self.layout_engine == "igraph":
             return self._compute_pos_ig()
-        elif self.layout_engine == "networkx":
+        if self.layout_engine == "networkx":
             return self._compute_pos_nx()
-        else:
-            raise ValueError(
-                f"Unknown engine {self.layout_engine}. "
-                "Only possible values are 'igraph' and 'networkx'"
-            )
+        raise ValueError(
+            f"Unknown engine {self.layout_engine}. "
+            "Only possible values are 'igraph' and 'networkx'"
+        )
 
     def _compute_pos_nx(self):
         return nx.spring_layout(
@@ -80,6 +79,7 @@ class MapperPlot:
         rng = np.random.default_rng(self.seed)
         random_pos = rng.random((len(self.graph.nodes()), self.dim))
         graph_ig = ig.Graph.from_networkx(self.graph)
+        pos = {}
         if self.dim == 2:
             layout = graph_ig.layout_fruchterman_reingold(
                 niter=self.iterations,

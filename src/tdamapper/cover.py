@@ -9,19 +9,19 @@ Indeed, the overlaps of the open subsets define the edges of the Mapper graph.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Generator, Generic, Optional, TypeVar, Union
+from typing import Any, Callable, Generator, Generic, Optional, Self, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
 from tdamapper._common import ArrayLike, ParamsMixin, warn_user
-from tdamapper.core import Proximity
+from tdamapper.core import Cover, Proximity
 from tdamapper.utils.metrics import Metric, chebyshev, get_metric
 from tdamapper.utils.vptree import VPTree
 
-S = TypeVar("S")
-
 T = TypeVar("T")
+
+S = TypeVar("S")
 
 
 class _Pullback(Generic[S, T]):
@@ -39,7 +39,11 @@ class _Pullback(Generic[S, T]):
     :type dist: callable
     """
 
-    def __init__(self, fun: Callable[[S], T], dist: Callable[[T, T], float]) -> None:
+    def __init__(
+        self,
+        fun: Callable[[S], T],
+        dist: Callable[[T, T], float],
+    ) -> None:
         self.fun = fun
         self.dist = dist
 
@@ -90,8 +94,8 @@ class BallCover(ParamsMixin, Proximity[T]):
     """
 
     _radius: float
-    _data: list[tuple[int, Any]]
-    _vptree: VPTree
+    _data: list[tuple[int, T]]
+    _vptree: VPTree[tuple[int, T]]
 
     def __init__(
         self,
@@ -193,8 +197,8 @@ class KNNCover(ParamsMixin, Proximity[T]):
     """
 
     _neighbors: int
-    _data: list[tuple[int, Any]]
-    _vptree: VPTree
+    _data: list[tuple[int, T]]
+    _vptree: VPTree[tuple[int, T]]
 
     def __init__(
         self,
@@ -260,6 +264,41 @@ class KNNCover(ParamsMixin, Proximity[T]):
 
 
 class BaseCubicalCover:
+    """
+    Base class for cubical cover algorithms, which covers data with open
+    hypercubes of uniform size and overlap. This class provides the basic
+    functionality for cubical covers, including the computation of centers,
+    offsets, and bounds of the hypercubes.
+
+    A hypercube is a multidimensional generalization of a square or a cube.
+    The size and overlap of the hypercubes are determined by the number of
+    intervals and the overlap fraction parameters. This class maps each point
+    to the hypercube with the nearest center.
+
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
+        Defaults to 1.
+    :type n_intervals: int
+    :param overlap_frac: The fraction of overlap between adjacent intervals on
+        each dimension, must be in the range (0.0, 0.5]. If not specified, the
+        overlap_frac is computed such that the volume of the overlap within
+        each hypercube is half the total volume. Defaults to None.
+    :type overlap_frac: float
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :type kind: str
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :type leaf_capacity: int
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
+    :type leaf_radius: float, optional
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    :type pivoting: str or callable, optional
+    """
 
     _n_intervals: int
     _overlap_frac: float
@@ -339,7 +378,7 @@ class BaseCubicalCover:
             self._overlap_frac = self.overlap_frac
         self._n_intervals = self.n_intervals
         if self._overlap_frac <= 0.0:
-            raise ValueError("The parameter overlap_frac is expected to be " "> 0.0")
+            raise ValueError("The parameter overlap_frac is expected to be > 0.0")
         if self._overlap_frac > 0.5:
             warn_user("The parameter overlap_frac is expected to be <= 0.5")
         self._min, self._max, self._delta = self._get_bounds(X)
@@ -593,13 +632,11 @@ class CubicalCover(ParamsMixin):
         )
         if self.algorithm == "proximity":
             return ProximityCubicalCover(**params)
-        elif self.algorithm == "standard":
+        if self.algorithm == "standard":
             return StandardCubicalCover(**params)
-        else:
-            raise ValueError(
-                "The only possible values for algorithm are 'standard' and "
-                "'proximity'."
-            )
+        raise ValueError(
+            "The only possible values for algorithm are 'standard' and " "'proximity'."
+        )
 
     def fit(self, X: ArrayLike[NDArray[np.float64]]) -> CubicalCover:
         """

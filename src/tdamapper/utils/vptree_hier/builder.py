@@ -1,3 +1,8 @@
+"""
+A module for building a vantage-point tree (VP-tree) from a dataset.
+This module provides a `Builder` class that constructs a VP-tree recursively.
+"""
+
 from random import randrange
 from typing import Callable, Generic, Iterable, TypeVar
 
@@ -17,24 +22,27 @@ T = TypeVar("T")
 
 
 class Builder(Generic[T]):
+    """
+    A class to build a vantage-point tree (VP-tree) from a dataset.
+
+    This class constructs a VP-tree recursively by selecting a vantage point,
+    calculating distances to other points, and partitioning the dataset into
+    left and right subtrees based on the distances.
+    """
 
     _arr: VPArray[T]
-    _leaf_capacity: int
-    _leaf_radius: float
     _distance: Metric[T]
     _pivoting: Callable[[int, int], None]
 
     def __init__(self, vpt: VPTreeType[T], items: Iterable[T]):
-        self._distance = vpt._get_distance()
-
+        self.leaf_capacity = vpt.leaf_capacity
+        self.leaf_radius = vpt.leaf_radius
         dataset = [x for x in items]
         indices = np.array([i for i in range(len(dataset))])
         distances = np.array([0.0 for _ in items])
         self._arr = VPArray(dataset, distances, indices)
-
-        self._leaf_capacity = vpt.get_leaf_capacity()
-        self._leaf_radius = vpt.get_leaf_radius()
-        pivoting = vpt.get_pivoting()
+        self._distance = vpt._get_distance()
+        pivoting = vpt.pivoting
         self._pivoting = self._pivoting_disabled
         if pivoting == "random":
             self._pivoting = self._pivoting_random
@@ -92,7 +100,7 @@ class Builder(Generic[T]):
         self._arr.set_distance(start, v_radius)
         left: Tree[T]
         right: Tree[T]
-        if (end - start <= 2 * self._leaf_capacity) or (v_radius <= self._leaf_radius):
+        if (end - start <= 2 * self.leaf_capacity) or (v_radius <= self.leaf_radius):
             left = Leaf(start + 1, mid)
             right = Leaf(mid, end)
         else:

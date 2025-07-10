@@ -9,7 +9,7 @@ from tdamapper.utils.vptree_flat.common import VPArray, VPTreeType
 T = TypeVar("T")
 
 
-def _mid(start, end):
+def _mid(start: int, end: int) -> int:
     return (start + end) // 2
 
 

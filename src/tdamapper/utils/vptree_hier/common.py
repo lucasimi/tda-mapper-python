@@ -24,11 +24,14 @@ class VPTreeType(Protocol[T]):
 
     def _get_tree(self) -> Tree[T]: ...
 
-    def get_leaf_capacity(self) -> int: ...
+    @property
+    def leaf_capacity(self) -> int: ...
 
-    def get_leaf_radius(self) -> float: ...
+    @property
+    def leaf_radius(self) -> float: ...
 
-    def get_pivoting(self) -> Optional[str]: ...
+    @property
+    def pivoting(self) -> Optional[str]: ...
 
 
 class VPArray(Generic[T]):
@@ -74,16 +77,19 @@ class Node(Generic[T]):
         self._left = left
         self._right = right
 
-    def get_ball(self) -> tuple[float, T]:
+    def get_bounds(self) -> Optional[tuple[int, int]]:
+        return None
+
+    def get_ball(self) -> Optional[tuple[float, T]]:
         return self._radius, self._center
 
     def is_terminal(self) -> bool:
         return False
 
-    def get_left(self) -> Tree[T]:
+    def get_left(self) -> Optional[Tree[T]]:
         return self._left
 
-    def get_right(self) -> Tree[T]:
+    def get_right(self) -> Optional[Tree[T]]:
         return self._right
 
 
@@ -93,11 +99,20 @@ class Leaf:
         self._start = start
         self._end = end
 
-    def get_bounds(self) -> tuple[int, int]:
+    def get_bounds(self) -> Optional[tuple[int, int]]:
         return self._start, self._end
+
+    def get_ball(self) -> Optional[tuple[float, T]]:
+        return None
 
     def is_terminal(self) -> bool:
         return True
+
+    def get_left(self) -> Optional[Tree[T]]:
+        return None
+
+    def get_right(self) -> Optional[Tree[T]]:
+        return None
 
 
 Tree = Union[Node[T], Leaf]

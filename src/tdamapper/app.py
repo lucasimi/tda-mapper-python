@@ -192,74 +192,58 @@ def run_mapper(
 
     mapper_config: MapperConfig = MapperConfig(**kwargs)
 
-    lens_type = mapper_config.lens_type
-    cover_scale_data = mapper_config.cover_scale_data
-    cover_type = mapper_config.cover_type
-    clustering_scale_data = mapper_config.clustering_scale_data
-    clustering_type = mapper_config.clustering_type
-    lens_pca_n_components = mapper_config.lens_pca_n_components
-    lens_umap_n_components = mapper_config.lens_umap_n_components
-    cover_cubical_n_intervals = mapper_config.cover_cubical_n_intervals
-    cover_cubical_overlap_frac = mapper_config.cover_cubical_overlap_frac
-    cover_ball_radius = mapper_config.cover_ball_radius
-    cover_knn_neighbors = mapper_config.cover_knn_neighbors
-    clustering_kmeans_n_clusters = mapper_config.clustering_kmeans_n_clusters
-    clustering_dbscan_eps = mapper_config.clustering_dbscan_eps
-    clustering_dbscan_min_samples = mapper_config.clustering_dbscan_min_samples
-    clustering_agglomerative_n_clusters = (
-        mapper_config.clustering_agglomerative_n_clusters
-    )
-
     lens = lens_pca(n_components=LENS_PCA_N_COMPONENTS)
-    if lens_type == LENS_IDENTITY:
+    if mapper_config.lens_type == LENS_IDENTITY:
         lens = lens_identity
-    elif lens_type == LENS_PCA:
-        lens = lens_pca(n_components=lens_pca_n_components)
-    elif lens_type == LENS_UMAP:
-        lens = lens_umap(n_components=lens_umap_n_components)
+    elif mapper_config.lens_type == LENS_PCA:
+        lens = lens_pca(n_components=mapper_config.lens_pca_n_components)
+    elif mapper_config.lens_type == LENS_UMAP:
+        lens = lens_umap(n_components=mapper_config.lens_umap_n_components)
 
     cover: Optional[Cover]
-    if cover_type == COVER_CUBICAL:
+    if mapper_config.cover_type == COVER_CUBICAL:
         cover = CubicalCover(
-            n_intervals=cover_cubical_n_intervals,
-            overlap_frac=cover_cubical_overlap_frac,
+            n_intervals=mapper_config.cover_cubical_n_intervals,
+            overlap_frac=mapper_config.cover_cubical_overlap_frac,
         )
-    elif cover_type == COVER_BALL:
-        cover = BallCover(radius=cover_ball_radius)
-    elif cover_type == COVER_KNN:
-        cover = KNNCover(neighbors=cover_knn_neighbors)
+    elif mapper_config.cover_type == COVER_BALL:
+        cover = BallCover(radius=mapper_config.cover_ball_radius)
+    elif mapper_config.cover_type == COVER_KNN:
+        cover = KNNCover(neighbors=mapper_config.cover_knn_neighbors)
     else:
-        logger.error(f"Unknown cover type: {cover_type}")
+        logger.error(f"Unknown cover type: {mapper_config.cover_type}")
         return None
 
     clustering: Optional[Clustering[NDArray[np.float64]]]
-    if clustering_type == CLUSTERING_TRIVIAL:
+    if mapper_config.clustering_type == CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
-    elif clustering_type == CLUSTERING_KMEANS:
+    elif mapper_config.clustering_type == CLUSTERING_KMEANS:
         clustering = KMeans(
-            n_clusters=clustering_kmeans_n_clusters,
+            n_clusters=mapper_config.clustering_kmeans_n_clusters,
             random_state=RANDOM_SEED,
         )
-    elif clustering_type == CLUSTERING_DBSCAN:
+    elif mapper_config.clustering_type == CLUSTERING_DBSCAN:
         clustering = DBSCAN(
-            eps=clustering_dbscan_eps,
-            min_samples=clustering_dbscan_min_samples,
+            eps=mapper_config.clustering_dbscan_eps,
+            min_samples=mapper_config.clustering_dbscan_min_samples,
         )
-    elif clustering_type == CLUSTERING_AGGLOMERATIVE:
+    elif mapper_config.clustering_type == CLUSTERING_AGGLOMERATIVE:
         clustering = AgglomerativeClustering(
-            n_clusters=clustering_agglomerative_n_clusters,
+            n_clusters=mapper_config.clustering_agglomerative_n_clusters,
         )
     else:
-        logger.error(f"Unknown clustering type: {clustering_type}")
+        logger.error(f"Unknown clustering type: {mapper_config.clustering_type}")
         return None
 
     mapper = MapperAlgorithm(cover=cover, clustering=clustering)
     X = df.to_numpy()
     y = lens(X)
-    df_y = pd.DataFrame(y, columns=[f"{lens_type} {i}" for i in range(y.shape[1])])
-    if cover_scale_data:
+    df_y = pd.DataFrame(
+        y, columns=[f"{mapper_config.lens_type} {i}" for i in range(y.shape[1])]
+    )
+    if mapper_config.cover_scale_data:
         y = StandardScaler().fit_transform(y)
-    if clustering_scale_data:
+    if mapper_config.clustering_scale_data:
         X = StandardScaler().fit_transform(X)
     mapper_graph = mapper.fit_transform(X, y)
     logger.info("Mapper computation completed.")
@@ -327,6 +311,23 @@ class App:
 
     :param storage: Storage object for managing data persistence.
     """
+
+    lens_type: Optional[str] = None
+    cover_type: Optional[str] = None
+    clustering_type: Optional[str] = None
+    lens_pca_n_components: Optional[int] = None
+    lens_umap_n_components: Optional[int] = None
+    cover_cubical_n_intervals: Optional[int] = None
+    cover_cubical_overlap_frac: Optional[float] = None
+    cover_ball_radius: Optional[float] = None
+    cover_knn_neighbors: Optional[int] = None
+    clustering_kmeans_n_clusters: Optional[int] = None
+    clustering_dbscan_eps: Optional[float] = None
+    clustering_dbscan_min_samples: Optional[int] = None
+    clustering_agglomerative_n_clusters: Optional[int] = None
+    plot_dimensions: Optional[int] = None
+    plot_iterations: Optional[int] = None
+    plot_seed: Optional[int] = None
 
     def __init__(self, storage):
         self.storage = storage
@@ -623,7 +624,7 @@ class App:
         ).classes("w-full")
 
     def _init_footnotes(self):
-        ui.label(text=("Made in Rome, with ❤️ and ☕️.")).classes(
+        ui.label(text="Made in Rome, with ❤️ and ☕️.").classes(
             "text-caption text-gray-500"
         ).classes("text-caption text-gray-500")
 
@@ -633,14 +634,17 @@ class App:
 
         def _toggle_drawer():
             self.left_drawer.toggle()
-            if self.draw_area is not None:
-                self.draw_area.update()
 
         with ui.page_sticky(x_offset=18, y_offset=18, position="top-left"):
-            ui.button(
+            settings_button = ui.button(
                 icon="menu",
                 on_click=_toggle_drawer,
             ).props("fab color=themedark")
+            settings_button.bind_visibility_from(
+                target_object=self.left_drawer,
+                target_name="value",
+                value=False,
+            )
 
     def get_mapper_config(self):
         return MapperConfig(
@@ -800,7 +804,7 @@ class App:
         return notification
 
     def notification_running_stop(
-        self, notification, message: str, type: Optional[str] = None
+        self, notification, message: str, kind: Optional[str] = None
     ):
         """
         Stop the ongoing notification and update its message.
@@ -810,11 +814,12 @@ class App:
 
         :param notification: The Notification object to update.
         :param message: The final message to display in the notification.
-        :param type: Optional; the type of notification to set (e.g., "positive", "warning", "error").
+        :param type: Optional; the type of notification to set
+            (e.g., "positive", "warning", "error").
         :return: None
         """
-        if type is not None:
-            notification.type = type
+        if kind is not None:
+            notification.type = kind
         notification.message = message
         notification.timeout = 5.0
         notification.spinner = False
@@ -828,14 +833,14 @@ class App:
         if df_X is None or df_X.empty:
             error = "Run Mapper failed: no data found, please load data first."
             logger.warning(error)
-            self.notification_running_stop(notification, error, type="warning")
+            self.notification_running_stop(notification, error, kind="warning")
             return
         mapper_config = self.get_mapper_config()
         result = await run.cpu_bound(run_mapper, df_X, **asdict(mapper_config))
         if result is None:
             error = "Run Mapper failed: something went wrong."
             logger.error(error)
-            self.notification_running_stop(notification, error, type="error")
+            self.notification_running_stop(notification, error, kind="error")
             return
         mapper_graph, df_y = result
         if mapper_graph is not None:
@@ -843,7 +848,7 @@ class App:
         if df_y is not None:
             self.storage["df_y"] = df_y
         self.notification_running_stop(
-            notification, "Run Mapper completed.", type="positive"
+            notification, "Run Mapper completed.", kind="positive"
         )
         await self.async_draw_mapper()
 
@@ -866,7 +871,7 @@ class App:
             )
             logger.warning(error)
             self.notification_running_stop(
-                notification=notification, message=error, type="warning"
+                notification=notification, message=error, kind="warning"
             )
             return
 
@@ -880,7 +885,7 @@ class App:
         )
         if mapper_fig is None:
             error = "Draw Mapper failed: something went wrong."
-            self.notification_running_stop(notification, error, type="error")
+            self.notification_running_stop(notification, error, kind="error")
             return
 
         logger.info("Displaying Mapper plot.")
@@ -890,7 +895,7 @@ class App:
         with self.plot_container:
             self.draw_area = ui.plotly(mapper_fig).classes("w-full h-full")
         self.notification_running_stop(
-            notification, "Draw Mapper completed.", type="positive"
+            notification, "Draw Mapper completed.", kind="positive"
         )
 
 

@@ -1,3 +1,7 @@
+"""
+A module for computing various distance metrics between vectors.
+"""
+
 import numpy as np
 from numba import njit
 

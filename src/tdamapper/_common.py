@@ -14,24 +14,26 @@ import numpy as np
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
-T = TypeVar("T", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
+
+T = TypeVar("T")
 
 
-class ArrayLike(Protocol[T]):
+class ArrayLike(Protocol[T_co]):
     """
     Protocol for array-like objects that can be used as input data.
     This includes numpy arrays and lists of points.
     """
 
     @overload
-    def __getitem__(self, index: int) -> T: ...
+    def __getitem__(self, index: int) -> T_co: ...
 
     @overload
-    def __getitem__(self, index: slice) -> ArrayLike[T]: ...
+    def __getitem__(self, index: slice) -> ArrayLike[T_co]: ...
 
     def __len__(self) -> int: ...
 
-    def __iter__(self) -> Iterator[T]: ...
+    def __iter__(self) -> Iterator[T_co]: ...
 
 
 def deprecated(msg: str) -> Callable:
