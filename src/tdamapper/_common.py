@@ -8,17 +8,19 @@ import cProfile
 import io
 import pstats
 import warnings
-from typing import Any, Callable, Iterator, Protocol
+from typing import Any, Callable, Iterator, Protocol, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
+T = TypeVar("T")
 
-class Array(Protocol):
 
-    def __getitem__(self, index: int) -> Any:
+class Array(Protocol[T]):
+
+    def __getitem__(self, index: int) -> T:
         """
         Get an item from the array.
         """
@@ -28,12 +30,12 @@ class Array(Protocol):
         Get the length of the array.
         """
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int, value: T) -> None:
         """
         Set an item in the array.
         """
 
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[T]:
         """
         Iterate over the array.
         """
@@ -56,12 +58,12 @@ def warn_user(msg: str) -> None:
 
 class EstimatorMixin:
 
-    def _is_sparse(self, X: Array) -> bool:
+    def _is_sparse(self, X: Array[Any]) -> bool:
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
     def _validate_X_y(
-        self, X: Array, y: Array
+        self, X: Array[Any], y: Array[Any]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
@@ -99,7 +101,7 @@ class EstimatorMixin:
 
         return X, y
 
-    def _set_n_features_in(self, X: Array) -> None:
+    def _set_n_features_in(self, X: Array[Any]) -> None:
         if hasattr(X, "shape"):
             self.n_features_in_ = X.shape[1]
 

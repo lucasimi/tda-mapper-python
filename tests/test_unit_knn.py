@@ -125,14 +125,14 @@ def test_vptree_simple():
 
 
 def check_vptree(vpt):
-    arr = vpt._get_arr()
+    arr = vpt.array
     data = arr._dataset
     distances = arr._distances
     indices = arr._indices
 
-    dist = vpt._get_distance()
-    leaf_capacity = vpt.get_leaf_capacity()
-    leaf_radius = vpt.get_leaf_radius()
+    dist = vpt.metric
+    leaf_capacity = vpt.leaf_capacity
+    leaf_radius = vpt.leaf_radius
 
     def check_sub(start, end):
         v_radius = distances[start]

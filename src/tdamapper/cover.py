@@ -84,7 +84,7 @@ class BallCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: Array) -> BallCover:
+    def fit(self, X: Array[Any]) -> BallCover:
         """
         Train internal parameters.
 
@@ -127,7 +127,7 @@ class BallCover(ParamsMixin):
         )
         return [x for (x, _) in neighs]
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -191,7 +191,7 @@ class KNNCover(ParamsMixin):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: Array) -> KNNCover:
+    def fit(self, X: Array[Any]) -> KNNCover:
         """
         Train internal parameters.
 
@@ -231,7 +231,7 @@ class KNNCover(ParamsMixin):
         neighs = self._vptree.knn_search((-1, x), self._neighbors)
         return [x for (x, _) in neighs]
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -307,7 +307,7 @@ class BaseCubicalCover:
         _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
         return _min, _max, _delta
 
-    def fit(self, X: Array) -> BaseCubicalCover:
+    def fit(self, X: Array[Any]) -> BaseCubicalCover:
         """
         Train internal parameters.
 
@@ -406,7 +406,7 @@ class ProximityCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -468,7 +468,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def _landmarks(self, X: Array) -> dict[tuple[float], Array]:
+    def _landmarks(self, X: Array[Any]) -> dict[tuple[float], Array[Any]]:
         lmrks = {}
         for x in X:
             lmrk, _ = self._get_center(x)
@@ -476,7 +476,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset using landmarks.
 
@@ -574,7 +574,7 @@ class CubicalCover(ParamsMixin):
             "The only possible values for algorithm are 'standard' and 'proximity'."
         )
 
-    def fit(self, X: Array) -> CubicalCover:
+    def fit(self, X: Array[Any]) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -600,7 +600,7 @@ class CubicalCover(ParamsMixin):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset using hypercubes.
 

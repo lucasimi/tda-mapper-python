@@ -1,33 +1,47 @@
-from tdamapper.utils.vptree_flat.common import _mid
+from __future__ import annotations
+
+from typing import Callable, Generic, TypeVar
+
+from tdamapper.utils.vptree_flat.common import VPArray, VPTreeType, _mid
+
+T = TypeVar("T")
 
 
-class BallSearch:
+class BallSearch(Generic[T]):
 
-    def __init__(self, vpt, point, eps, inclusive=True):
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+    _array: VPArray[T]
+    _distance: Callable[[T, T], float]
+    _point: T
+    _eps: float
+    _inclusive: bool
+
+    def __init__(
+        self, vpt: VPTreeType[T], point: T, eps: float, inclusive: bool = True
+    ) -> None:
+        self._array = vpt.array
+        self._distance = vpt.metric
         self._point = point
         self._eps = eps
         self._inclusive = inclusive
 
-    def search(self):
+    def search(self) -> list[T]:
         return self._search_iter()
 
-    def _inside(self, dist):
+    def _inside(self, dist: float) -> bool:
         if self._inclusive:
             return dist <= self._eps
         return dist < self._eps
 
-    def _search_iter(self):
-        stack = [(0, self._arr.size())]
+    def _search_iter(self) -> list[T]:
+        stack = [(0, self._array.size())]
         result = []
         while stack:
             start, end = stack.pop()
-            v_radius = self._arr.get_distance(start)
-            v_point = self._arr.get_point(start)
-            is_terminal = self._arr.is_terminal(start)
+            v_radius = self._array.get_distance(start)
+            v_point = self._array.get_point(start)
+            is_terminal = self._array.is_terminal(start)
             if is_terminal:
-                for x in self._arr.get_points(start, end):
+                for x in self._array.get_points(start, end):
                     dist = self._distance(self._point, x)
                     if self._inside(dist):
                         result.append(x)

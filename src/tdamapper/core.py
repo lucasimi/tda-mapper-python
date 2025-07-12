@@ -55,7 +55,7 @@ logging.basicConfig(
 
 
 def mapper_labels(
-    X: Array, y: Array, cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
 ) -> list[list[int]]:
     """
     Identify the nodes of the Mapper graph.
@@ -85,7 +85,7 @@ def mapper_labels(
     """
 
     def _run_clustering(
-        local_ids: list[int], X_local: Array, clust: Clustering
+        local_ids: list[int], X_local: Array[Any], clust: Clustering
     ) -> tuple[list[int], list[int]]:
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
@@ -110,7 +110,7 @@ def mapper_labels(
 
 
 def mapper_connected_components(
-    X: Array, y: Array, cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
 ) -> list[int]:
     """
     Identify the connected components of the Mapper graph.
@@ -155,7 +155,7 @@ def mapper_connected_components(
 
 
 def mapper_graph(
-    X: Array, y: Array, cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
 ) -> nx.Graph:
     """
     Create the Mapper graph.
@@ -201,7 +201,7 @@ def mapper_graph(
 
 
 def aggregate_graph(
-    X: Array, graph: nx.Graph, agg: Callable[..., Any]
+    X: Array[Any], graph: nx.Graph, agg: Callable[..., Any]
 ) -> dict[int, Any]:
     """
     Apply an aggregation function to the nodes of a graph.
@@ -237,7 +237,7 @@ class Cover(Protocol):
     this class to implement more meaningful cover algorithms.
     """
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -266,7 +266,7 @@ class Clustering(Protocol):
 
     labels_: list[int]
 
-    def fit(self, X: Array, y: Optional[Array] = None) -> Clustering:
+    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> Clustering:
         """
         Fit the clustering algorithm to the data.
 
@@ -285,7 +285,7 @@ class SpatialSearch(Protocol):
     query point in a dataset.
     """
 
-    def fit(self, X: Array) -> SpatialSearch:
+    def fit(self, X: Array[Any]) -> SpatialSearch:
         """
         Train internal parameters.
 
@@ -303,7 +303,7 @@ class SpatialSearch(Protocol):
         """
 
 
-def proximity_net(search: SpatialSearch, X: Array) -> Iterator[list[int]]:
+def proximity_net(search: SpatialSearch, X: Array[Any]) -> Iterator[list[int]]:
     """
     Covers the dataset using proximity-net.
 
@@ -340,7 +340,7 @@ class TrivialCover(ParamsMixin):
     dataset.
     """
 
-    def apply(self, X: Array) -> Iterator[list[int]]:
+    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -374,7 +374,7 @@ class FailSafeClustering(ParamsMixin):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: Array, y: Optional[Array] = None) -> FailSafeClustering:
+    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> FailSafeClustering:
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
@@ -404,7 +404,7 @@ class TrivialClustering(ParamsMixin):
     def __init__(self) -> None:
         pass
 
-    def fit(self, X: Array, _y: Optional[Array] = None) -> TrivialClustering:
+    def fit(self, X: Array[Any], _y: Optional[Array[Any]] = None) -> TrivialClustering:
         """
         Fit the clustering algorithm to the data.
 

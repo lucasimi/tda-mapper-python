@@ -36,7 +36,7 @@ class VPTree:
 
     def __init__(
         self,
-        X: Array,
+        X: Array[Any],
         metric: Union[MetricLiteral, Metric] = "euclidean",
         metric_params: Optional[dict[str, Any]] = None,
         kind: VPTreeKind = "flat",

@@ -1,54 +1,44 @@
-from tdamapper.utils.metrics import get_metric
+from __future__ import annotations
+
+from typing import Any, Optional, Union
+
+from tdamapper._common import Array
+from tdamapper.utils.metrics import Metric, MetricLiteral, get_metric
 from tdamapper.utils.vptree_hier.ball_search import BallSearch
 from tdamapper.utils.vptree_hier.builder import Builder
+from tdamapper.utils.vptree_hier.common import PivotingStrategy, Tree, VPArray
 from tdamapper.utils.vptree_hier.knn_search import KnnSearch
 
 
 class VPTree:
 
+    _metric: Union[MetricLiteral, Metric]
+    _metric_params: Optional[dict[str, Any]]
+    leaf_capacity: int
+    leaf_radius: float
+    pivoting: PivotingStrategy
+    tree: Tree[Any]
+    array: VPArray[Any]
+
     def __init__(
         self,
-        X,
-        metric="euclidean",
-        metric_params=None,
-        leaf_capacity=1,
-        leaf_radius=0.0,
-        pivoting=None,
+        X: Array[Any],
+        metric: Union[MetricLiteral, Metric] = "euclidean",
+        metric_params: Optional[dict[str, Any]] = None,
+        leaf_capacity: int = 1,
+        leaf_radius: float = 0.0,
+        pivoting: PivotingStrategy = "disabled",
     ):
         self._metric = metric
         self._metric_params = metric_params
-        self._leaf_capacity = leaf_capacity
-        self._leaf_radius = leaf_radius
-        self._pivoting = pivoting
-        self._tree, self._arr = Builder(self, X).build()
+        self.metric = get_metric(metric, **(metric_params or {}))
+        self.leaf_capacity = leaf_capacity
+        self.leaf_radius = leaf_radius
+        self.pivoting = pivoting
+        self.tree, self.array = Builder(self, X).build()
 
-    def get_metric(self):
-        return self._metric
-
-    def get_metric_params(self):
-        return self._metric_params
-
-    def get_leaf_capacity(self):
-        return self._leaf_capacity
-
-    def get_leaf_radius(self):
-        return self._leaf_radius
-
-    def get_pivoting(self):
-        return self._pivoting
-
-    def _get_tree(self):
-        return self._tree
-
-    def _get_arr(self):
-        return self._arr
-
-    def _get_distance(self):
-        metric_params = self._metric_params or {}
-        return get_metric(self._metric, **metric_params)
-
-    def ball_search(self, point, eps, inclusive=True):
+    def ball_search(self, point: Any, eps: float, inclusive: bool = True) -> list[Any]:
         return BallSearch(self, point, eps, inclusive).search()
 
-    def knn_search(self, point, k):
+    def knn_search(self, point: Any, k: int) -> list[Any]:
         return KnnSearch(self, point, k).search()

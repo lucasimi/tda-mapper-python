@@ -61,7 +61,7 @@ class MapperClustering(EstimatorMixin, ParamsMixin):
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X: Array, y: Optional[Array] = None) -> MapperClustering:
+    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> MapperClustering:
         """
         Fit the clustering algorithm to the data.
 
@@ -143,7 +143,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X: Array, y: Optional[Array] = None) -> MapperAlgorithm:
+    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> MapperAlgorithm:
         """
         Create the Mapper graph and store it for later use.
 
@@ -182,7 +182,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self._set_n_features_in(X)
         return self
 
-    def fit_transform(self, X: Array, y: Array) -> nx.Graph:
+    def fit_transform(self, X: Array[Any], y: Array[Any]) -> nx.Graph:
         """
         Create the Mapper graph.
 

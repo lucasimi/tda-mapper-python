@@ -16,9 +16,6 @@ from tdamapper.plot_backends.plot_matplotlib import plot_matplotlib
 from tdamapper.plot_backends.plot_plotly import plot_plotly, plot_plotly_update
 from tdamapper.plot_backends.plot_pyvis import plot_pyvis
 
-Dimensions = Literal[2, 3]
-LayoutEngine = Literal["igraph", "networkx"]
-
 
 class MapperPlot:
     """
@@ -43,10 +40,10 @@ class MapperPlot:
     def __init__(
         self,
         graph: nx.Graph,
-        dim: Dimensions,
+        dim: Literal[2, 3],
         iterations: int = 50,
         seed: Optional[int] = None,
-        layout_engine: LayoutEngine = "igraph",
+        layout_engine: Literal["igraph", "networkx"] = "igraph",
     ) -> None:
         self.graph = graph
         self.dim = dim

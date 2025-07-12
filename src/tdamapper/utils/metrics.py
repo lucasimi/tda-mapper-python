@@ -100,7 +100,9 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric:
     :param p: The order of the Minkowski distance.
     :return: The Minkowski distance function.
     """
-    p: int = kwargs.get("p", 2)
+    p = kwargs.get("p", 2)
+    if not isinstance(p, (int, float)):
+        raise TypeError("p must be an integer or a float")
     if p == 1:
         return manhattan()
     if p == 2:
@@ -108,7 +110,7 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric:
     if np.isinf(p):
         return chebyshev()
 
-    def dist(x, y):
+    def dist(x: Any, y: Any) -> float:
         return _metrics.minkowski(p, x, y)
 
     return dist

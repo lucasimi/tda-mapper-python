@@ -66,7 +66,7 @@ CLUSTERING_DBSCAN_EPS = 0.5
 CLUSTERING_DBSCAN_MIN_SAMPLES = 5
 CLUSTERING_AGGLOMERATIVE_N_CLUSTERS = 2
 
-PLOT_DIMENSIONS = 2
+PLOT_DIMENSIONS: Literal[2, 3] = 2
 PLOT_ITERATIONS = 100
 PLOT_COLORMAP = "Viridis"
 PLOT_NODE_SIZE = 1.0
@@ -594,11 +594,11 @@ class App:
             ).props("fab color=themedark")
 
     def get_mapper_config(self) -> MapperConfig:
-
-        plot_dimensions = int(self.plot_dimensions.value)
-        if plot_dimensions == 2:
+        plot_dim = int(self.plot_dimensions.value)
+        plot_dimensions: Literal[2, 3]
+        if plot_dim == 2:
             plot_dimensions = 2
-        elif plot_dimensions == 3:
+        elif plot_dim == 3:
             plot_dimensions = 3
         else:
             plot_dimensions = PLOT_DIMENSIONS
