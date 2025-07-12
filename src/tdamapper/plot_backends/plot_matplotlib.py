@@ -4,12 +4,18 @@ matplotlib.
 """
 
 import math
+from typing import Any, Callable, Optional, Union
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
+from matplotlib.figure import Figure
+from numpy.typing import NDArray
 
 from tdamapper.core import ATTR_SIZE, aggregate_graph
+from tdamapper.plot_backends.common import MapperPlotType
 
 _NODE_OUTER_WIDTH = 0.75
 
@@ -21,15 +27,15 @@ _EDGE_COLOR = "#777"
 
 
 def plot_matplotlib(
-    mapper_plot,
-    width,
-    height,
-    title,
-    colors,
-    node_size,
-    agg,
-    cmap,
-):
+    mapper_plot: MapperPlotType,
+    width: int,
+    height: int,
+    title: Optional[str],
+    colors: NDArray[np.float_],
+    node_size: Union[float, int],
+    agg: Callable[..., Any],
+    cmap: str,
+) -> tuple[Figure, Axes]:
     px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
     fig, ax = plt.subplots(figsize=(width * px, height * px))
     ax.get_xaxis().set_visible(False)
@@ -39,7 +45,15 @@ def plot_matplotlib(
     return fig, ax
 
 
-def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
+def _plot_nodes(
+    mapper_plot: MapperPlotType,
+    title: Optional[str],
+    colors: NDArray[np.float_],
+    node_size: Union[int, float],
+    agg: Callable[..., Any],
+    cmap: str,
+    ax: Axes,
+) -> None:
     nodes_arr = _node_pos_array(
         mapper_plot.graph, mapper_plot.dim, mapper_plot.positions
     )
@@ -72,9 +86,10 @@ def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
         ax=ax,
         format="%.2g",
     )
-    colorbar.set_label(title, color=_NODE_OUTER_COLOR)
+    if title is not None:
+        colorbar.set_label(title, color=_NODE_OUTER_COLOR)
     colorbar.set_alpha(1.0)
-    colorbar.outline.set_color(_NODE_OUTER_COLOR)
+    # colorbar.outline.set_color(_NODE_OUTER_COLOR)
     colorbar.ax.yaxis.set_tick_params(
         color=_NODE_OUTER_COLOR, labelcolor=_NODE_OUTER_COLOR
     )
@@ -82,7 +97,7 @@ def _plot_nodes(mapper_plot, title, colors, node_size, agg, cmap, ax):
     colorbar.ax.locator_params(nbins=10)
 
 
-def _plot_edges(mapper_plot, ax):
+def _plot_edges(mapper_plot: MapperPlotType, ax: Axes) -> None:
     segments = [
         (mapper_plot.positions[e[0]], mapper_plot.positions[e[1]])
         for e in mapper_plot.graph.edges()
@@ -98,5 +113,7 @@ def _plot_edges(mapper_plot, ax):
     ax.add_collection(lines)
 
 
-def _node_pos_array(graph, dim, positions):
+def _node_pos_array(
+    graph: nx.Graph, dim: int, positions: NDArray[np.float_]
+) -> tuple[list[NDArray[np.float_]], ...]:
     return tuple([positions[n][i] for n in graph.nodes()] for i in range(dim))

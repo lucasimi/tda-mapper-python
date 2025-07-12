@@ -8,7 +8,7 @@ import cProfile
 import io
 import pstats
 import warnings
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterator, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -31,6 +31,11 @@ class Array(Protocol):
     def __setitem__(self, index: int, value: Any) -> None:
         """
         Set an item in the array.
+        """
+
+    def __iter__(self) -> Iterator[Any]:
+        """
+        Iterate over the array.
         """
 
 
@@ -119,7 +124,6 @@ class ParamsMixin:
         Get all public parameters of the object as a dictionary.
 
         :param deep: A flag for returning also nested parameters.
-        :type deep: bool, optional.
         """
         params = {}
         for k, v in self.__dict__.items():
@@ -166,10 +170,8 @@ def clone(obj: Any) -> Any:
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
 
-    :param estimator: An estimator to be cloned.
-    :type estimator: A scikit-learn compatible estimator
+    :param obj: An estimator to be cloned.
     :return: A new estimator with the same parameters.
-    :rtype: A scikit-learn compatible estimator
     """
     params = obj.get_params(deep=True)
     obj_noargs = type(obj)()

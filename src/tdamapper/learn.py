@@ -9,8 +9,16 @@ relationships, and uncover meaningful structures in a manner that aligns with
 scikit-learn's conventions for estimators.
 """
 
-from tdamapper._common import EstimatorMixin, ParamsMixin, clone
+from __future__ import annotations
+
+from typing import Any, Optional, Union
+
+import networkx as nx
+
+from tdamapper._common import Array, EstimatorMixin, ParamsMixin, clone
 from tdamapper.core import (
+    Clustering,
+    Cover,
     FailSafeClustering,
     TrivialClustering,
     TrivialCover,
@@ -34,33 +42,30 @@ class MapperClustering(EstimatorMixin, ParamsMixin):
     :func:`tdamapper.core.mapper_connected_components`, which is faster.
 
     :param cover: A cover algorithm.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset.
-    :type clustering: A class compatible with scikit-learn estimators from
-        :mod:`sklearn.cluster`
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
         Defaults to 1.
-    :type n_jobs: int
     """
+
+    labels_: list[int]
 
     def __init__(
         self,
-        cover=None,
-        clustering=None,
-        n_jobs=1,
-    ):
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        n_jobs: int = 1,
+    ) -> None:
         self.cover = cover
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: Array, y: Optional[Array] = None) -> MapperClustering:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Ignored.
         :return: self
         """
@@ -101,43 +106,44 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
     :param cover: A cover algorithm. If no cover is specified,
         :class:`tdamapper.core.TrivialCover` is used, which produces a single
         open cover containing the whole dataset. Defaults to None.
-    :type cover: A class compatible with :class:`tdamapper.core.Cover`
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset. If no clustering is specified,
         :class:`tdamapper.core.TrivialClustering` is used, which produces a
         single cluster for each subset. Defaults to None.
-    :type clustering: An estimator compatible with scikit-learn's clustering
-        interface, typically from :mod:`sklearn.cluster`.
     :param failsafe: A flag that is used to prevent failures. If True, the
         clustering object is wrapped by
         :class:`tdamapper.core.FailSafeClustering`. Defaults to True.
-    :type failsafe: bool, optional
     :param verbose: A flag that is used for logging, supplied to
         :class:`tdamapper.core.FailSafeClustering`. If True, clustering
         failures are logged. Set to False to suppress these messages. Defaults
         to True.
-    :type verbose: bool, optional
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
         Defaults to 1.
-    :type n_jobs: int
     """
+
+    _cover: Cover
+    _clustering: Clustering
+    _verbose: bool
+    _failsafe: bool
+    _n_jobs: int
+    graph_: nx.Graph
 
     def __init__(
         self,
-        cover=None,
-        clustering=None,
-        failsafe=True,
-        verbose=True,
-        n_jobs=1,
-    ):
+        cover: Optional[Cover] = None,
+        clustering: Optional[Clustering] = None,
+        failsafe: bool = True,
+        verbose: bool = True,
+        n_jobs: int = 1,
+    ) -> None:
         self.cover = cover
         self.clustering = clustering
         self.failsafe = failsafe
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X, y=None):
+    def fit(self, X: Array, y: Optional[Array] = None) -> MapperAlgorithm:
         """
         Create the Mapper graph and store it for later use.
 
@@ -145,11 +151,11 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         the attribute `graph_` and returns a reference to the calling object.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Lens values for the n points of the dataset.
-        :type y: array-like of shape (n, k) or list-like of length n
         :return: The object itself.
         """
+        if y is None:
+            y = X
         X, y = self._validate_X_y(X, y)
         self._cover = TrivialCover() if self.cover is None else self.cover
         self._clustering = (
@@ -176,7 +182,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         self._set_n_features_in(X)
         return self
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X: Array, y: Array) -> nx.Graph:
         """
         Create the Mapper graph.
 
@@ -184,11 +190,8 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin):
         :func:`tdamapper.core.mapper_graph`.
 
         :param X: A dataset of n points.
-        :type X: array-like of shape (n, m) or list-like of length n
         :param y: Lens values for the n points of the dataset.
-        :type y: array-like of shape (n, k) or list-like of length n
         :return: The Mapper graph.
-        :rtype: :class:`networkx.Graph`
         """
         self.fit(X, y)
         return self.graph_

@@ -1,10 +1,16 @@
+from typing import Any, Iterable
+
+
 class UnionFind:
 
-    def __init__(self, X):
+    _parent: dict[Any, Any]
+    _size: dict[Any, int]
+
+    def __init__(self, X: Iterable[Any]):
         self._parent = {x: x for x in X}
         self._size = {x: 1 for x in X}
 
-    def find(self, x):
+    def find(self, x: Any) -> Any:
         root = x
         while root != self._parent[root]:
             root = self._parent[root]
@@ -15,7 +21,7 @@ class UnionFind:
             tmp = parent
         return root
 
-    def union(self, x, y):
+    def union(self, x: Any, y: Any) -> Any:
         x, y = self.find(x), self.find(y)
         if x != y:
             x_size, y_size = self._size[x], self._size[y]

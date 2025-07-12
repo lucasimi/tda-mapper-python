@@ -4,13 +4,17 @@ pyvis.
 """
 
 import math
+from typing import Any, Callable, Optional, Union
 
+import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 import plotly.io as pio
+from numpy.typing import NDArray
 from pyvis.network import Network
 
 from tdamapper.core import aggregate_graph
+from tdamapper.plot_backends.common import MapperPlotType
 
 _EDGE_WIDTH = 0.75
 
@@ -19,12 +23,18 @@ _EDGE_COLOR = "#777"
 _TICKS_NUM = 10
 
 
-def _fmt(x, max_len=3):
+def _fmt(x: Any, max_len: int = 3) -> str:
     fmt = f".{max_len}g"
     return f"{x:{fmt}}"
 
 
-def _colorbar(height, cmap, cmin, cmax, title):
+def _colorbar(
+    height: int,
+    cmap: str,
+    cmin: float,
+    cmax: float,
+    title: Optional[str],
+) -> go.Figure:
     colorbar_fig = go.Figure()
     colorbar_fig.add_trace(
         go.Scatter(
@@ -68,7 +78,7 @@ def _colorbar(height, cmap, cmin, cmax, title):
     return colorbar_fig
 
 
-def _combine(network, colorbar):
+def _combine(network: Network, colorbar: go.Figure) -> str:
     network_html = network.generate_html()
     colorbar_html = pio.to_html(
         colorbar,
@@ -129,16 +139,16 @@ def _combine(network, colorbar):
 
 
 def plot_pyvis(
-    mapper_plot,
-    output_file,
-    colors,
-    node_size,
-    agg,
-    title,
-    width,
-    height,
-    cmap,
-):
+    mapper_plot: MapperPlotType,
+    output_file: str,
+    colors: NDArray[np.float_],
+    node_size: Union[float, int],
+    agg: Callable[..., Any],
+    title: Optional[str],
+    width: int,
+    height: int,
+    cmap: str,
+) -> None:
     net, cmin, cmax = _compute_net(
         mapper_plot=mapper_plot,
         width=width,
@@ -150,19 +160,19 @@ def plot_pyvis(
     )
     colorbar = _colorbar(height=height, cmap=cmap, cmin=cmin, cmax=cmax, title=title)
     combined_html = _combine(net, colorbar)
-    with open(output_file, "w") as file:
+    with open(output_file, "w", encoding="utf-8") as file:
         file.write(combined_html)
 
 
 def _compute_net(
-    mapper_plot,
-    colors,
-    node_size,
-    agg,
-    width,
-    height,
-    cmap,
-):
+    mapper_plot: MapperPlotType,
+    colors: NDArray[np.float_],
+    node_size: Union[float, int],
+    agg: Callable[..., Any],
+    width: int,
+    height: int,
+    cmap: str,
+) -> tuple[Network, float, float]:
     net = Network(
         height=f"{height}px",
         width=f"{width}px",
@@ -198,7 +208,7 @@ def _compute_net(
             min_node_color = node_color
     node_color_range = max_node_color - min_node_color
 
-    def _size(node):
+    def _size(node: int) -> int:
         if max_node_size == min_node_size:
             node_size_norm = 25.0
         else:
@@ -206,7 +216,7 @@ def _compute_net(
             node_size_norm = node_size * 25.0 * math.sqrt(n_size / max_node_size)
         return int(round(node_size_norm))
 
-    def _color(node):
+    def _color(node: int) -> Any:
         if max_node_color == min_node_color:
             node_color = 0.5
         else:

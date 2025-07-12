@@ -1,7 +1,7 @@
 from tdamapper.app import main
 
 
-def run():
+def run() -> None:
     main()
 
 

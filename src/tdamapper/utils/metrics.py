@@ -26,35 +26,33 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
+from typing import Any, Callable, Literal, Union, get_args
+
 import numpy as np
 
 import tdamapper.utils._metrics as _metrics
 
-_EUCLIDEAN = "euclidean"
-_MANHATTAN = "manhattan"
-_MINKOWSKI = "minkowski"
-_MINKOWSKI_P = "p"
-_CHEBYSHEV = "chebyshev"
-_COSINE = "cosine"
+Metric = Callable[[Any, Any], float]
+
+MetricLiteral = Literal[
+    "euclidean",
+    "manhattan",
+    "minkowski",
+    "chebyshev",
+    "cosine",
+]
 
 
-def get_supported_metrics():
+def get_supported_metrics() -> list[MetricLiteral]:
     """
     Return a list of supported metric names.
 
     :return: A list of supported metric names.
-    :rtype: list of str
     """
-    return [
-        _EUCLIDEAN,
-        _MANHATTAN,
-        _MINKOWSKI,
-        _CHEBYSHEV,
-        _COSINE,
-    ]
+    return list(get_args(MetricLiteral))
 
 
-def euclidean():
+def euclidean(**_kwargs: dict[str, Any]) -> Metric:
     """
     Return the Euclidean distance function for vectors.
 
@@ -62,12 +60,11 @@ def euclidean():
     the squared differences between the components of the vectors.
 
     :return: The Euclidean distance function.
-    :rtype: callable
     """
     return _metrics.euclidean
 
 
-def manhattan():
+def manhattan(**_kwargs: dict[str, Any]) -> Metric:
     """
     Return the Manhattan distance function for vectors.
 
@@ -75,12 +72,11 @@ def manhattan():
     between the components of the vectors.
 
     :return: The Manhattan distance function.
-    :rtype: callable
     """
     return _metrics.manhattan
 
 
-def chebyshev():
+def chebyshev(**_kwargs: dict[str, Any]) -> Metric:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -88,12 +84,11 @@ def chebyshev():
     between the components of the vectors.
 
     :return: The Chebyshev distance function.
-    :rtype: callable
     """
     return _metrics.chebyshev
 
 
-def minkowski(p):
+def minkowski(**kwargs: dict[str, Any]) -> Metric:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -103,16 +98,14 @@ def minkowski(p):
     it is equivalent to the Chebyshev distance.
 
     :param p: The order of the Minkowski distance.
-    :type p: int
-
     :return: The Minkowski distance function.
-    :rtype: callable
     """
+    p: int = kwargs.get("p", 2)
     if p == 1:
         return manhattan()
-    elif p == 2:
+    if p == 2:
         return euclidean()
-    elif np.isinf(p):
+    if np.isinf(p):
         return chebyshev()
 
     def dist(x, y):
@@ -121,7 +114,7 @@ def minkowski(p):
     return dist
 
 
-def cosine():
+def cosine(**_kwargs: dict[str, Any]) -> Metric:
     """
     Return the cosine distance function for vectors.
 
@@ -138,41 +131,34 @@ def cosine():
     inequality on unit vectors.
 
     :return: The cosine distance function.
-    :rtype: callable
     """
     return _metrics.cosine
 
 
-def get_metric(metric, **kwargs):
+def get_metric(
+    metric: Union[MetricLiteral, Metric], **kwargs: dict[str, Any]
+) -> Metric:
     """
     Return a distance function based on the specified string or callable.
 
     :param metric: The metric to use. If a callable function is provided, it
         is returned directly. Otherwise, predefined metric names returned by
         `get_supported_metrics()` are supported.
-    :type metric: str or callable
-
     :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski
         distance).
-    :type kwargs: dict
-
     :return: The selected distance metric function.
-    :rtype: callable
-
     :raises ValueError: If an invalid metric string is provided.
     """
     if callable(metric):
         return metric
-    elif metric == _EUCLIDEAN:
-        return euclidean()
-    elif metric == _MANHATTAN:
-        return manhattan()
-    elif metric == _MINKOWSKI:
-        p = kwargs.get(_MINKOWSKI_P, 2)
-        return minkowski(p)
-    elif metric == _CHEBYSHEV:
-        return chebyshev()
-    elif metric == _COSINE:
-        return cosine()
-    else:
-        raise ValueError("metric must be a string or callable")
+    if metric == "euclidean":
+        return euclidean(**kwargs)
+    if metric == "manhattan":
+        return manhattan(**kwargs)
+    if metric == "minkowski":
+        return minkowski(**kwargs)
+    if metric == "chebyshev":
+        return chebyshev(**kwargs)
+    if metric == "cosine":
+        return cosine(**kwargs)
+    raise ValueError("metric must be a known string or callable")
