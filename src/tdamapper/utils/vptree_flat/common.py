@@ -5,7 +5,7 @@ from typing import Callable, Generic, Iterator, Literal, Protocol, TypeVar
 import numpy as np
 from numpy.typing import NDArray
 
-from tdamapper._common import Array
+from tdamapper.protocols import Array
 from tdamapper.utils.quickselect import quickselect, swap_all
 
 

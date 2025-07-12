@@ -15,10 +15,11 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from umap import UMAP
 
-from tdamapper.core import Cover, TrivialClustering
+from tdamapper.core import TrivialClustering
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
+from tdamapper.protocols import Clustering, Cover
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -164,7 +165,7 @@ def run_mapper(
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
 
-    cover: Cover
+    cover: Cover[NDArray[np.float_]]
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
             n_intervals=cover_cubical_n_intervals,
@@ -178,6 +179,7 @@ def run_mapper(
         logger.error(f"Unknown cover type: {cover_type}")
         return None
 
+    clustering: Clustering[NDArray[np.float_]]
     if clustering_type == CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == CLUSTERING_KMEANS:

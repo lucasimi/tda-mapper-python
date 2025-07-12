@@ -26,13 +26,12 @@ parameterized by an order `p`.
 - Cosine: A distance on unit vectors based on cosine similarity.
 """
 
-from typing import Any, Callable, Literal, Union, get_args
+from typing import Any, Literal, Union, get_args
 
 import numpy as np
 
 import tdamapper.utils._metrics as _metrics
-
-Metric = Callable[[Any, Any], float]
+from tdamapper.protocols import Metric
 
 MetricLiteral = Literal[
     "euclidean",
@@ -52,7 +51,7 @@ def get_supported_metrics() -> list[MetricLiteral]:
     return list(get_args(MetricLiteral))
 
 
-def euclidean(**_kwargs: dict[str, Any]) -> Metric:
+def euclidean(**_kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Euclidean distance function for vectors.
 
@@ -64,7 +63,7 @@ def euclidean(**_kwargs: dict[str, Any]) -> Metric:
     return _metrics.euclidean
 
 
-def manhattan(**_kwargs: dict[str, Any]) -> Metric:
+def manhattan(**_kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Manhattan distance function for vectors.
 
@@ -76,7 +75,7 @@ def manhattan(**_kwargs: dict[str, Any]) -> Metric:
     return _metrics.manhattan
 
 
-def chebyshev(**_kwargs: dict[str, Any]) -> Metric:
+def chebyshev(**_kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -88,7 +87,7 @@ def chebyshev(**_kwargs: dict[str, Any]) -> Metric:
     return _metrics.chebyshev
 
 
-def minkowski(**kwargs: dict[str, Any]) -> Metric:
+def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -116,7 +115,7 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric:
     return dist
 
 
-def cosine(**_kwargs: dict[str, Any]) -> Metric:
+def cosine(**_kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the cosine distance function for vectors.
 
@@ -138,8 +137,8 @@ def cosine(**_kwargs: dict[str, Any]) -> Metric:
 
 
 def get_metric(
-    metric: Union[MetricLiteral, Metric], **kwargs: dict[str, Any]
-) -> Metric:
+    metric: Union[MetricLiteral, Metric[Any]], **kwargs: dict[str, Any]
+) -> Metric[Any]:
     """
     Return a distance function based on the specified string or callable.
 

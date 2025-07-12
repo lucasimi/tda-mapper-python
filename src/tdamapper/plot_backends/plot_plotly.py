@@ -3,7 +3,6 @@ This module provides functionalities to visualize the Mapper graph based on
 plotly.
 """
 
-import math
 from typing import Any, Callable, Optional, Union
 
 import networkx as nx
@@ -12,7 +11,6 @@ import plotly.colors as pc
 import plotly.graph_objects as go
 from numpy.typing import NDArray
 
-from tdamapper._common import Array
 from tdamapper.core import ATTR_SIZE, aggregate_graph
 from tdamapper.plot_backends.common import MapperPlotType
 

@@ -31,12 +31,13 @@ this module is a NetworkX graph object.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Iterator, Optional, Protocol
+from typing import Any, Callable, Generic, Iterator, Optional, TypeVar
 
 import networkx as nx
 from joblib import Parallel, delayed
 
-from tdamapper._common import Array, ParamsMixin, clone
+from tdamapper._common import ParamsMixin, clone
+from tdamapper.protocols import Array, Clustering, Cover, SpatialSearch
 from tdamapper.utils.unionfind import UnionFind
 
 ATTR_IDS = "ids"
@@ -53,9 +54,17 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
+S = TypeVar("S")
+
+T = TypeVar("T")
+
 
 def mapper_labels(
-    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[S],
+    y: Array[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
+    n_jobs: int = 1,
 ) -> list[list[int]]:
     """
     Identify the nodes of the Mapper graph.
@@ -85,7 +94,7 @@ def mapper_labels(
     """
 
     def _run_clustering(
-        local_ids: list[int], X_local: Array[Any], clust: Clustering
+        local_ids: list[int], X_local: Array[S], clust: Clustering[S]
     ) -> tuple[list[int], list[int]]:
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
@@ -110,7 +119,11 @@ def mapper_labels(
 
 
 def mapper_connected_components(
-    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[S],
+    y: Array[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
+    n_jobs: int = 1,
 ) -> list[int]:
     """
     Identify the connected components of the Mapper graph.
@@ -155,7 +168,11 @@ def mapper_connected_components(
 
 
 def mapper_graph(
-    X: Array[Any], y: Array[Any], cover: Cover, clustering: Clustering, n_jobs: int = 1
+    X: Array[S],
+    y: Array[T],
+    cover: Cover[T],
+    clustering: Clustering[S],
+    n_jobs: int = 1,
 ) -> nx.Graph:
     """
     Create the Mapper graph.
@@ -201,7 +218,7 @@ def mapper_graph(
 
 
 def aggregate_graph(
-    X: Array[Any], graph: nx.Graph, agg: Callable[..., Any]
+    X: Array[S], graph: nx.Graph, agg: Callable[..., Any]
 ) -> dict[int, Any]:
     """
     Apply an aggregation function to the nodes of a graph.
@@ -229,81 +246,7 @@ def aggregate_graph(
     return agg_values
 
 
-class Cover(Protocol):
-    """
-    Abstract interface for cover algorithms.
-
-    This is a naive implementation. Subclasses should override the methods of
-    this class to implement more meaningful cover algorithms.
-    """
-
-    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
-        """
-        Covers the dataset with a single open set.
-
-        This is a naive implementation that returns a generator producing a
-        single list containing all the ids if the original dataset. This
-        method should be overridden by subclasses to implement more meaningful
-        cover algorithms.
-
-        :param X: A dataset of n points.
-        :return: A generator of lists of ids.
-        """
-
-
-class Clustering(Protocol):
-    """
-    Abstract interface for clustering algorithms.
-
-    A clustering algorithm is a method for grouping data points into clusters.
-    Each cluster is represented by a unique integer label, and the labels are
-    assigned to the points in the dataset. The labels are typically non-negative
-    integers, starting from zero. The labels are assigned such that the points
-    in the same cluster have the same label, and the points in different clusters
-    have different labels. The labels are not necessarily contiguous, and there
-    may be gaps in the sequence of labels.
-    """
-
-    labels_: list[int]
-
-    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> Clustering:
-        """
-        Fit the clustering algorithm to the data.
-
-        :param X: A dataset of n points.
-        :param y: A dataset of targets. Typically ignored and present for
-            compatibility with scikit-learn's clustering interface.
-        :return: The fitted clustering object.
-        """
-
-
-class SpatialSearch(Protocol):
-    """
-    Abstract interface for search algorithms.
-
-    A spatial search algorithm is a method for finding neighbors of a
-    query point in a dataset.
-    """
-
-    def fit(self, X: Array[Any]) -> SpatialSearch:
-        """
-        Train internal parameters.
-
-        :param X: A dataset of n points.
-        :return: The object itself.
-        """
-
-    def search(self, x: Any) -> list[int]:
-        """
-        Return a list of neighbors for the query point.
-
-        :param x: A query point for which we want to find neighbors.
-        :return: A list containing all the indices of the points in the
-            dataset.
-        """
-
-
-def proximity_net(search: SpatialSearch, X: Array[Any]) -> Iterator[list[int]]:
+def proximity_net(search: SpatialSearch[S], X: Array[S]) -> Iterator[list[int]]:
     """
     Covers the dataset using proximity-net.
 
@@ -331,7 +274,7 @@ def proximity_net(search: SpatialSearch, X: Array[Any]) -> Iterator[list[int]]:
                 yield neigh_ids
 
 
-class TrivialCover(ParamsMixin):
+class TrivialCover(ParamsMixin, Generic[T]):
     """
     Cover algorithm that covers data with a single subset containing the whole
     dataset.
@@ -340,7 +283,7 @@ class TrivialCover(ParamsMixin):
     dataset.
     """
 
-    def apply(self, X: Array[Any]) -> Iterator[list[int]]:
+    def apply(self, X: Array[T]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -350,7 +293,7 @@ class TrivialCover(ParamsMixin):
         yield list(range(0, len(X)))
 
 
-class FailSafeClustering(ParamsMixin):
+class FailSafeClustering(ParamsMixin, Generic[T]):
     """
     A delegating clustering algorithm that prevents failure.
 
@@ -364,17 +307,17 @@ class FailSafeClustering(ParamsMixin):
         enable logging, or False to suppress it. Defaults to True.
     """
 
-    _clustering: Optional[Clustering]
+    _clustering: Optional[Clustering[T]]
     _verbose: bool
     labels_: list[int]
 
     def __init__(
-        self, clustering: Optional[Clustering] = None, verbose: bool = True
+        self, clustering: Optional[Clustering[T]] = None, verbose: bool = True
     ) -> None:
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: Array[Any], y: Optional[Array[Any]] = None) -> FailSafeClustering:
+    def fit(self, X: Array[T], y: Optional[Array[T]] = None) -> FailSafeClustering[T]:
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
@@ -389,7 +332,7 @@ class FailSafeClustering(ParamsMixin):
         return self
 
 
-class TrivialClustering(ParamsMixin):
+class TrivialClustering(ParamsMixin, Generic[T]):
     """
     A clustering algorithm that returns a single cluster.
 
@@ -404,7 +347,7 @@ class TrivialClustering(ParamsMixin):
     def __init__(self) -> None:
         pass
 
-    def fit(self, X: Array[Any], _y: Optional[Array[Any]] = None) -> TrivialClustering:
+    def fit(self, X: Array[T], _y: Optional[Array[T]] = None) -> TrivialClustering[T]:
         """
         Fit the clustering algorithm to the data.
 

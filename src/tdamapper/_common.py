@@ -8,37 +8,14 @@ import cProfile
 import io
 import pstats
 import warnings
-from typing import Any, Callable, Iterator, Protocol, TypeVar
+from typing import Any, Callable
 
 import numpy as np
 from numpy.typing import NDArray
 
+from tdamapper.protocols import Array
+
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
-
-T = TypeVar("T")
-
-
-class Array(Protocol[T]):
-
-    def __getitem__(self, index: int) -> T:
-        """
-        Get an item from the array.
-        """
-
-    def __len__(self) -> int:
-        """
-        Get the length of the array.
-        """
-
-    def __setitem__(self, index: int, value: T) -> None:
-        """
-        Set an item in the array.
-        """
-
-    def __iter__(self) -> Iterator[T]:
-        """
-        Iterate over the array.
-        """
 
 
 def deprecated(msg: str) -> Callable[..., Any]:

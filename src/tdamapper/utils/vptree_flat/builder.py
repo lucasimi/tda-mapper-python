@@ -3,7 +3,7 @@ from typing import Callable, Generic, TypeVar
 
 import numpy as np
 
-from tdamapper._common import Array
+from tdamapper.protocols import Array
 from tdamapper.utils.vptree_flat.common import VPArray, VPTreeType, _mid
 
 T = TypeVar("T")
