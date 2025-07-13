@@ -55,7 +55,6 @@ logging.basicConfig(
 )
 
 S = TypeVar("S")
-
 T = TypeVar("T")
 
 
@@ -320,6 +319,17 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
     def fit(
         self, X: ArrayRead[T], y: Optional[ArrayRead[T]] = None
     ) -> FailSafeClustering[T]:
+        """
+        Fit the clustering algorithm to the data, handling exceptions.
+
+        If the clustering algorithm fails, a single cluster containing all
+        points is returned. The labels of the cluster are set to zero for all
+        points.
+
+        :param X: A dataset of n points.
+        :param y: Ignored.
+        :return: self
+        """
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )

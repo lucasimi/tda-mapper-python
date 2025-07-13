@@ -1,3 +1,14 @@
+"""
+Protocols for type hinting in tdamapper.
+
+These protocols define the expected interfaces for various components
+used in the tdamapper library, such as array-like structures, metrics,
+cover algorithms, clustering algorithms, and spatial search algorithms.
+They are used to ensure that the components adhere to the expected
+behaviors and can be used interchangeably in the library's functions
+and methods.
+"""
+
 from __future__ import annotations
 
 from typing import Iterator, Optional, Protocol, TypeVar

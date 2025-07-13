@@ -21,12 +21,37 @@ from tdamapper.utils.metrics import MetricLiteral, chebyshev, get_metric
 from tdamapper.utils.vptree import PivotingStrategy, VPTree, VPTreeKind
 
 T = TypeVar("T")
-T_contra = TypeVar("T_contra", contravariant=True)
 S = TypeVar("S")
+
+T_contra = TypeVar("T_contra", contravariant=True)
 S_contra = TypeVar("S_contra", contravariant=True)
 
+CubicalAlgorithm = Literal["standard", "proximity"]
 
-class _Pullback(Generic[S_contra, T_contra]):
+
+class Pullback(Generic[S_contra, T_contra]):
+    """
+    Pullback pseudo-metric function.
+
+    This class is used to adapt a metric function that operates on a
+    transformed space to work with the original space. It applies a function
+    to the input data before computing the distance, effectively pulling back
+    the metric to the original space.
+
+    Given a function :math:`f: X \to Y` and a metric
+    :math:`d: Y \times Y \to \\mathbb{R}`,
+    this class defines a new pseudo-metric
+    :math:`d': X \times X \to \\mathbb{R}` such that:
+    :math:`d'(x_1, x_2) = d(f(x_1), f(x_2))`.
+
+    When :math:`f` is injective, this pseudo-metric :math:`d'` is a true
+    metric. If :math:`f` is not injective, it is a pseudo-metric, meaning it
+    may not satisfy the identity of two objects :math:`x_1`, :math:`x_2` with
+    :math:`d'(x_1, x_2) = 0`.
+
+    :param fun: A function that transforms the input data.
+    :param dist: A metric function that operates on the transformed data.
+    """
 
     def __init__(
         self, fun: Callable[[S_contra], T_contra], dist: Metric[T_contra]
@@ -35,10 +60,24 @@ class _Pullback(Generic[S_contra, T_contra]):
         self.dist = dist
 
     def __call__(self, x: S_contra, y: S_contra) -> float:
+        """
+        Compute the distance between two points in the original space
+        using the pullback metric.
+
+        This method applies the transformation function to both points and
+        then computes the distance using the provided metric function.
+
+        :param x: A point in the original space.
+        :param y: Another point in the original space.
+        :return: The distance between the transformed points in the metric space.
+        """
         return self.dist(self.fun(x), self.fun(y))
 
 
 def _snd(x: tuple[T, ...]) -> T:
+    """
+    Extract the second element from a tuple.
+    """
     return x[1]
 
 
@@ -108,7 +147,7 @@ class BallCover(ParamsMixin, Generic[T_contra]):
         self._data = list(enumerate(X))
         self._vptree = VPTree(
             self._data,
-            metric=_Pullback(_snd, metric),
+            metric=Pullback(_snd, metric),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
             leaf_radius=self.leaf_radius or self.radius,
@@ -214,7 +253,7 @@ class KNNCover(ParamsMixin, Generic[T_contra]):
         self._data = list(enumerate(X))
         self._vptree = VPTree(
             self._data,
-            metric=_Pullback(_snd, metric),
+            metric=Pullback(_snd, metric),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity or self.neighbors,
             leaf_radius=self.leaf_radius,
@@ -252,6 +291,35 @@ class KNNCover(ParamsMixin, Generic[T_contra]):
 
 
 class BaseCubicalCover:
+    """
+    Base class for cubical cover algorithms, which cover data with open
+    hypercubes of uniform size and overlap. This class provides the basic
+    functionality for cubical covers, including the initialization of parameters
+    and the methods for computing the center of a hypercube and its overlap.
+
+    A hypercube is a multidimensional generalization of a square or a cube.
+    The size and overlap of the hypercubes are determined by the number of
+    intervals and the overlap fraction parameters. This class maps each point
+    to the hypercube with the nearest center.
+
+    :param n_intervals: The number of intervals to use for each dimension.
+        Must be positive and less than or equal to the length of the dataset.
+        Defaults to 1.
+    :param overlap_frac: The fraction of overlap between adjacent intervals on
+        each dimension, must be in the range (0.0, 0.5]. If not specified, the
+        overlap_frac is computed such that the volume of the overlap within
+        each hypercube is half the total volume. Defaults to None.
+    :param kind: Specifies whether to use a flat or a hierarchical vantage
+        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
+        'flat'.
+    :param leaf_capacity: The maximum number of points in a leaf node of the
+        vantage point tree. Must be a positive value. Defaults to 1.
+    :param leaf_radius: The radius of the leaf nodes. If not specified, it
+        defaults to the value of `radius`. Must be a positive value. Defaults
+        to None.
+    :param pivoting: The method used for pivoting in the vantage point tree.
+        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
+    """
 
     _overlap_frac: float
     _n_intervals: int
@@ -338,7 +406,7 @@ class BaseCubicalCover:
         radius = 1.0 / (2.0 - 2.0 * self._overlap_frac)
         self._cover = BallCover(
             radius,
-            metric=_Pullback(self._gamma_n, chebyshev()),
+            metric=Pullback(self._gamma_n, chebyshev()),
             kind=self.kind,
             leaf_capacity=self.leaf_capacity,
             leaf_radius=self.leaf_radius,
@@ -504,9 +572,6 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             neigh_ids = self.search(x)
             if neigh_ids:
                 yield neigh_ids
-
-
-CubicalAlgorithm = Literal["standard", "proximity"]
 
 
 class CubicalCover(ParamsMixin):
