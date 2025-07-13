@@ -315,7 +315,7 @@ class PlotlyPlot:
 
         :return: A Plotly Figure object containing the Mapper graph.
         """
-        self.set_figure(
+        self._set_figure(
             node_sizes=node_sizes,
             colors=colors,
             titles=titles,
@@ -357,7 +357,7 @@ class PlotlyPlot:
         marker_size = [factor * attr_size[n] / max_size for n in self.graph.nodes()]
         return marker_size
 
-    def set_cmap(self, cmap: str) -> None:
+    def _set_cmap(self, cmap: str) -> None:
         if self.fig is None:
             return
         cmap_rgb = _get_cmap_rgb(cmap)
@@ -426,7 +426,7 @@ class PlotlyPlot:
                 selector=dict(name=_EDGES_TRACE),
             )
 
-    def set_title(self, color_name: str) -> None:
+    def _set_title(self, color_name: str) -> None:
         if self.fig is None:
             return
         self.fig.update_traces(
@@ -436,7 +436,7 @@ class PlotlyPlot:
             selector=dict(name=_NODES_TRACE),
         )
 
-    def set_node_size(self, node_size: float) -> None:
+    def _set_node_size(self, node_size: float) -> None:
         if self.fig is None:
             return
         self.fig.update_traces(
@@ -450,21 +450,21 @@ class PlotlyPlot:
             selector=dict(name=_NODES_TRACE),
         )
 
-    def set_width(self, width: int) -> None:
+    def _set_width(self, width: int) -> None:
         if self.fig is None:
             return
         self.fig.update_layout(
             width=width,
         )
 
-    def set_height(self, height: int) -> None:
+    def _set_height(self, height: int) -> None:
         if self.fig is None:
             return
         self.fig.update_layout(
             height=height,
         )
 
-    def set_figure(
+    def _set_figure(
         self,
         node_sizes: list[float],
         colors: NDArray[np.float_],
@@ -501,18 +501,34 @@ class PlotlyPlot:
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> None:
+        """
+        Update the Plotly figure with new parameters.
+
+        :param titles: A list of titles for the colormap.
+        :param node_sizes: A list of scaling factors for node size.
+        :param colors: An array of values that determine the color of each
+            node in the graph, useful for highlighting different features of
+            the data.
+        :param agg: A function used to aggregate the `colors` array over the
+            points within a single node. The final color of each node is
+            obtained by mapping the aggregated value with the colormap `cmap`.
+        :param cmaps: A list of colormap names used to map `colors` data values,
+            aggregated by `agg`, to actual RGBA colors.
+        :param width: The desired width of the figure in pixels.
+        :param height: The desired height of the figure in pixels.
+        """
         if width is not None:
-            self.set_width(width)
+            self._set_width(width)
         if height is not None:
-            self.set_height(height)
+            self._set_height(height)
         if titles is not None:
-            self.set_title(titles[0])
+            self._set_title(titles[0])
         if node_sizes is not None:
-            self.set_node_size(node_sizes[len(node_sizes) // 2])
+            self._set_node_size(node_sizes[len(node_sizes) // 2])
         if (colors is not None) and (agg is not None):
             self._set_colors(colors[:, 0], agg)
         if cmaps is not None:
-            self.set_cmap(cmaps[0])
+            self._set_cmap(cmaps[0])
 
     def _nodes_trace(
         self, node_pos_arr: tuple[list[float], ...]
@@ -655,6 +671,19 @@ class PlotlyPlot:
         agg: Optional[Callable[..., Any]],
         node_sizes: Optional[list[float]],
     ) -> None:
+        """
+        Set the UI elements for the Plotly figure.
+
+        :param cmaps: A list of colormap names to be used in the UI.
+        :param colors: An array of values that determine the color of each
+            node in the graph, useful for highlighting different features of
+            the data.
+        :param titles: A list of titles for the colormap.
+        :param agg: A function used to aggregate the `colors` array over the
+            points within a single node. The final color of each node is
+            obtained by mapping the aggregated value with the colormap `cmap`.
+        :param node_sizes: A list of scaling factors for node size.
+        """
         if self.fig is None:
             return
 
@@ -673,7 +702,7 @@ class PlotlyPlot:
             if s.name == SLIDER_NODE_SIZE_NAME:
                 ui_slider_size = s
 
-        ui_menu_dark_mode = self.ui_menu_dark_mode()
+        ui_menu_dark_mode = self._ui_menu_dark_mode()
 
         if cmaps is not None:
             cmaps_plotly = [PLOTLY_CMAPS.get(c.lower()) for c in cmaps]
@@ -697,7 +726,7 @@ class PlotlyPlot:
             sliders=sliders,
         )
 
-    def ui_menu_dark_mode(self) -> dict[str, Any]:
+    def _ui_menu_dark_mode(self) -> dict[str, Any]:
         buttons = [
             dict(
                 label="Light",

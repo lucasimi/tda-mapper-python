@@ -133,6 +133,6 @@ def _plot_edges(mapper_plot: MapperPlotType, ax: Axes) -> None:
 
 
 def _node_pos_array(
-    graph: nx.Graph, dim: int, positions: NDArray[np.float_]
-) -> tuple[list[NDArray[np.float_]], ...]:
+    graph: nx.Graph, dim: int, positions: dict[int, tuple[float, ...]]
+) -> tuple[list[float], ...]:
     return tuple([positions[n][i] for n in graph.nodes()] for i in range(dim))
