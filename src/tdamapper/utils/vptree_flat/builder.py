@@ -1,3 +1,7 @@
+"""
+This module contains a builder for constructing the vp-tree from a dataset.
+"""
+
 from random import randrange
 from typing import Callable, Generic, TypeVar
 
@@ -10,6 +14,12 @@ T = TypeVar("T")
 
 
 class Builder(Generic[T]):
+    """
+    A builder for constructing the vp-tree from a dataset.
+
+    :param vpt: The vantage point tree to build.
+    :param X: The dataset from which to build the vp-tree.
+    """
 
     _array: VPArray[T]
     _distance: Callable[[T, T], float]
@@ -76,6 +86,11 @@ class Builder(Generic[T]):
             self._array.set_terminal(i, is_terminal)
 
     def build(self) -> VPArray[T]:
+        """
+        Build the vp-tree from the dataset.
+
+        :return: A tuple containing the constructed vp-tree and the VPArray.
+        """
         self._build_iter()
         return self._array
 

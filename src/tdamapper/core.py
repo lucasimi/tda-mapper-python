@@ -89,7 +89,6 @@ def mapper_labels(
     :param clustering: A clustering algorithm.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
     :return: A list of node labels for each point in the dataset.
     """
 
@@ -146,7 +145,6 @@ def mapper_connected_components(
         dataset.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
     :return: A list of labels. The label at position i identifies the connected
         component of the point at position i in the dataset.
     """
@@ -195,7 +193,6 @@ def mapper_graph(
         dataset.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
     :return: The Mapper graph.
     """
     itm_lbls = mapper_labels(X, y, cover, clustering, n_jobs=n_jobs)
@@ -304,7 +301,7 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
 
     :param clustering: A clustering algorithm to delegate to.
     :param verbose: A flag to log clustering exceptions. Set to True to
-        enable logging, or False to suppress it. Defaults to True.
+        enable logging, or False to suppress it.
     """
 
     _clustering: Optional[Clustering[T]]
@@ -320,6 +317,16 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
     def fit(
         self, X: ArrayRead[T], y: Optional[ArrayRead[T]] = None
     ) -> FailSafeClustering[T]:
+        """
+        Fit the clustering algorithm to the data.
+
+        If the clustering algorithm fails, a single cluster containing all
+        points is returned.
+
+        :param X: A dataset of n points.
+        :param y: Ignored.
+        :return: self
+        """
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
@@ -350,13 +357,13 @@ class TrivialClustering(ParamsMixin, Generic[T]):
         pass
 
     def fit(
-        self, X: ArrayRead[T], _y: Optional[ArrayRead[T]] = None
+        self, X: ArrayRead[T], y: Optional[ArrayRead[T]] = None
     ) -> TrivialClustering[T]:
         """
         Fit the clustering algorithm to the data.
 
         :param X: A dataset of n points.
-        :param _y: Ignored.
+        :param y: Ignored.
         :return: self
         """
         self.labels_ = [0 for _ in X]

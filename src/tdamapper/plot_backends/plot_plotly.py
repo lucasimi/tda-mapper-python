@@ -153,6 +153,29 @@ def plot_plotly(
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> go.Figure:
+    """
+    Draw an interactive plot using Plotly.
+
+    :param colors: An array of values that determine the color of each
+        node in the graph, useful for highlighting different features of
+        the data.
+    :param node_size: A scaling factor for node size. When node_size is a
+        list, the figure will display a slider with the specified values.
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :param title: The title for the colormap. When colors has shape (n, m)
+        and title is a list of string, each item will be used as title for
+        its corresponding colormap.
+    :param cmap: The name of a colormap used to map `colors` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :param width: The desired width of the figure in pixels.
+    :param height: The desired height of the figure in pixels.
+
+    :return: An interactive Plotly figure that can be displayed on screen
+        and notebooks. For 3D embeddings, the figure requires a WebGL
+        context to be shown.
+    """
     cmaps = _to_cmaps(cmap)
     colors = _to_colors(colors)
     colors_num = colors.shape[1]
@@ -182,6 +205,31 @@ def plot_plotly_update(
     agg: Optional[Callable[..., Any]] = None,
     cmap: Optional[Union[str, list[str]]] = None,
 ) -> go.Figure:
+    """
+    Draw an interactive plot using Plotly on a previously rendered figure.
+
+    This is typically faster than calling `MapperPlot.plot_plotly` on a
+    new set of parameters.
+
+    :param fig: A Plotly Figure object obtained by calling the method
+        `MapperPlot.plot_plotly`.
+    :param colors: An array of values that determine the color of each
+        node in the graph, useful for highlighting different features of
+        the data.
+    :param node_size: A scaling factor for node size.
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :param title: The title to be displayed alongside the figure.
+    :param cmap: The name of a colormap used to map `colors` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :param width: The desired width of the figure in pixels.
+    :param height: The desired height of the figure in pixels.
+
+    :return: An interactive Plotly figure that can be displayed on screen
+        and notebooks. For 3D embeddings, the figure requires a WebGL
+        context to be shown.
+    """
     plot = PlotlyPlot(mapper_plot, fig)
     cmaps = None
     if cmap is not None:
@@ -220,6 +268,15 @@ def plot_plotly_update(
 
 
 class PlotlyPlot:
+    """
+    A class to handle the plotting of Mapper graphs using Plotly.
+
+    :param mapper_plot: An instance of `MapperPlotType` containing the
+        Mapper graph and its properties.
+    :param fig: An optional Plotly Figure object to update. If provided,
+        the existing figure will be updated with new data instead of
+        creating a new one.
+    """
 
     def __init__(
         self, mapper_plot: MapperPlotType, fig: Optional[go.Figure] = None
@@ -240,6 +297,24 @@ class PlotlyPlot:
         width: Optional[int] = None,
         height: Optional[int] = None,
     ) -> go.Figure:
+        """
+        Create a Plotly figure with the Mapper graph.
+
+        :param colors: An array of values that determine the color of each
+            node in the graph, useful for highlighting different features of
+            the data.
+        :param node_sizes: A list of scaling factors for node size.
+        :param titles: A list of titles for the colormap.
+        :param agg: A function used to aggregate the `colors` array over the
+            points within a single node. The final color of each node is
+            obtained by mapping the aggregated value with the colormap `cmap`.
+        :param cmaps: A list of colormap names used to map `colors` data values,
+            aggregated by `agg`, to actual RGBA colors.
+        :param width: The desired width of the figure in pixels.
+        :param height: The desired height of the figure in pixels.
+
+        :return: A Plotly Figure object containing the Mapper graph.
+        """
         self.set_figure(
             node_sizes=node_sizes,
             colors=colors,

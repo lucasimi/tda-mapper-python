@@ -49,7 +49,6 @@ class MapperClustering(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra])
         dataset.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
     """
 
     labels_: list[int]
@@ -110,21 +109,19 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra]):
 
     :param cover: A cover algorithm. If no cover is specified,
         :class:`tdamapper.core.TrivialCover` is used, which produces a single
-        open cover containing the whole dataset. Defaults to None.
+        open cover containing the whole dataset.
     :param clustering: The clustering algorithm to apply to each subset of the
         dataset. If no clustering is specified,
         :class:`tdamapper.core.TrivialClustering` is used, which produces a
-        single cluster for each subset. Defaults to None.
+        single cluster for each subset.
     :param failsafe: A flag that is used to prevent failures. If True, the
         clustering object is wrapped by
-        :class:`tdamapper.core.FailSafeClustering`. Defaults to True.
+        :class:`tdamapper.core.FailSafeClustering`.
     :param verbose: A flag that is used for logging, supplied to
         :class:`tdamapper.core.FailSafeClustering`. If True, clustering
-        failures are logged. Set to False to suppress these messages. Defaults
-        to True.
+        failures are logged. Set to False to suppress these messages.
     :param n_jobs: The maximum number of parallel clustering jobs. This
         parameter is passed to the constructor of :class:`joblib.Parallel`.
-        Defaults to 1.
     """
 
     _cover: Cover[T_contra]

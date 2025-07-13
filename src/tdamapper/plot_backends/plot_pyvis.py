@@ -149,6 +149,23 @@ def plot_pyvis(
     height: int,
     cmap: str,
 ) -> None:
+    """
+    Draw an interactive HTML plot using PyVis.
+
+    :param output_file: The path where the html file is written.
+    :param colors: An array of values that determine the color of each
+        node in the graph, useful for highlighting different features of
+        the data.
+    :param node_size: A scaling factor for node size.
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :param title: The title to be displayed alongside the figure.
+    :param cmap: The name of a colormap used to map `colors` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :param width: The desired width of the figure in pixels.
+    :param height: The desired height of the figure in pixels.
+    """
     net, cmin, cmax = _compute_net(
         mapper_plot=mapper_plot,
         width=width,

@@ -36,6 +36,25 @@ def plot_matplotlib(
     agg: Callable[..., Any],
     cmap: str,
 ) -> tuple[Figure, Axes]:
+    """
+    Draw a static plot using Matplotlib.
+
+    :param colors: An array of values that determine the color of each
+        node in the graph, useful for highlighting different features of
+        the data.
+    :param node_size: A scaling factor for node size.
+    :param agg: A function used to aggregate the `colors` array over the
+        points within a single node. The final color of each node is
+        obtained by mapping the aggregated value with the colormap `cmap`.
+    :param title: The title to be displayed alongside the figure.
+    :param cmap: The name of a colormap used to map `colors` data values,
+        aggregated by `agg`, to actual RGBA colors.
+    :param width: The desired width of the figure in pixels.
+    :param height: The desired height of the figure in pixels.
+
+    :return: A static matplotlib figure that can be displayed on screen
+        and notebooks.
+    """
     px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
     fig, ax = plt.subplots(figsize=(width * px, height * px))
     ax.get_xaxis().set_visible(False)

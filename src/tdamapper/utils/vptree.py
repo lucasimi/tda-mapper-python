@@ -21,16 +21,13 @@ class VPTree(Generic[T]):
     :param X: A dataset of n points.
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-        Defaults to 'euclidean'.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
-        to 'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. Must be a positive
-        value. Defaults to 0.0.
+        value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     def __init__(
@@ -68,7 +65,7 @@ class VPTree(Generic[T]):
         :param eps: The radius within which to search for neighbors. Must be
             positive.
         :param inclusive: Whether to include points exactly at the distance
-            `eps` from `point`. Defaults to True.
+            `eps` from `point`.
         :return: A list of points within the specified radius from the given
             query point.
         """

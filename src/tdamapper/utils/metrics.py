@@ -8,22 +8,29 @@ metric, it must satisfy the following properties:
 
 1. Symmetry: The distance between two points is the same regardless of the
     order, i.e.:
-    :math:`d(x, y) = d(y, x)` for all x and y.
+    :math:`d(x, y) = d(y, x)` for all :math:`x` and :math:`y`.
 2. Positivity: The distance between two distinct points is always positive,
     i.e.:
-    :math:`d(x, y) > 0` for all distinct x and y, and :math:`d(x, x) = 0`
-    for every x.
+    :math:`d(x, y) > 0` for all distinct :math:`x` and :math:`y`, and
+    :math:`d(x, x) = 0` for every :math:`x`.
 3. Triangle inequality: The distance between two points is less than or equal
     to the sum of the distances from a third point, i.e.:
-    :math:`d(x, z) \\leq d(x, y) + d(y, z)` for all points x, y, z.
+    :math:`d(x, z) \\leq d(x, y) + d(y, z)` for all points :math:`x, y, z`.
 
 Supported distance metrics include:
-- Euclidean: The square root of the sum of squared differences between the
-components of vectors.
-- Minkowski: A generalization of the Euclidean and Chebyshev distances,
-parameterized by an order `p`.
-- Chebyshev: The maximum absolute difference between the components of vectors.
-- Cosine: A distance on unit vectors based on cosine similarity.
+
+- *Euclidean*: The square root of the sum of squared differences between the
+  components of vectors.
+
+- *Manhattan*: The sum of the absolute differences between the components of
+  vectors.
+
+- *Minkowski*: A generalization of the Euclidean and Chebyshev distances,
+  parameterized by an order `p`.
+
+- *Chebyshev*: The maximum absolute difference between the components of vectors.
+
+- *Cosine*: A distance on unit vectors based on cosine similarity.
 """
 
 from typing import Any, Literal, Union, get_args
@@ -51,7 +58,7 @@ def get_supported_metrics() -> list[MetricLiteral]:
     return list(get_args(MetricLiteral))
 
 
-def euclidean(**_kwargs: dict[str, Any]) -> Metric[Any]:
+def euclidean(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Euclidean distance function for vectors.
 
@@ -63,7 +70,7 @@ def euclidean(**_kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.euclidean
 
 
-def manhattan(**_kwargs: dict[str, Any]) -> Metric[Any]:
+def manhattan(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Manhattan distance function for vectors.
 
@@ -75,7 +82,7 @@ def manhattan(**_kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.manhattan
 
 
-def chebyshev(**_kwargs: dict[str, Any]) -> Metric[Any]:
+def chebyshev(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -115,18 +122,20 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
     return dist
 
 
-def cosine(**_kwargs: dict[str, Any]) -> Metric[Any]:
+def cosine(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the cosine distance function for vectors.
 
     The cosine similarity between the input vectors ranges from -1.0 to 1.0.
+
     - A value of 1.0 indicates that the vectors are in the same direction.
+
     - A value of 0.0 indicates orthogonality (the vectors are perpendicular).
+
     - A value of -1.0 indicates that the vectors are diametrically opposed.
 
     The cosine distance is derived from the cosine similarity :math:`s` and
-    is defined as:
-    :math:`d(x, y) = \\sqrt{2 \\cdot (1 - s(x, y))}`
+    is defined as: :math:`d(x, y) = \\sqrt{2 \\cdot (1 - s(x, y))}`
 
     This definition ensures that the cosine distance satisfies the triangle
     inequality on unit vectors.
@@ -144,7 +153,7 @@ def get_metric(
 
     :param metric: The metric to use. If a callable function is provided, it
         is returned directly. Otherwise, predefined metric names returned by
-        `get_supported_metrics()` are supported.
+        :func:`tdamapper.utils.metrics.get_supported_metrics` are supported.
     :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski
         distance).
     :return: The selected distance metric function.

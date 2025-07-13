@@ -1,3 +1,7 @@
+"""
+This module provides a ball search implementation for a vp-tree.
+"""
+
 from __future__ import annotations
 
 from typing import Callable, Generic, TypeVar
@@ -8,6 +12,14 @@ T = TypeVar("T")
 
 
 class BallSearch(Generic[T]):
+    """
+    A ball search implementation for a vp-tree.
+
+    :param vpt: The vantage point tree to search.
+    :param point: The point for which to find points within a certain distance.
+    :param eps: The radius of the ball to search within.
+    :param inclusive: Whether to include points at the boundary of the ball.
+    """
 
     _tree: Tree[T]
     _array: VPArray[T]
@@ -29,6 +41,11 @@ class BallSearch(Generic[T]):
         self._result = []
 
     def search(self) -> list[T]:
+        """
+        Perform a ball search in the vp-tree.
+
+        :return: A list of points within the specified radius of the point.
+        """
         self._result.clear()
         self._search_rec(self._tree)
         return self._result

@@ -52,22 +52,17 @@ class BallCover(ParamsMixin, Generic[T_contra]):
     fixed radius centered on the point itself.
 
     :param radius: The radius of the open balls. Must be a positive value.
-        Defaults to 1.0.
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-        Defaults to 'euclidean'.
     :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.utils.metrics.get_metric`.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
-        to 'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-        defaults to the value of `radius`. Must be a positive value. Defaults
-        to None.
+        defaults to the value of `radius`. Must be a positive value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     _radius: float
@@ -158,22 +153,17 @@ class KNNCover(ParamsMixin, Generic[T_contra]):
 
     :param neighbors: The number of neighbors to use for the KNN Proximity
         function, must be positive and less than the length of the dataset.
-        Defaults to 1.
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
-        Defaults to 'euclidean'.
     :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
+        passed to `tdamapper.utils.metrics.get_metric`.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
-        to 'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
         vantage point tree. If not specified, it defaults to the value of
-        `neighbors`. Must be a positive value. Defaults to None.
+        `neighbors`. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. Must be a positive value.
-        Defaults to 0.0.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     _neighbors: int
@@ -377,21 +367,17 @@ class ProximityCubicalCover(BaseCubicalCover, ParamsMixin):
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
-        Defaults to 1.
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
-        each hypercube is half the total volume. Defaults to None.
+        each hypercube is half the total volume.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-        'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-        defaults to the value of `radius`. Must be a positive value. Defaults
-        to None.
+        defaults to the value of `radius`. Must be a positive value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     def __init__(
@@ -439,21 +425,17 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
-        Defaults to 1.
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
-        each hypercube is half the total volume. Defaults to None.
+        each hypercube is half the total volume.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-        'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-        defaults to the value of `radius`. Must be a positive value. Defaults
-        to None.
+        defaults to the value of `radius`. Must be a positive value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     def __init__(
@@ -523,26 +505,20 @@ class CubicalCover(ParamsMixin):
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
-        Defaults to 1.
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
-        each hypercube is half the total volume. Defaults to None.
+        each hypercube is half the total volume.
     :param algorithm: Specifies whether to use standard cubical cover, as in
         :class:`tdamapper.cover.StandardCubicalCover` or proximity cubical
         cover, as in :class:`tdamapper.cover.ProximityCubicalCover`.
-        Acceptable values are 'standard' or 'proximity'. Defaults to
-        'proximity'.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-        'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-        defaults to the value of `radius`. Must be a positive value. Defaults
-        to None.
+        defaults to the value of `radius`. Must be a positive value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     _cubical_cover: Union[ProximityCubicalCover, StandardCubicalCover]

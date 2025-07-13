@@ -1,3 +1,9 @@
+"""
+This module defines various protocols used in the tdamapper library. These
+protocols specify the expected behavior of different components such as arrays,
+metrics, covers, clustering algorithms, and spatial search algorithms.
+"""
+
 from __future__ import annotations
 
 from typing import Iterator, Optional, Protocol, TypeVar

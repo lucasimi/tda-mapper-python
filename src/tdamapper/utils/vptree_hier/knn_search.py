@@ -1,3 +1,7 @@
+"""
+This module provides a k-nearest neighbors search implementation for a vp-tree.
+"""
+
 from typing import Callable, Generic, TypeVar
 
 from tdamapper.utils.heap import MaxHeap
@@ -7,6 +11,13 @@ T = TypeVar("T")
 
 
 class KnnSearch(Generic[T]):
+    """
+    A k-nearest neighbors search implementation for a vp-tree.
+
+    :param vpt: The vantage point tree to search.
+    :param point: The point for which to find the nearest neighbors.
+    :param neighbors: The number of nearest neighbors to find.
+    """
 
     _tree: Tree[T]
     _array: VPArray[T]
@@ -43,6 +54,11 @@ class KnnSearch(Generic[T]):
         return furthest_dist
 
     def search(self) -> list[T]:
+        """
+        Perform a k-nearest neighbors search in the vp-tree.
+
+        :return: A list of the k-nearest neighbors to the specified point.
+        """
         self._search_rec(self._tree)
         return self._get_items()
 

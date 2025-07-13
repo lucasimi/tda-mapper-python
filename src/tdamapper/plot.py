@@ -27,14 +27,12 @@ class MapperPlot:
     :param graph: The precomputed Mapper graph to be embedded. This can be
         obtained by calling :func:`tdamapper.core.mapper_graph` or
         :func:`tdamapper.core.MapperAlgorithm.fit_transform`.
-    :param dim: The dimension of the graph embedding (2 or 3).
+    :param dim: The dimension of the graph embedding.
     :param iterations: The number of iterations used to construct the graph
-        embedding. Defaults to 50.
+        embedding.
     :param seed: The random seed used to construct the graph embedding.
-        Defaults to None.
     :param layout_engine: The engine used to compute the graph layout in the
-        specified dimensions. Possible values are 'igraph' and 'networkx'.
-        Defaults to 'igraph'.
+        specified dimensions.
     """
 
     def __init__(
@@ -113,18 +111,15 @@ class MapperPlot:
         :param colors: An array of values that determine the color of each
             node in the graph, useful for highlighting different features of
             the data.
-        :param node_size: A scaling factor for node size. Defaults to 1.
+        :param node_size: A scaling factor for node size.
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
-            Defaults to `numpy.nanmean`.
         :param title: The title to be displayed alongside the figure.
         :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
-        :param width: The desired width of the figure in pixels. Defaults to
-            512.
-        :param height: The desired height of the figure in pixels. Defaults to
-            512
+            aggregated by `agg`, to actual RGBA colors.
+        :param width: The desired width of the figure in pixels.
+        :param height: The desired height of the figure in pixels.
 
         :return: A static matplotlib figure that can be displayed on screen
             and notebooks.
@@ -159,16 +154,14 @@ class MapperPlot:
             the data.
         :param node_size: A scaling factor for node size. When node_size is a
             list, the figure will display a slider with the specified values.
-            Defaults to 1.
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
-            Defaults to `numpy.nanmean`.
         :param title: The title for the colormap. When colors has shape (n, m)
             and title is a list of string, each item will be used as title for
             its corresponding colormap.
         :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
+            aggregated by `agg`, to actual RGBA colors.
         :param width: The desired width of the figure in pixels.
         :param height: The desired height of the figure in pixels.
 
@@ -208,20 +201,16 @@ class MapperPlot:
             `MapperPlot.plot_plotly`.
         :param colors: An array of values that determine the color of each
             node in the graph, useful for highlighting different features of
-            the data. Defaults to None.
-        :param node_size: A scaling factor for node size. Defaults to None.
+            the data.
+        :param node_size: A scaling factor for node size.
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
-            Defaults to None.
-        :param title: The title to be displayed alongside the figure. Defaults
-            to None.
+        :param title: The title to be displayed alongside the figure.
         :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to None.
-        :param width: The desired width of the figure in pixels. Defaults to
-            None.
-        :param height: The desired height of the figure in pixels. Defaults to
-            None.
+            aggregated by `agg`, to actual RGBA colors.
+        :param width: The desired width of the figure in pixels.
+        :param height: The desired height of the figure in pixels.
 
         :return: An interactive Plotly figure that can be displayed on screen
             and notebooks. For 3D embeddings, the figure requires a WebGL
@@ -257,19 +246,15 @@ class MapperPlot:
         :param colors: An array of values that determine the color of each
             node in the graph, useful for highlighting different features of
             the data.
-        :param node_size: A scaling factor for node size. Defaults to 1.
+        :param node_size: A scaling factor for node size.
         :param agg: A function used to aggregate the `colors` array over the
             points within a single node. The final color of each node is
             obtained by mapping the aggregated value with the colormap `cmap`.
-            Defaults to `numpy.nanmean`.
-        :param title: The title to be displayed alongside the figure. Defaults
-            to None.
+        :param title: The title to be displayed alongside the figure.
         :param cmap: The name of a colormap used to map `colors` data values,
-            aggregated by `agg`, to actual RGBA colors. Defaults to 'jet'.
-        :param width: The desired width of the figure in pixels. Defaults to
-            512.
-        :param height: The desired height of the figure in pixels. Defaults to
-            512.
+            aggregated by `agg`, to actual RGBA colors.
+        :param width: The desired width of the figure in pixels.
+        :param height: The desired height of the figure in pixels.
         """
         return plot_pyvis(
             self,
