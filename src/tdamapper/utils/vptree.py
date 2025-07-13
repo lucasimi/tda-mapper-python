@@ -4,7 +4,7 @@ A module for fast knn and range searches, depending only on a given metric
 
 from typing import Generic, Literal, Type, TypeVar, Union
 
-from tdamapper.protocols import Array, Metric
+from tdamapper.protocols import ArrayRead, Metric
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 
@@ -35,7 +35,7 @@ class VPTree(Generic[T]):
 
     def __init__(
         self,
-        X: Array[T],
+        X: ArrayRead[T],
         metric: Metric[T],
         kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,

@@ -13,7 +13,7 @@ from typing import Any, Callable
 import numpy as np
 from numpy.typing import NDArray
 
-from tdamapper.protocols import Array
+from tdamapper.protocols import Array, ArrayRead
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
@@ -35,48 +35,52 @@ def warn_user(msg: str) -> None:
 
 class EstimatorMixin:
 
-    def _is_sparse(self, X: Array[Any]) -> bool:
+    def _is_sparse(self, X: ArrayRead[Any]) -> bool:
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
     def _validate_X_y(
-        self, X: Array[Any], y: Array[Any]
+        self, X: ArrayRead[Any], y: ArrayRead[Any]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
-        X = np.asarray(X)
-        y = np.asarray(y)
+        X_ = np.asarray(X)
+        y_ = np.asarray(y)
 
-        if X.size == 0:
-            msg = f"0 feature(s) (shape={X.shape}) while a minimum of 1 is " "required."
+        if X_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={X_.shape}) while a minimum of 1 is " "required."
+            )
             raise ValueError(msg)
 
-        if y.size == 0:
-            msg = f"0 feature(s) (shape={y.shape}) while a minimum of 1 is " "required."
+        if y_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={y_.shape}) while a minimum of 1 is " "required."
+            )
             raise ValueError(msg)
 
-        if X.ndim == 1:
+        if X_.ndim == 1:
             raise ValueError("1d-arrays not supported.")
 
-        if np.iscomplexobj(X) or np.iscomplexobj(y):
+        if np.iscomplexobj(X_) or np.iscomplexobj(y_):
             raise ValueError("Complex data not supported.")
 
-        if X.dtype == np.object_:
-            X = np.array(X, dtype=float)
+        if X_.dtype == np.object_:
+            X_ = np.array(X_, dtype=float)
 
-        if y.dtype == np.object_:
-            y = np.array(y, dtype=float)
+        if y_.dtype == np.object_:
+            y_ = np.array(y_, dtype=float)
 
         if (
-            np.isnan(X).any()
-            or np.isinf(X).any()
-            or np.isnan(y).any()
-            or np.isinf(y).any()
+            np.isnan(X_).any()
+            or np.isinf(X_).any()
+            or np.isnan(y_).any()
+            or np.isinf(y_).any()
         ):
             raise ValueError("NaNs or infinite values not supported.")
 
-        return X, y
+        return X_, y_
 
     def _set_n_features_in(self, X: Array[Any]) -> None:
         if hasattr(X, "shape"):

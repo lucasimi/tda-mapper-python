@@ -23,14 +23,14 @@ from tdamapper.core import (
     mapper_connected_components,
     mapper_graph,
 )
-from tdamapper.protocols import Array, Clustering, Cover
+from tdamapper.protocols import ArrayRead, Clustering, Cover
 
-S = TypeVar("S")
+S_contra = TypeVar("S_contra", contravariant=True)
 
-T = TypeVar("T")
+T_contra = TypeVar("T_contra", contravariant=True)
 
 
-class MapperClustering(EstimatorMixin, ParamsMixin, Generic[S, T]):
+class MapperClustering(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra]):
     """
     A clustering algorithm based on the Mapper graph.
 
@@ -56,15 +56,17 @@ class MapperClustering(EstimatorMixin, ParamsMixin, Generic[S, T]):
 
     def __init__(
         self,
-        cover: Optional[Cover[T]] = None,
-        clustering: Optional[Clustering[S]] = None,
+        cover: Optional[Cover[T_contra]] = None,
+        clustering: Optional[Clustering[S_contra]] = None,
         n_jobs: int = 1,
     ) -> None:
         self.cover = cover
         self.clustering = clustering
         self.n_jobs = n_jobs
 
-    def fit(self, X: Array[S], y: Optional[Array[T]] = None) -> MapperClustering[S, T]:
+    def fit(
+        self, X: ArrayRead[S_contra], y: Optional[ArrayRead[T_contra]] = None
+    ) -> MapperClustering[S_contra, T_contra]:
         """
         Fit the clustering algorithm to the data.
 
@@ -91,7 +93,7 @@ class MapperClustering(EstimatorMixin, ParamsMixin, Generic[S, T]):
         return self
 
 
-class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S, T]):
+class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra]):
     """
     A class for creating and analyzing Mapper graphs.
 
@@ -125,8 +127,8 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S, T]):
         Defaults to 1.
     """
 
-    _cover: Cover[T]
-    _clustering: Clustering[S]
+    _cover: Cover[T_contra]
+    _clustering: Clustering[S_contra]
     _verbose: bool
     _failsafe: bool
     _n_jobs: int
@@ -134,8 +136,8 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S, T]):
 
     def __init__(
         self,
-        cover: Optional[Cover[T]] = None,
-        clustering: Optional[Clustering[S]] = None,
+        cover: Optional[Cover[T_contra]] = None,
+        clustering: Optional[Clustering[S_contra]] = None,
         failsafe: bool = True,
         verbose: bool = True,
         n_jobs: int = 1,
@@ -146,7 +148,9 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S, T]):
         self.verbose = verbose
         self.n_jobs = n_jobs
 
-    def fit(self, X: Array[S], y: Optional[Array[T]] = None) -> MapperAlgorithm[S, T]:
+    def fit(
+        self, X: ArrayRead[S_contra], y: Optional[ArrayRead[T_contra]] = None
+    ) -> MapperAlgorithm[S_contra, T_contra]:
         """
         Create the Mapper graph and store it for later use.
 
@@ -183,7 +187,7 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S, T]):
         self._set_n_features_in(X)
         return self
 
-    def fit_transform(self, X: Array[S], y: Array[T]) -> nx.Graph:
+    def fit_transform(self, X: ArrayRead[S_contra], y: ArrayRead[T_contra]) -> nx.Graph:
         """
         Create the Mapper graph.
 

@@ -16,29 +16,33 @@ from numpy.typing import NDArray
 
 from tdamapper._common import ParamsMixin, warn_user
 from tdamapper.core import proximity_net
-from tdamapper.protocols import Array, Metric
+from tdamapper.protocols import ArrayRead, Metric
 from tdamapper.utils.metrics import MetricLiteral, chebyshev, get_metric
 from tdamapper.utils.vptree import PivotingStrategy, VPTree, VPTreeKind
 
 T = TypeVar("T")
+T_contra = TypeVar("T_contra", contravariant=True)
 S = TypeVar("S")
+S_contra = TypeVar("S_contra", contravariant=True)
 
 
-class _Pullback(Generic[S, T]):
+class _Pullback(Generic[S_contra, T_contra]):
 
-    def __init__(self, fun: Callable[[S], T], dist: Metric[T]):
+    def __init__(
+        self, fun: Callable[[S_contra], T_contra], dist: Metric[T_contra]
+    ) -> None:
         self.fun = fun
         self.dist = dist
 
-    def __call__(self, x: S, y: S) -> float:
+    def __call__(self, x: S_contra, y: S_contra) -> float:
         return self.dist(self.fun(x), self.fun(y))
 
 
-def _snd(x: tuple[Any, ...]) -> Any:
+def _snd(x: tuple[T, ...]) -> T:
     return x[1]
 
 
-class BallCover(ParamsMixin, Generic[T]):
+class BallCover(ParamsMixin, Generic[T_contra]):
     """
     Cover algorithm based on `ball proximity function`, which covers data with
     open balls of fixed radius.
@@ -67,8 +71,8 @@ class BallCover(ParamsMixin, Generic[T]):
     """
 
     _radius: float
-    _data: list[tuple[int, T]]
-    _vptree: VPTree[tuple[int, T]]
+    _data: list[tuple[int, T_contra]]
+    _vptree: VPTree[tuple[int, T_contra]]
 
     def __init__(
         self,
@@ -88,7 +92,7 @@ class BallCover(ParamsMixin, Generic[T]):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: Array[T]) -> BallCover[T]:
+    def fit(self, X: ArrayRead[T_contra]) -> BallCover[T_contra]:
         """
         Train internal parameters.
 
@@ -112,7 +116,7 @@ class BallCover(ParamsMixin, Generic[T]):
         )
         return self
 
-    def search(self, x: T) -> list[int]:
+    def search(self, x: T_contra) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -130,7 +134,7 @@ class BallCover(ParamsMixin, Generic[T]):
         )
         return [x for (x, _) in neighs]
 
-    def apply(self, X: Array[T]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[T_contra]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -144,7 +148,7 @@ class BallCover(ParamsMixin, Generic[T]):
         return proximity_net(self, X)
 
 
-class KNNCover(ParamsMixin, Generic[T]):
+class KNNCover(ParamsMixin, Generic[T_contra]):
     """
     Cover algorithm based on `KNN proximity function`, which covers data using
     k-nearest neighbors (KNN).
@@ -173,8 +177,8 @@ class KNNCover(ParamsMixin, Generic[T]):
     """
 
     _neighbors: int
-    _data: list[tuple[int, T]]
-    _vptree: VPTree[tuple[int, T]]
+    _data: list[tuple[int, T_contra]]
+    _vptree: VPTree[tuple[int, T_contra]]
 
     def __init__(
         self,
@@ -194,7 +198,7 @@ class KNNCover(ParamsMixin, Generic[T]):
         self.leaf_radius = leaf_radius
         self.pivoting = pivoting
 
-    def fit(self, X: Array[T]) -> KNNCover[T]:
+    def fit(self, X: ArrayRead[T_contra]) -> KNNCover[T_contra]:
         """
         Train internal parameters.
 
@@ -218,7 +222,7 @@ class KNNCover(ParamsMixin, Generic[T]):
         )
         return self
 
-    def search(self, x: T) -> list[int]:
+    def search(self, x: T_contra) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
@@ -233,7 +237,7 @@ class KNNCover(ParamsMixin, Generic[T]):
         neighs = self._vptree.knn_search((-1, x), self._neighbors)
         return [x for (x, _) in neighs]
 
-    def apply(self, X: Array[T]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[T_contra]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -309,7 +313,7 @@ class BaseCubicalCover:
         _delta[(_delta >= -eps) & (_delta <= eps)] = self._n_intervals
         return _min, _max, _delta
 
-    def fit(self, X: Array[NDArray[np.float_]]) -> BaseCubicalCover:
+    def fit(self, X: ArrayRead[NDArray[np.float_]]) -> BaseCubicalCover:
         """
         Train internal parameters.
 
@@ -408,7 +412,7 @@ class ProximityCubicalCover(BaseCubicalCover, ParamsMixin):
             pivoting=pivoting,
         )
 
-    def apply(self, X: Array[NDArray[np.float_]]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[NDArray[np.float_]]) -> Iterator[list[int]]:
         """
         Covers the dataset using proximity-net.
 
@@ -471,7 +475,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
         )
 
     def _landmarks(
-        self, X: Array[NDArray[np.float_]]
+        self, X: ArrayRead[NDArray[np.float_]]
     ) -> dict[tuple[float], NDArray[np.float_]]:
         lmrks = {}
         for x in X:
@@ -480,7 +484,7 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
                 lmrks[lmrk] = x
         return lmrks
 
-    def apply(self, X: Array[NDArray[np.float_]]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[NDArray[np.float_]]) -> Iterator[list[int]]:
         """
         Covers the dataset using landmarks.
 
@@ -578,7 +582,7 @@ class CubicalCover(ParamsMixin):
             "The only possible values for algorithm are 'standard' and 'proximity'."
         )
 
-    def fit(self, X: Array[NDArray[np.float_]]) -> CubicalCover:
+    def fit(self, X: ArrayRead[NDArray[np.float_]]) -> CubicalCover:
         """
         Train internal parameters.
 
@@ -604,7 +608,7 @@ class CubicalCover(ParamsMixin):
         """
         return self._cubical_cover.search(x)
 
-    def apply(self, X: Array[NDArray[np.float_]]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[NDArray[np.float_]]) -> Iterator[list[int]]:
         """
         Covers the dataset using hypercubes.
 

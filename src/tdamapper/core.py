@@ -37,7 +37,7 @@ import networkx as nx
 from joblib import Parallel, delayed
 
 from tdamapper._common import ParamsMixin, clone
-from tdamapper.protocols import Array, Clustering, Cover, SpatialSearch
+from tdamapper.protocols import ArrayRead, Clustering, Cover, SpatialSearch
 from tdamapper.utils.unionfind import UnionFind
 
 ATTR_IDS = "ids"
@@ -60,8 +60,8 @@ T = TypeVar("T")
 
 
 def mapper_labels(
-    X: Array[S],
-    y: Array[T],
+    X: ArrayRead[S],
+    y: ArrayRead[T],
     cover: Cover[T],
     clustering: Clustering[S],
     n_jobs: int = 1,
@@ -94,7 +94,7 @@ def mapper_labels(
     """
 
     def _run_clustering(
-        local_ids: list[int], X_local: Array[S], clust: Clustering[S]
+        local_ids: list[int], X_local: ArrayRead[S], clust: Clustering[S]
     ) -> tuple[list[int], list[int]]:
         local_lbls = clust.fit(X_local).labels_
         return local_ids, local_lbls
@@ -119,8 +119,8 @@ def mapper_labels(
 
 
 def mapper_connected_components(
-    X: Array[S],
-    y: Array[T],
+    X: ArrayRead[S],
+    y: ArrayRead[T],
     cover: Cover[T],
     clustering: Clustering[S],
     n_jobs: int = 1,
@@ -168,8 +168,8 @@ def mapper_connected_components(
 
 
 def mapper_graph(
-    X: Array[S],
-    y: Array[T],
+    X: ArrayRead[S],
+    y: ArrayRead[T],
     cover: Cover[T],
     clustering: Clustering[S],
     n_jobs: int = 1,
@@ -218,7 +218,7 @@ def mapper_graph(
 
 
 def aggregate_graph(
-    X: Array[S], graph: nx.Graph, agg: Callable[..., Any]
+    X: ArrayRead[S], graph: nx.Graph, agg: Callable[..., Any]
 ) -> dict[int, Any]:
     """
     Apply an aggregation function to the nodes of a graph.
@@ -246,7 +246,7 @@ def aggregate_graph(
     return agg_values
 
 
-def proximity_net(search: SpatialSearch[S], X: Array[S]) -> Iterator[list[int]]:
+def proximity_net(search: SpatialSearch[S], X: ArrayRead[S]) -> Iterator[list[int]]:
     """
     Covers the dataset using proximity-net.
 
@@ -283,7 +283,7 @@ class TrivialCover(ParamsMixin, Generic[T]):
     dataset.
     """
 
-    def apply(self, X: Array[T]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[T]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -317,7 +317,9 @@ class FailSafeClustering(ParamsMixin, Generic[T]):
         self.clustering = clustering
         self.verbose = verbose
 
-    def fit(self, X: Array[T], y: Optional[Array[T]] = None) -> FailSafeClustering[T]:
+    def fit(
+        self, X: ArrayRead[T], y: Optional[ArrayRead[T]] = None
+    ) -> FailSafeClustering[T]:
         self._clustering = (
             TrivialClustering() if self.clustering is None else self.clustering
         )
@@ -347,7 +349,9 @@ class TrivialClustering(ParamsMixin, Generic[T]):
     def __init__(self) -> None:
         pass
 
-    def fit(self, X: Array[T], _y: Optional[Array[T]] = None) -> TrivialClustering[T]:
+    def fit(
+        self, X: ArrayRead[T], _y: Optional[ArrayRead[T]] = None
+    ) -> TrivialClustering[T]:
         """
         Fit the clustering algorithm to the data.
 

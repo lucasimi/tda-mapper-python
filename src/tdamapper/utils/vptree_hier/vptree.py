@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
-from tdamapper.protocols import Array, Metric
+from tdamapper.protocols import ArrayRead, Metric
 from tdamapper.utils.vptree_hier.ball_search import BallSearch
 from tdamapper.utils.vptree_hier.builder import Builder
 from tdamapper.utils.vptree_hier.common import PivotingStrategy, Tree, VPArray
@@ -22,7 +22,7 @@ class VPTree(Generic[T]):
 
     def __init__(
         self,
-        X: Array[T],
+        X: ArrayRead[T],
         metric: Metric[T],
         leaf_capacity: int = 1,
         leaf_radius: float = 0.0,

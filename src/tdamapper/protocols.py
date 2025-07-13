@@ -9,9 +9,12 @@ T_co = TypeVar("T_co", covariant=True)
 T = TypeVar("T")
 
 
-class Array(Protocol[T]):
+class ArrayRead(Protocol[T_co]):
+    """
+    Abstract interface for a read-only array-like structure.
+    """
 
-    def __getitem__(self, index: int) -> T:
+    def __getitem__(self, index: int) -> T_co:
         """
         Get an item from the array.
         """
@@ -21,23 +24,38 @@ class Array(Protocol[T]):
         Get the length of the array.
         """
 
-    def __setitem__(self, index: int, value: T) -> None:
-        """
-        Set an item in the array.
-        """
-
-    def __iter__(self) -> Iterator[T]:
+    def __iter__(self) -> Iterator[T_co]:
         """
         Iterate over the array.
         """
 
 
+class ArrayWrite(Protocol[T_contra]):
+    """
+    Abstract interface for a writeable array-like structure.
+    """
+
+    def __setitem__(self, index: int, value: T_contra) -> None:
+        """
+        Set an item in the array.
+        """
+
+
+class Array(ArrayRead[T], ArrayWrite[T], Protocol[T]):
+    """
+    Abstract interface for an array-like structure.
+    """
+
+
 class Metric(Protocol[T_contra]):
+    """
+    Abstract interface for a metric.
+    """
 
     def __call__(self, x: T_contra, y: T_contra) -> float: ...
 
 
-class Cover(Protocol[T]):
+class Cover(Protocol[T_contra]):
     """
     Abstract interface for cover algorithms.
 
@@ -45,7 +63,7 @@ class Cover(Protocol[T]):
     this class to implement more meaningful cover algorithms.
     """
 
-    def apply(self, X: Array[T]) -> Iterator[list[int]]:
+    def apply(self, X: ArrayRead[T_contra]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
 
@@ -59,7 +77,7 @@ class Cover(Protocol[T]):
         """
 
 
-class Clustering(Protocol[T]):
+class Clustering(Protocol[T_contra]):
     """
     Abstract interface for clustering algorithms.
 
@@ -74,7 +92,9 @@ class Clustering(Protocol[T]):
 
     labels_: list[int]
 
-    def fit(self, X: Array[T], y: Optional[Array[T]] = None) -> Clustering[T]:
+    def fit(
+        self, X: ArrayRead[T_contra], y: Optional[ArrayRead[T_contra]] = None
+    ) -> Clustering[T_contra]:
         """
         Fit the clustering algorithm to the data.
 
@@ -85,7 +105,7 @@ class Clustering(Protocol[T]):
         """
 
 
-class SpatialSearch(Protocol[T]):
+class SpatialSearch(Protocol[T_contra]):
     """
     Abstract interface for search algorithms.
 
@@ -93,7 +113,7 @@ class SpatialSearch(Protocol[T]):
     query point in a dataset.
     """
 
-    def fit(self, X: Array[T]) -> SpatialSearch[T]:
+    def fit(self, X: ArrayRead[T_contra]) -> SpatialSearch[T_contra]:
         """
         Train internal parameters.
 
@@ -101,7 +121,7 @@ class SpatialSearch(Protocol[T]):
         :return: The object itself.
         """
 
-    def search(self, x: T) -> list[int]:
+    def search(self, x: T_contra) -> list[int]:
         """
         Return a list of neighbors for the query point.
 
