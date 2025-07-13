@@ -21,9 +21,12 @@ from tdamapper.utils.metrics import MetricLiteral, chebyshev, get_metric
 from tdamapper.utils.vptree import PivotingStrategy, VPTree, VPTreeKind
 
 T = TypeVar("T")
-T_contra = TypeVar("T_contra", contravariant=True)
 S = TypeVar("S")
+
+T_contra = TypeVar("T_contra", contravariant=True)
 S_contra = TypeVar("S_contra", contravariant=True)
+
+CubicalAlgorithm = Literal["standard", "proximity"]
 
 
 class _Pullback(Generic[S_contra, T_contra]):
@@ -291,21 +294,17 @@ class BaseCubicalCover:
 
     :param n_intervals: The number of intervals to use for each dimension.
         Must be positive and less than or equal to the length of the dataset.
-        Defaults to 1.
     :param overlap_frac: The fraction of overlap between adjacent intervals on
         each dimension, must be in the range (0.0, 0.5]. If not specified, the
         overlap_frac is computed such that the volume of the overlap within
-        each hypercube is half the total volume. Defaults to None.
+        each hypercube is half the total volume.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
-        point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults to
-        'flat'.
+        point tree.
     :param leaf_capacity: The maximum number of points in a leaf node of the
-        vantage point tree. Must be a positive value. Defaults to 1.
+        vantage point tree. Must be a positive value.
     :param leaf_radius: The radius of the leaf nodes. If not specified, it
-        defaults to the value of `radius`. Must be a positive value. Defaults
-        to None.
+        defaults to the value of `radius`. Must be a positive value.
     :param pivoting: The method used for pivoting in the vantage point tree.
-        Acceptable values are None, 'random', or 'furthest'. Defaults to None.
     """
 
     _overlap_frac: float
@@ -551,9 +550,6 @@ class StandardCubicalCover(BaseCubicalCover, ParamsMixin):
             neigh_ids = self.search(x)
             if neigh_ids:
                 yield neigh_ids
-
-
-CubicalAlgorithm = Literal["standard", "proximity"]
 
 
 class CubicalCover(ParamsMixin):

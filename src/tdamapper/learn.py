@@ -26,7 +26,6 @@ from tdamapper.core import (
 from tdamapper.protocols import ArrayRead, Clustering, Cover
 
 S_contra = TypeVar("S_contra", contravariant=True)
-
 T_contra = TypeVar("T_contra", contravariant=True)
 
 

@@ -55,7 +55,6 @@ logging.basicConfig(
 )
 
 S = TypeVar("S")
-
 T = TypeVar("T")
 
 
