@@ -7,7 +7,7 @@ from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 
-distance = "euclidean"
+distance = get_metric("euclidean")
 
 
 def dataset(dim=10, num=1000):

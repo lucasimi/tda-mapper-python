@@ -1,9 +1,9 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import numpy as np
 from numba import njit
 
-from tdamapper._common import Array
+from tdamapper.protocols import Array
 
 _ARR = np.zeros(1)
 

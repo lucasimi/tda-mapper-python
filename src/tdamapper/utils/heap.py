@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Generic, Iterator, Optional, Protocol, TypeVar
+from typing import Generic, Iterator, Optional, Protocol, TypeVar
 
 
 def _left(i: int) -> int:

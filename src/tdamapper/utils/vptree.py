@@ -2,18 +2,19 @@
 A module for fast knn and range searches, depending only on a given metric
 """
 
-from typing import Any, Literal, Optional, Union
+from typing import Generic, Literal, Type, TypeVar, Union
 
-from tdamapper._common import Array
-from tdamapper.utils.metrics import Metric, MetricLiteral
+from tdamapper.protocols import ArrayRead, Metric
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 
 VPTreeKind = Literal["flat", "hierarchical"]
 PivotingStrategy = Literal["disabled", "random", "furthest"]
 
+T = TypeVar("T")
 
-class VPTree:
+
+class VPTree(Generic[T]):
     """
     A Vantage Point Tree, or vp-tree, for fast range-queries and knn-queries.
 
@@ -21,8 +22,6 @@ class VPTree:
     :param metric: The metric used to define the distance between points.
         Accepts any value compatible with `tdamapper.utils.metrics.get_metric`.
         Defaults to 'euclidean'.
-    :param metric_params: Additional parameters for the metric function, to be
-        passed to `tdamapper.utils.metrics.get_metric`. Defaults to None.
     :param kind: Specifies whether to use a flat or a hierarchical vantage
         point tree. Acceptable values are 'flat' or 'hierarchical'. Defaults
         to 'flat'.
@@ -36,15 +35,14 @@ class VPTree:
 
     def __init__(
         self,
-        X: Array[Any],
-        metric: Union[MetricLiteral, Metric] = "euclidean",
-        metric_params: Optional[dict[str, Any]] = None,
+        X: ArrayRead[T],
+        metric: Metric[T],
         kind: VPTreeKind = "flat",
         leaf_capacity: int = 1,
         leaf_radius: float = 0.0,
         pivoting: PivotingStrategy = "disabled",
     ) -> None:
-        builder: Union[type[FVPT], type[HVPT]]
+        builder: Union[Type[FVPT[T]], Type[HVPT[T]]]
         if kind == "flat":
             builder = FVPT
         elif kind == "hierarchical":
@@ -54,13 +52,12 @@ class VPTree:
         self._vpt = builder(
             X,
             metric=metric,
-            metric_params=metric_params,
             leaf_capacity=leaf_capacity,
             leaf_radius=leaf_radius,
             pivoting=pivoting,
         )
 
-    def ball_search(self, point: Any, eps: float, inclusive: bool = True) -> list[Any]:
+    def ball_search(self, point: T, eps: float, inclusive: bool = True) -> list[T]:
         """
         Perform a ball search in the Vantage Point Tree.
 
@@ -77,7 +74,7 @@ class VPTree:
         """
         return self._vpt.ball_search(point, eps, inclusive=inclusive)
 
-    def knn_search(self, point: Any, k: int) -> list[Any]:
+    def knn_search(self, point: T, k: int) -> list[T]:
         """
         Perform a k-nearest neighbors search in the Vantage Point Tree.
 

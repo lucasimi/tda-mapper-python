@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 import numpy as np
 
-from tdamapper._common import Array
+from tdamapper.protocols import ArrayRead
 from tdamapper.utils.vptree_hier.common import (
     Leaf,
     Node,
@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 class Builder(Generic[T]):
 
-    def __init__(self, vpt: VPTreeType[T], X: Array[T]) -> None:
+    def __init__(self, vpt: VPTreeType[T], X: ArrayRead[T]) -> None:
         self._distance = vpt.metric
 
         dataset = list(X)

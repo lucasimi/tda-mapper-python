@@ -72,6 +72,12 @@ Homepage = "https://github.com/lucasimi/tda-mapper-python"
 Documentation = "https://tda-mapper.readthedocs.io"
 Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"tdamapper" = ["py.typed"]
+
 [tool.coverage.run]
 omit = [
     "**/_*.py",
