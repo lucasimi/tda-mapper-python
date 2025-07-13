@@ -3,74 +3,86 @@ from __future__ import annotations
 from typing import Iterator, Optional, Protocol, TypeVar
 
 T_contra = TypeVar("T_contra", contravariant=True)
-
 T_co = TypeVar("T_co", covariant=True)
-
 T = TypeVar("T")
 
 
 class ArrayRead(Protocol[T_co]):
     """
-    Abstract interface for a read-only array-like structure.
+    Protocol for a read-only array-like structure.
     """
 
     def __getitem__(self, index: int) -> T_co:
         """
         Get an item from the array.
+
+        :param index: The index of the item to retrieve.
+        :return: The item at the specified index.
         """
 
     def __len__(self) -> int:
         """
         Get the length of the array.
+
+        :return: The number of items in the array.
         """
 
     def __iter__(self) -> Iterator[T_co]:
         """
         Iterate over the array.
+
+        :return: An iterator over the items in the array.
         """
 
 
 class ArrayWrite(Protocol[T_contra]):
     """
-    Abstract interface for a writeable array-like structure.
+    Protocol for a writeable array-like structure.
     """
 
     def __setitem__(self, index: int, value: T_contra) -> None:
         """
         Set an item in the array.
+
+        :param index: The index at which to set the item.
+        :param value: The value to set at the specified index.
         """
 
 
 class Array(ArrayRead[T], ArrayWrite[T], Protocol[T]):
     """
-    Abstract interface for an array-like structure.
+    Protocol for an array-like structure.
     """
 
 
 class Metric(Protocol[T_contra]):
     """
-    Abstract interface for a metric.
+    Protocol for a metric function.
     """
 
-    def __call__(self, x: T_contra, y: T_contra) -> float: ...
+    def __call__(self, x: T_contra, y: T_contra) -> float:
+        """
+        Compute the distance between two points.
+
+        :param x: The first point.
+        :param y: The second point.
+        :return: The distance between the two points.
+        """
 
 
 class Cover(Protocol[T_contra]):
     """
-    Abstract interface for cover algorithms.
+    Protocol for cover algorithms.
 
-    This is a naive implementation. Subclasses should override the methods of
-    this class to implement more meaningful cover algorithms.
+    A cover algorithm collects open sets from a dataset such that each point
+    belongs to at least one open set. The open sets are represented as lists of
+    indices, where each index corresponds to a point in the dataset. The open
+    sets are eventually overlapping.
     """
 
     def apply(self, X: ArrayRead[T_contra]) -> Iterator[list[int]]:
         """
-        Covers the dataset with a single open set.
-
-        This is a naive implementation that returns a generator producing a
-        single list containing all the ids if the original dataset. This
-        method should be overridden by subclasses to implement more meaningful
-        cover algorithms.
+        Covers the dataset with open sets.
 
         :param X: A dataset of n points.
         :return: A generator of lists of ids.
@@ -79,15 +91,11 @@ class Cover(Protocol[T_contra]):
 
 class Clustering(Protocol[T_contra]):
     """
-    Abstract interface for clustering algorithms.
+    Protocol for clustering algorithms.
 
-    A clustering algorithm is a method for grouping data points into clusters.
-    Each cluster is represented by a unique integer label, and the labels are
-    assigned to the points in the dataset. The labels are typically non-negative
-    integers, starting from zero. The labels are assigned such that the points
-    in the same cluster have the same label, and the points in different clusters
-    have different labels. The labels are not necessarily contiguous, and there
-    may be gaps in the sequence of labels.
+    A clustering algorithm groups data points into clusters, each represented by
+    an integer label. Labels are typically non-negative and may be
+    non-contiguous.
     """
 
     labels_: list[int]
@@ -107,7 +115,7 @@ class Clustering(Protocol[T_contra]):
 
 class SpatialSearch(Protocol[T_contra]):
     """
-    Abstract interface for search algorithms.
+    Protocol for spatial search algorithms.
 
     A spatial search algorithm is a method for finding neighbors of a
     query point in a dataset.
