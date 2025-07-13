@@ -49,6 +49,10 @@ jobs:
         run: | 
           python -m pip install -e .[dev]
 
+      - name: Run typechecks
+        run: | 
+          mypy src tests --ignore-missing-imports
+
       - name: Run tests and code coverage
         run: | 
           coverage run --source=src -m pytest tests/test_unit_*.py

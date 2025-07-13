@@ -55,6 +55,7 @@ dev = [
     "nbformat>=4.2.0",
     "umap-learn<0.6.0",
     "nicegui>=2.18.0,<3.0.0",
+    "mypy",
 ]
 app = [
     "pandas<3.0.0",
@@ -70,6 +71,12 @@ tda-mapper-app = "tdamapper._run_app:run"
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
 Documentation = "https://tda-mapper.readthedocs.io"
 Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"tdamapper" = ["py.typed"]
 
 [tool.coverage.run]
 omit = [

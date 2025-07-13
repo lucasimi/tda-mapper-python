@@ -8,6 +8,10 @@ all: install
 install:
 	$(PIP) install -e .[dev]
 
+.PHONY: typecheck
+typecheck:
+	mypy src --ignore-missing-imports
+
 .PHONY: test
 test:
 	coverage run --source=src -m pytest tests/test_unit_*.py

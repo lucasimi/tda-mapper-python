@@ -2,19 +2,25 @@
 This module provides common functionalities for internal use.
 """
 
+from __future__ import annotations
+
 import cProfile
 import io
 import pstats
 import warnings
+from typing import Any, Callable
 
 import numpy as np
+from numpy.typing import NDArray
+
+from tdamapper.protocols import Array, ArrayRead
 
 warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamapper\.")
 
 
-def deprecated(msg):
-    def deprecated_func(func):
-        def wrapper(*args, **kwargs):
+def deprecated(msg: str) -> Callable[..., Any]:
+    def deprecated_func(func: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
 
@@ -23,55 +29,62 @@ def deprecated(msg):
     return deprecated_func
 
 
-def warn_user(msg):
+def warn_user(msg: str) -> None:
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
 class EstimatorMixin:
 
-    def _is_sparse(self, X):
+    def _is_sparse(self, X: ArrayRead[Any]) -> bool:
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
-    def _validate_X_y(self, X, y):
+    def _validate_X_y(
+        self, X: ArrayRead[Any], y: ArrayRead[Any]
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
-        X = np.asarray(X)
-        y = np.asarray(y)
+        X_ = np.asarray(X)
+        y_ = np.asarray(y)
 
-        if X.size == 0:
-            msg = f"0 feature(s) (shape={X.shape}) while a minimum of 1 is " "required."
+        if X_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={X_.shape}) while a minimum of 1 is " "required."
+            )
             raise ValueError(msg)
 
-        if y.size == 0:
-            msg = f"0 feature(s) (shape={y.shape}) while a minimum of 1 is " "required."
+        if y_.size == 0:
+            msg = (
+                f"0 feature(s) (shape={y_.shape}) while a minimum of 1 is " "required."
+            )
             raise ValueError(msg)
 
-        if X.ndim == 1:
+        if X_.ndim == 1:
             raise ValueError("1d-arrays not supported.")
 
-        if np.iscomplexobj(X) or np.iscomplexobj(y):
+        if np.iscomplexobj(X_) or np.iscomplexobj(y_):
             raise ValueError("Complex data not supported.")
 
-        if X.dtype == np.object_:
-            X = np.array(X, dtype=float)
+        if X_.dtype == np.object_:
+            X_ = np.array(X_, dtype=float)
 
-        if y.dtype == np.object_:
-            y = np.array(y, dtype=float)
+        if y_.dtype == np.object_:
+            y_ = np.array(y_, dtype=float)
 
         if (
-            np.isnan(X).any()
-            or np.isinf(X).any()
-            or np.isnan(y).any()
-            or np.isinf(y).any()
+            np.isnan(X_).any()
+            or np.isinf(X_).any()
+            or np.isnan(y_).any()
+            or np.isinf(y_).any()
         ):
             raise ValueError("NaNs or infinite values not supported.")
 
-        return X, y
+        return X_, y_
 
-    def _set_n_features_in(self, X):
-        self.n_features_in_ = X.shape[1]
+    def _set_n_features_in(self, X: Array[Any]) -> None:
+        if hasattr(X, "shape"):
+            self.n_features_in_ = X.shape[1]
 
 
 class ParamsMixin:
@@ -80,21 +93,20 @@ class ParamsMixin:
     scikit-learn `get_params` and `set_params`.
     """
 
-    def _is_param_public(self, k):
+    def _is_param_public(self, k: str) -> bool:
         return (not k.startswith("_")) and (not k.endswith("_"))
 
-    def _split_param(self, k):
+    def _split_param(self, k: str) -> tuple[str, str]:
         k_split = k.split("__")
         outer = k_split[0]
         inner = "__".join(k_split[1:])
         return outer, inner
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
         """
         Get all public parameters of the object as a dictionary.
 
         :param deep: A flag for returning also nested parameters.
-        :type deep: bool, optional.
         """
         params = {}
         for k, v in self.__dict__.items():
@@ -105,7 +117,7 @@ class ParamsMixin:
                         params[f"{k}__{_k}"] = _v
         return params
 
-    def set_params(self, **params):
+    def set_params(self, **params: dict[str, Any]) -> ParamsMixin:
         """
         Set public parameters. Only updates attributes that already exist.
         """
@@ -124,7 +136,7 @@ class ParamsMixin:
                 k_attr.set_params(**{k_inner: v})
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         obj_noargs = type(self)()
         args_repr = []
         for k, v in self.__dict__.items():
@@ -136,15 +148,13 @@ class ParamsMixin:
         return f"{self.__class__.__name__}({', '.join(args_repr)})"
 
 
-def clone(obj):
+def clone(obj: Any) -> Any:
     """
     Clone an estimator, returning a new one, unfitted, having the same public
     parameters.
 
-    :param estimator: An estimator to be cloned.
-    :type estimator: A scikit-learn compatible estimator
+    :param obj: An estimator to be cloned.
     :return: A new estimator with the same parameters.
-    :rtype: A scikit-learn compatible estimator
     """
     params = obj.get_params(deep=True)
     obj_noargs = type(obj)()
@@ -152,9 +162,9 @@ def clone(obj):
     return obj_noargs
 
 
-def profile(n_lines=10):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
+def profile(n_lines: int = 10) -> Callable[..., Any]:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
             profiler = cProfile.Profile()
             profiler.enable()
             result = func(*args, **kwargs)

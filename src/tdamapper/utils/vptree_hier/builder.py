@@ -1,78 +1,111 @@
+"""
+This module contains a builder for constructing the vp-tree from a dataset.
+"""
+
 from random import randrange
+from typing import Callable, Generic, TypeVar
 
 import numpy as np
 
-from tdamapper.utils.vptree_hier.common import Leaf, Node, VPArray, _mid
+from tdamapper.protocols import ArrayRead
+from tdamapper.utils.vptree_hier.common import (
+    Leaf,
+    Node,
+    Tree,
+    VPArray,
+    VPTreeType,
+    _mid,
+)
+
+T = TypeVar("T")
 
 
-class Builder:
+class Builder(Generic[T]):
+    """
+    A builder for constructing the vp-tree from a dataset.
 
-    def __init__(self, vpt, X):
-        self._distance = vpt._get_distance()
+    :param vpt: The vantage point tree to build.
+    :param X: The dataset from which to build the vp-tree.
+    """
 
-        dataset = [x for x in X]
-        indices = np.array([i for i in range(len(dataset))])
+    _array: VPArray[T]
+    _leaf_capacity: int
+    _leaf_radius: float
+    _pivoting: Callable[[int, int], None]
+
+    def __init__(self, vpt: VPTreeType[T], X: ArrayRead[T]) -> None:
+        self._distance = vpt.metric
+
+        dataset = list(X)
+        indices = np.array(list(range(len(dataset))))
         distances = np.array([0.0 for _ in X])
-        self._arr = VPArray(dataset, distances, indices)
+        self._array = VPArray(dataset, distances, indices)
 
-        self._leaf_capacity = vpt.get_leaf_capacity()
-        self._leaf_radius = vpt.get_leaf_radius()
-        pivoting = vpt.get_pivoting()
+        self._leaf_capacity = vpt.leaf_capacity
+        self._leaf_radius = vpt.leaf_radius
+        pivoting = vpt.pivoting
         self._pivoting = self._pivoting_disabled
         if pivoting == "random":
             self._pivoting = self._pivoting_random
         elif pivoting == "furthest":
             self._pivoting = self._pivoting_furthest
 
-    def _pivoting_disabled(self, start, end):
+    def _pivoting_disabled(self, start: int, end: int) -> None:
         pass
 
-    def _pivoting_random(self, start, end):
+    def _pivoting_random(self, start: int, end: int) -> None:
         if end <= start:
             return
         pivot = randrange(start, end)
         if pivot > start:
-            self._arr.swap(start, pivot)
+            self._array.swap(start, pivot)
 
-    def _furthest(self, start, end, i):
+    def _furthest(self, start: int, end: int, i: int) -> int:
         furthest_dist = 0.0
         furthest = start
-        i_point = self._arr.get_point(i)
+        i_point = self._array.get_point(i)
         for j in range(start, end):
-            j_point = self._arr.get_point(j)
+            j_point = self._array.get_point(j)
             j_dist = self._distance(i_point, j_point)
             if j_dist > furthest_dist:
                 furthest = j
                 furthest_dist = j_dist
         return furthest
 
-    def _pivoting_furthest(self, start, end):
+    def _pivoting_furthest(self, start: int, end: int) -> None:
         if end <= start:
             return
         rnd = randrange(start, end)
         furthest_rnd = self._furthest(start, end, rnd)
         furthest = self._furthest(start, end, furthest_rnd)
         if furthest > start:
-            self._arr.swap(start, furthest)
+            self._array.swap(start, furthest)
 
-    def _update(self, start, end):
+    def _update(self, start: int, end: int) -> None:
         self._pivoting(start, end)
-        v_point = self._arr.get_point(start)
+        v_point = self._array.get_point(start)
         for i in range(start + 1, end):
-            point = self._arr.get_point(i)
-            self._arr.set_distance(i, self._distance(v_point, point))
+            point = self._array.get_point(i)
+            self._array.set_distance(i, self._distance(v_point, point))
 
-    def build(self):
-        tree = self._build_rec(0, self._arr.size())
-        return tree, self._arr
+    def build(self) -> tuple[Tree[T], VPArray[T]]:
+        """
+        Build the vp-tree from the dataset.
 
-    def _build_rec(self, start, end):
+        :return: A tuple containing the constructed vp-tree and the VPArray.
+        """
+        tree = self._build_rec(0, self._array.size())
+        return tree, self._array
+
+    def _build_rec(self, start: int, end: int) -> Tree[T]:
         mid = _mid(start, end)
         self._update(start, end)
-        v_point = self._arr.get_point(start)
-        self._arr.partition(start + 1, end, mid)
-        v_radius = self._arr.get_distance(mid)
-        self._arr.set_distance(start, v_radius)
+        v_point = self._array.get_point(start)
+        self._array.partition(start + 1, end, mid)
+        v_radius = self._array.get_distance(mid)
+        self._array.set_distance(start, v_radius)
+        left: Tree[T]
+        right: Tree[T]
         if (end - start <= 2 * self._leaf_capacity) or (v_radius <= self._leaf_radius):
             left = Leaf(start + 1, mid)
             right = Leaf(mid, end)

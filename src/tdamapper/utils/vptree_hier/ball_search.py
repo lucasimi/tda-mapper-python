@@ -1,40 +1,83 @@
-class BallSearch:
+"""
+This module provides a ball search implementation for a vp-tree.
+"""
 
-    def __init__(self, vpt, point, eps, inclusive=True):
-        self._tree = vpt._get_tree()
-        self._arr = vpt._get_arr()
-        self._distance = vpt._get_distance()
+from __future__ import annotations
+
+from typing import Callable, Generic, TypeVar
+
+from tdamapper.utils.vptree_hier.common import Tree, VPArray, VPTreeType
+
+T = TypeVar("T")
+
+
+class BallSearch(Generic[T]):
+    """
+    A ball search implementation for a vp-tree.
+
+    :param vpt: The vantage point tree to search.
+    :param point: The point for which to find points within a certain distance.
+    :param eps: The radius of the ball to search within.
+    :param inclusive: Whether to include points at the boundary of the ball.
+    """
+
+    _tree: Tree[T]
+    _array: VPArray[T]
+    _distance: Callable[[T, T], float]
+    _point: T
+    _eps: float
+    _inclusive: bool
+    _result: list[T]
+
+    def __init__(
+        self, vpt: VPTreeType[T], point: T, eps: float, inclusive: bool = True
+    ) -> None:
+        self._tree = vpt.tree
+        self._array = vpt.array
+        self._distance = vpt.metric
         self._point = point
         self._eps = eps
         self._inclusive = inclusive
         self._result = []
 
-    def search(self):
+    def search(self) -> list[T]:
+        """
+        Perform a ball search in the vp-tree.
+
+        :return: A list of points within the specified radius of the point.
+        """
         self._result.clear()
         self._search_rec(self._tree)
         return self._result
 
-    def _inside(self, dist):
+    def _inside(self, dist: float) -> bool:
         if self._inclusive:
             return dist <= self._eps
         return dist < self._eps
 
-    def _search_rec(self, tree):
-        if tree.is_terminal():
-            start, end = tree.get_bounds()
-            for x in self._arr.get_points(start, end):
+    def _search_rec(self, tree: Tree[T]) -> None:
+        if tree.is_terminal:
+            bounds = tree.bounds
+            if bounds is None:
+                return
+            start, end = bounds
+            for x in self._array.get_points(start, end):
                 dist = self._distance(self._point, x)
                 if self._inside(dist):
                     self._result.append(x)
         else:
-            v_radius, v_point = tree.get_ball()
+            ball = tree.ball
+            if ball is None:
+                return
+            v_radius, v_point = ball
             dist = self._distance(v_point, self._point)
             if self._inside(dist):
                 self._result.append(v_point)
             if dist <= v_radius:
-                fst, snd = tree.get_left(), tree.get_right()
+                fst, snd = tree.left, tree.right
             else:
-                fst, snd = tree.get_right(), tree.get_left()
-            self._search_rec(fst)
-            if abs(dist - v_radius) <= self._eps:
+                fst, snd = tree.right, tree.left
+            if fst is not None:
+                self._search_rec(fst)
+            if abs(dist - v_radius) <= self._eps and snd is not None:
                 self._search_rec(snd)

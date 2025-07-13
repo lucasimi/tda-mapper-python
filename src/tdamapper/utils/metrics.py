@@ -8,53 +8,57 @@ metric, it must satisfy the following properties:
 
 1. Symmetry: The distance between two points is the same regardless of the
     order, i.e.:
-    :math:`d(x, y) = d(y, x)` for all x and y.
+    :math:`d(x, y) = d(y, x)` for all :math:`x` and :math:`y`.
 2. Positivity: The distance between two distinct points is always positive,
     i.e.:
-    :math:`d(x, y) > 0` for all distinct x and y, and :math:`d(x, x) = 0`
-    for every x.
+    :math:`d(x, y) > 0` for all distinct :math:`x` and :math:`y`, and
+    :math:`d(x, x) = 0` for every :math:`x`.
 3. Triangle inequality: The distance between two points is less than or equal
     to the sum of the distances from a third point, i.e.:
-    :math:`d(x, z) \\leq d(x, y) + d(y, z)` for all points x, y, z.
+    :math:`d(x, z) \\leq d(x, y) + d(y, z)` for all points :math:`x, y, z`.
 
 Supported distance metrics include:
-- Euclidean: The square root of the sum of squared differences between the
-components of vectors.
-- Minkowski: A generalization of the Euclidean and Chebyshev distances,
-parameterized by an order `p`.
-- Chebyshev: The maximum absolute difference between the components of vectors.
-- Cosine: A distance on unit vectors based on cosine similarity.
+
+- *Euclidean*: The square root of the sum of squared differences between the
+  components of vectors.
+
+- *Manhattan*: The sum of the absolute differences between the components of
+  vectors.
+
+- *Minkowski*: A generalization of the Euclidean and Chebyshev distances,
+  parameterized by an order `p`.
+
+- *Chebyshev*: The maximum absolute difference between the components of vectors.
+
+- *Cosine*: A distance on unit vectors based on cosine similarity.
 """
+
+from typing import Any, Literal, Union, get_args
 
 import numpy as np
 
 import tdamapper.utils._metrics as _metrics
+from tdamapper.protocols import Metric
 
-_EUCLIDEAN = "euclidean"
-_MANHATTAN = "manhattan"
-_MINKOWSKI = "minkowski"
-_MINKOWSKI_P = "p"
-_CHEBYSHEV = "chebyshev"
-_COSINE = "cosine"
+MetricLiteral = Literal[
+    "euclidean",
+    "manhattan",
+    "minkowski",
+    "chebyshev",
+    "cosine",
+]
 
 
-def get_supported_metrics():
+def get_supported_metrics() -> list[MetricLiteral]:
     """
     Return a list of supported metric names.
 
     :return: A list of supported metric names.
-    :rtype: list of str
     """
-    return [
-        _EUCLIDEAN,
-        _MANHATTAN,
-        _MINKOWSKI,
-        _CHEBYSHEV,
-        _COSINE,
-    ]
+    return list(get_args(MetricLiteral))
 
 
-def euclidean():
+def euclidean(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Euclidean distance function for vectors.
 
@@ -62,12 +66,11 @@ def euclidean():
     the squared differences between the components of the vectors.
 
     :return: The Euclidean distance function.
-    :rtype: callable
     """
     return _metrics.euclidean
 
 
-def manhattan():
+def manhattan(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Manhattan distance function for vectors.
 
@@ -75,12 +78,11 @@ def manhattan():
     between the components of the vectors.
 
     :return: The Manhattan distance function.
-    :rtype: callable
     """
     return _metrics.manhattan
 
 
-def chebyshev():
+def chebyshev(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -88,12 +90,11 @@ def chebyshev():
     between the components of the vectors.
 
     :return: The Chebyshev distance function.
-    :rtype: callable
     """
     return _metrics.chebyshev
 
 
-def minkowski(p):
+def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -103,76 +104,71 @@ def minkowski(p):
     it is equivalent to the Chebyshev distance.
 
     :param p: The order of the Minkowski distance.
-    :type p: int
-
     :return: The Minkowski distance function.
-    :rtype: callable
     """
+    p = kwargs.get("p", 2)
+    if not isinstance(p, (int, float)):
+        raise TypeError("p must be an integer or a float")
     if p == 1:
         return manhattan()
-    elif p == 2:
+    if p == 2:
         return euclidean()
-    elif np.isinf(p):
+    if np.isinf(p):
         return chebyshev()
 
-    def dist(x, y):
+    def dist(x: Any, y: Any) -> float:
         return _metrics.minkowski(p, x, y)
 
     return dist
 
 
-def cosine():
+def cosine(**kwargs: dict[str, Any]) -> Metric[Any]:
     """
     Return the cosine distance function for vectors.
 
     The cosine similarity between the input vectors ranges from -1.0 to 1.0.
+
     - A value of 1.0 indicates that the vectors are in the same direction.
+
     - A value of 0.0 indicates orthogonality (the vectors are perpendicular).
+
     - A value of -1.0 indicates that the vectors are diametrically opposed.
 
     The cosine distance is derived from the cosine similarity :math:`s` and
-    is defined as:
-    :math:`d(x, y) = \\sqrt{2 \\cdot (1 - s(x, y))}`
+    is defined as: :math:`d(x, y) = \\sqrt{2 \\cdot (1 - s(x, y))}`
 
     This definition ensures that the cosine distance satisfies the triangle
     inequality on unit vectors.
 
     :return: The cosine distance function.
-    :rtype: callable
     """
     return _metrics.cosine
 
 
-def get_metric(metric, **kwargs):
+def get_metric(
+    metric: Union[MetricLiteral, Metric[Any]], **kwargs: dict[str, Any]
+) -> Metric[Any]:
     """
     Return a distance function based on the specified string or callable.
 
     :param metric: The metric to use. If a callable function is provided, it
         is returned directly. Otherwise, predefined metric names returned by
-        `get_supported_metrics()` are supported.
-    :type metric: str or callable
-
+        :func:`tdamapper.utils.metrics.get_supported_metrics` are supported.
     :param kwargs: Additional keyword arguments (e.g., 'p' for Minkowski
         distance).
-    :type kwargs: dict
-
     :return: The selected distance metric function.
-    :rtype: callable
-
     :raises ValueError: If an invalid metric string is provided.
     """
     if callable(metric):
         return metric
-    elif metric == _EUCLIDEAN:
-        return euclidean()
-    elif metric == _MANHATTAN:
-        return manhattan()
-    elif metric == _MINKOWSKI:
-        p = kwargs.get(_MINKOWSKI_P, 2)
-        return minkowski(p)
-    elif metric == _CHEBYSHEV:
-        return chebyshev()
-    elif metric == _COSINE:
-        return cosine()
-    else:
-        raise ValueError("metric must be a string or callable")
+    if metric == "euclidean":
+        return euclidean(**kwargs)
+    if metric == "manhattan":
+        return manhattan(**kwargs)
+    if metric == "minkowski":
+        return minkowski(**kwargs)
+    if metric == "chebyshev":
+        return chebyshev(**kwargs)
+    if metric == "cosine":
+        return cosine(**kwargs)
+    raise ValueError("metric must be a known string or callable")

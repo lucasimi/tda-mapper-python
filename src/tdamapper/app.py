@@ -1,9 +1,14 @@
 import logging
 import os
 from dataclasses import asdict, dataclass
+from typing import Any, Callable, Literal, Optional
 
+import networkx as nx
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from nicegui import app, run, ui
+from numpy.typing import NDArray
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.datasets import load_digits, load_iris
 from sklearn.decomposition import PCA
@@ -14,6 +19,7 @@ from tdamapper.core import TrivialClustering
 from tdamapper.cover import BallCover, CubicalCover, KNNCover
 from tdamapper.learn import MapperAlgorithm
 from tdamapper.plot import MapperPlot
+from tdamapper.protocols import Clustering, Cover
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,7 +67,7 @@ CLUSTERING_DBSCAN_EPS = 0.5
 CLUSTERING_DBSCAN_MIN_SAMPLES = 5
 CLUSTERING_AGGLOMERATIVE_N_CLUSTERS = 2
 
-PLOT_DIMENSIONS = 2
+PLOT_DIMENSIONS: Literal[2, 3] = 2
 PLOT_ITERATIONS = 100
 PLOT_COLORMAP = "Viridis"
 PLOT_NODE_SIZE = 1.0
@@ -86,12 +92,12 @@ class MapperConfig:
     clustering_dbscan_eps: float = CLUSTERING_DBSCAN_EPS
     clustering_dbscan_min_samples: int = CLUSTERING_DBSCAN_MIN_SAMPLES
     clustering_agglomerative_n_clusters: int = CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
-    plot_dimensions: int = PLOT_DIMENSIONS
+    plot_dimensions: Literal[2, 3] = PLOT_DIMENSIONS
     plot_iterations: int = PLOT_ITERATIONS
     plot_seed: int = RANDOM_SEED
 
 
-def fix_data(data):
+def fix_data(data: pd.DataFrame) -> pd.DataFrame:
     df = pd.DataFrame(data)
     df = df.select_dtypes(include="number")
     df.dropna(axis=1, how="all", inplace=True)
@@ -99,36 +105,39 @@ def fix_data(data):
     return df
 
 
-def lens_identity(X):
+def lens_identity(X: NDArray[np.float_]) -> NDArray[np.float_]:
     return X
 
 
-def lens_pca(n_components):
+def lens_pca(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.float_]]:
 
-    def _pca(X):
+    def _pca(X: NDArray[np.float_]) -> NDArray[np.float_]:
         pca_model = PCA(n_components=n_components, random_state=RANDOM_SEED)
         return pca_model.fit_transform(X)
 
     return _pca
 
 
-def lens_umap(n_components):
+def lens_umap(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.float_]]:
 
-    def _umap(X):
+    def _umap(X: NDArray[np.float_]) -> NDArray[np.float_]:
         um = UMAP(n_components=n_components, random_state=RANDOM_SEED)
         return um.fit_transform(X)
 
     return _umap
 
 
-def run_mapper(df, **kwargs):
+def run_mapper(
+    df: pd.DataFrame, **kwargs: dict[str, Any]
+) -> Optional[tuple[nx.Graph, pd.DataFrame]]:
     logger.info("Mapper computation started...")
     if df is None or df.empty:
         error = "Mapper computation failed: no data found, please load data first."
         logger.error(error)
-        return
+        return None
 
-    mapper_config = MapperConfig(**kwargs)
+    params: dict[str, Any] = kwargs
+    mapper_config = MapperConfig(**params)
 
     lens_type = mapper_config.lens_type
     cover_scale_data = mapper_config.cover_scale_data
@@ -156,6 +165,7 @@ def run_mapper(df, **kwargs):
     elif lens_type == LENS_UMAP:
         lens = lens_umap(n_components=lens_umap_n_components)
 
+    cover: Cover[NDArray[np.float_]]
     if cover_type == COVER_CUBICAL:
         cover = CubicalCover(
             n_intervals=cover_cubical_n_intervals,
@@ -167,8 +177,9 @@ def run_mapper(df, **kwargs):
         cover = KNNCover(neighbors=cover_knn_neighbors)
     else:
         logger.error(f"Unknown cover type: {cover_type}")
-        return
+        return None
 
+    clustering: Clustering[NDArray[np.float_]]
     if clustering_type == CLUSTERING_TRIVIAL:
         clustering = TrivialClustering()
     elif clustering_type == CLUSTERING_KMEANS:
@@ -187,7 +198,7 @@ def run_mapper(df, **kwargs):
         )
     else:
         logger.error(f"Unknown clustering type: {clustering_type}")
-        return
+        return None
 
     mapper = MapperAlgorithm(cover=cover, clustering=clustering)
     X = df.to_numpy()
@@ -202,10 +213,17 @@ def run_mapper(df, **kwargs):
     return mapper_graph, df_y
 
 
-def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
+def create_mapper_figure(
+    df_X: pd.DataFrame,
+    df_y: pd.DataFrame,
+    df_target: pd.DataFrame,
+    mapper_graph: nx.Graph,
+    **kwargs: dict[str, Any],
+) -> go.Figure:
     logger.info("Mapper rendering started...")
     df_colors = pd.concat([df_target, df_y, df_X], axis=1)
-    mapper_config = MapperConfig(**kwargs)
+    params: dict[str, Any] = kwargs
+    mapper_config = MapperConfig(**params)
     plot_dimensions = mapper_config.plot_dimensions
     plot_iterations = mapper_config.plot_iterations
     plot_seed = mapper_config.plot_seed
@@ -240,7 +258,30 @@ def create_mapper_figure(df_X, df_y, df_target, mapper_graph, **kwargs):
 
 class App:
 
-    def __init__(self, storage):
+    lens_type: Any
+    cover_type: Any
+    clustering_type: Any
+    lens_pca_n_components: Any
+    lens_umap_n_components: Any
+    cover_cubical_n_intervals: Any
+    cover_cubical_overlap_frac: Any
+    cover_ball_radius: Any
+    cover_knn_neighbors: Any
+    clustering_kmeans_n_clusters: Any
+    clustering_dbscan_eps: Any
+    clustering_dbscan_min_samples: Any
+    clustering_agglomerative_n_clusters: Any
+    plot_dimensions: Any
+    plot_iterations: Any
+    plot_seed: Any
+    load_type: Any
+    load_example: Any
+    storage: dict[str, Any]
+    draw_area: Optional[Any] = None
+    plot_container: Any
+    left_drawer: Any
+
+    def __init__(self, storage: dict[str, Any]) -> None:
         self.storage = storage
 
         ui.colors(
@@ -298,7 +339,7 @@ class App:
         with ui.column().classes("w-full h-screen overflow-hidden"):
             self._init_draw_area()
 
-    def _init_about(self):
+    def _init_about(self) -> None:
         with ui.dialog() as dialog, ui.card():
             ui.markdown(
                 """
@@ -326,7 +367,7 @@ class App:
             "w-full text-themedark"
         )
 
-    def _init_file_upload(self):
+    def _init_file_upload(self) -> None:
         ui.label("📊 Data").classes("text-h6")
 
         self.load_type = ui.select(
@@ -358,11 +399,11 @@ class App:
             value=LOAD_EXAMPLE,
         )
 
-    def _init_lens(self):
+    def _init_lens(self) -> None:
         ui.label("🔎 Lens").classes("text-h6")
         self._init_lens_settings()
 
-    def _init_lens_settings(self):
+    def _init_lens_settings(self) -> None:
         self.lens_type = ui.select(
             options=[
                 LENS_IDENTITY,
@@ -393,7 +434,7 @@ class App:
             value=LENS_UMAP,
         )
 
-    def _init_cover(self):
+    def _init_cover(self) -> None:
         with ui.row().classes("w-full items-center justify-between"):
             ui.label("🌐 Cover").classes("text-h6")
             self.cover_scale = ui.switch(
@@ -402,7 +443,7 @@ class App:
             )
         self._init_cover_settings()
 
-    def _init_cover_settings(self):
+    def _init_cover_settings(self) -> None:
         self.cover_type = ui.select(
             options=[
                 COVER_CUBICAL,
@@ -453,7 +494,7 @@ class App:
             value=COVER_KNN,
         )
 
-    def _init_clustering(self):
+    def _init_clustering(self) -> None:
         with ui.row().classes("w-full items-center justify-between"):
             ui.label("🧮 Clustering").classes("text-h6")
             self.clustering_scale = ui.switch(
@@ -462,7 +503,7 @@ class App:
             )
         self._init_clustering_settings()
 
-    def _init_clustering_settings(self):
+    def _init_clustering_settings(self) -> None:
         self.clustering_type = ui.select(
             options=[
                 CLUSTERING_TRIVIAL,
@@ -513,11 +554,11 @@ class App:
             value=CLUSTERING_AGGLOMERATIVE,
         )
 
-    def _init_draw(self):
+    def _init_draw(self) -> None:
         ui.label("🎨 Draw").classes("text-h6")
         self._init_draw_settings()
 
-    def _init_draw_settings(self):
+    def _init_draw_settings(self) -> None:
         self.plot_dimensions = ui.select(
             options=[2, 3],
             label="Dimensions",
@@ -534,16 +575,16 @@ class App:
             value=RANDOM_SEED,
         ).classes("w-full")
 
-    def _init_footnotes(self):
-        ui.label(text=("Made in Rome, with ❤️ and ☕️.")).classes(
+    def _init_footnotes(self) -> None:
+        ui.label(text="Made in Rome, with ❤️ and ☕️.").classes(
             "text-caption text-gray-500"
         ).classes("text-caption text-gray-500")
 
-    def _init_draw_area(self):
+    def _init_draw_area(self) -> None:
         self.plot_container = ui.element("div").classes("w-full h-full")
         self.draw_area = None
 
-        def _toggle_drawer():
+        def _toggle_drawer() -> None:
             self.left_drawer.toggle()
             if self.draw_area is not None:
                 self.draw_area.update()
@@ -554,7 +595,15 @@ class App:
                 on_click=_toggle_drawer,
             ).props("fab color=themedark")
 
-    def get_mapper_config(self):
+    def get_mapper_config(self) -> MapperConfig:
+        plot_dim = int(self.plot_dimensions.value)
+        plot_dimensions: Literal[2, 3]
+        if plot_dim == 2:
+            plot_dimensions = 2
+        elif plot_dim == 3:
+            plot_dimensions = 3
+        else:
+            plot_dimensions = PLOT_DIMENSIONS
         return MapperConfig(
             lens_type=str(self.lens_type.value) if self.lens_type.value else LENS_PCA,
             cover_type=(
@@ -615,11 +664,7 @@ class App:
                 if self.clustering_agglomerative_n_clusters.value
                 else CLUSTERING_AGGLOMERATIVE_N_CLUSTERS
             ),
-            plot_dimensions=(
-                int(self.plot_dimensions.value)
-                if self.plot_dimensions.value
-                else PLOT_DIMENSIONS
-            ),
+            plot_dimensions=plot_dimensions,
             plot_iterations=(
                 int(self.plot_iterations.value)
                 if self.plot_iterations.value
@@ -630,7 +675,7 @@ class App:
             ),
         )
 
-    def upload_file(self, file):
+    def upload_file(self, file: Any) -> None:
         if file is not None:
             df = pd.read_csv(file.content)
             self.storage["df"] = fix_data(df)
@@ -643,7 +688,7 @@ class App:
             logger.info(error)
             ui.notify(error, type="warning")
 
-    def load_data(self):
+    def load_data(self) -> None:
         if self.load_type.value == LOAD_EXAMPLE:
             if self.load_example.value == LOAD_EXAMPLE_DIGITS:
                 df, labels = load_digits(as_frame=True, return_X_y=True)
@@ -670,7 +715,7 @@ class App:
             return
 
         df = self.storage.get("df", pd.DataFrame())
-        if df is not None or not df.empty:
+        if df is not None and not df.empty:
             logger.info("Load data completed.")
             ui.notify("Load data completed.", type="positive")
         else:
@@ -678,20 +723,22 @@ class App:
             logger.warning(error)
             ui.notify(error, type="warning")
 
-    def notification_running_start(self, message):
+    def notification_running_start(self, message: str) -> Any:
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = message
         notification.spinner = True
         return notification
 
-    def notification_running_stop(self, notification, message, type=None):
+    def notification_running_stop(
+        self, notification: Any, message: str, type: Optional[str] = None
+    ) -> None:
         if type is not None:
             notification.type = type
         notification.message = message
         notification.timeout = 5.0
         notification.spinner = False
 
-    async def async_run_mapper(self):
+    async def async_run_mapper(self) -> None:
         notification = self.notification_running_start("Running Mapper...")
         df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
@@ -716,7 +763,7 @@ class App:
         )
         await self.async_draw_mapper()
 
-    async def async_draw_mapper(self):
+    async def async_draw_mapper(self) -> None:
         notification = self.notification_running_start("Drawing Mapper...")
 
         mapper_config = self.get_mapper_config()
@@ -760,15 +807,15 @@ class App:
         )
 
 
-def startup():
+def startup() -> None:
     @ui.page("/")
-    def main_page():
+    def main_page() -> None:
         ui.query(".nicegui-content").classes("p-0")
         storage = app.storage.client
         App(storage=storage)
 
 
-def main():
+def main() -> None:
     port = os.getenv("PORT", "8080")
     host = os.getenv("HOST", "0.0.0.0")
     production = os.getenv("PRODUCTION", "false").lower() == "true"

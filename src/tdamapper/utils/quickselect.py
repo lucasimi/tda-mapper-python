@@ -1,16 +1,28 @@
+from typing import Any, Optional
+
 import numpy as np
 from numba import njit
+
+from tdamapper.protocols import Array
 
 _ARR = np.zeros(1)
 
 
-@njit  # pragma: no cover
-def swap(arr, i, j):
+@njit  # type: ignore
+def swap(arr: Array[Any], i: int, j: int) -> None:  # pragma: no cover
     arr[i], arr[j] = arr[j], arr[i]
 
 
-@njit  # pragma: no cover
-def _swap_all(arr, i, j, extra1, use_extra1, extra2, use_extra2):
+@njit  # type: ignore
+def _swap_all(
+    arr: Array[Any],
+    i: int,
+    j: int,
+    extra1: Array[Any],
+    use_extra1: bool,
+    extra2: Array[Any],
+    use_extra2: bool,
+) -> None:  # pragma: no cover
     swap(arr, i, j)
     if use_extra1:
         swap(extra1, i, j)
@@ -18,8 +30,17 @@ def _swap_all(arr, i, j, extra1, use_extra1, extra2, use_extra2):
         swap(extra2, i, j)
 
 
-@njit  # pragma: no cover
-def _partition(data, start, end, p_ord, extra1, use_extra1, extra2, use_extra2):
+@njit  # type: ignore
+def _partition(
+    data: Array[Any],
+    start: int,
+    end: int,
+    p_ord: Any,
+    extra1: Array[Any],
+    use_extra1: bool,
+    extra2: Array[Any],
+    use_extra2: bool,
+) -> int:  # pragma: no cover
     higher = start
     for j in range(start, end):
         j_ord = data[j]
@@ -29,8 +50,17 @@ def _partition(data, start, end, p_ord, extra1, use_extra1, extra2, use_extra2):
     return higher
 
 
-@njit  # pragma: no cover
-def _quickselect(data, start, end, k, extra1, use_extra1, extra2, use_extra2):
+@njit  # type: ignore
+def _quickselect(
+    data: Array[Any],
+    start: int,
+    end: int,
+    k: int,
+    extra1: Array[Any],
+    use_extra1: bool,
+    extra2: Array[Any],
+    use_extra2: bool,
+) -> None:  # pragma: no cover
     if (k < start) or (k >= end):
         return
     start_, end_, higher = start, end, -1
@@ -47,19 +77,29 @@ def _quickselect(data, start, end, k, extra1, use_extra1, extra2, use_extra2):
             start_ = higher
 
 
-def _to_array(extra1=None, extra2=None):
+def _to_array(
+    extra1: Optional[Array[Any]] = None, extra2: Optional[Array[Any]] = None
+) -> tuple[Array[Any], Array[Any]]:
     extra1_arr = _ARR if extra1 is None else extra1
     extra2_arr = _ARR if extra2 is None else extra2
     return extra1_arr, extra2_arr
 
 
-def _use_array(extra1=None, extra2=None):
+def _use_array(
+    extra1: Optional[Array[Any]] = None, extra2: Optional[Array[Any]] = None
+) -> tuple[bool, bool]:
     use_extra1 = extra1 is not None
     use_extra2 = extra2 is not None
     return use_extra1, use_extra2
 
 
-def swap_all(arr, i, j, extra1=None, extra2=None):
+def swap_all(
+    arr: Array[Any],
+    i: int,
+    j: int,
+    extra1: Optional[Array[Any]] = None,
+    extra2: Optional[Array[Any]] = None,
+) -> None:
     extra1_arr, extra2_arr = _to_array(extra1, extra2)
     use_extra1, use_extra2 = _use_array(extra1, extra2)
     _swap_all(
@@ -73,7 +113,14 @@ def swap_all(arr, i, j, extra1=None, extra2=None):
     )
 
 
-def partition(data, start, end, p_ord, extra1=None, extra2=None):
+def partition(
+    data: Array[Any],
+    start: int,
+    end: int,
+    p_ord: Any,
+    extra1: Optional[Array[Any]] = None,
+    extra2: Optional[Array[Any]] = None,
+) -> int:
     extra1_arr, extra2_arr = _to_array(extra1, extra2)
     use_extra1, use_extra2 = _use_array(extra1, extra2)
     return _partition(
@@ -88,7 +135,14 @@ def partition(data, start, end, p_ord, extra1=None, extra2=None):
     )
 
 
-def quickselect(data, start, end, k, extra1=None, extra2=None):
+def quickselect(
+    data: Array[Any],
+    start: int,
+    end: int,
+    k: int,
+    extra1: Optional[Array[Any]] = None,
+    extra2: Optional[Array[Any]] = None,
+) -> None:
     extra1_arr, extra2_arr = _to_array(extra1, extra2)
     use_extra1, use_extra2 = _use_array(extra1, extra2)
     _quickselect(

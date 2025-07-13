@@ -25,10 +25,18 @@ tdamapper.learn
    :undoc-members:
    :show-inheritance:
 
-tdamapper.clustering
---------------------
+tdamapper.plot
+--------------
 
-.. automodule:: tdamapper.clustering
+.. automodule:: tdamapper.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tdamapper.protocols
+-------------------
+
+.. automodule:: tdamapper.protocols
    :members:
    :undoc-members:
    :show-inheritance:
@@ -49,10 +57,10 @@ tdamapper.utils.vptree
    :undoc-members:
    :show-inheritance:
 
-tdamapper.plot
---------------
+tdamapper.app
+-------------
 
-.. automodule:: tdamapper.plot
+.. automodule:: tdamapper.app
    :members:
    :undoc-members:
    :show-inheritance:

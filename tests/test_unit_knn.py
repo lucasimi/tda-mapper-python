@@ -1,8 +1,10 @@
 import numpy as np
 
 from tdamapper.cover import KNNCover
-from tdamapper.utils.metrics import euclidean
+from tdamapper.utils.metrics import euclidean, get_metric
 from tdamapper.utils.vptree_flat.vptree import VPTree
+
+distance = get_metric("euclidean")
 
 X = np.array(
     [
@@ -94,7 +96,7 @@ x = np.array([99.73199663, 100.8024564])
 
 
 def test_knn_search():
-    knn_cover = KNNCover(neighbors=5, metric="euclidean")
+    knn_cover = KNNCover(neighbors=5, metric=distance)
     knn_cover.fit(X)
     neigh_ids = knn_cover.search(x)
     d = euclidean()
@@ -104,7 +106,7 @@ def test_knn_search():
 
 
 def test_vptree():
-    vptree = VPTree(X[:80], metric="euclidean", leaf_capacity=5)
+    vptree = VPTree(X[:80], metric=distance, leaf_capacity=5)
     neigh = vptree.knn_search(x, 5)
     d = euclidean()
     dists = [d(x, y) for y in neigh]
@@ -115,7 +117,7 @@ def test_vptree():
 
 def test_vptree_simple():
     XX = np.array([np.array([x, x / 2]) for x in range(30)])
-    vptree = VPTree(XX, metric="euclidean", leaf_capacity=5, leaf_radius=0.0)
+    vptree = VPTree(XX, metric=distance, leaf_capacity=5, leaf_radius=0.0)
     xx = np.array([3, 3 / 2])
     neigh = vptree.knn_search(xx, 2)
     d = euclidean()
@@ -125,14 +127,14 @@ def test_vptree_simple():
 
 
 def check_vptree(vpt):
-    arr = vpt._get_arr()
+    arr = vpt.array
     data = arr._dataset
     distances = arr._distances
     indices = arr._indices
 
-    dist = vpt._get_distance()
-    leaf_capacity = vpt.get_leaf_capacity()
-    leaf_radius = vpt.get_leaf_radius()
+    dist = vpt.metric
+    leaf_capacity = vpt.leaf_capacity
+    leaf_radius = vpt.leaf_radius
 
     def check_sub(start, end):
         v_radius = distances[start]
