@@ -19,6 +19,13 @@ warnings.filterwarnings("default", category=DeprecationWarning, module=r"^tdamap
 
 
 def deprecated(msg: str) -> Callable[..., Any]:
+    """
+    Decorator to mark functions as deprecated.
+
+    :param msg: The deprecation message to be shown in the warning.
+    :return: A decorator that wraps the function to issue a deprecation warning.
+    """
+
     def deprecated_func(func: Callable[..., Any]) -> Callable[..., Any]:
         def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
@@ -30,18 +37,45 @@ def deprecated(msg: str) -> Callable[..., Any]:
 
 
 def warn_user(msg: str) -> None:
+    """
+    Issue a warning to the user.
+    """
     warnings.warn(msg, UserWarning, stacklevel=2)
 
 
 class EstimatorMixin:
+    """
+    Mixin to add common functionalities to estimators, such as validation of
+    input data and setting the number of features.
+
+    This mixin is intended to be used with estimators that follow the scikit-learn
+    interface, particularly those that implement the `fit` method.
+    It provides methods to validate input data, check for sparsity, and set the
+    number of features in the input data.
+    """
 
     def _is_sparse(self, X: ArrayRead[Any]) -> bool:
+        """
+        Check if the input data `X` is sparse.
+
+        :param X: Input data, can be a list, numpy array, or similar.
+        :return: True if `X` is sparse, False otherwise.
+        """
         # simple alternative use scipy.sparse.issparse
         return hasattr(X, "toarray")
 
     def _validate_X_y(
         self, X: ArrayRead[Any], y: ArrayRead[Any]
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """
+        Validate the input data `X` and target `y`.
+
+        :param X: Input data, can be a list, numpy array, or similar.
+        :param y: Target values, can be a list, numpy array, or similar.
+        :return: Tuple of validated numpy arrays for `X` and `y`.
+        :raises ValueError: If the input data is invalid, such as being empty,
+            having NaNs or infinite values, or being complex.
+        """
         if self._is_sparse(X):
             raise ValueError("Sparse data not supported.")
 
@@ -83,6 +117,11 @@ class EstimatorMixin:
         return X_, y_
 
     def _set_n_features_in(self, X: Array[Any]) -> None:
+        """
+        Set the number of features in the input data `X`.
+
+        :param X: Input data, can be a list, numpy array, or similar.
+        """
         if hasattr(X, "shape"):
             self.n_features_in_ = X.shape[1]
 
@@ -163,6 +202,14 @@ def clone(obj: Any) -> Any:
 
 
 def profile(n_lines: int = 10) -> Callable[..., Any]:
+    """
+    Decorator to profile a function using cProfile and print the top `n_lines`
+    cumulative time statistics.
+
+    :param n_lines: The number of lines to print from the profiling statistics.
+    :return: A decorator that wraps the function to profile its execution.
+    """
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
             profiler = cProfile.Profile()
