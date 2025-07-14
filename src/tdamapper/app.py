@@ -1,3 +1,7 @@
+"""
+This module provides a web app for visualizing Mapper graphs.
+"""
+
 import logging
 import os
 from dataclasses import asdict, dataclass
@@ -31,6 +35,18 @@ ICON_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-icon.png"
 
 LOGO_URL = f"{GIT_REPO_URL}/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png"
 
+ABOUT_TEXT = """
+### About
+
+**tda-mapper** is a Python library built around the Mapper algorithm, a core
+technique in Topological Data Analysis (TDA) for extracting topological
+structure from complex data. Designed for computational efficiency and
+scalability, it leverages optimized spatial search methods to support
+high-dimensional datasets. You can find further details in the
+[documentation](https://tda-mapper.readthedocs.io/en/main/)
+and in the
+[paper](https://openreview.net/pdf?id=lTX4bYREAZ).
+"""
 
 LOAD_EXAMPLE = "Example"
 LOAD_EXAMPLE_DIGITS = "Digits"
@@ -77,6 +93,32 @@ RANDOM_SEED = 42
 
 @dataclass
 class MapperConfig:
+    """
+    Configuration for the Mapper algorithm.
+
+    :param lens_type: Type of lens to use for dimensionality reduction.
+    :param cover_scale_data: Whether to scale the data before covering.
+    :param cover_type: Type of cover to use for the Mapper algorithm.
+    :param clustering_scale_data: Whether to scale the data before clustering.
+    :param clustering_type: Type of clustering algorithm to use.
+    :param lens_pca_n_components: Number of components for PCA lens.
+    :param lens_umap_n_components: Number of components for UMAP lens.
+    :param cover_cubical_n_intervals: Number of intervals for cubical cover.
+    :param cover_cubical_overlap_frac: Overlap fraction for cubical cover.
+    :param cover_ball_radius: Radius for ball cover.
+    :param cover_knn_neighbors: Number of neighbors for KNN cover.
+    :param clustering_kmeans_n_clusters: Number of clusters for KMeans
+        clustering.
+    :param clustering_dbscan_eps: Epsilon parameter for DBSCAN clustering.
+    :param clustering_dbscan_min_samples: Minimum samples for DBSCAN
+        clustering.
+    :param clustering_agglomerative_n_clusters: Number of clusters for
+        Agglomerative clustering.
+    :param plot_dimensions: Number of dimensions for the plot (2D or 3D).
+    :param plot_iterations: Number of iterations for the plot.
+    :param plot_seed: Random seed for reproducibility.
+    """
+
     lens_type: str = LENS_PCA
     cover_scale_data: bool = COVER_SCALE_DATA
     cover_type: str = COVER_CUBICAL
@@ -98,6 +140,14 @@ class MapperConfig:
 
 
 def fix_data(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Fixes the input data by selecting numeric columns, dropping empty columns,
+    and filling NaN values with the mean of each column.
+
+    :param data: Input DataFrame to be fixed.
+    :return: Fixed DataFrame with numeric columns, no empty columns, and NaN
+        values filled with column means.
+    """
     df = pd.DataFrame(data)
     df = df.select_dtypes(include="number")
     df.dropna(axis=1, how="all", inplace=True)
@@ -106,10 +156,25 @@ def fix_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def lens_identity(X: NDArray[np.float_]) -> NDArray[np.float_]:
+    """
+    Identity lens function that returns the input data as is.
+
+    :param X: Input data as a NumPy array.
+    :return: The same input data as a NumPy array.
+    """
     return X
 
 
 def lens_pca(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.float_]]:
+    """
+    Creates a lens function that reduces the dimensionality of the input data.
+    This function applies PCA to the input data and returns the transformed
+    data.
+
+    :param n_components: Number of components to keep after PCA.
+    :return: A function that applies PCA to the input data and returns the
+        transformed data.
+    """
 
     def _pca(X: NDArray[np.float_]) -> NDArray[np.float_]:
         pca_model = PCA(n_components=n_components, random_state=RANDOM_SEED)
@@ -119,6 +184,15 @@ def lens_pca(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.flo
 
 
 def lens_umap(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.float_]]:
+    """
+    Creates a lens function that reduces the dimensionality of the input data.
+    This function applies UMAP to the input data and returns the transformed
+    data.
+
+    :param n_components: Number of components to keep after UMAP.
+    :return: A function that applies UMAP to the input data and returns the
+        transformed data.
+    """
 
     def _umap(X: NDArray[np.float_]) -> NDArray[np.float_]:
         um = UMAP(n_components=n_components, random_state=RANDOM_SEED)
@@ -130,6 +204,15 @@ def lens_umap(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.fl
 def run_mapper(
     df: pd.DataFrame, **kwargs: dict[str, Any]
 ) -> Optional[tuple[nx.Graph, pd.DataFrame]]:
+    """
+    Runs the Mapper algorithm on the provided DataFrame and returns the Mapper
+    graph and the transformed DataFrame.
+
+    :param df: Input DataFrame containing the data to be processed.
+    :param kwargs: Additional parameters for the Mapper configuration.
+    :return: A tuple containing the Mapper graph and the transformed DataFrame,
+        or None if the computation fails.
+    """
     logger.info("Mapper computation started...")
     if df is None or df.empty:
         error = "Mapper computation failed: no data found, please load data first."
@@ -220,6 +303,16 @@ def create_mapper_figure(
     mapper_graph: nx.Graph,
     **kwargs: dict[str, Any],
 ) -> go.Figure:
+    """
+    Renders the Mapper graph as a Plotly figure.
+
+    :param df_X: DataFrame containing the input data.
+    :param df_y: DataFrame containing the lens-transformed data.
+    :param df_target: DataFrame containing the target labels.
+    :param mapper_graph: The Mapper graph to be visualized.
+    :param kwargs: Additional parameters for the Mapper configuration.
+    :return: A Plotly figure representing the Mapper graph.
+    """
     logger.info("Mapper rendering started...")
     df_colors = pd.concat([df_target, df_y, df_X], axis=1)
     params: dict[str, Any] = kwargs
@@ -257,6 +350,39 @@ def create_mapper_figure(
 
 
 class App:
+    """
+    Main application class for the Mapper web application.
+
+    This class initializes the user interface, handles data loading, and runs
+    the Mapper algorithm.
+
+    :param storage: Dictionary to store application state and data.
+    :param draw_area: Optional draw area for rendering Mapper graphs.
+    :param plot_container: Container for the plot area.
+    :param left_drawer: Drawer for the left sidebar containing controls and
+        settings.
+    :param lens_type: Type of lens to use for dimensionality reduction.
+    :param cover_type: Type of cover to use for the Mapper algorithm.
+    :param clustering_type: Type of clustering algorithm to use.
+    :param lens_pca_n_components: Number of components for PCA lens.
+    :param lens_umap_n_components: Number of components for UMAP lens.
+    :param cover_cubical_n_intervals: Number of intervals for cubical cover.
+    :param cover_cubical_overlap_frac: Overlap fraction for cubical cover.
+    :param cover_ball_radius: Radius for ball cover.
+    :param cover_knn_neighbors: Number of neighbors for KNN cover.
+    :param clustering_kmeans_n_clusters: Number of clusters for KMeans
+        clustering.
+    :param clustering_dbscan_eps: Epsilon parameter for DBSCAN clustering.
+    :param clustering_dbscan_min_samples: Minimum samples for DBSCAN
+        clustering.
+    :param clustering_agglomerative_n_clusters: Number of clusters for
+        Agglomerative clustering.
+    :param plot_dimensions: Number of dimensions for the plot (2D or 3D).
+    :param plot_iterations: Number of iterations for the plot.
+    :param plot_seed: Random seed for reproducibility.
+    :param load_type: Type of data loading (example or CSV).
+    :param load_example: Example dataset to load if using example data.
+    """
 
     lens_type: Any
     cover_type: Any
@@ -341,20 +467,7 @@ class App:
 
     def _init_about(self) -> None:
         with ui.dialog() as dialog, ui.card():
-            ui.markdown(
-                """
-                ### About
-
-                **tda-mapper** is a Python library built around the Mapper algorithm, a core
-                technique in Topological Data Analysis (TDA) for extracting topological
-                structure from complex data. Designed for computational efficiency and
-                scalability, it leverages optimized spatial search methods to support
-                high-dimensional datasets. You can find further details in the
-                [documentation](https://tda-mapper.readthedocs.io/en/main/)
-                and in the
-                [paper](https://openreview.net/pdf?id=lTX4bYREAZ).
-                """
-            )
+            ui.markdown(ABOUT_TEXT)
             ui.link(
                 text="If you like this project, please consider giving it a ⭐ on GitHub!",
                 target=GIT_REPO_URL,
@@ -596,6 +709,11 @@ class App:
             ).props("fab color=themedark")
 
     def get_mapper_config(self) -> MapperConfig:
+        """
+        Retrieves the current configuration settings for the Mapper algorithm.
+
+        :return: A MapperConfig object containing the current settings.
+        """
         plot_dim = int(self.plot_dimensions.value)
         plot_dimensions: Literal[2, 3]
         if plot_dim == 2:
@@ -676,6 +794,13 @@ class App:
         )
 
     def upload_file(self, file: Any) -> None:
+        """
+        Handles the file upload event, reads the CSV file,
+        and stores the data in the application storage.
+
+        :param file: The uploaded file object.
+        :return: None
+        """
         if file is not None:
             df = pd.read_csv(file.content)
             self.storage["df"] = fix_data(df)
@@ -689,6 +814,15 @@ class App:
             ui.notify(error, type="warning")
 
     def load_data(self) -> None:
+        """
+        Loads example datasets or CSV files based on the selected load type.
+
+        If the load type is set to "Example", it loads either the Digits or
+        Iris dataset. If the load type is set to "CSV", it checks if a
+        DataFrame is already stored in the application storage and uses it.
+
+        :return: None
+        """
         if self.load_type.value == LOAD_EXAMPLE:
             if self.load_example.value == LOAD_EXAMPLE_DIGITS:
                 df, labels = load_digits(as_frame=True, return_X_y=True)
@@ -724,6 +858,14 @@ class App:
             ui.notify(error, type="warning")
 
     def notification_running_start(self, message: str) -> Any:
+        """
+        Starts a notification to indicate that a long-running operation is in
+        progress.
+
+        :param message: The message to display in the notification.
+        :return: A notification object that can be used to update the message
+            and status.
+        """
         notification = ui.notification(timeout=None, type="ongoing")
         notification.message = message
         notification.spinner = True
@@ -732,6 +874,14 @@ class App:
     def notification_running_stop(
         self, notification: Any, message: str, type: Optional[str] = None
     ) -> None:
+        """
+        Stops the notification and updates it with the final message and type.
+
+        :param notification: The notification object to update.
+        :param message: The final message to display in the notification.
+        :param type: The type of notification.
+        :return: None
+        """
         if type is not None:
             notification.type = type
         notification.message = message
@@ -739,6 +889,16 @@ class App:
         notification.spinner = False
 
     async def async_run_mapper(self) -> None:
+        """
+        Runs the Mapper algorithm on the loaded data and updates the storage
+        with the Mapper graph and transformed DataFrame.
+
+        This method retrieves the input DataFrame from storage, applies the
+        Mapper algorithm, and stores the resulting Mapper graph and transformed
+        DataFrame back into storage.
+
+        :return: None
+        """
         notification = self.notification_running_start("Running Mapper...")
         df_X = self.storage.get("df", pd.DataFrame())
         if df_X is None or df_X.empty:
@@ -764,6 +924,15 @@ class App:
         await self.async_draw_mapper()
 
     async def async_draw_mapper(self) -> None:
+        """
+        Draws the Mapper graph using the stored graph and input data.
+
+        This method retrieves the Mapper graph and input DataFrame from
+        storage, creates a Plotly figure representing the Mapper graph, and
+        updates the draw area in the user interface with the new figure.
+
+        :return: None
+        """
         notification = self.notification_running_start("Drawing Mapper...")
 
         mapper_config = self.get_mapper_config()
@@ -808,14 +977,30 @@ class App:
 
 
 def startup() -> None:
+    """
+    Initializes the NiceGUI app and sets up the main page.
+
+    :return: None
+    """
+
     @ui.page("/")
     def main_page() -> None:
+        """
+        Main page of the application.
+
+        :return: None
+        """
         ui.query(".nicegui-content").classes("p-0")
         storage = app.storage.client
         App(storage=storage)
 
 
 def main() -> None:
+    """
+    Main entry point for the Mapper web application.
+
+    :return: None
+    """
     port = os.getenv("PORT", "8080")
     host = os.getenv("HOST", "0.0.0.0")
     production = os.getenv("PRODUCTION", "false").lower() == "true"
