@@ -17,7 +17,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Software Development :: Libraries",
-    "License :: OSI Approved :: Apache-2.0",
+    "License :: Apache-2.0",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
