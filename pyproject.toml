@@ -9,7 +9,7 @@ description = "A simple and efficient Python implementation of Mapper algorithm 
 readme = "README.md"
 authors = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
 maintainers = [{ name = "Luca Simi", email = "lucasimi90@gmail.com" }]
-license = { file = "LICENSE" } 
+license = "Apache-2.0"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
@@ -17,7 +17,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Software Development :: Libraries",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -71,6 +70,8 @@ tda-mapper-app = "tdamapper._run_app:run"
 Homepage = "https://github.com/lucasimi/tda-mapper-python"
 Documentation = "https://tda-mapper.readthedocs.io"
 Issues = "https://github.com/lucasimi/tda-mapper-python/issues"
+
+
 
 [tool.setuptools.packages.find]
 where = ["src"]
