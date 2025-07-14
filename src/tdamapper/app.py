@@ -699,14 +699,17 @@ class App:
 
         def _toggle_drawer() -> None:
             self.left_drawer.toggle()
-            if self.draw_area is not None:
-                self.draw_area.update()
 
         with ui.page_sticky(x_offset=18, y_offset=18, position="top-left"):
-            ui.button(
+            toggle_button = ui.button(
                 icon="menu",
                 on_click=_toggle_drawer,
             ).props("fab color=themedark")
+            toggle_button.bind_visibility_from(
+                target_object=self.left_drawer,
+                target_name="value",
+                value=False,
+            )
 
     def get_mapper_config(self) -> MapperConfig:
         """
