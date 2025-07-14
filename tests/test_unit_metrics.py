@@ -40,6 +40,15 @@ def test_cosine():
     assert bc == 0.0
 
 
+def test_minkowski():
+    d = metrics.minkowski(p=3)
+    a = np.array([1.0, 0.0])
+    b = np.array([0.0, 1.0])
+    ab = d(a, b)
+    assert ab >= 1.2599
+    assert ab <= 1.2600
+
+
 def test_get_metric():
     assert metrics.euclidean() == metrics.get_metric("euclidean")
     assert metrics.euclidean() == metrics.get_metric("minkowski")
