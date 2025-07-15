@@ -1,25 +1,58 @@
+"""
+Unit tests for the vp-tree implementations.
+"""
+
 import random
 
 import numpy as np
+import pytest
 
 from tdamapper.utils.metrics import get_metric
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
-
-distance = get_metric("euclidean")
-
-
-def dataset(dim=10, num=1000):
-    return [np.random.rand(dim) for _ in range(num)]
-
-
-eps = 0.25
-
-neighbors = 5
+from tests.test_utils import (
+    dataset_grid,
+    dataset_random,
+    dataset_simple,
+    dataset_two_lines,
+)
 
 
-def _test_ball_search(data, dist, vpt):
+def distance(metric):
+    """
+    Get the distance function for the specified metric.
+    """
+    return get_metric(metric)
+
+
+def distance_refs(metric, data):
+    """
+    Get the distance function for the specified metric, using data references.
+    This is useful for testing with datasets that are not numpy arrays.
+    """
+    d = get_metric(metric)
+
+    def dist_refs(i, j):
+        return d(data[i, :], data[j, :])
+
+    return dist_refs
+
+
+SIMPLE = dataset_simple()
+SIMPLE_REFS = np.array(list(range(len(SIMPLE))))
+
+TWO_LINES = dataset_two_lines(100)
+TWO_LINES_REFS = np.array(list(range(len(TWO_LINES))))
+
+GRID = dataset_grid(10)
+GRID_REFS = np.array(list(range(len(GRID))))
+
+RANDOM = dataset_random(2, 100)
+RANDOM_REFS = np.array(list(range(len(RANDOM))))
+
+
+def _test_ball_search(data, dist, vpt, eps):
     for _ in range(len(data) // 10):
         point = random.choice(data)
         ball = vpt.ball_search(point, eps)
@@ -31,7 +64,7 @@ def _test_ball_search(data, dist, vpt):
             assert any(d(x, y) == 0.0 for y in ball)
 
 
-def _test_knn_search(data, dist, vpt):
+def _test_knn_search(data, dist, vpt, neighbors):
     for _ in range(len(data) // 10):
         point = random.choice(data)
         neigh = vpt.knn_search(point, neighbors)
@@ -54,65 +87,28 @@ def _test_nn_search(data, dist, vpt):
         assert 0.0 == d(val, neigh[0])
 
 
-def _test_vptree(builder, data, dist):
-    vpt = builder(data, metric=dist, leaf_radius=eps, leaf_capacity=neighbors)
-    _test_ball_search(data, dist, vpt)
-    _test_knn_search(data, dist, vpt)
-    _test_nn_search(data, dist, vpt)
+def _test_vptree(builder, data, dist, eps, neighbors, pivoting):
     vpt = builder(
         data,
         metric=dist,
         leaf_radius=eps,
         leaf_capacity=neighbors,
-        pivoting="random",
+        pivoting=pivoting,
     )
-    _test_ball_search(data, dist, vpt)
-    _test_knn_search(data, dist, vpt)
-    _test_nn_search(data, dist, vpt)
-    vpt = builder(
-        data,
-        metric=dist,
-        leaf_radius=eps,
-        leaf_capacity=neighbors,
-        pivoting="furthest",
-    )
-    _test_ball_search(data, dist, vpt)
-    _test_knn_search(data, dist, vpt)
+    _test_ball_search(data, dist, vpt, eps)
+    _test_knn_search(data, dist, vpt, neighbors)
     _test_nn_search(data, dist, vpt)
 
 
-def test_vptree_hier_refs():
-    data = dataset()
-    data_refs = list(range(len(data)))
-    d = get_metric(distance)
-
-    def dist_refs(i, j):
-        return d(data[i], data[j])
-
-    _test_vptree(HVPT, data_refs, dist_refs)
-
-
-def test_vptree_hier_data():
-    data = dataset()
-    _test_vptree(HVPT, data, distance)
-
-
-def test_vptree_flat_refs():
-    data = dataset()
-    data_refs = list(range(len(data)))
-    d = get_metric(distance)
-
-    def dist_refs(i, j):
-        return d(data[i], data[j])
-
-    _test_vptree(FVPT, data_refs, dist_refs)
-
-
-def test_vptree_flat_data():
-    data = dataset()
-    _test_vptree(FVPT, data, distance)
-
-
-def test_ball_tree_data():
-    data = dataset()
-    _test_vptree(SkBallTree, data, distance)
+@pytest.mark.parametrize("pivoting", ["disabled", "random", "furthest"])
+@pytest.mark.parametrize("eps", [0.1, 0.25, 0.5])
+@pytest.mark.parametrize("neighbors", [1, 5, 10])
+@pytest.mark.parametrize("builder", [HVPT, FVPT])
+@pytest.mark.parametrize("metric", ["euclidean"])
+@pytest.mark.parametrize("dataset", [SIMPLE, TWO_LINES, GRID, RANDOM])
+def test_vptree(builder, dataset, metric, eps, neighbors, pivoting):
+    """
+    Test the vp-tree implementations with various datasets and metrics.
+    """
+    metric = get_metric(metric)
+    _test_vptree(builder, dataset, metric, eps, neighbors, pivoting)
