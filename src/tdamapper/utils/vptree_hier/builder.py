@@ -98,6 +98,8 @@ class Builder(Generic[T]):
         return tree, self._array
 
     def _build_rec(self, start: int, end: int) -> Tree[T]:
+        if end - start <= self._leaf_capacity:
+            return Leaf(start, end)
         mid = _mid(start, end)
         self._update(start, end)
         v_point = self._array.get_point(start)
@@ -106,7 +108,7 @@ class Builder(Generic[T]):
         self._array.set_distance(start, v_radius)
         left: Tree[T]
         right: Tree[T]
-        if (end - start <= 2 * self._leaf_capacity) or (v_radius <= self._leaf_radius):
+        if v_radius <= self._leaf_radius:
             left = Leaf(start + 1, mid)
             right = Leaf(mid, end)
         else:

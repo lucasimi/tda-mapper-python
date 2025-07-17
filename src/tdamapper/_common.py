@@ -179,10 +179,12 @@ class ParamsMixin:
         obj_noargs = type(self)()
         args_repr = []
         for k, v in self.__dict__.items():
+            if not self._is_param_public(k):
+                continue
             v_default = getattr(obj_noargs, k)
             v_default_repr = repr(v_default)
             v_repr = repr(v)
-            if self._is_param_public(k) and not v_repr == v_default_repr:
+            if not v_repr == v_default_repr:
                 args_repr.append(f"{k}={v_repr}")
         return f"{self.__class__.__name__}({', '.join(args_repr)})"
 

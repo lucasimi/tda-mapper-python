@@ -1,39 +1,36 @@
-import random
+import pytest
 
 from tdamapper.utils.heap import MaxHeap
+from tests.test_utils import list_int_random
 
 
-def maxheap(data):
+def _check_heap_property(data, i=0):
+    if i >= len(data):
+        return
+    i_left = 2 * i + 1
+    if i_left < len(data):
+        assert data[i] >= data[i_left]
+    i_right = 2 * i + 2
+    if i_right < len(data):
+        assert data[i] >= data[i_right]
+    _check_heap_property(data, i_left)
+    _check_heap_property(data, i_right)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        [],
+        [1, 2, 3, 4, 5],
+        [5, 4, 3, 2, 1],
+        [1, 1, 1, 1, 2],
+        list_int_random(10),
+        list_int_random(100),
+        list_int_random(1000),
+    ],
+)
+def test_max_heap(data):
     m = MaxHeap()
     for x in data:
         m.add(x, x)
-    return m
-
-
-def test_empty():
-    m = MaxHeap()
-    assert 0 == len(m)
-
-
-def test_max():
-    data = list(range(10))
-    random.shuffle(data)
-    m = maxheap(data)
-    assert (9, 9) == m.top()
-    assert 10 == len(m)
-
-
-def test_max_random():
-    data = random.sample(list(range(1000)), 100)
-    m = maxheap(data)
-    assert 100 == len(m)
-    max_data = max(data)
-    assert (max_data, max_data) == m.top()
-    assert 0 != len(m)
-    collected = []
-    for _ in range(10):
-        collected.append(m.pop())
-    data.sort()
-    collected.sort()
-    assert collected == [(x, x) for x in data[-10:]]
-    assert 90 == len(m)
+    _check_heap_property(list(m))

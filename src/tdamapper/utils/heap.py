@@ -104,6 +104,14 @@ class MaxHeap(Generic[K, V]):
     def __len__(self) -> int:
         return len(self._heap)
 
+    def is_empty(self) -> bool:
+        """
+        Check if the heap is empty.
+
+        :return: True if the heap is empty, False otherwise.
+        """
+        return len(self._heap) == 0
+
     def top(self) -> Optional[tuple[K, V]]:
         """
         Returns the maximum element in the heap without removing it.

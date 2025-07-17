@@ -2,6 +2,8 @@
 Unit tests for the cover algorithms.
 """
 
+import math
+
 import pytest
 
 from tdamapper.core import TrivialCover
@@ -163,3 +165,32 @@ def test_params(cover, params):
     params = cover.get_params(deep=True)
     for k, v in params.items():
         assert params[k] == v
+
+
+def test_cubical_cover():
+    """
+    Test the CubicalCover with a specific configuration.
+    This test checks that the cover correctly identifies the intervals and
+    overlaps based on the given parameters.
+    """
+    m, M = 0, 99
+    n = 10
+    p = 0.1
+    w = (M - m) / (n * (1.0 - p))
+    delta = p * w
+    data = list(range(m, M + 1))
+    cover = CubicalCover(n_intervals=n, overlap_frac=p)
+    cover.fit(data)
+    for x in data[:-1]:
+        result = cover.search(x)
+        i = math.floor((x - m) / (w - delta))
+        a_i = m + i * (w - delta) - delta / 2.0
+        b_i = m + (i + 1) * (w - delta) + delta / 2.0
+        expected = [y for y in data if y > a_i and y < b_i]
+        for c in result:
+            assert c in expected
+        for c in expected:
+            assert c in result
+    x = data[-1]
+    last_result = cover.search(x)
+    assert result == last_result

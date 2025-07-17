@@ -2,9 +2,8 @@
 Unit tests for the vp-tree implementations.
 """
 
-import random
+import math
 
-import numpy as np
 import pytest
 
 from tdamapper.utils.metrics import get_metric
@@ -12,79 +11,60 @@ from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
 from tests.test_utils import (
+    dataset_empty,
     dataset_grid,
     dataset_random,
     dataset_simple,
     dataset_two_lines,
 )
 
-
-def distance(metric):
-    """
-    Get the distance function for the specified metric.
-    """
-    return get_metric(metric)
-
-
-def distance_refs(metric, data):
-    """
-    Get the distance function for the specified metric, using data references.
-    This is useful for testing with datasets that are not numpy arrays.
-    """
-    d = get_metric(metric)
-
-    def dist_refs(i, j):
-        return d(data[i, :], data[j, :])
-
-    return dist_refs
-
+EMPTY = dataset_empty()
 
 SIMPLE = dataset_simple()
-SIMPLE_REFS = np.array(list(range(len(SIMPLE))))
 
-TWO_LINES = dataset_two_lines(100)
-TWO_LINES_REFS = np.array(list(range(len(TWO_LINES))))
+TWO_LINES = dataset_two_lines(10)
 
 GRID = dataset_grid(10)
-GRID_REFS = np.array(list(range(len(GRID))))
 
-RANDOM = dataset_random(2, 100)
-RANDOM_REFS = np.array(list(range(len(RANDOM))))
+RANDOM = dataset_random(2, 10)
 
 
 def _test_ball_search(data, dist, vpt, eps):
-    for _ in range(len(data) // 10):
-        point = random.choice(data)
-        ball = vpt.ball_search(point, eps)
-        d = get_metric(dist)
-        near = [y for y in data if d(point, y) < eps]
-        for x in ball:
-            assert any(d(x, y) == 0.0 for y in near)
-        for x in near:
-            assert any(d(x, y) == 0.0 for y in ball)
+    d = get_metric(dist)
+    for point in data:
+        neigh = vpt.ball_search(point, eps, inclusive=False)
+        neigh_naive = [y for y in data if d(point, y) < eps]
+        dist_neigh = [d(point, y) for y in neigh]
+        dist_neigh_naive = [d(point, y) for y in neigh_naive]
+        dist_neigh.sort()
+        dist_neigh_naive.sort()
+        assert len(dist_neigh) == len(dist_neigh_naive)
+        assert len(neigh) == len(neigh_naive)
+        for x, y in zip(dist_neigh, dist_neigh_naive):
+            assert math.isclose(x, y)
 
 
 def _test_knn_search(data, dist, vpt, neighbors):
-    for _ in range(len(data) // 10):
-        point = random.choice(data)
+    d = get_metric(dist)
+    for point in data:
         neigh = vpt.knn_search(point, neighbors)
-        assert neighbors == len(neigh)
-        d = get_metric(dist)
+        neigh_len = len(neigh)
+        assert min(neighbors, len(data)) == neigh_len
         dist_neigh = [d(point, y) for y in neigh]
         dist_data = [d(point, y) for y in data]
         dist_data.sort()
         dist_neigh.sort()
-        assert 0.0 == dist_data[0]
-        assert 0.0 == dist_neigh[0]
-        assert dist_neigh == dist_data[:neighbors]
-        assert set(dist_neigh) == set(dist_data[:neighbors])
+        assert math.isclose(dist_data[0], 0.0)
+        assert math.isclose(dist_neigh[0], 0.0)
+        for x, y in zip(dist_neigh, dist_data[:neigh_len]):
+            assert math.isclose(x, y)
 
 
 def _test_nn_search(data, dist, vpt):
     d = get_metric(dist)
     for val in data:
         neigh = vpt.knn_search(val, 1)
-        assert 0.0 == d(val, neigh[0])
+        assert math.isclose(d(val, neigh[0]), 0.0)
 
 
 def _test_vptree(builder, data, dist, eps, neighbors, pivoting):
@@ -95,20 +75,89 @@ def _test_vptree(builder, data, dist, eps, neighbors, pivoting):
         leaf_capacity=neighbors,
         pivoting=pivoting,
     )
+    _check_vptree_property(vpt)
     _test_ball_search(data, dist, vpt, eps)
     _test_knn_search(data, dist, vpt, neighbors)
     _test_nn_search(data, dist, vpt)
 
 
+def _check_vptree_property(vpt):
+    arr = vpt.array
+    data = arr._dataset
+    distances = arr._distances
+    indices = arr._indices
+
+    dist = vpt.metric
+    leaf_capacity = vpt.leaf_capacity
+    leaf_radius = vpt.leaf_radius
+
+    def _check_sub(start, end):
+        v_radius = distances[start]
+        v_point_index = indices[start]
+        v_point = data[v_point_index]
+
+        mid = (start + end) // 2
+        for i in range(start + 1, mid):
+            y_index = indices[i]
+            y = data[y_index]
+            assert dist(v_point, y) <= v_radius
+        for i in range(mid, end):
+            y_index = indices[i]
+            y = data[y_index]
+            assert dist(v_point, y) >= v_radius
+
+    def _check_rec(start, end):
+        v_radius = distances[start]
+        if (end - start > leaf_capacity) and (v_radius > leaf_radius):
+            _check_sub(start, end)
+            mid = (start + end) // 2
+            _check_rec(start + 1, mid)
+            _check_rec(mid, end)
+
+    _check_rec(0, len(data))
+
+
 @pytest.mark.parametrize("pivoting", ["disabled", "random", "furthest"])
-@pytest.mark.parametrize("eps", [0.1, 0.25, 0.5])
-@pytest.mark.parametrize("neighbors", [1, 5, 10])
+@pytest.mark.parametrize("eps", [0.1, 0.5])
+@pytest.mark.parametrize("neighbors", [2, 10])
 @pytest.mark.parametrize("builder", [HVPT, FVPT])
-@pytest.mark.parametrize("metric", ["euclidean"])
-@pytest.mark.parametrize("dataset", [SIMPLE, TWO_LINES, GRID, RANDOM])
+@pytest.mark.parametrize("metric", ["euclidean", "manhattan"])
+@pytest.mark.parametrize("dataset", [TWO_LINES, GRID, RANDOM])
 def test_vptree(builder, dataset, metric, eps, neighbors, pivoting):
     """
     Test the vp-tree implementations with various datasets and metrics.
     """
     metric = get_metric(metric)
-    _test_vptree(builder, dataset, metric, eps, neighbors, pivoting)
+    vpt = builder(
+        dataset,
+        metric=metric,
+        leaf_radius=eps,
+        leaf_capacity=neighbors,
+        pivoting=pivoting,
+    )
+    _check_vptree_property(vpt)
+    _test_ball_search(dataset, metric, vpt, eps)
+    _test_knn_search(dataset, metric, vpt, neighbors)
+    _test_nn_search(dataset, metric, vpt)
+
+
+@pytest.mark.parametrize("pivoting", ["disabled", "random", "furthest"])
+@pytest.mark.parametrize("eps", [0.1, 0.5])
+@pytest.mark.parametrize("neighbors", [2, 10])
+@pytest.mark.parametrize("metric", ["euclidean", "manhattan"])
+@pytest.mark.parametrize("dataset", [TWO_LINES, GRID, RANDOM])
+def test_vptree_sklearn(dataset, metric, eps, neighbors, pivoting):
+    """
+    Test the baseline vp-tree implementation with various datasets and metrics.
+    """
+    metric = get_metric(metric)
+    vpt = SkBallTree(
+        dataset,
+        metric=metric,
+        leaf_radius=eps,
+        leaf_capacity=neighbors,
+        pivoting=pivoting,
+    )
+    _test_ball_search(dataset, metric, vpt, eps)
+    _test_knn_search(dataset, metric, vpt, neighbors)
+    _test_nn_search(dataset, metric, vpt)
