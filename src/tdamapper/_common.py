@@ -27,7 +27,7 @@ def deprecated(msg: str) -> Callable[..., Any]:
     """
 
     def deprecated_func(func: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
+        def wrapper(*args: list[Any], **kwargs: Any) -> Any:
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
 
@@ -213,7 +213,7 @@ def profile(n_lines: int = 10) -> Callable[..., Any]:
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapper(*args: list[Any], **kwargs: dict[str, Any]) -> Any:
+        def wrapper(*args: list[Any], **kwargs: Any) -> Any:
             profiler = cProfile.Profile()
             profiler.enable()
             result = func(*args, **kwargs)

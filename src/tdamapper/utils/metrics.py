@@ -58,7 +58,7 @@ def get_supported_metrics() -> list[MetricLiteral]:
     return list(get_args(MetricLiteral))
 
 
-def euclidean(**kwargs: dict[str, Any]) -> Metric[Any]:
+def euclidean() -> Metric[Any]:
     """
     Return the Euclidean distance function for vectors.
 
@@ -70,7 +70,7 @@ def euclidean(**kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.euclidean
 
 
-def manhattan(**kwargs: dict[str, Any]) -> Metric[Any]:
+def manhattan() -> Metric[Any]:
     """
     Return the Manhattan distance function for vectors.
 
@@ -82,7 +82,7 @@ def manhattan(**kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.manhattan
 
 
-def chebyshev(**kwargs: dict[str, Any]) -> Metric[Any]:
+def chebyshev() -> Metric[Any]:
     """
     Return the Chebyshev distance function for vectors.
 
@@ -94,7 +94,7 @@ def chebyshev(**kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.chebyshev
 
 
-def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
+def minkowski(p: Union[int, float]) -> Metric[Any]:
     """
     Return the Minkowski distance function for order p on vectors.
 
@@ -106,9 +106,6 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
     :param p: The order of the Minkowski distance.
     :return: The Minkowski distance function.
     """
-    p = kwargs.get("p", 2)
-    if not isinstance(p, (int, float)):
-        raise TypeError("p must be an integer or a float")
     if p == 1:
         return manhattan()
     if p == 2:
@@ -122,7 +119,7 @@ def minkowski(**kwargs: dict[str, Any]) -> Metric[Any]:
     return dist
 
 
-def cosine(**kwargs: dict[str, Any]) -> Metric[Any]:
+def cosine() -> Metric[Any]:
     """
     Return the cosine distance function for vectors.
 
@@ -145,9 +142,7 @@ def cosine(**kwargs: dict[str, Any]) -> Metric[Any]:
     return _metrics.cosine
 
 
-def get_metric(
-    metric: Union[MetricLiteral, Metric[Any]], **kwargs: dict[str, Any]
-) -> Metric[Any]:
+def get_metric(metric: Union[MetricLiteral, Metric[Any]], **kwargs: Any) -> Metric[Any]:
     """
     Return a distance function based on the specified string or callable.
 

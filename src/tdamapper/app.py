@@ -202,7 +202,7 @@ def lens_umap(n_components: int) -> Callable[[NDArray[np.float_]], NDArray[np.fl
 
 
 def run_mapper(
-    df: pd.DataFrame, **kwargs: dict[str, Any]
+    df: pd.DataFrame, **kwargs: Any
 ) -> Optional[tuple[nx.Graph, pd.DataFrame]]:
     """
     Runs the Mapper algorithm on the provided DataFrame and returns the Mapper
@@ -301,7 +301,7 @@ def create_mapper_figure(
     df_y: pd.DataFrame,
     df_target: pd.DataFrame,
     mapper_graph: nx.Graph,
-    **kwargs: dict[str, Any],
+    **kwargs: Any,
 ) -> go.Figure:
     """
     Renders the Mapper graph as a Plotly figure.
