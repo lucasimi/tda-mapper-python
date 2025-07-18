@@ -4,6 +4,7 @@ Unit tests for the cover algorithms.
 
 import math
 
+import numpy as np
 import pytest
 
 from tdamapper.core import TrivialCover
@@ -63,6 +64,26 @@ def count_components(charts):
 
 
 @pytest.mark.parametrize(
+    "cover",
+    [
+        TrivialCover(),
+        BallCover(radius=0.1, metric="euclidean"),
+        KNNCover(neighbors=1, metric="euclidean"),
+        StandardCubicalCover(n_intervals=2, overlap_frac=0.5),
+        ProximityCubicalCover(n_intervals=2, overlap_frac=0.5),
+    ],
+)
+def test_cover_empty(cover):
+    """
+    Test that the cover algorithms handle empty datasets correctly.
+    """
+    empty_data = np.array([])
+    cover.fit(empty_data)
+    charts = cover.apply(empty_data)
+    assert len(list(charts)) == 0
+
+
+@pytest.mark.parametrize(
     "dataset, cover, num_charts, num_components",
     [
         # Simple dataset
@@ -115,7 +136,20 @@ def count_components(charts):
         (GRID, KNNCover(neighbors=1, metric="euclidean"), 100, 100),
         (GRID, KNNCover(neighbors=10, metric="euclidean"), None, 1),
         (GRID, StandardCubicalCover(n_intervals=2, overlap_frac=0.5), 4, 1),
+        (GRID, StandardCubicalCover(n_intervals=2), 4, 1),
         (GRID, ProximityCubicalCover(n_intervals=2, overlap_frac=0.5), 4, 1),
+        (
+            GRID,
+            CubicalCover(n_intervals=2, overlap_frac=0.5, algorithm="proximity"),
+            4,
+            1,
+        ),
+        (
+            GRID,
+            CubicalCover(n_intervals=2, overlap_frac=0.5, algorithm="standard"),
+            4,
+            1,
+        ),
     ],
 )
 def test_cover(dataset, cover, num_charts, num_components):

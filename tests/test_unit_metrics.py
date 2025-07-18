@@ -1,3 +1,7 @@
+"""
+Unit tests for the metrics module.
+"""
+
 import math
 
 import numpy as np
@@ -66,8 +70,11 @@ def _check_values(m1, m2, a, b):
         (euclidean(), get_metric("euclidean")),
         (manhattan(), get_metric("manhattan")),
         (chebyshev(), get_metric("chebyshev")),
-        (minkowski(p=3), get_metric("minkowski", p=3)),
+        (manhattan(), get_metric("minkowski", p=1)),
+        (euclidean(), get_metric("minkowski", p=2)),
         (minkowski(p=2.5), get_metric("minkowski", p=2.5)),
+        (minkowski(p=3), get_metric("minkowski", p=3)),
+        (chebyshev(), get_metric("minkowski", p=float("inf"))),
         (cosine(), get_metric("cosine")),
     ],
 )
@@ -87,3 +94,8 @@ def test_supported_metrics():
     ]
     supported_metrics = get_supported_metrics()
     assert set(supported_metrics) == set(expected_metrics)
+
+
+def test_non_existent_metric():
+    with pytest.raises(ValueError):
+        get_metric("non_existent_metric")

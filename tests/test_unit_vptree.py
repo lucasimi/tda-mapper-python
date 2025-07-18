@@ -7,6 +7,7 @@ import math
 import pytest
 
 from tdamapper.utils.metrics import get_metric
+from tdamapper.utils.vptree import VPTree
 from tdamapper.utils.vptree_flat.vptree import VPTree as FVPT
 from tdamapper.utils.vptree_hier.vptree import VPTree as HVPT
 from tests.ball_tree import SkBallTree
@@ -117,6 +118,17 @@ def _check_vptree_property(vpt):
     _check_rec(0, len(data))
 
 
+@pytest.mark.parametrize("builder", [HVPT, FVPT])
+@pytest.mark.parametrize("dataset", [[], [1], [1, 2]])
+def test_vptree_small_dataset(builder, dataset):
+    """
+    Test the vp-tree implementations with an empty dataset.
+    """
+    vpt = builder(dataset, metric=lambda x, y: abs(x - y))
+    array = vpt.array
+    assert array.size() == len(dataset)
+
+
 @pytest.mark.parametrize("pivoting", ["disabled", "random", "furthest"])
 @pytest.mark.parametrize("eps", [0.1, 0.5])
 @pytest.mark.parametrize("neighbors", [2, 10])
@@ -136,6 +148,30 @@ def test_vptree(builder, dataset, metric, eps, neighbors, pivoting):
         pivoting=pivoting,
     )
     _check_vptree_property(vpt)
+    _test_ball_search(dataset, metric, vpt, eps)
+    _test_knn_search(dataset, metric, vpt, neighbors)
+    _test_nn_search(dataset, metric, vpt)
+
+
+@pytest.mark.parametrize("pivoting", ["disabled", "random", "furthest"])
+@pytest.mark.parametrize("eps", [0.1, 0.5])
+@pytest.mark.parametrize("neighbors", [2, 10])
+@pytest.mark.parametrize("kind", ["flat", "hierarchical"])
+@pytest.mark.parametrize("metric", ["euclidean", "manhattan"])
+@pytest.mark.parametrize("dataset", [SIMPLE, TWO_LINES])
+def test_vptree_public(kind, dataset, metric, eps, neighbors, pivoting):
+    """
+    Test the vp-tree implementations with various datasets and metrics.
+    """
+    metric = get_metric(metric)
+    vpt = VPTree(
+        dataset,
+        kind=kind,
+        metric=metric,
+        leaf_radius=eps,
+        leaf_capacity=neighbors,
+        pivoting=pivoting,
+    )
     _test_ball_search(dataset, metric, vpt, eps)
     _test_knn_search(dataset, metric, vpt, neighbors)
     _test_nn_search(dataset, metric, vpt)

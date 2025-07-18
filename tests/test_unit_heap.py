@@ -34,3 +34,8 @@ def test_max_heap(data):
     for x in data:
         m.add(x, x)
     _check_heap_property(list(m))
+    assert len(m) == len(data)
+    if not data:
+        assert m.is_empty()
+        assert m.top() is None
+        assert m.pop() is None

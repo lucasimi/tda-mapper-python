@@ -94,7 +94,10 @@ class Builder(Generic[T]):
 
         :return: A tuple containing the constructed vp-tree and the VPArray.
         """
-        tree = self._build_rec(0, self._array.size())
+        if self._array.size() > 0:
+            tree = self._build_rec(0, self._array.size())
+        else:
+            tree = Leaf(0, 0)
         return tree, self._array
 
     def _build_rec(self, start: int, end: int) -> Tree[T]:

@@ -279,6 +279,15 @@ class TrivialCover(ParamsMixin, Generic[T]):
     dataset.
     """
 
+    def fit(self, X: ArrayRead[T]) -> TrivialCover[T]:
+        """
+        Fit the cover algorithm to the data.
+
+        :param X: A dataset of n points. Ignored.
+        :return: self
+        """
+        return self
+
     def apply(self, X: ArrayRead[T]) -> Iterator[list[int]]:
         """
         Covers the dataset with a single open set.
@@ -286,7 +295,8 @@ class TrivialCover(ParamsMixin, Generic[T]):
         :param X: A dataset of n points.
         :return: A generator of lists of ids.
         """
-        yield list(range(0, len(X)))
+        if len(X) > 0:
+            yield list(range(0, len(X)))
 
 
 class FailSafeClustering(ParamsMixin, Generic[T]):

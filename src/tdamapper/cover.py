@@ -377,6 +377,8 @@ class BaseCubicalCover:
         :param X: A dataset of n points.
         :return: The object itself.
         """
+        if len(X) == 0:
+            return self
         X_ = np.asarray(X).reshape(len(X), -1).astype(float)
         if self.overlap_frac is None:
             dim = 1 if X_.ndim == 1 else X_.shape[1]
