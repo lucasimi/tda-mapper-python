@@ -159,6 +159,8 @@ def test_cover(dataset, cover, num_charts, num_components):
     num_components is None, the test will not check that value.
     """
     charts = assert_coverage(dataset, cover)
+    for chart in charts:
+        assert len(chart) > 0
     if num_charts is not None:
         assert len(charts) == num_charts
     if num_components is not None:
