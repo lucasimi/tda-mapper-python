@@ -1,3 +1,10 @@
+"""
+This module implements a max-heap data structure that allows for efficient
+retrieval and removal of the maximum element. The heap supports adding
+elements, retrieving the maximum element, and removing the maximum element
+while maintaining the heap property.
+"""
+
 from __future__ import annotations
 
 from typing import Generic, Iterator, Optional, Protocol, TypeVar
@@ -16,6 +23,9 @@ def _parent(i: int) -> int:
 
 
 class Comparable(Protocol):
+    """
+    Protocol for comparison methods required for a key in the heap.
+    """
 
     def __lt__(self: K, other: K) -> bool: ...
 
@@ -32,6 +42,14 @@ V = TypeVar("V")
 
 
 class _HeapNode(Generic[K, V]):
+    """
+    A node in the heap that holds a key-value pair.
+
+    The key is used for comparison, and the value is stored alongside it.
+
+    :param key: The key used for comparison.
+    :param value: The value associated with the key.
+    """
 
     _key: K
     _value: V
@@ -41,6 +59,11 @@ class _HeapNode(Generic[K, V]):
         self._value = value
 
     def get(self) -> tuple[K, V]:
+        """
+        Returns the key-value pair stored in the node.
+
+        :return: A tuple containing the key and value.
+        """
         return self._key, self._value
 
     def __lt__(self, other: _HeapNode[K, V]) -> bool:
@@ -57,6 +80,12 @@ class _HeapNode(Generic[K, V]):
 
 
 class MaxHeap(Generic[K, V]):
+    """
+    A max-heap implementation that allows for efficient retrieval of the
+    maximum element. This heap supports adding elements, retrieving the maximum
+    element, and removing the maximum element while maintaining the heap
+    property.
+    """
 
     _heap: list[_HeapNode[K, V]]
     _iter: Iterator[_HeapNode[K, V]]
@@ -75,12 +104,32 @@ class MaxHeap(Generic[K, V]):
     def __len__(self) -> int:
         return len(self._heap)
 
+    def is_empty(self) -> bool:
+        """
+        Check if the heap is empty.
+
+        :return: True if the heap is empty, False otherwise.
+        """
+        return len(self._heap) == 0
+
     def top(self) -> Optional[tuple[K, V]]:
+        """
+        Returns the maximum element in the heap without removing it.
+
+        :return: A tuple containing the key and value of the maximum element,
+            or None if the heap is empty.
+        """
         if not self._heap:
             return None
         return self._heap[0].get()
 
     def pop(self) -> Optional[tuple[K, V]]:
+        """
+        Removes and returns the maximum element from the heap.
+
+        :return: A tuple containing the key and value of the maximum element,
+            or None if the heap is empty.
+        """
         if not self._heap:
             return None
         max_val = self._heap[0]
@@ -89,8 +138,14 @@ class MaxHeap(Generic[K, V]):
         self._bubble_down()
         return max_val.get()
 
-    def add(self, key: K, val: V) -> None:
-        self._heap.append(_HeapNode(key, val))
+    def add(self, key: K, value: V) -> None:
+        """
+        Adds a new key-value pair to the heap.
+
+        :param key: The key used for comparison.
+        :param value: The value associated with the key.
+        """
+        self._heap.append(_HeapNode(key, value))
         self._bubble_up()
 
     def _get_local_max(self, i: int) -> int:

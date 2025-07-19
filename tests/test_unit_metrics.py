@@ -1,51 +1,101 @@
+"""
+Unit tests for the metrics module.
+"""
+
+import math
+
 import numpy as np
+import pytest
 
-import tdamapper.utils.metrics as metrics
+from tdamapper.utils.metrics import (
+    chebyshev,
+    cosine,
+    euclidean,
+    get_metric,
+    get_supported_metrics,
+    manhattan,
+    minkowski,
+)
+from tests.test_utils import (
+    dataset_empty,
+    dataset_grid,
+    dataset_random,
+    dataset_simple,
+    dataset_two_lines,
+)
 
+EMPTY = dataset_empty()
 
-def test_euclidean():
-    d = metrics.euclidean()
-    a = np.array([1.0, 0.0])
-    b = np.array([0.0, 1.0])
-    ab = d(a, b)
-    assert ab >= 1.414
-    assert ab <= 1.415
+SIMPLE = dataset_simple()
 
+TWO_LINES = dataset_two_lines(100)
 
-def test_manhattan():
-    d = metrics.manhattan()
-    a = np.array([1.0, 0.0])
-    b = np.array([0.0, 1.0])
-    ab = d(a, b)
-    assert ab == 2.0
+GRID = dataset_grid(10)
 
-
-def test_chebyshev():
-    d = metrics.chebyshev()
-    a = np.array([1.0, 0.0])
-    b = np.array([0.0, 1.0])
-    ab = d(a, b)
-    assert ab == 1.0
-
-
-def test_cosine():
-    d = metrics.cosine()
-    a = np.array([1.0, 0.0])
-    b = np.array([0.0, 1.0])
-    c = np.array([0.0, 2.0])
-    ab = d(a, b)
-    assert ab >= 1.414
-    assert ab <= 1.415
-    bc = d(b, c)
-    assert bc == 0.0
+RANDOM = dataset_random(2, 100)
 
 
-def test_get_metric():
-    assert metrics.euclidean() == metrics.get_metric("euclidean")
-    assert metrics.euclidean() == metrics.get_metric("minkowski")
-    assert metrics.chebyshev() == metrics.get_metric("chebyshev")
-    assert metrics.chebyshev() == metrics.get_metric("minkowski", p=np.inf)
-    assert metrics.chebyshev() == metrics.get_metric("minkowski", p=float("inf"))
-    assert metrics.manhattan() == metrics.get_metric("manhattan")
-    assert metrics.manhattan() == metrics.get_metric("minkowski", p=1)
-    assert metrics.cosine() == metrics.get_metric("cosine")
+def _check_values(m1, m2, a, b):
+    m1_div_by_zero = False
+    m1_is_nan = False
+
+    m2_div_by_zero = False
+    m2_is_nan = False
+
+    try:
+        m1_value = m1(a, b)
+        if np.isnan(m1_value):
+            m1_is_nan = True
+    except ZeroDivisionError:
+        m1_div_by_zero = True
+    try:
+        m2_value = m2(a, b)
+        if np.isnan(m2_value):
+            m2_is_nan = True
+    except ZeroDivisionError:
+        m2_div_by_zero = True
+    assert m1_div_by_zero == m2_div_by_zero
+    assert m1_is_nan == m2_is_nan
+    if m1_div_by_zero or m2_div_by_zero:
+        return True
+    if m1_is_nan or m2_is_nan:
+        return True
+    return math.isclose(m1_value, m2_value)
+
+
+@pytest.mark.parametrize("data", [SIMPLE, TWO_LINES, GRID, RANDOM])
+@pytest.mark.parametrize(
+    "m1, m2",
+    [
+        (euclidean(), get_metric("euclidean")),
+        (manhattan(), get_metric("manhattan")),
+        (chebyshev(), get_metric("chebyshev")),
+        (manhattan(), get_metric("minkowski", p=1)),
+        (euclidean(), get_metric("minkowski", p=2)),
+        (minkowski(p=2.5), get_metric("minkowski", p=2.5)),
+        (minkowski(p=3), get_metric("minkowski", p=3)),
+        (chebyshev(), get_metric("minkowski", p=float("inf"))),
+        (cosine(), get_metric("cosine")),
+    ],
+)
+def test_metrics(m1, m2, data):
+    for a in data:
+        for b in data:
+            assert _check_values(m1, m2, a, b)
+
+
+def test_supported_metrics():
+    expected_metrics = [
+        "euclidean",
+        "manhattan",
+        "chebyshev",
+        "cosine",
+        "minkowski",
+    ]
+    supported_metrics = get_supported_metrics()
+    assert set(supported_metrics) == set(expected_metrics)
+
+
+def test_non_existent_metric():
+    with pytest.raises(ValueError):
+        get_metric("non_existent_metric")

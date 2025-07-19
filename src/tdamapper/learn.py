@@ -159,10 +159,12 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra]):
         """
         y_ = X if y is None else y
         X, y_ = self._validate_X_y(X, y_)
-        self._cover = TrivialCover() if self.cover is None else self.cover
-        self._clustering = (
-            TrivialClustering() if self.clustering is None else self.clustering
-        )
+        self._cover = TrivialCover()
+        if self.cover is not None:
+            self._cover = clone(self.cover)
+        self._clustering = TrivialClustering()
+        if self.clustering is not None:
+            self._clustering = clone(self.clustering)
         self._verbose = self.verbose
         self._failsafe = self.failsafe
         if self._failsafe:
@@ -170,8 +172,6 @@ class MapperAlgorithm(EstimatorMixin, ParamsMixin, Generic[S_contra, T_contra]):
                 clustering=self._clustering,
                 verbose=self._verbose,
             )
-        self._cover = clone(self._cover)
-        self._clustering = clone(self._clustering)
         self._n_jobs = self.n_jobs
         self.graph_ = mapper_graph(
             X,
