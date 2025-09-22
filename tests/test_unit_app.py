@@ -28,6 +28,7 @@ async def test_run_app_fail(user: User) -> None:
 async def test_run_app_success(user: User) -> None:
     app.startup()
     await user.open("/")
+
     await user.should_see("Load Data")
     await user.should_see("Lens")
     await user.should_see("Cover")
@@ -35,9 +36,15 @@ async def test_run_app_success(user: User) -> None:
     await user.should_see("Run Mapper")
     await user.should_see("Redraw")
 
+    user.find("Dataset").click()
+    user.find("Iris").click()
     user.find("Load Data").click()
     await user.should_see("Load data completed")
     await user.should_not_see("Load data failed")
+
+    user.find("Exclude columns").click()
+    user.find("sepal length (cm)").click()
+
     user.find("Run Mapper").click()
     await user.should_see("Running Mapper...")
     await user.should_not_see("Run Mapper failed")
@@ -45,6 +52,7 @@ async def test_run_app_success(user: User) -> None:
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("Draw Mapper failed")
     await user.should_see("Draw Mapper completed", retries=RETRIES)
+
     user.find("Redraw").click()
     await user.should_see("Drawing Mapper...")
     await user.should_not_see("Draw Mapper failed")
