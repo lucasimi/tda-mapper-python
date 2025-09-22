@@ -37,6 +37,12 @@ async def test_run_app_success(user: User) -> None:
     await user.should_see("Redraw")
 
     user.find("Dataset").click()
+    user.find("Digits").click()
+    user.find("Load Data").click()
+    await user.should_see("Load data completed")
+    await user.should_not_see("Load data failed")
+
+    user.find("Dataset").click()
     user.find("Iris").click()
     user.find("Load Data").click()
     await user.should_see("Load data completed")
