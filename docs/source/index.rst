@@ -17,6 +17,9 @@
    :target: https://codecov.io/github/lucasimi/tda-mapper-python
 .. |DOI| image:: https://img.shields.io/badge/DOI-10.5281/zenodo.10642381-blue?logo=doi&logoColor=silver
    :target: https://doi.org/10.5281/zenodo.10642381
+.. |PyOpenSci| image:: https://pyopensci.org/badges/peer-reviewed.svg
+   :target: https://github.com/pyOpenSci/software-review/issues/222
+   :alt: pyOpenSci Peer-Reviewed
 .. |Step 1| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_1.png
 .. |Step 2| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_2.png
 .. |Step 3| image:: https://github.com/lucasimi/tda-mapper-python/raw/main/resources/mapper_3.png
@@ -26,10 +29,13 @@
    https://github.com/lucasimi/tda-mapper-python/raw/main/docs/source/logos/tda-mapper-logo-horizontal.png
    :alt: Logo
 
-|Repo Status| |Source Code|
+|Source Code|
 
-|PyPI version| |downloads| |codecov| |test| |publish| |docs|  |DOI|
+|PyOpenSci| |DOI| |Repo Status| 
 
+|PyPI version| |downloads| 
+
+|test| |codecov| |docs| |publish|
 
 tda-mapper
 ==========
